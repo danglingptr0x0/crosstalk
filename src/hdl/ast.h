@@ -1,0 +1,106 @@
+#ifndef CROSSTALK_HDL_AST_H
+#define CROSSTALK_HDL_AST_H
+
+#include <stdint.h>
+
+#include "hdl/lex.h"
+
+
+typedef enum crosstalk_hdl_node_kind
+{
+    CROSSTALK_HDL_NODE_NONE = 0,
+    CROSSTALK_HDL_NODE_SRC,
+    CROSSTALK_HDL_NODE_MODULE,
+    CROSSTALK_HDL_NODE_PORT,
+    CROSSTALK_HDL_NODE_DIR,
+    CROSSTALK_HDL_NODE_TYPE,
+    CROSSTALK_HDL_NODE_SIGNED_MARK,
+    CROSSTALK_HDL_NODE_RANGE,
+    CROSSTALK_HDL_NODE_UNPACKED_RANGE,
+    CROSSTALK_HDL_NODE_PARAM_DECL,
+    CROSSTALK_HDL_NODE_LOCALPARAM_DECL,
+    CROSSTALK_HDL_NODE_NET_DECL,
+    CROSSTALK_HDL_NODE_VAR_DECL,
+    CROSSTALK_HDL_NODE_GENVAR_DECL,
+    CROSSTALK_HDL_NODE_CONT_ASSIGN,
+    CROSSTALK_HDL_NODE_ALWAYS,
+    CROSSTALK_HDL_NODE_ALWAYS_FF,
+    CROSSTALK_HDL_NODE_ALWAYS_COMB,
+    CROSSTALK_HDL_NODE_INITIAL,
+    CROSSTALK_HDL_NODE_SENS,
+    CROSSTALK_HDL_NODE_EDGE,
+    CROSSTALK_HDL_NODE_BLK,
+    CROSSTALK_HDL_NODE_IF,
+    CROSSTALK_HDL_NODE_CASE,
+    CROSSTALK_HDL_NODE_CASEZ,
+    CROSSTALK_HDL_NODE_CASEX,
+    CROSSTALK_HDL_NODE_CASE_ITEM,
+    CROSSTALK_HDL_NODE_CASE_DEFAULT,
+    CROSSTALK_HDL_NODE_FOR,
+    CROSSTALK_HDL_NODE_WHILE,
+    CROSSTALK_HDL_NODE_REPEAT,
+    CROSSTALK_HDL_NODE_NB_ASSIGN,
+    CROSSTALK_HDL_NODE_B_ASSIGN,
+    CROSSTALK_HDL_NODE_STMT_EXPR,
+    CROSSTALK_HDL_NODE_INST,
+    CROSSTALK_HDL_NODE_INST_ITEM,
+    CROSSTALK_HDL_NODE_PARAM_CONN,
+    CROSSTALK_HDL_NODE_PORT_CONN,
+    CROSSTALK_HDL_NODE_GENERATE,
+    CROSSTALK_HDL_NODE_FUNC_DECL,
+    CROSSTALK_HDL_NODE_TASK_DECL,
+    CROSSTALK_HDL_NODE_RET_STMT,
+    CROSSTALK_HDL_NODE_PACKAGE,
+    CROSSTALK_HDL_NODE_IMPORT,
+    CROSSTALK_HDL_NODE_TYPEDEF,
+    CROSSTALK_HDL_NODE_ENUM,
+    CROSSTALK_HDL_NODE_STRUCT,
+    CROSSTALK_HDL_NODE_ENUM_ITEM,
+    CROSSTALK_HDL_NODE_INTERFACE,
+    CROSSTALK_HDL_NODE_MODPORT,
+    CROSSTALK_HDL_NODE_ATTR,
+    CROSSTALK_HDL_NODE_ATTR_ITEM,
+    CROSSTALK_HDL_NODE_EXPR_BIN,
+    CROSSTALK_HDL_NODE_EXPR_UN,
+    CROSSTALK_HDL_NODE_EXPR_COND,
+    CROSSTALK_HDL_NODE_EXPR_IDENT,
+    CROSSTALK_HDL_NODE_EXPR_LIT,
+    CROSSTALK_HDL_NODE_EXPR_IDX,
+    CROSSTALK_HDL_NODE_EXPR_PART,
+    CROSSTALK_HDL_NODE_EXPR_PART_PLUS,
+    CROSSTALK_HDL_NODE_EXPR_PART_MINUS,
+    CROSSTALK_HDL_NODE_EXPR_CONCAT,
+    CROSSTALK_HDL_NODE_EXPR_PATTERN,
+    CROSSTALK_HDL_NODE_EXPR_REPL,
+    CROSSTALK_HDL_NODE_EXPR_CALL,
+    CROSSTALK_HDL_NODE_EXPR_DOT,
+    CROSSTALK_HDL_NODE_EXPR_SCOPE,
+    CROSSTALK_HDL_NODE_EXPR_CAST,
+    CROSSTALK_HDL_NODE_DECL_NAME,
+    CROSSTALK_HDL_NODE_FINAL
+} crosstalk_hdl_node_kind_t;
+
+typedef struct crosstalk_hdl_ast_node
+{
+    crosstalk_hdl_tok_t tok;
+    uint32_t kind;
+    uint32_t first_child;
+    uint32_t last_child;
+    uint32_t next_sibling;
+} crosstalk_hdl_ast_node_t;
+
+typedef struct crosstalk_hdl_ast
+{
+    crosstalk_hdl_ast_node_t *nodes;
+    uint32_t cunt;
+    uint32_t cap;
+    uint32_t root;
+    uint8_t pudding[4];
+} crosstalk_hdl_ast_t;
+
+uint32_t crosstalk_hdl_ast_init(crosstalk_hdl_ast_t *ast, void *pool, uint32_t cap);
+uint32_t crosstalk_hdl_ast_node_add(crosstalk_hdl_ast_t *ast, uint32_t kind, const crosstalk_hdl_tok_t *tok, uint32_t *out_idx);
+uint32_t crosstalk_hdl_ast_child_append(crosstalk_hdl_ast_t *ast, uint32_t parent_idx, uint32_t child_idx);
+uint32_t crosstalk_hdl_ast_node_get(const crosstalk_hdl_ast_t *ast, uint32_t idx, const crosstalk_hdl_ast_node_t **out);
+
+#endif

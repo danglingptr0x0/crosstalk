@@ -1,0 +1,62 @@
+# Contributions
+
+Crosstalk is planned to be quite a large project and I have decided to allow contributions to be submitted.
+They will function in a way similar to the kernel DCO process. I like it because I recently stopped using git
+and don't want to walk that back, so instead, to contribute, just send me your patch by email at **dangling@danglingptr.io**
+I might not accept patches that are not compatible with the ecosystem that I want to build. However, if you submit something
+really cool, I will definitely consider it. And as far as bugfixes go, I will always consider but may not always apply them
+for a variety of reasons. Make sure that the content that you submit is yours, that you're sending it under
+the **GNU AGPLv3-only**, and that it is **signed-off by you**. If you'd like to sign your patch, then you are welcome
+to enclose it using PGP, and I will then associate your sign-off identifier with your pubkey. Thanks
+
+My key's fingerprint: 5FEDF7367C81E61DC2EA604AEBE6B5D5B3373C15
+
+
+Patch format:
+
+```
+<patch description>
+
+Signed-off-by: [Name|Stable identifier] <yourname.orstableidentifier@youremailserver.org>
+---
+<patch in a unified diff against a release>
+```
+
+
+DCO verbatim (https://developercertificate.org/):
+
+> Developer Certificate of Origin
+> Version 1.1
+>
+> Copyright (C) 2004, 2006 The Linux Foundation and its contributors.
+>
+> Everyone is permitted to copy and distribute verbatim copies of this
+> license document, but changing it is not allowed.
+>
+>
+> Developer's Certificate of Origin 1.1
+>
+> By making a contribution to this project, I certify that:
+>
+> (a) The contribution was created in whole or in part by me and I
+> have the right to submit it under the open source license
+> indicated in the file; or
+>
+> (b) The contribution is based upon previous work that, to the best
+> of my knowledge, is covered under an appropriate open source
+> license and I have the right under that license to submit that
+> work with modifications, whether created in whole or in part
+> by me, under the same open source license (unless I am
+> permitted to submit under a different license), as indicated
+> in the file; or
+>
+> (c) The contribution was provided directly to me by some other
+> person who certified (a), (b) or (c) and I have not modified
+> it.
+>
+> (d) I understand and agree that this project and the contribution
+> are public and that a record of the contribution (including all
+> personal information I submit with it, including my sign-off) is
+> maintained indefinitely and may be redistributed consistent with
+> this project or the open source license(s) involved.
+
