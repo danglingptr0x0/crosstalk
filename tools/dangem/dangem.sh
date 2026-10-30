@@ -31,6 +31,8 @@ SMALL_TEXT="terminal too small"
 LAUNCH_CONFIRM_TEXT="The latest source is newer than the compiled binaries. Launch anyway (press again)?"
 LAUNCH_ARM_SPAN=3000
 FRAME_WAIT=0.016
+ESC_WAIT=0.01
+ESC_SEQ_MAX=5
 COL_MAX=512
 ROW_MAX=256
 JOB_MAX=64
@@ -1072,18 +1074,29 @@ core_key_route()
 
 core_key_rd()
 {
-    local ch rest=""
+    local ch rest="" taken=0
 
     KEY=""
 
-    if ! IFS= read -rsn1 -t "$FRAME_WAIT" -u 3 ch; then return 0; fi
+    if ! read -t 0 -u 3; then
+        sleep "$FRAME_WAIT"
+        return 0
+    fi
+
+    IFS= read -rsn1 -u 3 ch
 
     if [[ "$ch" != "$ESC" ]]; then
         KEY="${ch,,}"
         return 0
     fi
 
-    IFS= read -rsn5 -t 0.01 -u 3 rest
+    sleep "$ESC_WAIT"
+
+    while ((taken < ESC_SEQ_MAX)) && read -t 0 -u 3; do
+        IFS= read -rsn1 -u 3 ch
+        rest+="$ch"
+        taken=$((taken + 1))
+    done
 
     case "$rest" in
         "") KEY=ESC ;;
@@ -1144,7 +1157,7 @@ main()
     logging_line_wr INFO "dangem: launching; path: $OUT_PATH"
     unset TZ DANGEM_TERM_SPAWNED
     cd "$ROOT" || exit 1
-    exec "$OUT_PATH"
+    exec "$OUT_PATH" <"$TTY_PATH"
 }
 
 main "$@"
