@@ -29,8 +29,8 @@ MENU_EXIT_W=12
 SUMMARY_KEYS="F2=Launch - F5=Rebuild - Esc=Menu - F10=Quit"
 SMALL_TEXT="terminal too small"
 LAUNCH_CONFIRM_TEXT="The latest source is newer than the compiled binaries. Launch anyway (press again)?"
-LAUNCH_ARM_MS=3000
-FRAME_S=0.016
+LAUNCH_ARM_SPAN=3000
+FRAME_WAIT=0.016
 COL_MAX=512
 ROW_MAX=256
 JOB_MAX=64
@@ -72,9 +72,9 @@ SRC_DONE=0
 JOB_CUNT=1
 LIVE_CUNT=0
 ITEM_NEXT=0
-START_MS=0
-END_MS=0
-PREV_MS=0
+BUILD_START=0
+BUILD_END=0
+PREV_DURATION=0
 FAIL_SRC=""
 FAIL_TEXT=""
 DEPS_OK=0
@@ -91,7 +91,7 @@ QUIT=0
 LAUNCH=0
 LAUNCH_AFTER=0
 LAUNCH_CONFIRM=0
-LAUNCH_CONFIRM_MS=0
+LAUNCH_CONFIRM_TIME=0
 NOTICE=""
 VIEW_LAUNCH=""
 VIEW_BUILD=""
@@ -102,21 +102,28 @@ ROW_CUNT=0
 FRAME_BUFF=""
 TTY_SAVED=""
 
-time_epoch_ms_get()
+time_epoch_get()
 {
-    local epoch_us="${EPOCHREALTIME/./}"
-    echo $((epoch_us / 1000))
+    local epoch_real="${EPOCHREALTIME:-}"
+
+    if [[ -z "$epoch_real" ]]; then
+        date +%s%3N
+        return 0
+    fi
+
+    epoch_real="${epoch_real/./}"
+    echo $((epoch_real / 1000))
 }
 
 logging_line_wr()
 {
     mkdir -p "$ROOT" || return 0
-    printf '%s %s %s\n' "$(time_epoch_ms_get)" "$1" "$2" >>"$LOG_PATH"
+    printf '%s %s %s\n' "$(time_epoch_get)" "$1" "$2" >>"$LOG_PATH"
 }
 
 run_tty_ensure()
 {
-    local self="${BASH_SOURCE[0]}"
+    local self="${BASH_SOURCE[0]:-}"
     local name
 
     if [[ -t 1 ]]; then return 0; fi
@@ -396,7 +403,7 @@ compile_init()
     SRC_DONE=0
     OUT_PATH=""
     RELEASE=""
-    PREV_MS=0
+    PREV_DURATION=0
 
     if compile_list_ld; then LIST_OK=1; else LIST_OK=0; fi
 
@@ -424,7 +431,7 @@ compile_init()
             IFS= read -r line
             IFS= read -r line
         } <"$STAMP_PATH"
-        if [[ "$line" =~ ^[0-9]+$ ]]; then PREV_MS="$line"; fi
+        if [[ "$line" =~ ^[0-9]+$ ]]; then PREV_DURATION="$line"; fi
     fi
 
     build_src_newer_ck
@@ -546,8 +553,8 @@ compile_start()
     LIVE_CUNT=0
     JOB_PID=()
     JOB_ITEM=()
-    START_MS="$(time_epoch_ms_get)"
-    END_MS="$START_MS"
+    BUILD_START="$(time_epoch_get)"
+    BUILD_END="$BUILD_START"
     PHASE=compile
 
     return 0
@@ -585,14 +592,14 @@ compile_pump()
         if ! build_failed_is && ((ITEM_NEXT < ITEM_CUNT)); then return 0; fi
 
         if build_failed_is; then
-            END_MS="$(time_epoch_ms_get)"
+            BUILD_END="$(time_epoch_get)"
             PHASE=fail
             return 0
         fi
 
         if ! build_link_wr; then
             build_fail_set "link" "linker spawn failed"
-            END_MS="$(time_epoch_ms_get)"
+            BUILD_END="$(time_epoch_get)"
             PHASE=fail
             return 0
         fi
@@ -604,7 +611,7 @@ compile_pump()
 
     if ((LIVE_CUNT != 0)); then return 0; fi
 
-    END_MS="$(time_epoch_ms_get)"
+    BUILD_END="$(time_epoch_get)"
 
     if build_failed_is; then
         PHASE=fail
@@ -613,7 +620,7 @@ compile_pump()
 
     PHASE=done
     SRC_NEWER=0
-    printf '%s\n%s\n' "$RELEASE" "$((END_MS - START_MS))" >"$STAMP_PATH"
+    printf '%s\n%s\n' "$RELEASE" "$((BUILD_END - BUILD_START))" >"$STAMP_PATH"
 }
 
 core_deps_ck()
@@ -875,12 +882,12 @@ ui_summary_draw()
     ui_frame_draw "$box_col" 3 "$box_w" 9
     summary_verdict_draw "$box_col" "$box_w"
 
-    if compile_busy_is; then end="$(time_epoch_ms_get)"; else end="$END_MS"; fi
+    if compile_busy_is; then end="$(time_epoch_get)"; else end="$BUILD_END"; fi
 
     elapsed=0
-    if ((end > START_MS)); then elapsed=$(((end - START_MS) / 1000)); fi
+    if ((end > BUILD_START)); then elapsed=$(((end - BUILD_START) / 1000)); fi
 
-    scale=$((PREV_MS / 1000 * 2))
+    scale=$((PREV_DURATION / 1000 * 2))
     if ((scale < 60)); then scale=60; fi
 
     while ((elapsed > scale)); do scale=$((scale * 2)); done
@@ -952,11 +959,11 @@ core_launch_menu_req()
         return 0
     fi
 
-    now="$(time_epoch_ms_get)"
+    now="$(time_epoch_get)"
 
-    if compile_stale_is && [[ "$LAUNCH_CONFIRM" != 1 || $((now - LAUNCH_CONFIRM_MS)) -gt "$LAUNCH_ARM_MS" ]]; then
+    if compile_stale_is && [[ "$LAUNCH_CONFIRM" != 1 || $((now - LAUNCH_CONFIRM_TIME)) -gt "$LAUNCH_ARM_SPAN" ]]; then
         LAUNCH_CONFIRM=1
-        LAUNCH_CONFIRM_MS="$now"
+        LAUNCH_CONFIRM_TIME="$now"
         NOTICE="$LAUNCH_CONFIRM_TEXT"
         return 0
     fi
@@ -1069,7 +1076,7 @@ core_key_rd()
 
     KEY=""
 
-    if ! IFS= read -rsn1 -t "$FRAME_S" -u 3 ch; then return 0; fi
+    if ! IFS= read -rsn1 -t "$FRAME_WAIT" -u 3 ch; then return 0; fi
 
     if [[ "$ch" != "$ESC" ]]; then
         KEY="${ch,,}"
