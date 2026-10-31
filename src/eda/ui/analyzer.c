@@ -21,7 +21,7 @@
 #define ANALYZER_LABEL_W 18
 #define ANALYZER_BUS_LABEL_MIN_CELLS 6
 #define ANALYZER_CELL_MID_DIV 2
-#define ANALYZER_HINT_TEXT "analyzer <sigs>; up to 4 lanes; analyzer span <cycles>; analyzer off"
+#define ANALYZER_HINT_TEXT "analyzer <sigs|arr[i]|arr[lo:hi]>; up to 4 lanes; analyzer span <cycles>; analyzer off"
 #define ANALYZER_HDR_FMT "span %" PRIu64 " cycles; t %" PRIu64
 #define ANALYZER_LABEL_FMT "%.12s 0x%" PRIX64
 #define ANALYZER_BUS_LABEL_FMT "%" PRIX64

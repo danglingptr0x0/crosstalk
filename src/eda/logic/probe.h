@@ -15,6 +15,7 @@
 #define CROSSTALK_EDA_LOGIC_PROBE_RING_CAP 8192
 #define CROSSTALK_EDA_LOGIC_PROBE_RING_MASK (CROSSTALK_EDA_LOGIC_PROBE_RING_CAP - 0x1)
 #define CROSSTALK_EDA_LOGIC_PROBE_PORT_CAP 64
+#define CROSSTALK_EDA_LOGIC_PROBE_ELEM_NONE UINT64_MAX
 
 typedef struct crosstalk_eda_logic_probe_sample
 {
@@ -29,6 +30,7 @@ typedef struct crosstalk_eda_logic_probe
     uint64_t dropped;
     uint64_t period;
     uint64_t next_cycle;
+    uint64_t elem;
     const uint64_t *abi_vals;
     char port[CROSSTALK_EDA_LOGIC_PROBE_PORT_CAP];
     uint32_t hd;
@@ -57,6 +59,7 @@ uint32_t crosstalk_eda_logic_probe_attach(crosstalk_eda_logic_probe_ctx_t *ctx, 
 uint32_t crosstalk_eda_logic_probe_period_attach(crosstalk_eda_logic_probe_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_exec_ctx_t *exec, const crosstalk_hdl_abi_t *abi, const char *port, uint64_t period, uint32_t *out);
 uint32_t crosstalk_eda_logic_probe_host_attach(crosstalk_eda_logic_probe_ctx_t *ctx, uint32_t slot_idx, const char *port, uint32_t width, uint32_t *out);
 uint32_t crosstalk_eda_logic_probe_sample_push(crosstalk_eda_logic_probe_ctx_t *ctx, uint32_t handle, uint64_t val, uint64_t cycle);
+uint32_t crosstalk_eda_logic_probe_sel_parse(const char *port, char *out_base, uint32_t cap, uint64_t *out_lo, uint64_t *out_hi);
 uint32_t crosstalk_eda_logic_probe_find(const crosstalk_eda_logic_probe_ctx_t *ctx, uint32_t slot_idx, const char *port, uint32_t *out);
 uint32_t crosstalk_eda_logic_probe_detach(crosstalk_eda_logic_probe_ctx_t *ctx, uint32_t handle);
 uint32_t crosstalk_eda_logic_probe_slot_detach(crosstalk_eda_logic_probe_ctx_t *ctx, uint32_t slot_idx);

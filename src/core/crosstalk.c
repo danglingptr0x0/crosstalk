@@ -6543,7 +6543,7 @@ static uint32_t crosstalk_win_nav_key_isr(crosstalk_ctx_t *ctx, const ldg_term_k
     now_ms = ldg_time_epoch_ms_get();
     phys = irq->base != 0 ? irq->base : irq->codepoint;
 
-    if (shift_is == LDG_TRUTH_TRUE && (phys == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT || phys == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT_SHIFTED))
+    if (shift_is == LDG_TRUTH_TRUE && (phys == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT || phys == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT_SHIFTED || irq->shifted == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT_SHIFTED))
     {
         *consumed = LDG_TRUTH_TRUE;
         ctx->win_nav.kbd_pending = LDG_TRUTH_TRUE;
@@ -11782,11 +11782,60 @@ static void crosstalk_verb_feed(crosstalk_ctx_t *ctx, const char *arg)
     if (added != 0) { if (crosstalk_eda_ui_feed_open_set(&ctx->eda.feed, LDG_TRUTH_TRUE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "feed open failed"); } }
 }
 
+static uint32_t crosstalk_analyzer_sig_attach(crosstalk_ctx_t *ctx, const crosstalk_hdl_exec_ctx_t *exec, const crosstalk_hdl_abi_t *abi, const char *sig, uint32_t *added)
+{
+    uint32_t probe_handle = UINT32_MAX;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || sig == 0x0 || added == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ret = crosstalk_eda_logic_probe_attach(&ctx->eda.logic_probe, CROSSTALK_CORE_TERM_SLOT, exec, abi, sig, &probe_handle);
+    if (ret != LDG_ERR_AOK)
+    {
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer: attach failed; sig: %.63s; err: %u32", sig, ret);
+        toast_push(ctx, "analyzer sig refused");
+
+        return LDG_ERR_AOK;
+    }
+
+    ret = crosstalk_eda_ui_analyzer_lane_add(&ctx->eda.analyzer, sig, probe_handle, ctx->eda.logic_probe.probe[probe_handle].width);
+
+    if (ret == LDG_ERR_EXISTS)
+    {
+        if (crosstalk_eda_logic_probe_detach(&ctx->eda.logic_probe, probe_handle) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer probe detach failed"); }
+
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "analyzer: lane already present; sig: %.63s", sig);
+
+        *added = *added + 0x1;
+
+        return LDG_ERR_AOK;
+    }
+
+    if (ret != LDG_ERR_AOK)
+    {
+        if (crosstalk_eda_logic_probe_detach(&ctx->eda.logic_probe, probe_handle) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer probe detach failed"); }
+
+        toast_push(ctx, "analyzer lanes full");
+
+        return LDG_ERR_FULL;
+    }
+
+    *added = *added + 0x1;
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "analyzer: lane; sig: %.63s; probe: %u32; width: %u32", sig, probe_handle, ctx->eda.logic_probe.probe[probe_handle].width);
+
+    return LDG_ERR_AOK;
+}
+
 static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
 {
     const crosstalk_hdl_exec_ctx_t *exec = 0x0;
     const crosstalk_hdl_abi_t *abi = 0x0;
     char tok[CROSSTALK_CORE_SOUND_ARG_CAP] = LDG_ARR_ZERO_INIT;
+    char base[CROSSTALK_EDA_LOGIC_PROBE_PORT_CAP] = LDG_ARR_ZERO_INIT;
+    char sig[CROSSTALK_EDA_LOGIC_PROBE_PORT_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t elem_lo = 0;
+    uint64_t elem_hi = 0;
+    uint64_t elem = 0;
     uint32_t span = 0;
     uint32_t probe_handle = UINT32_MAX;
     uint32_t lane_cunt = 0;
@@ -11846,37 +11895,23 @@ static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
 
     while (tok[0] != LDG_STR_TERM)
     {
-        ret = crosstalk_eda_logic_probe_attach(&ctx->eda.logic_probe, CROSSTALK_CORE_TERM_SLOT, exec, abi, tok, &probe_handle);
+        ret = crosstalk_eda_logic_probe_sel_parse(tok, base, (uint32_t)sizeof(base), &elem_lo, &elem_hi);
+
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer: attach failed; sig: %.63s; err: %u32", tok, ret);
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer: sel refused; sig: %.63s; err: %u32", tok, ret);
             toast_push(ctx, "analyzer sig refused");
         }
-        else
-        {
-            ret = crosstalk_eda_ui_analyzer_lane_add(&ctx->eda.analyzer, tok, probe_handle, ctx->eda.logic_probe.probe[probe_handle].width);
-
-            if (ret == LDG_ERR_EXISTS)
+        else if (elem_lo == elem_hi) { ret = crosstalk_analyzer_sig_attach(ctx, exec, abi, tok, &added); }
+        else { for (elem = elem_lo; elem <= elem_hi && elem - elem_lo < (uint64_t)CROSSTALK_EDA_UI_ANALYZER_LANE_CAP && ret != LDG_ERR_FULL; elem = elem + 0x1)
             {
-                if (crosstalk_eda_logic_probe_detach(&ctx->eda.logic_probe, probe_handle) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer probe detach failed"); }
+                if (snprintf(sig, sizeof(sig), "%.40s[%" PRIu64 "]", base, elem) < 0) { ret = LDG_ERR_STR_FMT; break; }
 
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "analyzer: lane already present; sig: %.63s", tok);
-
-                added = added + 0x1;
-            }
-            else if (ret != LDG_ERR_AOK)
-            {
-                if (crosstalk_eda_logic_probe_detach(&ctx->eda.logic_probe, probe_handle) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "analyzer probe detach failed"); }
-
-                toast_push(ctx, "analyzer lanes full");
-                break;
-            }
-            else
-            {
-                added = added + 0x1;
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "analyzer: lane; sig: %.63s; probe: %u32; width: %u32", tok, probe_handle, ctx->eda.logic_probe.probe[probe_handle].width);
+                ret = crosstalk_analyzer_sig_attach(ctx, exec, abi, sig, &added);
             }
         }
+
+        if (ret == LDG_ERR_FULL) { break; }
 
         while (arg[at] == ' ') { at = at + 0x1; }
 
@@ -12336,7 +12371,7 @@ static uint32_t crosstalk_script_verb_tbl_get(const crosstalk_script_verb_t **ou
         { "brainomatic", 0x0, 0x0, crosstalk_verb_brainomatic, "brainomatic; toggle the ISA cheat sheet", 0x0 },
         { "progview", 0x0, 0x1, crosstalk_verb_progview, "progview [signal]; live disassembly following loc, no profiler tax", "@sig" },
         { "pipeview", 0x0, 0x8, crosstalk_verb_pipeview, "pipeview [stage sigs]; disassemble one insn-word sig per stage, in order", "@sig @sig @sig @sig @sig @sig @sig @sig" },
-        { "analyzer", 0x0, 0x4, crosstalk_verb_analyzer, "analyzer [sigs|span N|off]; cycle-accurate multi-lane digital traces", "@sig|span|off @sig @sig @sig" },
+        { "analyzer", 0x0, 0x4, crosstalk_verb_analyzer, "analyzer [sigs|arr[i]|arr[lo:hi]|span N|off]; cycle-accurate multi-lane digital traces; indices decimal or 0x hex", "@sig|span|off @sig @sig @sig" },
         { "feed", 0x0, 0x4, crosstalk_verb_feed, "feed [sigs|off]; cycle-stamped change events; exc values annotated", "@sig|off @sig @sig @sig" },
         { "program", 0x0, 0x1, crosstalk_verb_program, "program [path]; program the editor's file; bare uses the last path copied in the editor", "@path" }
     };
@@ -13492,6 +13527,7 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
         ldg_term_input_conf_t irq_conf = LDG_STRUCT_ZERO_INIT;
 
         ret = ldg_term_input_conf_default_get(&irq_conf);
+        irq_conf.kitty_en = LDG_TRUTH_FALSE;
         if (ret == LDG_ERR_AOK) { ret = ldg_term_input_create(&irq_conf, &ctx->irq_src); }
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK))

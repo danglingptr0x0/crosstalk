@@ -163,3 +163,11 @@ The game comes with a custom instruction set architecture and its first CPU call
 <p align="center"><strong>Self-play submode</strong></p>
 
 Sandbox mode is the default Crosstalk experience. Players can create a custom workspace with resizable, positionable, and alignable floating windows. Most use-cases start with opening a shell session to their host, invoking their editor, and writing SystemVerilog. Once there is a valid design, it can be simulated inside Crosstalk.
+
+
+<br>
+<br>
+<p align="center"><strong>Support</strong></p>
+If you'd like to support the project, then please consider tossing a coin:
+- XMR: 432rQNYtviBdepHQmU2p7oSHRtzWEiBz8ChxVLhaWYTvckGK72aP84J4BmYCQfgbPeep7QCJ7mdyLSYQwxTQQag5EBATrbn
+- ETH (main or arb one): 0x1f5F633Bc65DC76f76AE1Bf17eb0d8cD08158A40
