@@ -12,8 +12,7 @@ set(STD_PROJ_PREFIX "crosstalk")
 set(CROSSTALKRELEASE "0.1")
 
 set(STEAM_SDK "$ENV{HOME}/git/libdangling/steamworks_sdk/sdk")
-set(STEAM_REDIST "${STEAM_SDK}/redistributable_bin")
-set(STEAM_TICKET "${STEAM_SDK}/public/steam/lib/win64")
+set(CROSSTALK_LIBRESTEAM_ROOT "$ENV{HOME}/git/libresteam" CACHE PATH "LibreSteam tree holding include/ and the build outputs")
 
 set(DISCORD_SDK_REV "1.10.18247")
 set(DISCORD_SDK "${CMAKE_CURRENT_SOURCE_DIR}/DiscordSocialSdk-${DISCORD_SDK_REV}/discord_social_sdk")
@@ -132,7 +131,7 @@ set(CROSSTALK_SRC_LINUX
     src/net/discord.c
     src/net/inventory/inventory.c
     src/net/presence.c
-    src/net/steam.c
+    src/net/libresteam.c
     src/net/wire.c
     src/net/wshop/wshop.c
     src/wshop/item.c
@@ -245,7 +244,7 @@ set(CROSSTALK_SRC_WIN
     src/net/discord.c
     src/net/inventory/inventory.c
     src/net/presence.c
-    src/net/steam.c
+    src/net/libresteam.c
     src/net/wire.c
     src/net/wshop/wshop.c
     src/wshop/item.c
@@ -288,22 +287,34 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 
     find_library(CROSSTALK_DANGLING_LIB NAMES dangling REQUIRED)
 
+    find_library(CROSSTALK_DANGLING_IMPLIB NAMES libdangling.dll.a REQUIRED)
+    get_filename_component(CROSSTALK_DANGLING_LIB_DIR "${CROSSTALK_DANGLING_IMPLIB}" DIRECTORY)
+    set(CROSSTALK_DANGLING_DLL "${CROSSTALK_DANGLING_LIB_DIR}/../bin/libdangling.dll")
+    set(CROSSTALK_LIBRESTEAM_LIB "${CROSSTALK_LIBRESTEAM_ROOT}/build-win/libresteam.dll.a")
+    set(CROSSTALK_LIBRESTEAM_DLL "${CROSSTALK_LIBRESTEAM_ROOT}/build-win/libresteam.dll")
+    foreach(CROSSTALK_SHIP_FILE IN ITEMS "${CROSSTALK_DANGLING_DLL}" "${CROSSTALK_LIBRESTEAM_LIB}" "${CROSSTALK_LIBRESTEAM_DLL}")
+        if(NOT EXISTS "${CROSSTALK_SHIP_FILE}")
+            message(FATAL_ERROR "missing ${CROSSTALK_SHIP_FILE}")
+        endif()
+    endforeach()
+
     target_include_directories(crosstalk SYSTEM PRIVATE
         ${CROSSTALK_DANGLING_INC}
+        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/none"
+        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/windows"
         ${DISCORD_INC}
     )
     target_compile_options(crosstalk PRIVATE -Werror=incompatible-pointer-types)
     target_link_libraries(crosstalk PRIVATE
         -Wl,--start-group
-        ${CROSSTALK_DANGLING_LIB}
+        ${CROSSTALK_LIBRESTEAM_LIB}
+        ${CROSSTALK_DANGLING_IMPLIB}
         winpthread
         pthread
         m
         -Wl,--end-group
         setupapi
         runtimeobject
-        "${STEAM_REDIST}/win64/steam_api64.lib"
-        "${STEAM_TICKET}/sdkencryptedappticket64.lib"
         "${DISCORD_LIB}/discord_partner_sdk.lib"
         winhttp
         ole32
@@ -327,15 +338,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         target_link_options(crosstalk PRIVATE -static)
     endif()
 else()
-    find_library(CROSSTALK_STEAM_API_LIB NAMES steam_api REQUIRED)
-    find_library(CROSSTALK_STEAM_TICKET_LIB NAMES sdkencryptedappticket REQUIRED)
     find_library(CROSSTALK_DANGLING_LIB NAMES dangling REQUIRED)
+    set(CROSSTALK_LIBRESTEAM_LIB "${CROSSTALK_LIBRESTEAM_ROOT}/build/libresteam.so")
+    if(NOT EXISTS "${CROSSTALK_LIBRESTEAM_LIB}")
+        message(FATAL_ERROR "missing ${CROSSTALK_LIBRESTEAM_LIB}")
+    endif()
 
-    target_include_directories(crosstalk SYSTEM PRIVATE ${DISCORD_INC})
+    target_include_directories(crosstalk SYSTEM PRIVATE
+        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/none"
+        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/linux"
+        ${DISCORD_INC}
+    )
+    target_link_options(crosstalk PRIVATE -rdynamic)
     target_link_libraries(crosstalk PRIVATE
+        ${CROSSTALK_LIBRESTEAM_LIB}
         ${CROSSTALK_DANGLING_LIB}
-        "${CROSSTALK_STEAM_API_LIB}"
-        "${CROSSTALK_STEAM_TICKET_LIB}"
         "${DISCORD_LIB}/libdiscord_partner_sdk.so"
         pthread
         m
@@ -386,15 +403,6 @@ add_custom_command(TARGET crosstalk POST_BUILD
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_custom_command(TARGET crosstalk POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${STEAM_REDIST}/win64/steam_api64.dll"
-            "$<TARGET_FILE_DIR:crosstalk>/steam_api64.dll"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${STEAM_TICKET}/sdkencryptedappticket64.dll"
-            "$<TARGET_FILE_DIR:crosstalk>/sdkencryptedappticket64.dll"
-        COMMENT "Staging steam_api64.dll and sdkencryptedappticket64.dll next to binary"
-    )
-    add_custom_command(TARGET crosstalk POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${DISCORD_BIN}/discord_partner_sdk.dll"
             "$<TARGET_FILE_DIR:crosstalk>/discord_partner_sdk.dll"
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -402,19 +410,28 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
             "$<TARGET_FILE_DIR:crosstalk>/discord_krisp.dll"
         COMMENT "Staging discord_partner_sdk.dll and discord_krisp.dll next to binary"
     )
-    set(DISCORD_MODEL_DIR "${DISCORD_BIN}")
-else()
     add_custom_command(TARGET crosstalk POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CROSSTALK_STEAM_API_LIB}"
-            "$<TARGET_FILE_DIR:crosstalk>/libsteam_api.so"
-        COMMENT "Staging libsteam_api.so next to binary"
+            "${CROSSTALK_LIBRESTEAM_DLL}"
+            "$<TARGET_FILE_DIR:crosstalk>/libresteam.dll"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CROSSTALK_DANGLING_DLL}"
+            "$<TARGET_FILE_DIR:crosstalk>/libdangling.dll"
+        COMMENT "Staging libresteam.dll and libdangling.dll next to binary"
     )
+    set(DISCORD_MODEL_DIR "${DISCORD_BIN}")
+else()
     add_custom_command(TARGET crosstalk POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${DISCORD_LIB}/libdiscord_partner_sdk.so"
             "$<TARGET_FILE_DIR:crosstalk>/libdiscord_partner_sdk.so"
         COMMENT "Staging libdiscord_partner_sdk.so next to binary"
+    )
+    add_custom_command(TARGET crosstalk POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CROSSTALK_LIBRESTEAM_LIB}"
+            "$<TARGET_FILE_DIR:crosstalk>/libresteam.so"
+        COMMENT "Staging libresteam.so next to binary"
     )
     set(DISCORD_MODEL_DIR "${DISCORD_LIB}")
 endif()
@@ -456,10 +473,7 @@ target_include_directories(emu PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     target_include_directories(emu PRIVATE "${CROSSTALK_GEN}")
-    target_include_directories(emu SYSTEM PRIVATE
-        ${CROSSTALK_DANGLING_INC}
-        ${DISCORD_INC}
-    )
+    target_include_directories(emu SYSTEM PRIVATE ${CROSSTALK_DANGLING_INC})
     target_compile_options(emu PRIVATE -Werror=incompatible-pointer-types)
     target_link_libraries(emu PRIVATE
         -Wl,--start-group
@@ -470,9 +484,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         -Wl,--end-group
         setupapi
         runtimeobject
-        "${STEAM_REDIST}/win64/steam_api64.lib"
-        "${STEAM_TICKET}/sdkencryptedappticket64.lib"
-        "${DISCORD_LIB}/discord_partner_sdk.lib"
         winhttp
         ole32
         oleaut32
@@ -481,7 +492,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         wintrust
         advapi32
         ws2_32
-        opengl32
         gdi32
         winmm
         user32
@@ -496,12 +506,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
         target_link_options(emu PRIVATE -static)
     endif()
 else()
-    target_include_directories(emu SYSTEM PRIVATE ${DISCORD_INC})
     target_link_libraries(emu PRIVATE
         ${CROSSTALK_DANGLING_LIB}
-        "${CROSSTALK_STEAM_API_LIB}"
-        "${CROSSTALK_STEAM_TICKET_LIB}"
-        "${DISCORD_LIB}/libdiscord_partner_sdk.so"
         pthread
         m
     )
@@ -512,30 +518,54 @@ endif()
 
 target_link_options(emu PRIVATE -Wl,-Map=$<TARGET_FILE_DIR:emu>/dangcsaemu.map)
 
+add_executable(mngr
+    src/mngr/main.c
+    src/mngr/mngr.c
+    src/mngr/conf.c
+)
+set_target_properties(mngr PROPERTIES OUTPUT_NAME "dangcsaemumngr")
+target_include_directories(mngr PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_compile_options(mngr PRIVATE -Werror=incompatible-pointer-types)
+target_link_options(mngr PRIVATE -Wl,-Map=$<TARGET_FILE_DIR:mngr>/dangcsaemumngr.map)
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    add_custom_command(TARGET emu POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${STEAM_REDIST}/win64/steam_api64.dll"
-            "$<TARGET_FILE_DIR:emu>/steam_api64.dll"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${STEAM_TICKET}/sdkencryptedappticket64.dll"
-            "$<TARGET_FILE_DIR:emu>/sdkencryptedappticket64.dll"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${DISCORD_BIN}/discord_partner_sdk.dll"
-            "$<TARGET_FILE_DIR:emu>/discord_partner_sdk.dll"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${DISCORD_BIN}/discord_krisp.dll"
-            "$<TARGET_FILE_DIR:emu>/discord_krisp.dll"
-        COMMENT "Staging runtime DLLs next to dangcsaemu"
+    target_include_directories(mngr PRIVATE "${CROSSTALK_GEN}")
+    target_include_directories(mngr SYSTEM PRIVATE ${CROSSTALK_DANGLING_INC})
+    target_link_libraries(mngr PRIVATE
+        -Wl,--start-group
+        ${CROSSTALK_DANGLING_LIB}
+        winpthread
+        pthread
+        m
+        -Wl,--end-group
+        setupapi
+        runtimeobject
+        winhttp
+        ole32
+        oleaut32
+        bcrypt
+        crypt32
+        wintrust
+        advapi32
+        ws2_32
+        gdi32
+        winmm
+        user32
+        shell32
+        kernel32
+        xmllite
+        uuid
     )
+    if(CMAKE_C_COMPILER_ID MATCHES "Clang")
+        target_link_options(mngr PRIVATE -static -Wno-unused-command-line-argument)
+    else()
+        target_link_options(mngr PRIVATE -static)
+    endif()
 else()
-    add_custom_command(TARGET emu POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CROSSTALK_STEAM_API_LIB}"
-            "$<TARGET_FILE_DIR:emu>/libsteam_api.so"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${DISCORD_LIB}/libdiscord_partner_sdk.so"
-            "$<TARGET_FILE_DIR:emu>/libdiscord_partner_sdk.so"
-        COMMENT "Staging runtime libs next to dangcsaemu"
+    target_link_libraries(mngr PRIVATE
+        ${CROSSTALK_DANGLING_LIB}
+        pthread
+        m
     )
+    target_compile_definitions(mngr PRIVATE _GNU_SOURCE)
 endif()

@@ -167,7 +167,11 @@ Sandbox mode is the default Crosstalk experience. Players can create a custom wo
 
 <br>
 <br>
+<br>
+<br>
 <p align="center"><strong>Support</strong></p>
 If you'd like to support the project, then please consider tossing a coin:
+<br>
 - XMR: 432rQNYtviBdepHQmU2p7oSHRtzWEiBz8ChxVLhaWYTvckGK72aP84J4BmYCQfgbPeep7QCJ7mdyLSYQwxTQQag5EBATrbn
+<br>
 - ETH (main or arb one): 0x1f5F633Bc65DC76f76AE1Bf17eb0d8cD08158A40

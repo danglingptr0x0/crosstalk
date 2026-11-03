@@ -4,14 +4,22 @@
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
-#include <dangling/net/steamworks.h>
+
+#include <libresteam/user_stats/user_stats.h>
+#include <libresteam/utils/utils.h>
 
 #include "core/log.h"
 #include "game/progression/queue.h"
 
-static uint32_t progression_queue_app_ck(uint32_t appid)
+static uint32_t progression_queue_app_ck(const crosstalk_game_progression_queue_ctx_t *ctx, uint32_t appid)
 {
-    if (appid != ldg_net_steamworks_app_id_get()) { return LDG_ERR_FUNC_ARG_INVALID; }
+    uint32_t live = UINT32_MAX;
+    uint32_t ret = 0;
+
+    ret = libresteam_utils_app_id_get(ctx->set, &live);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (appid != live) { return LDG_ERR_FUNC_ARG_INVALID; }
 
     return LDG_ERR_AOK;
 }
@@ -30,10 +38,11 @@ static uint32_t progression_queue_res_note(crosstalk_game_progression_queue_ctx_
     return ret;
 }
 
-uint32_t crosstalk_game_progression_queue_init(crosstalk_game_progression_queue_ctx_t *ctx)
+uint32_t crosstalk_game_progression_queue_init(crosstalk_game_progression_queue_ctx_t *ctx, const libresteam_backend_set_t *set)
 {
-    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(ctx == 0x0 || set == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    ctx->set = set;
     ctx->sent_cunt = 0;
     ctx->fail_cunt = 0;
     ctx->ok = LDG_TRUTH_TRUE;
@@ -49,10 +58,10 @@ uint32_t crosstalk_game_progression_queue_ach_push(crosstalk_game_progression_qu
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    ret = progression_queue_app_ck(appid);
-    if (ret == LDG_ERR_AOK) { ret = ldg_net_steamworks_achievement_set(name); }
+    ret = progression_queue_app_ck(ctx, appid);
+    if (ret == LDG_ERR_AOK) { ret = libresteam_user_stats_achievement_set(ctx->set, name); }
 
-    if (ret == LDG_ERR_AOK) { ret = ldg_net_steamworks_stat_st(); }
+    if (ret == LDG_ERR_AOK) { ret = libresteam_user_stats_stats_st(ctx->set); }
 
     return progression_queue_res_note(ctx, name, ret);
 }
@@ -65,10 +74,10 @@ uint32_t crosstalk_game_progression_queue_stat_push(crosstalk_game_progression_q
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    ret = progression_queue_app_ck(appid);
-    if (ret == LDG_ERR_AOK) { ret = ldg_net_steamworks_stat_int_set(name, val); }
+    ret = progression_queue_app_ck(ctx, appid);
+    if (ret == LDG_ERR_AOK) { ret = libresteam_user_stats_stat_int_set(ctx->set, name, (uint32_t)val); }
 
-    if (ret == LDG_ERR_AOK) { ret = ldg_net_steamworks_stat_st(); }
+    if (ret == LDG_ERR_AOK) { ret = libresteam_user_stats_stats_st(ctx->set); }
 
     return progression_queue_res_note(ctx, name, ret);
 }

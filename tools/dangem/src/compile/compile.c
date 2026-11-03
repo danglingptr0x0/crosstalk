@@ -380,7 +380,7 @@ static uint32_t build_job_spawn(dangem_compile_t *build, dangem_compile_job_t *j
     job->err[0] = LDG_STR_TERM;
     job->item = item;
 
-    ret = ldg_sys_proc_spawn(build->cc, argv, build->root, &job->proc);
+    ret = ldg_sys_proc_spawn(build->cc, argv, build->root, LDG_SYS_PROC_SPAWN_STDIO_PIPE, &job->proc);
     if (ret != LDG_ERR_AOK) { return ret; }
 
     job->live = LDG_TRUTH_TRUE;

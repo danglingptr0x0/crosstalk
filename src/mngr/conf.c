@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <yder.h>
+#include <dangling/logging/logging.h>
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
@@ -363,7 +363,7 @@ uint32_t crosstalk_mngr_conf_wr(const crosstalk_mngr_machine_t *machine, const c
 
     if (done_len != (uint64_t)len) { return LDG_ERR_IO_WR; }
 
-    y_log_message(Y_LOG_LEVEL_INFO, "mngr: machine written; name: %.47s; path: %.191s; bytes: %u", machine->name, path, len);
+    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine written; name: %.47s; path: %.191s; bytes: %u32", machine->name, path, len);
 
     return LDG_ERR_AOK;
 }

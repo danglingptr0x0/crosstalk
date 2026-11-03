@@ -1,11 +1,10 @@
 #include <inttypes.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <windows.h>
-
-#include <yder.h>
+#include <dangling/logging/logging.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
@@ -13,29 +12,77 @@
 #include <dangling/io/file.h>
 #include <dangling/io/path.h>
 #include <dangling/str/str.h>
+#include <dangling/sys/proc.h>
 
 #include "mngr/mngr.h"
 
 #define MNGR_STEP 1
 #define MNGR_WIN_SEP '\\'
 #define MNGR_DIR_MODE 0755
-#define MNGR_CREATE_INHERIT_NONE 0
-#define MNGR_JOIN_FMT "%s%c%s"
-#define MNGR_CMD_FIRST_FMT "\"%.1023s\""
-#define MNGR_CMD_NEXT_FMT " \"%.1023s\""
-#define MNGR_CMD_FLAG_FMT " %s"
-#define MNGR_CMD_DISK_FMT " \"%u:%.1000s\""
-#define MNGR_CMD_LD_FMT " \"%.1000s@%" PRIu64 "\""
-#define MNGR_CMD_HZ_FMT " --hz %" PRIu64
-#define MNGR_CMD_GAMMA_FMT " --gamma %.2f"
+#define MNGR_ARG_DISK_FMT "%u:%s"
+#define MNGR_ARG_LD_FMT "%s@%" PRIu64
+#define MNGR_ARG_HZ_FMT "%" PRIu64
+#define MNGR_ARG_GAMMA_FMT "%.2f"
 #define MNGR_ARG_CORE "--core"
 #define MNGR_ARG_MEMLD "--memld"
 #define MNGR_ARG_DISK "--disk"
 #define MNGR_ARG_NET "--net"
-#define MNGR_ARG_KEYS_RAW "--keys raw"
+#define MNGR_ARG_HZ "--hz"
+#define MNGR_ARG_GAMMA "--gamma"
+#define MNGR_ARG_KEYS "--keys"
+#define MNGR_ARG_KEYS_RAW "raw"
 #define MNGR_ARG_NO_AUDIO "--no-audio"
 #define MNGR_ARG_NO_SERIAL "--no-serial"
 #define MNGR_ARG_NO_PERSIST "--no-persist"
+
+typedef struct mngr_argv
+{
+    const char *arg[LDG_SYS_PROC_ARG_MAX];
+    char st[CROSSTALK_MNGR_CMD_CAP];
+    uint64_t st_off;
+    uint32_t cunt;
+    uint8_t pudding[4];
+} mngr_argv_t;
+
+static uint32_t mngr_argv_push(mngr_argv_t *argv, const char *arg)
+{
+    if (LDG_UNLIKELY(argv == 0x0 || arg == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (argv->cunt + MNGR_STEP >= (uint32_t)LDG_SYS_PROC_ARG_MAX) { return LDG_ERR_FULL; }
+
+    argv->arg[argv->cunt] = arg;
+    argv->cunt = argv->cunt + MNGR_STEP;
+    argv->arg[argv->cunt] = 0x0;
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t mngr_argv_fmt_push(mngr_argv_t *argv, const char *fmt, ...)
+{
+    va_list args;
+    char *at = 0x0;
+    uint64_t room = 0;
+    int32_t written = 0;
+
+    if (LDG_UNLIKELY(argv == 0x0 || fmt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (argv->st_off >= (uint64_t)sizeof(argv->st)) { return LDG_ERR_STR_TRUNC; }
+
+    at = argv->st + argv->st_off;
+    room = (uint64_t)sizeof(argv->st) - argv->st_off;
+
+    va_start(args, fmt);
+    written = vsnprintf(at, room, fmt, args);
+    va_end(args);
+
+    if (written < 0) { return LDG_ERR_STR_FMT; }
+
+    if ((uint64_t)written >= room) { return LDG_ERR_STR_TRUNC; }
+
+    argv->st_off = argv->st_off + (uint64_t)written + (uint64_t)LDG_STR_TERM_SIZE;
+
+    return mngr_argv_push(argv, at);
+}
 
 static uint32_t mngr_ext_is(const char *name, uint8_t *out)
 {
@@ -96,8 +143,7 @@ static uint32_t mngr_data_dir_resolve(char *out, uint64_t out_size)
 
 uint32_t crosstalk_mngr_init(crosstalk_mngr_ctx_t *ctx)
 {
-    char module[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
-    uint64_t module_len = 0;
+    char prog[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -106,29 +152,23 @@ uint32_t crosstalk_mngr_init(crosstalk_mngr_ctx_t *ctx)
 
     ctx->sel = (uint32_t)UINT32_MAX;
 
-    module_len = (uint64_t)GetModuleFileNameA(0x0, module, (DWORD)sizeof(module));
-    if (module_len == 0 || module_len >= (uint64_t)sizeof(module)) { return LDG_ERR_IO_NOT_FOUND; }
+    ret = ldg_io_path_prog_get(prog, (uint64_t)sizeof(prog));
+    if (ret != LDG_ERR_AOK) { return ret; }
 
-    while (module_len != 0 && module[module_len - MNGR_STEP] != MNGR_WIN_SEP) { module_len = module_len - MNGR_STEP; }
-
-    if (module_len == 0) { return LDG_ERR_IO_NOT_FOUND; }
-
-    module[module_len - MNGR_STEP] = LDG_STR_TERM;
-
-    ret = ldg_str_rbrcpy(ctx->exe_dir, module, (uint64_t)sizeof(ctx->exe_dir));
+    ret = ldg_io_path_parent_get(prog, ctx->exe_dir, (uint64_t)sizeof(ctx->exe_dir));
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = mngr_data_dir_resolve(ctx->dir, (uint64_t)sizeof(ctx->dir));
     if (ret != LDG_ERR_AOK)
     {
-        y_log_message(Y_LOG_LEVEL_ERROR, "mngr: machine directory not resolved; err: %u", ret);
+        ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: machine directory not resolved; err: %u32", ret);
 
         return ret;
     }
 
     ctx->ok = LDG_TRUTH_TRUE;
 
-    y_log_message(Y_LOG_LEVEL_INFO, "mngr: machine directory; path: %.191s", ctx->dir);
+    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine directory; path: %.191s", ctx->dir);
 
     return LDG_ERR_AOK;
 }
@@ -164,7 +204,7 @@ uint32_t crosstalk_mngr_scan(crosstalk_mngr_ctx_t *ctx)
 
         if (crosstalk_mngr_conf_rd(&ctx->machine[ctx->cunt], ctx->path[ctx->cunt]) != LDG_ERR_AOK)
         {
-            y_log_message(Y_LOG_LEVEL_WARNING, "mngr: machine not read; path: %.191s", ctx->path[ctx->cunt]);
+            ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine not read; path: %.191s", ctx->path[ctx->cunt]);
 
             continue;
         }
@@ -177,7 +217,7 @@ uint32_t crosstalk_mngr_scan(crosstalk_mngr_ctx_t *ctx)
     if (ctx->cunt == 0) { ctx->sel = (uint32_t)UINT32_MAX; }
     else if (ctx->sel == (uint32_t)UINT32_MAX || ctx->sel >= ctx->cunt) { ctx->sel = 0; }
 
-    y_log_message(Y_LOG_LEVEL_INFO, "mngr: machines found; cunt: %u", ctx->cunt);
+    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machines found; cunt: %u32", ctx->cunt);
 
     return LDG_ERR_AOK;
 }
@@ -227,7 +267,7 @@ uint32_t crosstalk_mngr_machine_drop(crosstalk_mngr_ctx_t *ctx, uint32_t idx)
 
     if (idx >= ctx->cunt) { return LDG_ERR_BOUNDS; }
 
-    if (ldg_io_path_destroy(ctx->path[idx]) != LDG_ERR_AOK) { y_log_message(Y_LOG_LEVEL_WARNING, "mngr: machine file not removed; path: %.191s", ctx->path[idx]); }
+    if (ldg_io_path_destroy(ctx->path[idx]) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine file not removed; path: %.191s", ctx->path[idx]); }
 
     for (at = idx; at + MNGR_STEP < ctx->cunt; at = at + MNGR_STEP)
     {
@@ -243,18 +283,76 @@ uint32_t crosstalk_mngr_machine_drop(crosstalk_mngr_ctx_t *ctx, uint32_t idx)
     return LDG_ERR_AOK;
 }
 
+static LDG_NOINLINE uint32_t mngr_argv_build(const crosstalk_mngr_machine_t *machine, const char *exe, mngr_argv_t *argv)
+{
+    uint32_t drive = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(machine == 0x0 || exe == 0x0 || argv == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ret = mngr_argv_push(argv, exe);
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, MNGR_ARG_CORE); }
+
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, machine->core_path); }
+
+    for (at = 0; ret == LDG_ERR_AOK && at < (uint32_t)CROSSTALK_EMU_LD_MAX; at = at + MNGR_STEP)
+    {
+        if (machine->ld_path[at][0] == LDG_STR_TERM) { continue; }
+
+        ret = mngr_argv_push(argv, MNGR_ARG_MEMLD);
+        if (ret != LDG_ERR_AOK) { break; }
+
+        if (machine->ld_off[at] != 0) { ret = mngr_argv_fmt_push(argv, MNGR_ARG_LD_FMT, machine->ld_path[at], machine->ld_off[at]); }
+        else { ret = mngr_argv_push(argv, machine->ld_path[at]); }
+    }
+
+    for (drive = 0; ret == LDG_ERR_AOK && drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MNGR_STEP)
+    {
+        if (machine->disk_path[drive][0] == LDG_STR_TERM) { continue; }
+
+        ret = mngr_argv_push(argv, MNGR_ARG_DISK);
+        if (ret == LDG_ERR_AOK) { ret = mngr_argv_fmt_push(argv, MNGR_ARG_DISK_FMT, drive, machine->disk_path[drive]); }
+    }
+
+    if (ret == LDG_ERR_AOK && machine->net_path[0] != LDG_STR_TERM)
+    {
+        ret = mngr_argv_push(argv, MNGR_ARG_NET);
+        if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, machine->net_path); }
+    }
+
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, MNGR_ARG_HZ); }
+
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_fmt_push(argv, MNGR_ARG_HZ_FMT, machine->f_op_hz); }
+
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, MNGR_ARG_GAMMA); }
+
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_fmt_push(argv, MNGR_ARG_GAMMA_FMT, machine->gamma); }
+
+    if (ret == LDG_ERR_AOK && machine->key_mode != (uint32_t)CROSSTALK_EMU_INPUT_MODE_SCAN)
+    {
+        ret = mngr_argv_push(argv, MNGR_ARG_KEYS);
+        if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, MNGR_ARG_KEYS_RAW); }
+    }
+
+    if (ret == LDG_ERR_AOK && machine->audio_on != LDG_TRUTH_TRUE) { ret = mngr_argv_push(argv, MNGR_ARG_NO_AUDIO); }
+
+    if (ret == LDG_ERR_AOK && machine->serial_on != LDG_TRUTH_TRUE) { ret = mngr_argv_push(argv, MNGR_ARG_NO_SERIAL); }
+
+    if (ret == LDG_ERR_AOK && machine->disk_persist != LDG_TRUTH_TRUE) { ret = mngr_argv_push(argv, MNGR_ARG_NO_PERSIST); }
+
+    return ret;
+}
+
 uint32_t crosstalk_mngr_launch(const crosstalk_mngr_ctx_t *ctx, uint32_t idx)
 {
     char exe[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
-    char line[CROSSTALK_MNGR_CMD_CAP] = LDG_ARR_ZERO_INIT;
+    mngr_argv_t argv = LDG_STRUCT_ZERO_INIT;
+    ldg_sys_proc_t proc = LDG_STRUCT_ZERO_INIT;
     const crosstalk_mngr_machine_t *machine = 0x0;
-    STARTUPINFOA si = LDG_STRUCT_ZERO_INIT;
-    PROCESS_INFORMATION pi = LDG_STRUCT_ZERO_INIT;
-    DWORD code = 0;
-    uint64_t off = 0;
-    int32_t written = 0;
-    uint32_t drive = 0;
-    uint32_t at = 0;
+    const char *exe_name = 0x0;
+    uint32_t code = (uint32_t)UINT32_MAX;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -264,133 +362,37 @@ uint32_t crosstalk_mngr_launch(const crosstalk_mngr_ctx_t *ctx, uint32_t idx)
 
     if (machine->core_path[0] == LDG_STR_TERM) { return CROSSTALK_EMU_ERR_PLUGIN; }
 
-    written = snprintf(exe, sizeof(exe), MNGR_JOIN_FMT, ctx->exe_dir, MNGR_WIN_SEP, CROSSTALK_MNGR_EMU_EXE);
-    if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(exe)) { return LDG_ERR_STR_TRUNC; }
+    exe_name = ldg_io_path_sep_get() == MNGR_WIN_SEP ? CROSSTALK_MNGR_EMU_EXE_WIN : CROSSTALK_MNGR_EMU_EXE_UNIX;
 
-    written = snprintf(line, sizeof(line), MNGR_CMD_FIRST_FMT, exe);
-    if (written < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_io_path_join(ctx->exe_dir, exe_name, exe, (uint64_t)sizeof(exe));
+    if (ret != LDG_ERR_AOK) { return ret; }
 
-    off = (uint64_t)written;
-
-    written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_CORE);
-    if (written < 0) { return LDG_ERR_STR_FMT; }
-
-    off = off + (uint64_t)written;
-
-    written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_NEXT_FMT, machine->core_path);
-    if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-    off = off + (uint64_t)written;
-
-    for (at = 0; at < (uint32_t)CROSSTALK_EMU_LD_MAX; at = at + MNGR_STEP)
+    ret = mngr_argv_build(machine, exe, &argv);
+    if (ret != LDG_ERR_AOK)
     {
-        if (machine->ld_path[at][0] == LDG_STR_TERM) { continue; }
+        ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine args not built; name: %.47s; err: %u32", machine->name, ret);
 
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_MEMLD);
-        if (written < 0) { return LDG_ERR_STR_FMT; }
-
-        off = off + (uint64_t)written;
-
-        if (machine->ld_off[at] != 0) { written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_LD_FMT, machine->ld_path[at], machine->ld_off[at]); }
-        else { written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_NEXT_FMT, machine->ld_path[at]); }
-
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-        off = off + (uint64_t)written;
+        return ret;
     }
 
-    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MNGR_STEP)
+    ret = ldg_sys_proc_spawn(exe, argv.arg, ctx->exe_dir, LDG_SYS_PROC_SPAWN_STDIO_INHERIT, &proc);
+    if (ret != LDG_ERR_AOK)
     {
-        if (machine->disk_path[drive][0] == LDG_STR_TERM) { continue; }
+        ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine would not start; name: %.47s; exe: %.191s; err: %u32", machine->name, exe, ret);
 
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_DISK);
-        if (written < 0) { return LDG_ERR_STR_FMT; }
-
-        off = off + (uint64_t)written;
-
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_DISK_FMT, drive, machine->disk_path[drive]);
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-        off = off + (uint64_t)written;
+        return ret;
     }
 
-    if (machine->net_path[0] != LDG_STR_TERM)
-    {
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_NET);
-        if (written < 0) { return LDG_ERR_STR_FMT; }
+    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine started; name: %.47s; pid: %u32", machine->name, proc.pid);
 
-        off = off + (uint64_t)written;
+    do { ret = ldg_sys_proc_wait(&proc, LDG_SYS_PROC_WAIT_INFINITE, &code); } while (ret == LDG_ERR_INTERRUPTED);
 
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_NEXT_FMT, machine->net_path);
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine wait failed; name: %.47s; err: %u32", machine->name, ret); }
+    else { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine exited; name: %.47s; code: %u32", machine->name, code); }
 
-        off = off + (uint64_t)written;
-    }
+    if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr process close failed"); }
 
-    written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_HZ_FMT, machine->f_op_hz);
-    if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-    off = off + (uint64_t)written;
-
-    written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_GAMMA_FMT, machine->gamma);
-    if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-    off = off + (uint64_t)written;
-
-    if (machine->key_mode != (uint32_t)CROSSTALK_EMU_INPUT_MODE_SCAN)
-    {
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_KEYS_RAW);
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-        off = off + (uint64_t)written;
-    }
-
-    if (machine->audio_on != LDG_TRUTH_TRUE)
-    {
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_NO_AUDIO);
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-        off = off + (uint64_t)written;
-    }
-
-    if (machine->serial_on != LDG_TRUTH_TRUE)
-    {
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_NO_SERIAL);
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-        off = off + (uint64_t)written;
-    }
-
-    if (machine->disk_persist != LDG_TRUTH_TRUE)
-    {
-        written = snprintf(line + off, sizeof(line) - off, MNGR_CMD_FLAG_FMT, MNGR_ARG_NO_PERSIST);
-        if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(line) - off) { return LDG_ERR_STR_TRUNC; }
-
-        off = off + (uint64_t)written;
-    }
-
-    si.cb = (DWORD)sizeof(si);
-
-    if (CreateProcessA(0x0, line, 0x0, 0x0, FALSE, (DWORD)MNGR_CREATE_INHERIT_NONE, 0x0, ctx->exe_dir, &si, &pi) == 0)
-    {
-        y_log_message(Y_LOG_LEVEL_WARNING, "mngr: machine would not start; name: %.47s; exe: %.191s; last: %u", machine->name, exe, (uint32_t)GetLastError());
-
-        return LDG_ERR_IO_OPEN;
-    }
-
-    y_log_message(Y_LOG_LEVEL_INFO, "mngr: machine started; name: %.47s; pid: %u", machine->name, (uint32_t)pi.dwProcessId);
-
-    if (WaitForSingleObject(pi.hProcess, INFINITE) == WAIT_FAILED) { y_log_message(Y_LOG_LEVEL_WARNING, "mngr: machine wait failed; name: %.47s; last: %u", machine->name, (uint32_t)GetLastError()); }
-
-    if (GetExitCodeProcess(pi.hProcess, &code) == 0) { code = (DWORD)UINT32_MAX; }
-
-    y_log_message(Y_LOG_LEVEL_INFO, "mngr: machine exited; name: %.47s; code: %u", machine->name, (uint32_t)code);
-
-    if (CloseHandle(pi.hThread) == 0) { LDG_ERRLOG_WARN("mngr thread handle close failed"); }
-
-    if (CloseHandle(pi.hProcess) == 0) { LDG_ERRLOG_WARN("mngr process handle close failed"); }
-
-    return LDG_ERR_AOK;
+    return ret;
 }
 
 uint8_t crosstalk_mngr_sel_ok_is(const crosstalk_mngr_ctx_t *ctx)

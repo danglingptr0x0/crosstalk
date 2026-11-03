@@ -9,7 +9,8 @@
 #include "mngr/conf.h"
 
 #define CROSSTALK_MNGR_MACHINE_MAX 64
-#define CROSSTALK_MNGR_EMU_EXE "dangcsaemu.exe"
+#define CROSSTALK_MNGR_EMU_EXE_WIN "dangcsaemu.exe"
+#define CROSSTALK_MNGR_EMU_EXE_UNIX "dangcsaemu"
 #define CROSSTALK_MNGR_CMD_CAP 8192
 
 typedef struct crosstalk_mngr_ctx

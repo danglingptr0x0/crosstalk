@@ -28,7 +28,7 @@
 #define CROSSTALK_CORE_INSTABILITY_PORT_NAME "instability_in"
 #define CROSSTALK_CORE_INSTABILITY_FEED_SECS 0.125
 
-#include "net/steam.h"
+#include "net/libresteam.h"
 #include "net/wire.h"
 #include "net/presence.h"
 #include "wshop/mount.h"
@@ -384,9 +384,56 @@ static uint32_t crosstalk_save_path_resolve(char *out, uint64_t out_size)
     return ldg_str_rbrcpy(out, nxt, out_size);
 }
 
+static const char* crosstalk_local_name_get(const crosstalk_ctx_t *ctx)
+{
+    const char *name = 0x0;
+
+    if (ctx == 0x0 || ctx->libresteam_live != LDG_TRUTH_TRUE) { return 0x0; }
+
+    if (libresteam_friends_persona_name_get(&ctx->libresteam_set, &name) != LDG_ERR_AOK) { return 0x0; }
+
+    return name;
+}
+
+static const char* crosstalk_friend_name_get(const crosstalk_ctx_t *ctx, uint64_t steam_id)
+{
+    libresteam_steam_id_t id = LDG_STRUCT_ZERO_INIT;
+    const char *name = 0x0;
+
+    if (ctx == 0x0 || ctx->libresteam_live != LDG_TRUTH_TRUE) { return 0x0; }
+
+    id.all = steam_id;
+
+    if (libresteam_friends_friend_persona_name_get(&ctx->libresteam_set, id, &name) != LDG_ERR_AOK) { return 0x0; }
+
+    return name;
+}
+
+static uint8_t crosstalk_dlc_installed_is(const crosstalk_ctx_t *ctx, uint32_t app_id)
+{
+    uint8_t installed = LDG_TRUTH_FALSE;
+
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->libresteam_live != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
+
+    if (libresteam_apps_dlc_installed_get(&ctx->libresteam_set, app_id, &installed) != LDG_ERR_AOK) { return LDG_TRUTH_FALSE; }
+
+    return installed != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+static void crosstalk_libresteam_down(crosstalk_ctx_t *ctx)
+{
+    if (ctx == 0x0 || ctx->libresteam_live != LDG_TRUTH_TRUE) { return; }
+
+    if (libresteam_backend_steam_shutdown(&ctx->libresteam_steam) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: libresteam backend shutdown failed"); }
+
+    ctx->libresteam_live = LDG_TRUTH_FALSE;
+}
+
 static uint32_t crosstalk_persona_resolve(crosstalk_ctx_t *ctx, uint64_t steam_id, char *out, uint64_t out_size)
 {
-    const ldg_net_lobby_member_t *member = 0x0;
+    const crosstalk_net_libresteam_lobby_member_t *member = 0x0;
     const char *name = 0x0;
     uint32_t cunt = 0;
     uint32_t idx = 0;
@@ -395,37 +442,37 @@ static uint32_t crosstalk_persona_resolve(crosstalk_ctx_t *ctx, uint64_t steam_i
 
     out[0] = LDG_STR_TERM;
 
-    if (steam_id == ldg_net_steamworks_local_steam_id_get())
+    if (steam_id == crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net))
     {
-        name = ldg_net_steamworks_local_name_get();
+        name = crosstalk_local_name_get(ctx);
         if (name == 0x0) { return LDG_ERR_NOT_FOUND; }
 
         return ldg_str_rbrcpy(out, name, out_size);
     }
 
-    cunt = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
+    cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
 
     for (idx = 0; idx < cunt; idx = idx + 1)
     {
-        member = crosstalk_net_steam_lobby_member_get(&ctx->steam_net, idx);
+        member = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
         if (member == 0x0) { continue; }
 
         if (member->user_id == steam_id) { return ldg_str_rbrcpy(out, member->name, out_size); }
     }
 
-    cunt = crosstalk_net_steam_client_cunt_get(&ctx->steam_net);
+    cunt = crosstalk_net_libresteam_client_cunt_get(&ctx->libresteam_net);
 
     for (idx = 0; idx < cunt; idx = idx + 1)
     {
-        if (ldg_net_steamworks_client_steam_id_get(&ctx->net, idx) != steam_id) { continue; }
+        if (crosstalk_net_libresteam_client_steam_id_get(&ctx->libresteam_net, idx) != steam_id) { continue; }
 
-        name = crosstalk_net_steam_client_name_get(&ctx->steam_net, idx);
+        name = crosstalk_net_libresteam_client_name_get(&ctx->libresteam_net, idx);
         if (name == 0x0) { continue; }
 
         return ldg_str_rbrcpy(out, name, out_size);
     }
 
-    name = ldg_net_steamworks_friend_name_get(steam_id);
+    name = crosstalk_friend_name_get(ctx, steam_id);
     if (name != 0x0 && name[0] != LDG_STR_TERM) { return ldg_str_rbrcpy(out, name, out_size); }
 
     return LDG_ERR_NOT_FOUND;
@@ -433,8 +480,7 @@ static uint32_t crosstalk_persona_resolve(crosstalk_ctx_t *ctx, uint64_t steam_i
 
 static uint32_t crosstalk_lobby_items_build(crosstalk_ctx_t *ctx)
 {
-    const ldg_net_lobby_info_t *info = 0x0;
-    const ldg_net_srv_browser_entry_t *lan = 0x0;
+    const crosstalk_net_libresteam_lobby_info_t *info = 0x0;
     const char *sep = 0x0;
     uint64_t used = 0;
     uint64_t room = 0;
@@ -446,38 +492,13 @@ static uint32_t crosstalk_lobby_items_build(crosstalk_ctx_t *ctx)
 
     ctx->lobby_items[0] = LDG_STR_TERM;
 
-    if (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
-    {
-        cunt = crosstalk_net_steam_lan_list_cunt_get(&ctx->steam_net);
-        for (idx = 0; idx < cunt; idx = idx + 1)
-        {
-            lan = crosstalk_net_steam_lan_list_get(&ctx->steam_net, idx);
-            if (lan == 0x0) { continue; }
+    if (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) { return LDG_ERR_AOK; }
 
-            sep = (idx > 0) ? ";" : "";
-            room = (uint64_t)sizeof(ctx->lobby_items) - used;
-            if (room == 0) { break; }
-
-            written = snprintf(&ctx->lobby_items[used], room, "%.1s%.63s  %.31s  %" PRIu32 "/%" PRIu32 "  %u.%u.%u.%u:%u", sep, lan->name, lan->map, (uint32_t)lan->client_cunt, (uint32_t)lan->client_max, (lan->ip >> 24) & 0xFFU, (lan->ip >> 16) & 0xFFU, (lan->ip >> 8) & 0xFFU, lan->ip & 0xFFU, (uint32_t)lan->port);
-            if (written <= 0) { break; }
-
-            if ((uint64_t)written >= room)
-            {
-                ctx->lobby_items[used] = LDG_STR_TERM;
-                break;
-            }
-
-            used = used + (uint64_t)written;
-        }
-
-        return LDG_ERR_AOK;
-    }
-
-    cunt = crosstalk_net_steam_lobby_list_cunt_get(&ctx->steam_net);
+    cunt = crosstalk_net_libresteam_lobby_list_cunt_get(&ctx->libresteam_net);
 
     for (idx = 0; idx < cunt; idx = idx + 1)
     {
-        info = crosstalk_net_steam_lobby_list_get(&ctx->steam_net, idx);
+        info = crosstalk_net_libresteam_lobby_list_get(&ctx->libresteam_net, idx);
         if (info == 0x0) { continue; }
 
         sep = (idx > 0) ? ";" : "";
@@ -514,8 +535,8 @@ static uint32_t crosstalk_lan_member_items_build(crosstalk_ctx_t *ctx)
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     ctx->member_items[0] = LDG_STR_TERM;
-    lan_sesh = crosstalk_net_steam_lan_sesh_get(&ctx->steam_net);
-    name = ldg_net_steamworks_local_name_get();
+    lan_sesh = crosstalk_net_libresteam_lan_sesh_get(&ctx->libresteam_net);
+    name = crosstalk_local_name_get(ctx);
     if (name == 0x0 || name[0] == LDG_STR_TERM) { name = "you"; }
 
     room = (uint64_t)sizeof(ctx->member_items);
@@ -523,10 +544,10 @@ static uint32_t crosstalk_lan_member_items_build(crosstalk_ctx_t *ctx)
     if (written > 0 && (uint64_t)written < room) { used = (uint64_t)written; }
     else { ctx->member_items[0] = LDG_STR_TERM; return LDG_ERR_AOK; }
 
-    client_cunt = crosstalk_net_steam_client_cunt_get(&ctx->steam_net);
+    client_cunt = crosstalk_net_libresteam_client_cunt_get(&ctx->libresteam_net);
     for (idx = 0; idx < client_cunt; idx = idx + 1)
     {
-        name = crosstalk_net_steam_client_name_get(&ctx->steam_net, idx);
+        name = crosstalk_net_libresteam_client_name_get(&ctx->libresteam_net, idx);
         if (name == 0x0 || name[0] == LDG_STR_TERM) { name = "player"; }
 
         sep = ";";
@@ -550,7 +571,7 @@ static uint32_t crosstalk_lan_member_items_build(crosstalk_ctx_t *ctx)
 
 static uint32_t crosstalk_member_items_build(crosstalk_ctx_t *ctx)
 {
-    const ldg_net_lobby_member_t *member = 0x0;
+    const crosstalk_net_libresteam_lobby_member_t *member = 0x0;
     const char *sep = 0x0;
     const char *rdy_text = 0x0;
     uint64_t used = 0;
@@ -561,14 +582,14 @@ static uint32_t crosstalk_member_items_build(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (crosstalk_net_steam_lan_sesh_get(&ctx->steam_net) != (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { return crosstalk_lan_member_items_build(ctx); }
+    if (crosstalk_net_libresteam_lan_sesh_get(&ctx->libresteam_net) != (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { return crosstalk_lan_member_items_build(ctx); }
 
     ctx->member_items[0] = LDG_STR_TERM;
-    cunt = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
+    cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
 
     for (idx = 0; idx < cunt; idx = idx + 1)
     {
-        member = crosstalk_net_steam_lobby_member_get(&ctx->steam_net, idx);
+        member = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
         if (member == 0x0) { continue; }
 
         sep = (idx > 0) ? ";" : "";
@@ -594,7 +615,7 @@ static uint32_t crosstalk_member_items_build(crosstalk_ctx_t *ctx)
 
 static uint32_t crosstalk_wshop_sync(crosstalk_ctx_t *ctx)
 {
-    const ldg_net_steamworks_wshop_item_t *item = 0x0;
+    const crosstalk_net_wshop_item_t *item = 0x0;
     uint32_t type_arr[CROSSTALK_WSHOP_ITEM_SCAN_CUNT] = { CROSSTALK_NET_WSHOP_TYPE_CORE, CROSSTALK_NET_WSHOP_TYPE_SOFTWARE };
     uint32_t wshop_cunt = 0;
     uint32_t type_idx = 0;
@@ -627,7 +648,7 @@ static uint32_t crosstalk_wshop_sync(crosstalk_ctx_t *ctx)
 
 static uint32_t crosstalk_board_sel_refresh(crosstalk_ctx_t *ctx)
 {
-    const ldg_net_steamworks_wshop_item_t *item = 0x0;
+    const crosstalk_net_wshop_item_t *item = 0x0;
     uint32_t wshop_cunt = 0;
     uint32_t type_idx = 0;
     uint32_t idx = 0;
@@ -778,7 +799,7 @@ static uint32_t lobby_join_enter(crosstalk_ctx_t *ctx, uint64_t lobby_id)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ret = crosstalk_net_steam_lobby_join(&ctx->steam_net, lobby_id);
+    ret = crosstalk_net_libresteam_lobby_join(&ctx->libresteam_net, lobby_id);
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ctx->game.net_join_phase = CROSSTALK_NET_JOIN_PHASE_CONN;
@@ -1093,16 +1114,16 @@ static uint32_t crosstalk_ost_start(crosstalk_ctx_t *ctx)
 
         if (ctx->soundtrack_owned != LDG_TRUTH_TRUE)
         {
-            ret = ldg_net_steamworks_overlay_store_activate(CROSSTALK_CORE_SOUNDTRACK_APP_ID, LDG_NET_STEAMWORKS_STORE_FLAG_NONE);
+            ret = libresteam_friends_overlay_st_activate(&ctx->libresteam_set, CROSSTALK_CORE_SOUNDTRACK_APP_ID, CROSSTALK_CORE_STORE_FLAG_NONE);
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: ost store overlay; app: %u32; err: %u32", (uint32_t)CROSSTALK_CORE_SOUNDTRACK_APP_ID, ret);
 
             return LDG_ERR_DENIED;
         }
 
-        ret = ldg_net_steamworks_dlc_progress_get(CROSSTALK_CORE_SOUNDTRACK_APP_ID, &got, &total);
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: ost dlc state; app: %u32; installed: %u32; got: %u64; total: %u64; err: %u32", (uint32_t)CROSSTALK_CORE_SOUNDTRACK_APP_ID, (uint32_t)ldg_net_steamworks_dlc_installed_is(CROSSTALK_CORE_SOUNDTRACK_APP_ID), got, total, ret);
+        ret = libresteam_apps_dlc_progress_get(&ctx->libresteam_set, CROSSTALK_CORE_SOUNDTRACK_APP_ID, &got, &total);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: ost dlc state; app: %u32; installed: %u32; got: %u64; total: %u64; err: %u32", (uint32_t)CROSSTALK_CORE_SOUNDTRACK_APP_ID, (uint32_t)crosstalk_dlc_installed_is(ctx, CROSSTALK_CORE_SOUNDTRACK_APP_ID), got, total, ret);
 
-        if (ldg_net_steamworks_dlc_installed_is(CROSSTALK_CORE_SOUNDTRACK_APP_ID) == LDG_TRUTH_TRUE)
+        if (crosstalk_dlc_installed_is(ctx, CROSSTALK_CORE_SOUNDTRACK_APP_ID) == LDG_TRUTH_TRUE)
         {
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: ost dlc reports installed but no tracks at the scan path");
 
@@ -1111,7 +1132,7 @@ static uint32_t crosstalk_ost_start(crosstalk_ctx_t *ctx)
 
         if (total > 0) { return LDG_ERR_AGAIN; }
 
-        ret = ldg_net_steamworks_dlc_install(CROSSTALK_CORE_SOUNDTRACK_APP_ID);
+        ret = libresteam_apps_dlc_install(&ctx->libresteam_set, CROSSTALK_CORE_SOUNDTRACK_APP_ID);
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: ost dlc install req; app: %u32; err: %u32", (uint32_t)CROSSTALK_CORE_SOUNDTRACK_APP_ID, ret);
 
         return LDG_ERR_AGAIN;
@@ -1331,9 +1352,9 @@ static uint8_t crosstalk_sesh_joined_is(const crosstalk_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (ctx->steam_net.sesh_live != 0) { return LDG_TRUTH_TRUE; }
+    if (ctx->libresteam_net.sesh_live != 0) { return LDG_TRUTH_TRUE; }
 
-    if (crosstalk_net_steam_lobby_id_get(&ctx->steam_net) != 0) { return LDG_TRUTH_TRUE; }
+    if (crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net) != 0) { return LDG_TRUTH_TRUE; }
 
     return LDG_TRUTH_FALSE;
 }
@@ -1346,8 +1367,8 @@ static void crosstalk_sesh_leave(crosstalk_ctx_t *ctx)
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: session leave; remote: %u32; busy: %u32; rdy: %u32", (uint32_t)ctx->remote_sesh, (uint32_t)ctx->mp_busy, (uint32_t)ctx->mp_rdy);
 
-    crosstalk_net_steam_lobby_leave(&ctx->steam_net);
-    crosstalk_net_steam_sesh_stop(&ctx->steam_net);
+    crosstalk_net_libresteam_lobby_leave(&ctx->libresteam_net);
+    crosstalk_net_libresteam_sesh_stop(&ctx->libresteam_net);
 
     ret = crosstalk_game_chat_rst(&ctx->chat);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "session leave chat rst failed"); }
@@ -1570,8 +1591,8 @@ static void author_capture(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    persona = ldg_net_steamworks_local_name_get();
-    ctx->game.author_steam_id = ldg_net_steamworks_local_steam_id_get();
+    persona = crosstalk_local_name_get(ctx);
+    ctx->game.author_steam_id = crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net);
     snprintf(ctx->game.author_name, sizeof(ctx->game.author_name), "%s", persona != 0x0 ? persona : "");
     ctx->game.created_epoch_ms = ldg_time_epoch_ms_get();
     ctx->game.bench_ms_total = 0;
@@ -1850,12 +1871,16 @@ static uint32_t crosstalk_card_needle_step_draw(ldg_term_render_t *render, doubl
 
 static void crosstalk_card_kind_resolve(crosstalk_ctx_t *ctx)
 {
-    char country[LDG_NET_STEAMWORKS_COUNTRY_SIZE] = LDG_ARR_ZERO_INIT;
+    char country[CROSSTALK_CORE_COUNTRY_SIZE] = LDG_ARR_ZERO_INIT;
+    const char *code = 0x0;
     uint32_t ret = 0;
 
     if (ctx->card_kind_set == LDG_TRUTH_TRUE) { return; }
 
-    ret = ldg_net_steamworks_ip_country_get(country, sizeof(country));
+    ret = ctx->libresteam_live == LDG_TRUTH_TRUE ? libresteam_utils_ip_country_get(&ctx->libresteam_set, &code) : LDG_ERR_NOT_FOUND;
+    if (ret == LDG_ERR_AOK && (code == 0x0 || code[0] == LDG_STR_TERM)) { ret = LDG_ERR_NOT_FOUND; }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_str_rbrcpy(country, code, (uint64_t)sizeof(country)); }
 
     if (ret == LDG_ERR_NOT_FOUND) { return; }
 
@@ -2895,7 +2920,7 @@ static uint32_t crosstalk_author_sync_send(crosstalk_ctx_t *ctx)
     snprintf(wire_author.name, sizeof(wire_author.name), "%.63s", ctx->game.author_name);
     snprintf(wire_author.board_name, sizeof(wire_author.board_name), "%.63s", ctx->board_name);
 
-    ret = crosstalk_net_wire_send(&ctx->steam_net, CROSSTALK_NET_WIRE_KIND_AUTHOR, &wire_author, (uint32_t)sizeof(wire_author), CROSSTALK_NET_WIRE_RELIABLE);
+    ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_AUTHOR, &wire_author, (uint32_t)sizeof(wire_author), CROSSTALK_NET_WIRE_RELIABLE);
     if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "net: author sent; name: %.63s; board: %.63s; steam_id: %u64", wire_author.name, wire_author.board_name, wire_author.steam_id); }
 
     return ret;
@@ -3402,7 +3427,7 @@ static void crosstalk_serial_access_data_send(crosstalk_ctx_t *ctx, uint32_t dir
         data.len = part;
         memcpy(data.bytes, &bytes[at], (uint64_t)part);
 
-        ret = crosstalk_net_wire_send(&ctx->steam_net, (uint8_t)CROSSTALK_NET_WIRE_KIND_SERIAL_DATA, &data, (uint32_t)CROSSTALK_NET_WIRE_SERIAL_DATA_HDR_SIZE + part, CROSSTALK_NET_WIRE_RELIABLE);
+        ret = crosstalk_net_wire_send(&ctx->libresteam_net, (uint8_t)CROSSTALK_NET_WIRE_KIND_SERIAL_DATA, &data, (uint32_t)CROSSTALK_NET_WIRE_SERIAL_DATA_HDR_SIZE + part, CROSSTALK_NET_WIRE_RELIABLE);
         if (ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_INIT) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "serial: access data send failed; err: %u32; dir: %u32; len: %u32", ret, dir, part); }
 
         if (ret != LDG_ERR_AOK) { return; }
@@ -3422,7 +3447,7 @@ static void crosstalk_serial_access_ctl_send(crosstalk_ctx_t *ctx, uint32_t op)
     ret = ldg_str_rbrcpy(ctl.id, ctx->eda.serial.open_id, (uint64_t)sizeof(ctl.id));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return; }
 
-    ret = crosstalk_net_wire_send(&ctx->steam_net, (uint8_t)CROSSTALK_NET_WIRE_KIND_SERIAL_CTL, &ctl, (uint32_t)sizeof(ctl), CROSSTALK_NET_WIRE_RELIABLE);
+    ret = crosstalk_net_wire_send(&ctx->libresteam_net, (uint8_t)CROSSTALK_NET_WIRE_KIND_SERIAL_CTL, &ctl, (uint32_t)sizeof(ctl), CROSSTALK_NET_WIRE_RELIABLE);
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_INIT) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "serial: access ctl send failed; err: %u32; op: %u32", ret, op); }
 }
 
@@ -4738,9 +4763,9 @@ static void crosstalk_wshop_publish(crosstalk_ctx_t *ctx, const char *title, con
 
     ctx->wshop_pub.rev = CROSSTALK_WSHOP_MANIFEST_REV;
     ctx->wshop_pub.kind = CROSSTALK_WSHOP_MANIFEST_KIND_CORE;
-    ctx->wshop_pub.author_id = ldg_net_steamworks_local_steam_id_get();
+    ctx->wshop_pub.author_id = crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net);
 
-    persona = ldg_net_steamworks_local_name_get();
+    persona = crosstalk_local_name_get(ctx);
     if (persona != 0x0 && snprintf(ctx->wshop_pub.author, sizeof(ctx->wshop_pub.author), "%.127s", persona) < 0) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_USAGE_TEXT); return; }
 
     if (snprintf(ctx->wshop_pub.name, sizeof(ctx->wshop_pub.name), "%.127s", title) < 0) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_USAGE_TEXT); return; }
@@ -4770,7 +4795,7 @@ static void crosstalk_wshop_publish(crosstalk_ctx_t *ctx, const char *title, con
 
     if (ret != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_FAIL_TEXT); return; }
 
-    ctx->wshop_up_state = (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_IDLE;
+    ctx->wshop_up_state = (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_IDLE;
 
     toast_push(ctx, CROSSTALK_CORE_PUBLISH_OK_TEXT);
 }
@@ -4810,13 +4835,13 @@ static void crosstalk_display_attach(crosstalk_ctx_t *ctx, const char *arg)
 
 static const char* crosstalk_wshop_up_state_text_get(uint32_t state)
 {
-    if (state == (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_CREATING) { return "creating the item"; }
+    if (state == (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_CREATING) { return "creating the item"; }
 
-    if (state == (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_UPDATING) { return "uploading"; }
+    if (state == (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_UPDATING) { return "uploading"; }
 
-    if (state == (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_DONE) { return CROSSTALK_CORE_PUBLISH_DONE_TEXT; }
+    if (state == (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_DONE) { return CROSSTALK_CORE_PUBLISH_DONE_TEXT; }
 
-    if (state == (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_ERR) { return CROSSTALK_CORE_PUBLISH_FAIL_TEXT; }
+    if (state == (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_ERR) { return CROSSTALK_CORE_PUBLISH_FAIL_TEXT; }
 
     return "name it, pick an ISA, then publish";
 }
@@ -4828,17 +4853,17 @@ static void crosstalk_wshop_upload_watch(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    ret = crosstalk_net_wshop_upload_state_get(&ctx->wshop_up, &state);
+    ret = crosstalk_net_wshop_upload_state_get(&ctx->wshop, &ctx->wshop_up, &state);
 
     if (state == ctx->wshop_up_state) { return; }
 
     ctx->wshop_up_state = state;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop upload: state; now: %u32; id: %u64; done: %u64; total: %u64; err: %u32", state, ctx->wshop_up.file_id, ctx->wshop_up.bytes_done, ctx->wshop_up.bytes_total, ret);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop upload: state; now: %u32; id: %u64; err: %u32", state, ctx->wshop_up.file_id, ret);
 
-    if (state == (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_DONE) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_DONE_TEXT); }
+    if (state == (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_DONE) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_DONE_TEXT); }
 
-    if (state == (uint32_t)LDG_NET_STEAMWORKS_WSHOP_UPLOAD_ERR) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_FAIL_TEXT); }
+    if (state == (uint32_t)CROSSTALK_NET_WSHOP_UPLOAD_ERR) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_FAIL_TEXT); }
 }
 
 static uint32_t crosstalk_num_parse(const char *text, uint64_t *out_val)
@@ -8498,7 +8523,7 @@ static void crosstalk_notice_raise(crosstalk_ctx_t *ctx, const char *title, cons
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: notify failed; err: %u32", ret); }
 }
 
-static void sesh_data_cb(ldg_net_ctx_t *net, uint32_t conn_id, const void *data, uint32_t len)
+static void sesh_data_cb(crosstalk_net_libresteam_ctx_t *net, uint32_t conn_id, const void *data, uint32_t len)
 {
     crosstalk_ctx_t *ctx = 0x0;
     crosstalk_net_wire_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
@@ -8518,12 +8543,12 @@ static void sesh_data_cb(ldg_net_ctx_t *net, uint32_t conn_id, const void *data,
         return;
     }
 
-    if (hdr.sender == ldg_net_steamworks_local_steam_id_get()) { return; }
+    if (hdr.sender == crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net)) { return; }
 
-    if (net->mode == LDG_NET_MODE_SRV)
+    if (net->mode == CROSSTALK_NET_LIBRESTEAM_MODE_SRV)
     {
         relay_reliable = (uint8_t)(hdr.kind == CROSSTALK_NET_WIRE_KIND_POSE ? CROSSTALK_NET_WIRE_UNRELIABLE : CROSSTALK_NET_WIRE_RELIABLE);
-        ret = crosstalk_net_wire_relay(&ctx->steam_net, data, len, relay_reliable);
+        ret = crosstalk_net_wire_relay(&ctx->libresteam_net, data, len, relay_reliable);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "net: relay failed; err: %u32; kind: %u32", ret, (uint32_t)hdr.kind); }
     }
 
@@ -8570,7 +8595,7 @@ static void sesh_data_cb(ldg_net_ctx_t *net, uint32_t conn_id, const void *data,
         }
     }
 
-    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_SNAPSHOT_REQ && net->mode == LDG_NET_MODE_SRV)
+    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_SNAPSHOT_REQ && net->mode == CROSSTALK_NET_LIBRESTEAM_MODE_SRV)
     {
         ret = crosstalk_author_sync_send(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "net: author join send failed; err: %u32", ret); }
@@ -8689,7 +8714,7 @@ static void sesh_data_cb(ldg_net_ctx_t *net, uint32_t conn_id, const void *data,
         }
     }
 
-    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_AUTHOR && net->mode != LDG_NET_MODE_SRV && hdr.len >= (uint32_t)sizeof(crosstalk_net_wire_author_t) && hdr.sender == crosstalk_net_steam_lobby_host_steam_id_get(&ctx->steam_net))
+    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_AUTHOR && net->mode != CROSSTALK_NET_LIBRESTEAM_MODE_SRV && hdr.len >= (uint32_t)sizeof(crosstalk_net_wire_author_t) && hdr.sender == crosstalk_net_libresteam_lobby_host_steam_id_get(&ctx->libresteam_net))
     {
         crosstalk_net_wire_author_t wire_author = LDG_STRUCT_ZERO_INIT;
 
@@ -8708,7 +8733,7 @@ static void sesh_data_cb(ldg_net_ctx_t *net, uint32_t conn_id, const void *data,
     }
 }
 
-static void sesh_dc_cb(ldg_net_ctx_t *net, uint32_t conn_id)
+static void sesh_dc_cb(crosstalk_net_libresteam_ctx_t *net, uint32_t conn_id)
 {
     crosstalk_ctx_t *ctx = 0x0;
     uint64_t steam_id = 0;
@@ -8719,13 +8744,13 @@ static void sesh_dc_cb(ldg_net_ctx_t *net, uint32_t conn_id)
     ctx = (crosstalk_ctx_t *)net->cb->user;
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    steam_id = ldg_net_steamworks_client_steam_id_get(&ctx->net, conn_id);
+    steam_id = crosstalk_net_libresteam_client_steam_id_get(&ctx->libresteam_net, conn_id);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "net: peer left; conn: %u32; steam_id: %u64", conn_id, steam_id);
     if (steam_id == 0) { return; }
 
-    if (net->mode == LDG_NET_MODE_SRV)
+    if (net->mode == CROSSTALK_NET_LIBRESTEAM_MODE_SRV)
     {
-        ret = crosstalk_net_wire_send(&ctx->steam_net, CROSSTALK_NET_WIRE_KIND_BYE, &steam_id, (uint32_t)sizeof(steam_id), CROSSTALK_NET_WIRE_RELIABLE);
+        ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_BYE, &steam_id, (uint32_t)sizeof(steam_id), CROSSTALK_NET_WIRE_RELIABLE);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "net: bye send failed; err: %u32", ret); }
     }
 }
@@ -9837,7 +9862,7 @@ static void crosstalk_dlc_disks_attach(crosstalk_ctx_t *ctx)
 
     for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_DLC_DISK_CUNT; idx = idx + 0x1)
     {
-        if (ldg_net_steamworks_dlc_installed_is(app_id[idx]) != LDG_TRUTH_TRUE) { continue; }
+        if (crosstalk_dlc_installed_is(ctx, app_id[idx]) != LDG_TRUTH_TRUE) { continue; }
 
         if (snprintf(app_name, sizeof(app_name), "%" PRIu32, app_id[idx]) < 0) { continue; }
 
@@ -13136,7 +13161,7 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ret = ldg_audio_init();
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: audio init; err: %u32", ret);
 
-    ret = crosstalk_game_music_init(&ctx->music);
+    ret = crosstalk_game_music_init(&ctx->music, &ctx->libresteam_set);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music init failed"); }
 
     settings_apply(ctx);
@@ -13383,30 +13408,42 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
         return ret;
     }
 
-    ret = ldg_net_steamworks_init();
-    ctx->steam_live = (uint8_t)(ret == LDG_ERR_AOK ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "crosstalk: create net_init; err: %u32; steam: %u32", ret, (uint32_t)ctx->steam_live);
+    {
+        libresteam_backend_steam_conf_t libresteam_conf = LDG_STRUCT_ZERO_INIT;
 
-    ctx->app_id = ldg_net_steamworks_app_id_get();
+        ret = libresteam_backend_steam_init(&ctx->libresteam_steam, &libresteam_conf, &ctx->libresteam_backend);
+        if (ret == LDG_ERR_AOK)
+        {
+            ret = libresteam_backend_set_init(&ctx->libresteam_set, &ctx->libresteam_backend, CROSSTALK_CORE_LIBRESTEAM_BACKEND_CUNT, CROSSTALK_CORE_LIBRESTEAM_BACKEND_PRIMARY);
+            if (ret != LDG_ERR_AOK) { if (libresteam_backend_steam_shutdown(&ctx->libresteam_steam) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: libresteam backend shutdown failed"); } }
+        }
+    }
+
+    ctx->libresteam_live = (uint8_t)(ret == LDG_ERR_AOK ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "crosstalk: create net_init; err: %u32; libresteam: %u32", ret, (uint32_t)ctx->libresteam_live);
+
+    ctx->app_id = UINT32_MAX;
+    if (ctx->libresteam_live == LDG_TRUTH_TRUE && libresteam_utils_app_id_get(&ctx->libresteam_set, &ctx->app_id) != LDG_ERR_AOK) { ctx->app_id = UINT32_MAX; }
+
     if (ctx->app_id == UINT32_MAX || ctx->app_id == 0) { ctx->app_id = crosstalk_core_launch_app_id_get(); }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: launched as app_id: %u32", ctx->app_id);
 
-    ret = crosstalk_net_wshop_init(&ctx->wshop);
+    ret = crosstalk_net_wshop_init(&ctx->wshop, &ctx->libresteam_set);
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk wshop init failed"); }
 
-    if (ctx->steam_live == LDG_TRUTH_TRUE)
+    if (ctx->libresteam_live == LDG_TRUTH_TRUE)
     {
-        ret = crosstalk_net_steam_init(&ctx->steam_net, &ctx->net, &ctx->net_cb);
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "crosstalk: create steam_net_init; err: %u32", ret);
+        ret = crosstalk_net_libresteam_init(&ctx->libresteam_net, &ctx->libresteam_set, &ctx->net_cb);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "crosstalk: create libresteam_net_init; err: %u32", ret);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
         {
-            ldg_net_steamworks_shutdown();
-            ctx->steam_live = LDG_TRUTH_FALSE;
+            crosstalk_libresteam_down(ctx);
+            ctx->libresteam_live = LDG_TRUTH_FALSE;
         }
     }
 
-    ret = ctx->steam_live == LDG_TRUTH_TRUE ? crosstalk_net_inventory_init(&ctx->inventory) : LDG_ERR_NOT_INIT;
+    ret = ctx->libresteam_live == LDG_TRUTH_TRUE ? crosstalk_net_inventory_init(&ctx->inventory, &ctx->libresteam_set) : LDG_ERR_NOT_INIT;
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "crosstalk: create inventory_init; err: %u32", ret);
 
     if (ret == LDG_ERR_AOK)
@@ -13447,10 +13484,10 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ret = ldg_thread_pool_init(&ctx->game.ld_pool, CROSSTALK_LD_POOL_WORKERS);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        if (ctx->steam_live == LDG_TRUTH_TRUE)
+        if (ctx->libresteam_live == LDG_TRUTH_TRUE)
         {
-            crosstalk_net_steam_shutdown(&ctx->steam_net);
-            ldg_net_steamworks_shutdown();
+            crosstalk_net_libresteam_shutdown(&ctx->libresteam_net);
+            crosstalk_libresteam_down(ctx);
         }
 
         ldg_sched_ctx_shutdown(&ctx->sched);
@@ -13463,10 +13500,10 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     {
         ldg_thread_pool_shutdown(&ctx->game.ld_pool);
 
-        if (ctx->steam_live == LDG_TRUTH_TRUE)
+        if (ctx->libresteam_live == LDG_TRUTH_TRUE)
         {
-            crosstalk_net_steam_shutdown(&ctx->steam_net);
-            ldg_net_steamworks_shutdown();
+            crosstalk_net_libresteam_shutdown(&ctx->libresteam_net);
+            crosstalk_libresteam_down(ctx);
         }
 
         ldg_sched_ctx_shutdown(&ctx->sched);
@@ -13479,10 +13516,10 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     ctx->game.quit = LDG_TRUTH_FALSE;
 
-    ctx->soundtrack_owned = (ctx->steam_live == LDG_TRUTH_TRUE && ldg_net_steamworks_dlc_installed_is(CROSSTALK_CORE_SOUNDTRACK_APP_ID) == LDG_TRUTH_TRUE) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    ctx->soundtrack_owned = (ctx->libresteam_live == LDG_TRUTH_TRUE && crosstalk_dlc_installed_is(ctx, CROSSTALK_CORE_SOUNDTRACK_APP_ID) == LDG_TRUTH_TRUE) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: soundtrack ownership; app: %u32; owns: %u32", (uint32_t)CROSSTALK_CORE_SOUNDTRACK_APP_ID, (uint32_t)ctx->soundtrack_owned);
 
-    ret = crosstalk_game_progression_queue_init(&ctx->progression_queue);
+    ret = crosstalk_game_progression_queue_init(&ctx->progression_queue, &ctx->libresteam_set);
     if (ret == LDG_ERR_AOK) { ctx->progression_queue_ok = LDG_TRUTH_TRUE; }
     else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "crosstalk: progression queue init failed; err: %u32", ret); }
 
@@ -13635,7 +13672,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
 
     if (ctx->remote_sesh != 0)
     {
-        crosstalk_net_steam_notice_push(&ctx->steam_net, "guest board cannot be saved");
+        crosstalk_net_libresteam_notice_push(&ctx->libresteam_net, "guest board cannot be saved");
         return LDG_ERR_DENIED;
     }
 
@@ -14151,15 +14188,15 @@ static void crosstalk_menu_action_take(crosstalk_ctx_t *ctx, uint32_t *out_actio
 
 static uint8_t crosstalk_mp_room_is(crosstalk_ctx_t *ctx)
 {
-    ldg_net_lobby_state_t lobby_state = LDG_NET_LOBBY_STATE_NONE;
+    crosstalk_net_libresteam_lobby_state_t lobby_state = CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    lobby_state = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
+    lobby_state = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
 
-    if (lobby_state == LDG_NET_LOBBY_STATE_HOSTING || lobby_state == LDG_NET_LOBBY_STATE_JOINED) { return LDG_TRUTH_TRUE; }
+    if (lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED) { return LDG_TRUTH_TRUE; }
 
-    return crosstalk_net_steam_lan_sesh_get(&ctx->steam_net) != (uint8_t)CROSSTALK_NET_LAN_SESH_NONE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    return crosstalk_net_libresteam_lan_sesh_get(&ctx->libresteam_net) != (uint8_t)CROSSTALK_NET_LAN_SESH_NONE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
 static void crosstalk_mp_room_get(crosstalk_ctx_t *ctx, uint32_t *out_member_cunt, uint8_t *out_is_host)
@@ -14168,17 +14205,17 @@ static void crosstalk_mp_room_get(crosstalk_ctx_t *ctx, uint32_t *out_member_cun
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_member_cunt == 0x0 || out_is_host == 0x0)) { return; }
 
-    lan_sesh = crosstalk_net_steam_lan_sesh_get(&ctx->steam_net);
+    lan_sesh = crosstalk_net_libresteam_lan_sesh_get(&ctx->libresteam_net);
 
     if (lan_sesh != (uint8_t)CROSSTALK_NET_LAN_SESH_NONE)
     {
         *out_is_host = (uint8_t)(lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_HOSTING ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
-        *out_member_cunt = (uint32_t)CROSSTALK_CORE_MP_HOST_SELF + crosstalk_net_steam_client_cunt_get(&ctx->steam_net);
+        *out_member_cunt = (uint32_t)CROSSTALK_CORE_MP_HOST_SELF + crosstalk_net_libresteam_client_cunt_get(&ctx->libresteam_net);
         return;
     }
 
-    *out_is_host = (uint8_t)(crosstalk_net_steam_lobby_host_steam_id_get(&ctx->steam_net) == ldg_net_steamworks_local_steam_id_get() ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
-    *out_member_cunt = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
+    *out_is_host = (uint8_t)(crosstalk_net_libresteam_lobby_host_steam_id_get(&ctx->libresteam_net) == crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
+    *out_member_cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
 }
 
 static uint32_t crosstalk_menu_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
@@ -14213,9 +14250,9 @@ static uint32_t crosstalk_menu_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_MP)
     {
-        ldg_net_lobby_state_t lobby_state = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
+        crosstalk_net_libresteam_lobby_state_t lobby_state = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
 
-        if (lobby_state == LDG_NET_LOBBY_STATE_CREATING || lobby_state == LDG_NET_LOBBY_STATE_JOINING || lobby_state == LDG_NET_LOBBY_STATE_STARTING) { return LDG_ERR_AOK; }
+        if (lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_CREATING || lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINING || lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_STARTING) { return LDG_ERR_AOK; }
 
         if (crosstalk_mp_room_is(ctx) == LDG_TRUTH_TRUE)
         {
@@ -14231,7 +14268,7 @@ static uint32_t crosstalk_menu_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_
         else
         {
             crosstalk_game_menu_mp_action_t mp_action = CROSSTALK_GAME_MENU_MP_NONE;
-            uint32_t list_cunt = (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) ? crosstalk_net_steam_lan_list_cunt_get(&ctx->steam_net) : crosstalk_net_steam_lobby_list_cunt_get(&ctx->steam_net);
+            uint32_t list_cunt = (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) ? (uint32_t)CROSSTALK_NET_CUNT_NONE : crosstalk_net_libresteam_lobby_list_cunt_get(&ctx->libresteam_net);
 
             ret = crosstalk_game_menu_mp_key_isr(irq, &ctx->menu_nav, list_cunt, ctx->board_sel.names, ctx->board_sel.cunt, &ctx->mp_board_idx, &ctx->mp_players_idx, &ctx->mp_submode_idx, &ctx->mp_transport_idx, &mp_action, &row, consumed);
             action = (uint32_t)mp_action;
@@ -14541,16 +14578,16 @@ static uint32_t crosstalk_core_irq_drain(crosstalk_ctx_t *ctx)
 
 static void crosstalk_friend_started_tick(crosstalk_ctx_t *ctx)
 {
-    uint32_t friend_cunt = crosstalk_net_steam_friend_cunt_get(&ctx->steam_net);
+    uint32_t friend_cunt = crosstalk_net_libresteam_friend_cunt_get(&ctx->libresteam_net);
 
     for (uint32_t idx = 0; idx < friend_cunt; idx++)
     {
-        const crosstalk_net_steam_friend_t *mate = 0x0;
+        const crosstalk_net_libresteam_friend_t *mate = 0x0;
         char notice[CROSSTALK_NET_NOTICE_CAP] = LDG_ARR_ZERO_INIT;
 
-        if (crosstalk_net_steam_friend_started_take(&ctx->steam_net, idx) != LDG_TRUTH_TRUE) { continue; }
+        if (crosstalk_net_libresteam_friend_started_take(&ctx->libresteam_net, idx) != LDG_TRUTH_TRUE) { continue; }
 
-        mate = crosstalk_net_steam_friend_get(&ctx->steam_net, idx);
+        mate = crosstalk_net_libresteam_friend_get(&ctx->libresteam_net, idx);
         if (mate == 0x0) { continue; }
 
         snprintf(notice, sizeof(notice), "%.63s started Crosstalk", mate->name[0] != LDG_STR_TERM ? mate->name : "a friend");
@@ -14625,7 +14662,7 @@ static void crosstalk_peer_state_send(crosstalk_ctx_t *ctx)
     uint8_t self = crosstalk_peer_state_self_get(ctx);
     uint32_t ret = 0;
 
-    if (ctx->steam_net.sesh_live == 0) { return; }
+    if (ctx->libresteam_net.sesh_live == 0) { return; }
 
     if (ctx->peer_state_next > 0.0) { ctx->peer_state_next = ctx->peer_state_next - ctx->dt; }
 
@@ -14634,14 +14671,14 @@ static void crosstalk_peer_state_send(crosstalk_ctx_t *ctx)
     ctx->peer_state_next = CROSSTALK_CORE_PEER_STATE_PERIOD;
     ctx->peer_state_sent = self;
 
-    wire_state.steam_id = ldg_net_steamworks_local_steam_id_get();
+    wire_state.steam_id = crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net);
     wire_state.idle_ms = (uint64_t)(ctx->idle_secs * (double)LDG_MS_PER_SEC);
     wire_state.state = self;
     wire_state.focused = ldg_sys_focus_is();
 
     crosstalk_peer_state_apply(ctx, &wire_state);
 
-    ret = crosstalk_net_wire_send(&ctx->steam_net, CROSSTALK_NET_WIRE_KIND_PEER_STATE, &wire_state, (uint32_t)sizeof(wire_state), CROSSTALK_NET_WIRE_RELIABLE);
+    ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_PEER_STATE, &wire_state, (uint32_t)sizeof(wire_state), CROSSTALK_NET_WIRE_RELIABLE);
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "net: peer state send failed; err: %u32", ret); }
 }
 
@@ -14703,11 +14740,11 @@ static void crosstalk_hub_rows_sync(crosstalk_ctx_t *ctx)
     ret = crosstalk_game_hub_rows_rst(&ctx->hub);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "hub rows reset failed"); }
 
-    friend_cunt = crosstalk_net_steam_friend_cunt_get(&ctx->steam_net);
+    friend_cunt = crosstalk_net_libresteam_friend_cunt_get(&ctx->libresteam_net);
 
     for (uint32_t idx = 0; idx < friend_cunt; idx++)
     {
-        const crosstalk_net_steam_friend_t *mate = crosstalk_net_steam_friend_get(&ctx->steam_net, idx);
+        const crosstalk_net_libresteam_friend_t *mate = crosstalk_net_libresteam_friend_get(&ctx->libresteam_net, idx);
 
         if (mate == 0x0) { continue; }
 
@@ -14718,8 +14755,8 @@ static void crosstalk_hub_rows_sync(crosstalk_ctx_t *ctx)
         if (mate->in_ours == LDG_TRUTH_TRUE && mate->detail[0] != LDG_STR_TERM) { snprintf(status, sizeof(status), "%.31s", mate->detail); }
         else if (mate->in_ours == LDG_TRUTH_FALSE && mate->in_game == LDG_TRUTH_TRUE) { snprintf(status, sizeof(status), "%.31s", CROSSTALK_CORE_HUB_OTHER_GAME_TEXT); }
 
-        if (mate->state == (uint32_t)LDG_NET_STEAMWORKS_PERSONA_STATE_ONLINE) { reach = (uint8_t)CROSSTALK_GAME_HUB_REACH_ONLINE; }
-        else if (mate->state != (uint32_t)LDG_NET_STEAMWORKS_PERSONA_STATE_OFFLINE) { reach = (uint8_t)CROSSTALK_GAME_HUB_REACH_AWAY; }
+        if (mate->state == (uint32_t)LIBRESTEAM_FRIENDS_PERSONA_STATE_ONLINE) { reach = (uint8_t)CROSSTALK_GAME_HUB_REACH_ONLINE; }
+        else if (mate->state != (uint32_t)LIBRESTEAM_FRIENDS_PERSONA_STATE_OFFLINE) { reach = (uint8_t)CROSSTALK_GAME_HUB_REACH_AWAY; }
 
         if (mate->in_game == LDG_TRUTH_TRUE) { reach = (uint8_t)CROSSTALK_GAME_HUB_REACH_OTHER_GAME; }
 
@@ -14802,7 +14839,8 @@ static void crosstalk_hub_action_apply(crosstalk_ctx_t *ctx, crosstalk_game_hub_
 
         {
             char connect[CROSSTALK_NET_PRESENCE_CONNECT_CAP] = LDG_ARR_ZERO_INIT;
-            uint64_t own_lobby = crosstalk_net_steam_lobby_id_get(&ctx->steam_net);
+            libresteam_steam_id_t invite_id = LDG_STRUCT_ZERO_INIT;
+            uint64_t own_lobby = crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net);
 
             if (own_lobby == 0)
             {
@@ -14811,8 +14849,9 @@ static void crosstalk_hub_action_apply(crosstalk_ctx_t *ctx, crosstalk_game_hub_
             }
 
             snprintf(connect, sizeof(connect), CROSSTALK_NET_PRESENCE_CONNECT_FMT, own_lobby);
-            ret = ldg_net_steamworks_friend_game_invite(user_id, connect);
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "hub: steam invite; to: %u64; lobby: %u64; err: %u32", user_id, own_lobby, ret);
+            invite_id.all = user_id;
+            ret = libresteam_friends_game_invite(&ctx->libresteam_set, invite_id, connect);
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "hub: libresteam invite; to: %u64; lobby: %u64; err: %u32", user_id, own_lobby, ret);
 
             if (ret == LDG_ERR_AOK) { toast_push(ctx, "Steam invite sent"); }
             else { toast_push(ctx, "Steam refused the invite"); }
@@ -15003,10 +15042,10 @@ static void crosstalk_presence_attention_get(crosstalk_ctx_t *ctx, char *out, ui
 
 static void crosstalk_discord_presence_sync(crosstalk_ctx_t *ctx)
 {
-    ldg_net_lobby_state_t lobby_state = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
-    uint64_t lobby_id = crosstalk_net_steam_lobby_id_get(&ctx->steam_net);
-    uint32_t members = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
-    uint8_t in_lobby = (lobby_state == LDG_NET_LOBBY_STATE_HOSTING || lobby_state == LDG_NET_LOBBY_STATE_JOINED || lobby_state == LDG_NET_LOBBY_STATE_STARTING) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    crosstalk_net_libresteam_lobby_state_t lobby_state = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
+    uint64_t lobby_id = crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net);
+    uint32_t members = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
+    uint8_t in_lobby = (lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED || lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_STARTING) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     char op_line[CROSSTALK_CORE_ACTIVITY_PRESENCE_CAP] = LDG_ARR_ZERO_INIT;
     char att_line[CROSSTALK_CORE_ACTIVITY_PRESENCE_CAP] = LDG_ARR_ZERO_INIT;
     char state_line[CROSSTALK_CORE_STATE_PRESENCE_CAP] = LDG_ARR_ZERO_INIT;
@@ -15037,9 +15076,9 @@ static void crosstalk_discord_presence_sync(crosstalk_ctx_t *ctx)
 
     if (in_lobby == LDG_TRUTH_TRUE && (ctx->game.screen != CROSSTALK_GAME_SCREEN_EDITOR || ctx->mp_busy != LDG_TRUTH_FALSE))
     {
-        if (op_line[0] != LDG_STR_TERM || att_line[0] != LDG_STR_TERM) { crosstalk_net_presence_lines_set(op_line, att_line, LDG_TRUTH_TRUE); }
-        else if (sim_paused_is(ctx) == LDG_TRUTH_TRUE) { crosstalk_net_presence_paused_set(LDG_TRUTH_TRUE); }
-        else { crosstalk_net_presence_lobby_set(members, ctx->mp_players_max); }
+        if (op_line[0] != LDG_STR_TERM || att_line[0] != LDG_STR_TERM) { crosstalk_net_presence_lines_set(&ctx->libresteam_set, op_line, att_line, LDG_TRUTH_TRUE); }
+        else if (sim_paused_is(ctx) == LDG_TRUTH_TRUE) { crosstalk_net_presence_paused_set(&ctx->libresteam_set, LDG_TRUTH_TRUE); }
+        else { crosstalk_net_presence_lobby_set(&ctx->libresteam_set, members, ctx->mp_players_max); }
 
         crosstalk_net_discord_presence_lobby_set(&ctx->discord, members, ctx->mp_players_max, lobby_id);
         crosstalk_net_discord_lobby_join(&ctx->discord, lobby_id);
@@ -15051,9 +15090,9 @@ static void crosstalk_discord_presence_sync(crosstalk_ctx_t *ctx)
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR)
     {
-        if (op_line[0] != LDG_STR_TERM || att_line[0] != LDG_STR_TERM) { crosstalk_net_presence_lines_set(op_line, att_line, LDG_TRUTH_FALSE); }
-        else if (sim_paused_is(ctx) == LDG_TRUTH_TRUE) { crosstalk_net_presence_paused_set(LDG_TRUTH_FALSE); }
-        else { crosstalk_net_presence_sandbox_set(members); }
+        if (op_line[0] != LDG_STR_TERM || att_line[0] != LDG_STR_TERM) { crosstalk_net_presence_lines_set(&ctx->libresteam_set, op_line, att_line, LDG_TRUTH_FALSE); }
+        else if (sim_paused_is(ctx) == LDG_TRUTH_TRUE) { crosstalk_net_presence_paused_set(&ctx->libresteam_set, LDG_TRUTH_FALSE); }
+        else { crosstalk_net_presence_sandbox_set(&ctx->libresteam_set, members); }
 
         crosstalk_net_discord_presence_sandbox_set(&ctx->discord, members, CROSSTALK_PRESENCE_BOARD_NONE, CROSSTALK_PRESENCE_BOARD_NONE);
         return;
@@ -15061,21 +15100,21 @@ static void crosstalk_discord_presence_sync(crosstalk_ctx_t *ctx)
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_BOARD_SEL || ctx->game.screen == CROSSTALK_GAME_SCREEN_LD)
     {
-        crosstalk_net_presence_ld_set();
+        crosstalk_net_presence_ld_set(&ctx->libresteam_set);
         crosstalk_net_discord_presence_ld_set(&ctx->discord);
         return;
     }
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_MP)
     {
-        crosstalk_net_presence_browse_set();
+        crosstalk_net_presence_browse_set(&ctx->libresteam_set);
         crosstalk_net_discord_presence_browse_set(&ctx->discord);
         return;
     }
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_NEWDESIGN)
     {
-        crosstalk_net_presence_menu_set(CROSSTALK_NET_PRESENCE_MENU_NEW);
+        crosstalk_net_presence_menu_set(&ctx->libresteam_set, CROSSTALK_NET_PRESENCE_MENU_NEW);
         crosstalk_net_discord_presence_menu_set(&ctx->discord, CROSSTALK_NET_DISCORD_TEXT_MENU_NEW);
         return;
     }
@@ -15091,33 +15130,33 @@ static void crosstalk_discord_presence_sync(crosstalk_ctx_t *ctx)
             discord_kind = CROSSTALK_NET_DISCORD_TEXT_PROJ_REVERSE;
         }
 
-        crosstalk_net_presence_newproj_set(presence_kind);
+        crosstalk_net_presence_newproj_set(&ctx->libresteam_set, presence_kind);
         crosstalk_net_discord_presence_newproj_set(&ctx->discord, discord_kind);
         return;
     }
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EXTRAS)
     {
-        crosstalk_net_presence_extras_set();
+        crosstalk_net_presence_extras_set(&ctx->libresteam_set);
         crosstalk_net_discord_presence_extras_set(&ctx->discord);
         return;
     }
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_CREDITS)
     {
-        crosstalk_net_presence_credits_set();
+        crosstalk_net_presence_credits_set(&ctx->libresteam_set);
         crosstalk_net_discord_presence_credits_set(&ctx->discord);
         return;
     }
 
     if (ctx->settings_open != LDG_TRUTH_FALSE)
     {
-        crosstalk_net_presence_menu_set(CROSSTALK_NET_PRESENCE_MENU_SETTINGS);
+        crosstalk_net_presence_menu_set(&ctx->libresteam_set, CROSSTALK_NET_PRESENCE_MENU_SETTINGS);
         crosstalk_net_discord_presence_menu_set(&ctx->discord, CROSSTALK_NET_DISCORD_TEXT_MENU_SETTINGS);
         return;
     }
 
-    crosstalk_net_presence_menu_set(CROSSTALK_NET_PRESENCE_MENU_MAIN);
+    crosstalk_net_presence_menu_set(&ctx->libresteam_set, CROSSTALK_NET_PRESENCE_MENU_MAIN);
     crosstalk_net_discord_presence_menu_set(&ctx->discord, CROSSTALK_NET_DISCORD_TEXT_MENU_MAIN);
 }
 
@@ -15135,9 +15174,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
     if (desc.idx == ctx->fixed_event.idx && desc.generation == ctx->fixed_event.generation)
     {
-        if (ctx->steam_live == LDG_TRUTH_TRUE)
+        if (ctx->libresteam_live == LDG_TRUTH_TRUE)
         {
-            crosstalk_net_steam_poll(&ctx->steam_net, ctx->tick_period > 0.0 ? ctx->tick_period / 1000.0 : (1.0 / 60.0));
+            crosstalk_net_libresteam_poll(&ctx->libresteam_net, ctx->tick_period > 0.0 ? ctx->tick_period / 1000.0 : (1.0 / 60.0));
             crosstalk_net_inventory_poll(&ctx->inventory);
             crosstalk_net_wshop_poll(&ctx->wshop);
         }
@@ -15235,37 +15274,37 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         {
             uint64_t req_lobby = 0;
 
-            if (crosstalk_net_steam_join_req_get(&ctx->steam_net, &req_lobby) == LDG_ERR_AOK)
+            if (crosstalk_net_libresteam_join_req_get(&ctx->libresteam_net, &req_lobby) == LDG_ERR_AOK)
             {
                 ret = lobby_join_enter(ctx, req_lobby);
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: steam join request; lobby: %u64; friend: %u64; err: %u32", req_lobby, ldg_net_steamworks_join_friend_steam_id_get(&ctx->steam_net.join), ret);
+                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: libresteam join request; lobby: %u64; friend: %u64; err: %u32", req_lobby, crosstalk_net_libresteam_join_friend_steam_id_get(&ctx->libresteam_net), ret);
             }
         }
 
         {
-            ldg_net_lobby_state_t conn_state = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
+            crosstalk_net_libresteam_lobby_state_t conn_state = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
             uint64_t conn_lobby = 0;
 
-            if (conn_state == LDG_NET_LOBBY_STATE_HOSTING || conn_state == LDG_NET_LOBBY_STATE_JOINED) { conn_lobby = crosstalk_net_steam_lobby_id_get(&ctx->steam_net); }
+            if (conn_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || conn_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED) { conn_lobby = crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net); }
 
             if (conn_lobby != ctx->connect_lobby_prev)
             {
                 ctx->connect_lobby_prev = conn_lobby;
-                crosstalk_net_presence_connect_set(conn_lobby);
+                crosstalk_net_presence_connect_set(&ctx->libresteam_set, conn_lobby);
                 ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: connect presence; lobby: %u64", conn_lobby);
             }
         }
 
         {
-            ldg_net_lobby_state_t pres_state = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
-            uint32_t pres_players = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
+            crosstalk_net_libresteam_lobby_state_t pres_state = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
+            uint32_t pres_players = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
             uint64_t pres_group = CROSSTALK_NET_PRESENCE_GROUP_CLEAR;
             uint8_t pres_kind = CROSSTALK_NET_PRESENCE_KIND_MENU;
 
             if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR) { pres_kind = CROSSTALK_NET_PRESENCE_KIND_SANDBOX; }
-            else if (pres_state == LDG_NET_LOBBY_STATE_HOSTING || pres_state == LDG_NET_LOBBY_STATE_JOINED || pres_state == LDG_NET_LOBBY_STATE_STARTING) { pres_kind = CROSSTALK_NET_PRESENCE_KIND_LOBBY; }
+            else if (pres_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || pres_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED || pres_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_STARTING) { pres_kind = CROSSTALK_NET_PRESENCE_KIND_LOBBY; }
 
-            if (pres_kind != CROSSTALK_NET_PRESENCE_KIND_MENU) { pres_group = crosstalk_net_steam_lobby_id_get(&ctx->steam_net); }
+            if (pres_kind != CROSSTALK_NET_PRESENCE_KIND_MENU) { pres_group = crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net); }
 
             if (pres_kind != ctx->presence_kind || pres_players != ctx->presence_players || pres_group != ctx->presence_group)
             {
@@ -15273,18 +15312,18 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 ctx->presence_players = pres_players;
                 ctx->presence_group = pres_group;
 
-                crosstalk_net_presence_group_set(pres_group, pres_players);
+                crosstalk_net_presence_group_set(&ctx->libresteam_set, pres_group, pres_players);
 
                 ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: presence group; kind: %u32; players: %u32; group: %u64", (uint32_t)pres_kind, pres_players, pres_group);
             }
         }
-        if (ctx->game.net_join_phase == CROSSTALK_NET_JOIN_PHASE_CONN && crosstalk_net_steam_lan_sesh_get(&ctx->steam_net) == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE)
+        if (ctx->game.net_join_phase == CROSSTALK_NET_JOIN_PHASE_CONN && crosstalk_net_libresteam_lan_sesh_get(&ctx->libresteam_net) == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE)
         {
-            uint64_t host_id = crosstalk_net_steam_lobby_host_steam_id_get(&ctx->steam_net);
+            uint64_t host_id = crosstalk_net_libresteam_lobby_host_steam_id_get(&ctx->libresteam_net);
             if (host_id != 0)
             {
-                ret = crosstalk_net_steam_client_join(&ctx->steam_net, host_id, CROSSTALK_NET_VIRTUAL_PORT);
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: net client join; err: %u32; host: %u64; local: %u64", ret, host_id, ldg_net_steamworks_local_steam_id_get());
+                ret = crosstalk_net_libresteam_client_join(&ctx->libresteam_net, host_id, CROSSTALK_NET_VIRTUAL_PORT);
+                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: net client join; err: %u32; host: %u64; local: %u64", ret, host_id, crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net));
                 ctx->game.net_join_phase = CROSSTALK_NET_JOIN_PHASE_IDLE;
             }
         }
@@ -15296,25 +15335,27 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             uint64_t friend_id = 0;
             uint32_t friend_len = 0;
 
-            ret = crosstalk_net_steam_friend_msg_get(&ctx->steam_net, &friend_id, &friend_text, &friend_len);
+            ret = crosstalk_net_libresteam_friend_msg_get(&ctx->libresteam_net, &friend_id, &friend_text, &friend_len);
             if (ret != LDG_ERR_AOK || friend_text == 0x0) { break; }
 
             if (crosstalk_persona_resolve(ctx, friend_id, friend_name, (uint64_t)sizeof(friend_name)) != LDG_ERR_AOK) { friend_name[0] = LDG_STR_TERM; }
 
             if (friend_name[0] == LDG_STR_TERM)
             {
+                libresteam_steam_id_t info_id = LDG_STRUCT_ZERO_INIT;
                 uint8_t info_pending = 0;
 
-                ret = ldg_net_steamworks_user_info_req(friend_id, LDG_TRUTH_TRUE, &info_pending);
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "steam chat: persona miss; id: %u64; info req err: %u32; pending: %u32", friend_id, ret, (uint32_t)info_pending);
+                info_id.all = friend_id;
+                ret = libresteam_friends_user_info_req(&ctx->libresteam_set, info_id, LDG_TRUTH_TRUE, &info_pending);
+                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam chat: persona miss; id: %u64; info req err: %u32; pending: %u32", friend_id, ret, (uint32_t)info_pending);
             }
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "steam chat: from: %u64; name: %.63s; len: %u32; text: %.2047s", friend_id, friend_name[0] != LDG_STR_TERM ? friend_name : "?", friend_len, friend_text);
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam chat: from: %u64; name: %.63s; len: %u32; text: %.2047s", friend_id, friend_name[0] != LDG_STR_TERM ? friend_name : "?", friend_len, friend_text);
 
             if (friend_name[0] == LDG_STR_TERM) { snprintf(friend_name, sizeof(friend_name), "%.63s", CROSSTALK_CORE_PERSONA_UNKNOWN); }
 
             ret = crosstalk_game_chat_push(&ctx->chat, (uint8_t)CROSSTALK_GAME_CHAT_GROUP_STEAM, friend_id, friend_name, friend_name, friend_text);
-            if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "steam chat push failed"); }
+            if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam chat push failed"); }
 
             {
                 char notice[CROSSTALK_NET_NOTICE_CAP] = LDG_ARR_ZERO_INIT;
@@ -15325,22 +15366,22 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         }
 
         {
-            ldg_net_lobby_state_t lobby_now = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
-            char member_toast[LDG_NET_LOBBY_NAME_MAX + CROSSTALK_CORE_LOBBY_TOAST_PAD] = LDG_ARR_ZERO_INIT;
-            uint64_t self_id = ldg_net_steamworks_local_steam_id_get();
+            crosstalk_net_libresteam_lobby_state_t lobby_now = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
+            char member_toast[CROSSTALK_NET_LOBBY_NAME_MAX + CROSSTALK_CORE_LOBBY_TOAST_PAD] = LDG_ARR_ZERO_INIT;
+            uint64_t self_id = crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net);
             uint32_t member_cunt = 0;
             uint32_t idx = 0;
             uint32_t jdx = 0;
             uint8_t found = LDG_TRUTH_FALSE;
 
-            if (lobby_now == LDG_NET_LOBBY_STATE_HOSTING || lobby_now == LDG_NET_LOBBY_STATE_JOINED || lobby_now == LDG_NET_LOBBY_STATE_STARTING)
+            if (lobby_now == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || lobby_now == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED || lobby_now == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_STARTING)
             {
-                member_cunt = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
+                member_cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
                 if (ctx->lobby_member_prev_cunt > 0)
                 {
                     for (idx = 0; idx < member_cunt; idx = idx + 1)
                     {
-                        const ldg_net_lobby_member_t *member_now = crosstalk_net_steam_lobby_member_get(&ctx->steam_net, idx);
+                        const crosstalk_net_libresteam_lobby_member_t *member_now = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
 
                         if (member_now == 0x0 || member_now->user_id == self_id) { continue; }
 
@@ -15361,7 +15402,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                         found = LDG_TRUTH_FALSE;
                         for (jdx = 0; jdx < member_cunt; jdx = jdx + 1)
                         {
-                            const ldg_net_lobby_member_t *member_now = crosstalk_net_steam_lobby_member_get(&ctx->steam_net, jdx);
+                            const crosstalk_net_libresteam_lobby_member_t *member_now = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, jdx);
 
                             if (member_now != 0x0 && member_now->user_id == ctx->lobby_member_prev[idx].user_id) { found = LDG_TRUTH_TRUE; break; }
                         }
@@ -15375,9 +15416,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 }
 
                 ctx->lobby_member_prev_cunt = 0;
-                for (idx = 0; idx < member_cunt && ctx->lobby_member_prev_cunt < LDG_NET_LOBBY_MEMBER_MAX; idx = idx + 1)
+                for (idx = 0; idx < member_cunt && ctx->lobby_member_prev_cunt < CROSSTALK_NET_LOBBY_MEMBER_MAX; idx = idx + 1)
                 {
-                    const ldg_net_lobby_member_t *member_now = crosstalk_net_steam_lobby_member_get(&ctx->steam_net, idx);
+                    const crosstalk_net_libresteam_lobby_member_t *member_now = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
 
                     if (member_now == 0x0) { continue; }
 
@@ -15397,16 +15438,16 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             }
         }
 
-        if (ctx->remote_sesh != 0 && crosstalk_net_steam_status_get(&ctx->steam_net) != LDG_NET_CONN_STATUS_CONN)
+        if (ctx->remote_sesh != 0 && crosstalk_net_libresteam_status_get(&ctx->libresteam_net) != CROSSTALK_NET_LIBRESTEAM_CONN_STATUS_CONN)
         {
             crosstalk_sesh_leave(ctx);
             ctx->game.screen = CROSSTALK_GAME_SCREEN_MENU;
-            crosstalk_net_steam_notice_push(&ctx->steam_net, "left host board");
+            crosstalk_net_libresteam_notice_push(&ctx->libresteam_net, "left host board");
         }
 
-        if (ctx->snap_req_sent == 0 && ctx->net.net.mode != LDG_NET_MODE_SRV && ctx->steam_net.sesh_live != 0 && ctx->mp_rdy != LDG_TRUTH_FALSE && ctx->mp_busy == LDG_TRUTH_FALSE && crosstalk_net_steam_status_get(&ctx->steam_net) == LDG_NET_CONN_STATUS_CONN)
+        if (ctx->snap_req_sent == 0 && crosstalk_net_libresteam_mode_get(&ctx->libresteam_net) != CROSSTALK_NET_LIBRESTEAM_MODE_SRV && ctx->libresteam_net.sesh_live != 0 && ctx->mp_rdy != LDG_TRUTH_FALSE && ctx->mp_busy == LDG_TRUTH_FALSE && crosstalk_net_libresteam_status_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_CONN_STATUS_CONN)
         {
-            ret = crosstalk_net_wire_send(&ctx->steam_net, CROSSTALK_NET_WIRE_KIND_SNAPSHOT_REQ, 0x0, CROSSTALK_NET_WIRE_NO_PAYLOAD, CROSSTALK_NET_WIRE_RELIABLE);
+            ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_SNAPSHOT_REQ, 0x0, CROSSTALK_NET_WIRE_NO_PAYLOAD, CROSSTALK_NET_WIRE_RELIABLE);
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: snapshot requested; err: %u32", ret);
             ctx->snap_req_sent = LDG_TRUTH_TRUE;
         }
@@ -15420,13 +15461,13 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
     if (ctx->timeline_set == 0 || ctx->timeline_screen_prev != (uint8_t)ctx->game.screen)
     {
-        ldg_net_steamworks_timeline_mode_t tl_mode = LDG_NET_STEAMWORKS_TIMELINE_MENUS;
+        libresteam_timeline_mode_t tl_mode = LIBRESTEAM_TIMELINE_MODE_MENUS;
 
-        if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR) { tl_mode = LDG_NET_STEAMWORKS_TIMELINE_PLAYING; }
-        else if (ctx->game.screen == CROSSTALK_GAME_SCREEN_LD) { tl_mode = LDG_NET_STEAMWORKS_TIMELINE_LD; }
-        else if (ctx->game.screen == CROSSTALK_GAME_SCREEN_NEWDESIGN) { tl_mode = LDG_NET_STEAMWORKS_TIMELINE_STAGING; }
+        if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR) { tl_mode = LIBRESTEAM_TIMELINE_MODE_PLAYING; }
+        else if (ctx->game.screen == CROSSTALK_GAME_SCREEN_LD) { tl_mode = LIBRESTEAM_TIMELINE_MODE_LD_SCREEN; }
+        else if (ctx->game.screen == CROSSTALK_GAME_SCREEN_NEWDESIGN) { tl_mode = LIBRESTEAM_TIMELINE_MODE_STAGING; }
 
-        ret = ldg_net_steamworks_timeline_mode_set(tl_mode);
+        ret = ctx->libresteam_live == LDG_TRUTH_TRUE ? libresteam_timeline_mode_set(&ctx->libresteam_set, tl_mode) : LDG_ERR_NOT_INIT;
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: timeline mode set; err: %u32; mode: %u32", ret, (uint32_t)tl_mode); }
 
         ctx->timeline_screen_prev = (uint8_t)ctx->game.screen;
@@ -15899,8 +15940,8 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
             menu_hide[CROSSTALK_MENU_IDX_ISA] = LDG_TRUTH_TRUE;
             menu_hide[CROSSTALK_MENU_IDX_MP] = LDG_TRUTH_TRUE;
-            menu_hide[CROSSTALK_MENU_IDX_STORY] = ldg_net_steamworks_dlc_installed_is(CROSSTALK_CORE_STORY_APP_ID) == LDG_TRUTH_TRUE ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
-            menu_hide[CROSSTALK_MENU_IDX_REVERSE] = ldg_net_steamworks_dlc_installed_is(CROSSTALK_CORE_REVERSE_APP_ID) == LDG_TRUTH_TRUE ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
+            menu_hide[CROSSTALK_MENU_IDX_STORY] = crosstalk_dlc_installed_is(ctx, CROSSTALK_CORE_STORY_APP_ID) == LDG_TRUTH_TRUE ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
+            menu_hide[CROSSTALK_MENU_IDX_REVERSE] = crosstalk_dlc_installed_is(ctx, CROSSTALK_CORE_REVERSE_APP_ID) == LDG_TRUTH_TRUE ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
             menu_hide[CROSSTALK_MENU_IDX_ZONE] = LDG_TRUTH_TRUE;
 
             if (render != 0x0)
@@ -15957,7 +15998,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
     }
     else if (ctx->game.screen == CROSSTALK_GAME_SCREEN_MP)
     {
-        ldg_net_lobby_state_t lobby_state = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
+        crosstalk_net_libresteam_lobby_state_t lobby_state = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
 
         if (render != 0x0)
         {
@@ -15967,10 +16008,10 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
         if ((uint8_t)lobby_state != ctx->mp_lobby_state_prev)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby state; prev: %u32; now: %u32; members: %u32; id_ok: %u32; conn: %u32", (uint32_t)ctx->mp_lobby_state_prev, (uint32_t)lobby_state, crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net), (uint32_t)(crosstalk_net_steam_lobby_id_get(&ctx->steam_net) != 0), (uint32_t)ldg_net_steamworks_status_get(&ctx->net));
-            if ((ldg_net_lobby_state_t)ctx->mp_lobby_state_prev == LDG_NET_LOBBY_STATE_CREATING && lobby_state == LDG_NET_LOBBY_STATE_NONE) { toast_push(ctx, "lobby creation failed"); }
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby state; prev: %u32; now: %u32; members: %u32; id_ok: %u32; conn: %u32", (uint32_t)ctx->mp_lobby_state_prev, (uint32_t)lobby_state, crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net), (uint32_t)(crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net) != 0), (uint32_t)crosstalk_net_libresteam_status_get(&ctx->libresteam_net));
+            if ((crosstalk_net_libresteam_lobby_state_t)ctx->mp_lobby_state_prev == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_CREATING && lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE) { toast_push(ctx, "lobby creation failed"); }
 
-            if ((ldg_net_lobby_state_t)ctx->mp_lobby_state_prev == LDG_NET_LOBBY_STATE_JOINING && lobby_state == LDG_NET_LOBBY_STATE_NONE) { toast_push(ctx, "could not join the lobby"); }
+            if ((crosstalk_net_libresteam_lobby_state_t)ctx->mp_lobby_state_prev == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINING && lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE) { toast_push(ctx, "could not join the lobby"); }
 
             ctx->mp_lobby_state_prev = (uint8_t)lobby_state;
         }
@@ -15981,21 +16022,21 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
             ctx->mp_players_max = CROSSTALK_MP_PLAYERS_MIN + ctx->mp_players_idx * CROSSTALK_MP_PLAYERS_STEP;
 
-            ret = crosstalk_net_steam_lobby_mode_set(&ctx->steam_net, CROSSTALK_LOBBY_MODE_TEXT);
+            ret = crosstalk_net_libresteam_lobby_mode_set(&ctx->libresteam_net, CROSSTALK_LOBBY_MODE_TEXT);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "lobby mode set failed"); }
 
             if (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
             {
                 ctx->mp_host_pending = LDG_TRUTH_FALSE;
-                host_name = ldg_net_steamworks_local_name_get();
-                ret = crosstalk_net_steam_lan_host_start(&ctx->steam_net, LDG_NET_PORT_DEFAULT, ctx->mp_players_max, CROSSTALK_LOBBY_MODE_TEXT, host_name);
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lan host; err: %u32; port: %u32", ret, (uint32_t)LDG_NET_PORT_DEFAULT);
+                host_name = crosstalk_local_name_get(ctx);
+                ret = crosstalk_net_libresteam_lan_host_start(&ctx->libresteam_net, CROSSTALK_NET_LAN_PORT_DEFAULT, ctx->mp_players_max, CROSSTALK_LOBBY_MODE_TEXT, host_name);
+                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lan host; err: %u32; port: %u32", ret, (uint32_t)CROSSTALK_NET_LAN_PORT_DEFAULT);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { toast_push(ctx, "LAN host failed; check port and Steam"); }
             }
             else
             {
-                ret = crosstalk_net_steam_host_start(&ctx->steam_net, CROSSTALK_NET_VIRTUAL_PORT);
-                if (ret == LDG_ERR_AOK) { ret = crosstalk_net_steam_lobby_create(&ctx->steam_net, ctx->mp_players_max); }
+                ret = crosstalk_net_libresteam_host_start(&ctx->libresteam_net, CROSSTALK_NET_VIRTUAL_PORT);
+                if (ret == LDG_ERR_AOK) { ret = crosstalk_net_libresteam_lobby_create(&ctx->libresteam_net, ctx->mp_players_max); }
 
                 ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby host; err: %u32; retries: %u32", ret, (uint32_t)ctx->mp_host_retry);
 
@@ -16013,19 +16054,19 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             }
         }
 
-        if (lobby_state == LDG_NET_LOBBY_STATE_STARTING)
+        if (lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_STARTING)
         {
             ctx->mp_rdy = LDG_TRUTH_FALSE;
             ctx->mp_busy = LDG_TRUTH_FALSE;
-            crosstalk_net_steam_lobby_busy_set(&ctx->steam_net, LDG_TRUTH_FALSE);
+            crosstalk_net_libresteam_lobby_busy_set(&ctx->libresteam_net, LDG_TRUTH_FALSE);
             ctx->game.screen = CROSSTALK_GAME_SCREEN_EDITOR;
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby started; entering editor");
         }
-        else if (lobby_state == LDG_NET_LOBBY_STATE_CREATING || lobby_state == LDG_NET_LOBBY_STATE_JOINING) { if (render != 0x0) { ret = crosstalk_game_menu_ld_draw(render, &screen_rect, CROSSTALK_MP_WAIT_TEXT, CROSSTALK_MP_WAIT_FRAC); } }
+        else if (lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_CREATING || lobby_state == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINING) { if (render != 0x0) { ret = crosstalk_game_menu_ld_draw(render, &screen_rect, CROSSTALK_MP_WAIT_TEXT, CROSSTALK_MP_WAIT_FRAC); } }
         else if (crosstalk_mp_room_is(ctx) == LDG_TRUTH_TRUE)
         {
             crosstalk_game_menu_room_action_t room_action = CROSSTALK_GAME_MENU_ROOM_NONE;
-            uint8_t lan_sesh = crosstalk_net_steam_lan_sesh_get(&ctx->steam_net);
+            uint8_t lan_sesh = crosstalk_net_libresteam_lan_sesh_get(&ctx->libresteam_net);
             uint8_t is_host = LDG_TRUTH_FALSE;
             uint32_t member_cunt = 0;
             uint32_t room_action_raw = (uint32_t)CROSSTALK_CORE_MENU_ACTION_NONE;
@@ -16048,7 +16089,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             if (room_action == CROSSTALK_GAME_MENU_ROOM_RDY)
             {
                 ctx->mp_rdy = (uint8_t)(ctx->mp_rdy ^ LDG_TRUTH_TRUE);
-                if (lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { crosstalk_net_steam_lobby_rdy_set(&ctx->steam_net, ctx->mp_rdy); }
+                if (lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { crosstalk_net_libresteam_lobby_rdy_set(&ctx->libresteam_net, ctx->mp_rdy); }
 
                 if (ctx->mp_rdy == LDG_TRUTH_FALSE) { ctx->snap_req_sent = LDG_TRUTH_FALSE; }
             }
@@ -16066,15 +16107,15 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 }
                 else
                 {
-                    ret = crosstalk_net_steam_lobby_game_start(&ctx->steam_net);
+                    ret = crosstalk_net_libresteam_lobby_game_start(&ctx->libresteam_net);
                     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby start; err: %u32", ret);
                 }
             }
             else if (room_action == CROSSTALK_GAME_MENU_ROOM_LEAVE)
             {
-                if (lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { crosstalk_net_steam_lobby_leave(&ctx->steam_net); }
+                if (lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { crosstalk_net_libresteam_lobby_leave(&ctx->libresteam_net); }
 
-                crosstalk_net_steam_sesh_stop(&ctx->steam_net);
+                crosstalk_net_libresteam_sesh_stop(&ctx->libresteam_net);
                 ctx->mp_rdy = LDG_TRUTH_FALSE;
                 ctx->mp_busy = LDG_TRUTH_FALSE;
                 ret = crosstalk_game_chat_rst(&ctx->chat);
@@ -16086,7 +16127,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 else if (ctx->remote_sesh == 0)
                 {
                     ctx->mp_busy = LDG_TRUTH_TRUE;
-                    if (lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { crosstalk_net_steam_lobby_busy_set(&ctx->steam_net, LDG_TRUTH_TRUE); }
+                    if (lan_sesh == (uint8_t)CROSSTALK_NET_LAN_SESH_NONE) { crosstalk_net_libresteam_lobby_busy_set(&ctx->libresteam_net, LDG_TRUTH_TRUE); }
 
                     ctx->game.screen = CROSSTALK_GAME_SCREEN_EDITOR;
                     ret = crosstalk_game_progression_achievement_unlock_req(CROSSTALK_GAME_PROGRESSION_LOBBY_BUILDER, CROSSTALK_APP_ID, &ctx->progression_queue);
@@ -16098,8 +16139,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         else
         {
             crosstalk_game_menu_mp_action_t mp_action = CROSSTALK_GAME_MENU_MP_NONE;
-            const ldg_net_lobby_info_t *pick_info = 0x0;
-            const ldg_net_srv_browser_entry_t *lan_entry = 0x0;
+            const crosstalk_net_libresteam_lobby_info_t *pick_info = 0x0;
             char mp_pick[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
             uint32_t mp_action_raw = (uint32_t)CROSSTALK_CORE_MENU_ACTION_NONE;
             uint32_t mp_row = UINT32_MAX;
@@ -16111,7 +16151,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             ret = crosstalk_lobby_items_build(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "lobby items build failed"); }
 
-            list_cunt = (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) ? crosstalk_net_steam_lan_list_cunt_get(&ctx->steam_net) : crosstalk_net_steam_lobby_list_cunt_get(&ctx->steam_net);
+            list_cunt = (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) ? (uint32_t)CROSSTALK_NET_CUNT_NONE : crosstalk_net_libresteam_lobby_list_cunt_get(&ctx->libresteam_net);
 
             if (render != 0x0)
             {
@@ -16126,37 +16166,24 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             {
                 if (crosstalk_game_fx_sfx_lever_play(&ctx->game.sfx_sound) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "lever sfx failed"); }
 
-                if (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) { ret = crosstalk_net_steam_lan_list_req(&ctx->steam_net); }
-                else { ret = crosstalk_net_steam_lobby_list_req(&ctx->steam_net); }
+                if (ctx->mp_transport_idx != (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) { ret = crosstalk_net_libresteam_lobby_list_req(&ctx->libresteam_net); }
             }
 
-            if (mp_action == CROSSTALK_GAME_MENU_MP_REFRESH) { if (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) { ret = crosstalk_net_steam_lan_list_req(&ctx->steam_net); }
-                else
+            if (mp_action == CROSSTALK_GAME_MENU_MP_REFRESH) { if (ctx->mp_transport_idx != (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
                 {
-                    ret = crosstalk_net_steam_lobby_list_req(&ctx->steam_net);
+                    ret = crosstalk_net_libresteam_lobby_list_req(&ctx->libresteam_net);
                     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby list req; err: %u32", ret);
-                } }
+                }
+            }
             else if (mp_action == CROSSTALK_GAME_MENU_MP_JOIN)
             {
-                if (ctx->mp_transport_idx == (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
+                if (ctx->mp_transport_idx != (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
                 {
-                    lan_entry = crosstalk_net_steam_lan_list_get(&ctx->steam_net, mp_row);
-                    if (lan_entry != 0x0)
-                    {
-                        ctx->mp_players_max = (uint32_t)lan_entry->client_max;
-                        ret = crosstalk_net_steam_lan_client_join(&ctx->steam_net, lan_entry->ip, lan_entry->port);
-                        if (ret != LDG_ERR_AOK) { toast_push(ctx, "could not join the LAN session"); }
-
-                        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lan join; err: %u32; ip: %u32; port: %u32", ret, lan_entry->ip, (uint32_t)lan_entry->port);
-                    }
-                }
-                else
-                {
-                    pick_info = crosstalk_net_steam_lobby_list_get(&ctx->steam_net, mp_row);
+                    pick_info = crosstalk_net_libresteam_lobby_list_get(&ctx->libresteam_net, mp_row);
                     if (pick_info != 0x0)
                     {
                         ctx->mp_players_max = (uint32_t)pick_info->player_max;
-                        ret = crosstalk_net_steam_lobby_join(&ctx->steam_net, pick_info->lobby_id);
+                        ret = crosstalk_net_libresteam_lobby_join(&ctx->libresteam_net, pick_info->lobby_id);
                         if (ret == LDG_ERR_AOK) { ctx->game.net_join_phase = CROSSTALK_NET_JOIN_PHASE_CONN; }
 
                         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: lobby join; err: %u32; lobby: %u64", ret, pick_info->lobby_id);
@@ -16305,7 +16332,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             {
                 ctx->board_sel_confirm_row = sel_row;
                 ctx->board_sel_confirm_ms = now_ms;
-                crosstalk_net_steam_notice_push(&ctx->steam_net, "press delete again to confirm");
+                crosstalk_net_libresteam_notice_push(&ctx->libresteam_net, "press delete again to confirm");
             }
         }
         else if (sel_action == CROSSTALK_GAME_MENU_BOARD_SEL_BACK)
@@ -16451,9 +16478,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                     statusline_cunt = statusline_cunt + (uint32_t)CROSSTALK_STATUSLINE_CELL_STEP;
                 }
             }
-            else if (crosstalk_net_steam_notice_active_is(&ctx->steam_net) == LDG_TRUTH_TRUE)
+            else if (crosstalk_net_libresteam_notice_active_is(&ctx->libresteam_net) == LDG_TRUTH_TRUE)
             {
-                statusline_cell[statusline_cunt] = crosstalk_net_steam_notice_text_get(&ctx->steam_net);
+                statusline_cell[statusline_cunt] = crosstalk_net_libresteam_notice_text_get(&ctx->libresteam_net);
                 statusline_cunt = statusline_cunt + (uint32_t)CROSSTALK_STATUSLINE_CELL_STEP;
             }
             else if (ctx->toast_text[0] != LDG_STR_TERM && ldg_time_epoch_ms_get() < ctx->toast_until_ms)
@@ -16462,15 +16489,15 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 statusline_cunt = statusline_cunt + (uint32_t)CROSSTALK_STATUSLINE_CELL_STEP;
             }
 
-            if (crosstalk_net_steam_status_get(&ctx->steam_net) == LDG_NET_CONN_STATUS_CONN)
+            if (crosstalk_net_libresteam_status_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_CONN_STATUS_CONN)
             {
-                uint64_t mp_local_id = ldg_net_steamworks_local_steam_id_get();
-                uint32_t mp_member_cunt = crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net);
+                uint64_t mp_local_id = crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net);
+                uint32_t mp_member_cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
                 const char *mp_peer = "";
                 uint32_t mp_i = 0;
                 for (mp_i = 0; mp_i < mp_member_cunt; mp_i = mp_i + 1)
                 {
-                    const ldg_net_lobby_member_t *mp_member = crosstalk_net_steam_lobby_member_get(&ctx->steam_net, mp_i);
+                    const crosstalk_net_libresteam_lobby_member_t *mp_member = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, mp_i);
                     if (mp_member != 0x0 && mp_member->user_id != mp_local_id) { mp_peer = mp_member->name; break; }
                 }
 
@@ -16481,11 +16508,11 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             }
             else
             {
-                ldg_net_lobby_state_t sl_lobby = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
+                crosstalk_net_libresteam_lobby_state_t sl_lobby = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
 
-                if (sl_lobby == LDG_NET_LOBBY_STATE_HOSTING || sl_lobby == LDG_NET_LOBBY_STATE_JOINED)
+                if (sl_lobby == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || sl_lobby == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED)
                 {
-                    snprintf(statusline_mp, sizeof(statusline_mp), "LOBBY %u | %.15s", crosstalk_net_steam_lobby_member_cunt_get(&ctx->steam_net), ctx->mp_rdy != LDG_TRUTH_FALSE ? "ready" : "waiting");
+                    snprintf(statusline_mp, sizeof(statusline_mp), "LOBBY %u | %.15s", crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net), ctx->mp_rdy != LDG_TRUTH_FALSE ? "ready" : "waiting");
                     statusline_cell[statusline_cunt] = statusline_mp;
                     statusline_cunt = statusline_cunt + (uint32_t)CROSSTALK_STATUSLINE_CELL_STEP;
                 }
@@ -16675,7 +16702,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         ret = crosstalk_eda_ui_wshop_publish_frame_set(&ctx->eda.wshop_publish, crosstalk_wshop_up_state_text_get(ctx->wshop_up_state));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish frame set failed"); }
 
-        ret = crosstalk_game_chat_frame_set(&ctx->chat, (uint8_t)(ctx->steam_net.sesh_live != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE), crosstalk_net_discord_live_is(&ctx->discord));
+        ret = crosstalk_game_chat_frame_set(&ctx->chat, (uint8_t)(ctx->libresteam_net.sesh_live != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE), crosstalk_net_discord_live_is(&ctx->discord));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "chat frame set failed"); }
 
         if (render != 0x0 && ctx->game.screen != CROSSTALK_GAME_SCREEN_LD)
@@ -16918,9 +16945,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
         if (ctx->game.screen == CROSSTALK_GAME_SCREEN_MP && ctx->chat.win.open == LDG_TRUTH_FALSE)
         {
-            ldg_net_lobby_state_t chat_lobby = crosstalk_net_steam_lobby_state_get(&ctx->steam_net);
+            crosstalk_net_libresteam_lobby_state_t chat_lobby = crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net);
 
-            if (chat_lobby == LDG_NET_LOBBY_STATE_HOSTING || chat_lobby == LDG_NET_LOBBY_STATE_JOINED)
+            if (chat_lobby == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING || chat_lobby == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED)
             {
                 crosstalk_chat_dock(ctx);
                 ret = crosstalk_game_chat_open_set(&ctx->chat, LDG_TRUTH_TRUE);
@@ -16967,7 +16994,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
                 ret = (discord_self != 0x0 && discord_self[0] != LDG_STR_TERM) ? ldg_str_rbrcpy(self_name, discord_self, (uint64_t)sizeof(self_name)) : LDG_ERR_NOT_FOUND;
             }
-            else { ret = crosstalk_persona_resolve(ctx, ldg_net_steamworks_local_steam_id_get(), self_name, (uint64_t)sizeof(self_name)); }
+            else { ret = crosstalk_persona_resolve(ctx, crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net), self_name, (uint64_t)sizeof(self_name)); }
 
             if ((ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) || self_name[0] == LDG_STR_TERM) { ret = ldg_str_rbrcpy(self_name, "you", (uint64_t)sizeof(self_name)); }
 
@@ -16978,12 +17005,12 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 if (chat_peer == CROSSTALK_GAME_CHAT_PEER_NONE) { toast_push(ctx, "pick a Steam friend in the hub first"); }
                 else
                 {
-                    ret = crosstalk_net_steam_friend_msg_reply(chat_peer, chat_text);
-                    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "steam chat: sent; to: %u64; err: %u32", chat_peer, ret);
+                    ret = crosstalk_net_libresteam_friend_msg_reply(&ctx->libresteam_net, chat_peer, chat_text);
+                    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "libresteam chat: sent; to: %u64; err: %u32", chat_peer, ret);
                     if (ret == LDG_ERR_AOK)
                     {
                         ret = crosstalk_game_chat_push(&ctx->chat, (uint8_t)CROSSTALK_GAME_CHAT_GROUP_STEAM, chat_peer, 0x0, self_name, chat_text);
-                        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "steam chat echo push failed"); }
+                        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam chat echo push failed"); }
                     }
                     else { toast_push(ctx, "Steam refused the message"); }
                 }
@@ -17031,10 +17058,10 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 ret = crosstalk_game_chat_push(&ctx->chat, (uint8_t)CROSSTALK_GAME_CHAT_GROUP_SESH, CROSSTALK_GAME_CHAT_PEER_NONE, CROSSTALK_CORE_CHAT_SESH_NAME, self_name, chat_text);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "chat local push failed"); }
 
-                if (ctx->steam_net.sesh_live != 0)
+                if (ctx->libresteam_net.sesh_live != 0)
                 {
                     ret = ldg_str_rbrcpy(wire_chat.text, chat_text, (uint64_t)sizeof(wire_chat.text));
-                    if (ret == LDG_ERR_AOK || ret == LDG_ERR_STR_TRUNC) { ret = crosstalk_net_wire_send(&ctx->steam_net, CROSSTALK_NET_WIRE_KIND_CHAT, &wire_chat, (uint32_t)sizeof(wire_chat), CROSSTALK_NET_WIRE_RELIABLE); }
+                    if (ret == LDG_ERR_AOK || ret == LDG_ERR_STR_TRUNC) { ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_CHAT, &wire_chat, (uint32_t)sizeof(wire_chat), CROSSTALK_NET_WIRE_RELIABLE); }
 
                     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "net: chat send failed; err: %u32", ret); }
                     else
@@ -17075,7 +17102,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_INIT && ret != LDG_ERR_DENIED)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "lobby exit autosave failed"); }
 
                 ctx->mp_busy = LDG_TRUTH_FALSE;
-                crosstalk_net_steam_lobby_busy_set(&ctx->steam_net, LDG_TRUTH_FALSE);
+                crosstalk_net_libresteam_lobby_busy_set(&ctx->libresteam_net, LDG_TRUTH_FALSE);
                 ctx->game.paused = LDG_TRUTH_FALSE;
                 ctx->game.screen = CROSSTALK_GAME_SCREEN_MP;
                 ctx->menu_sel = (uint32_t)CROSSTALK_MENU_SEL_FIRST;
@@ -17377,10 +17404,10 @@ uint32_t crosstalk_core_destroy(crosstalk_ctx_t *ctx)
 
     mark = crosstalk_shutdown_mark("discord", mark);
 
-    if (ctx->steam_live == LDG_TRUTH_TRUE)
+    if (ctx->libresteam_live == LDG_TRUTH_TRUE)
     {
-        crosstalk_net_steam_shutdown(&ctx->steam_net);
-        ldg_net_steamworks_shutdown();
+        crosstalk_net_libresteam_shutdown(&ctx->libresteam_net);
+        crosstalk_libresteam_down(ctx);
     }
 
     mark = crosstalk_shutdown_mark("steam", mark);

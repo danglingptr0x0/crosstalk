@@ -125,7 +125,7 @@ uint32_t crosstalk_hdl_proc_start(crosstalk_hdl_proc_ctx_t *ctx, const char *pat
     ctx->exit_code = UINT32_MAX;
     ctx->proc = (ldg_sys_proc_t)LDG_STRUCT_ZERO_INIT;
 
-    ret = ldg_sys_proc_spawn(path, argv, cwd, &ctx->proc);
+    ret = ldg_sys_proc_spawn(path, argv, cwd, LDG_SYS_PROC_SPAWN_STDIO_PIPE, &ctx->proc);
     if (ret != LDG_ERR_AOK)
     {
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "proc: spawn failed; path: %s; err: %u32", path, ret);

@@ -5,21 +5,19 @@
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
-#include <dangling/net/net.h>
-#include <dangling/net/steamworks.h>
 
 #include "core/log.h"
 #include "net/wire.h"
 
 #define CROSSTALK_NET_WIRE_SEG_NONE 0
 
-static uint32_t wire_frame_send(steam_net_ctx_t *ctx, uint8_t kind, const void *hd, uint32_t hd_len, const void *body, uint32_t body_len, uint8_t reliable)
+static uint32_t wire_frame_send(crosstalk_net_libresteam_ctx_t *ctx, uint8_t kind, const void *hd, uint32_t hd_len, const void *body, uint32_t body_len, uint8_t reliable)
 {
     crosstalk_net_wire_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
     uint64_t total = 0;
     uint32_t len = 0;
 
-    if (LDG_UNLIKELY(!ctx || !ctx->sesh)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(hd_len > 0 && hd == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -36,7 +34,7 @@ static uint32_t wire_frame_send(steam_net_ctx_t *ctx, uint8_t kind, const void *
     hdr.magic = CROSSTALK_NET_WIRE_MAGIC;
     hdr.len = len;
     hdr.seq = ctx->wire_seq;
-    hdr.sender = ldg_net_steamworks_local_steam_id_get();
+    hdr.sender = crosstalk_net_libresteam_local_steam_id_get(ctx);
     ctx->wire_seq = ctx->wire_seq + CROSSTALK_NET_WIRE_SEQ_STEP;
 
     memcpy(ctx->wire_buff, &hdr, sizeof(hdr));
@@ -45,15 +43,15 @@ static uint32_t wire_frame_send(steam_net_ctx_t *ctx, uint8_t kind, const void *
     if (body_len > 0) { memcpy(ctx->wire_buff + sizeof(hdr) + hd_len, body, body_len); }
 
     total = (uint64_t)sizeof(hdr) + (uint64_t)len;
-    return ldg_net_steamworks_send(ctx->sesh, ctx->wire_buff, total, reliable);
+    return crosstalk_net_libresteam_bcast(ctx, ctx->wire_buff, (uint32_t)total, reliable);
 }
 
-uint32_t crosstalk_net_wire_send(steam_net_ctx_t *ctx, uint8_t kind, const void *payload, uint32_t len, uint8_t reliable)
+uint32_t crosstalk_net_wire_send(crosstalk_net_libresteam_ctx_t *ctx, uint8_t kind, const void *payload, uint32_t len, uint8_t reliable)
 {
     return wire_frame_send(ctx, kind, payload, len, 0x0, CROSSTALK_NET_WIRE_SEG_NONE, reliable);
 }
 
-uint32_t crosstalk_net_wire_blob_send(steam_net_ctx_t *ctx, uint8_t kind, const void *blob, uint32_t len)
+uint32_t crosstalk_net_wire_blob_send(crosstalk_net_libresteam_ctx_t *ctx, uint8_t kind, const void *blob, uint32_t len)
 {
     crosstalk_net_wire_chunk_t chunk = LDG_STRUCT_ZERO_INIT;
     const uint8_t *src = 0x0;
@@ -87,7 +85,7 @@ uint32_t crosstalk_net_wire_blob_send(steam_net_ctx_t *ctx, uint8_t kind, const 
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_net_wire_blob_recv(steam_net_ctx_t *ctx, const uint8_t *payload, uint32_t len, uint8_t *out_complete)
+uint32_t crosstalk_net_wire_blob_recv(crosstalk_net_libresteam_ctx_t *ctx, const uint8_t *payload, uint32_t len, uint8_t *out_complete)
 {
     crosstalk_net_wire_chunk_t chunk = LDG_STRUCT_ZERO_INIT;
 
@@ -123,15 +121,15 @@ uint32_t crosstalk_net_wire_blob_recv(steam_net_ctx_t *ctx, const uint8_t *paylo
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_net_wire_relay(steam_net_ctx_t *ctx, const void *data, uint32_t len, uint8_t reliable)
+uint32_t crosstalk_net_wire_relay(crosstalk_net_libresteam_ctx_t *ctx, const void *data, uint32_t len, uint8_t reliable)
 {
-    if (LDG_UNLIKELY(!ctx || !ctx->sesh || !data)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(ctx == 0x0 || data == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(len < sizeof(crosstalk_net_wire_hdr_t))) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (LDG_UNLIKELY(ctx->sesh->net.mode != LDG_NET_MODE_SRV)) { return LDG_ERR_DENIED; }
+    if (LDG_UNLIKELY(crosstalk_net_libresteam_mode_get(ctx) != CROSSTALK_NET_LIBRESTEAM_MODE_SRV)) { return LDG_ERR_DENIED; }
 
-    return ldg_net_steamworks_bcast(ctx->sesh, data, (uint64_t)len, reliable);
+    return crosstalk_net_libresteam_bcast(ctx, data, len, reliable);
 }
 
 uint32_t crosstalk_net_wire_decode(const void *data, uint32_t len, crosstalk_net_wire_hdr_t *out_hdr, const uint8_t **out_payload)

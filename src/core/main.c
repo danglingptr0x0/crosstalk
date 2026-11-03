@@ -18,7 +18,6 @@
 #define CROSSTALK_CONNECT_SCAN_CUNT 1
 #define CROSSTALK_CONNECT_LOBBY_NONE 0
 #define CROSSTALK_CONNECT_STR_MATCH 0
-#define CROSSTALK_EXIT_OK 0
 #define CROSSTALK_ARGV_SELF 0
 #define CROSSTALK_SCHEME_APP_NAME "Crosstalk"
 
@@ -45,7 +44,6 @@ static uint64_t crosstalk_connect_lobby_parse(uint32_t argc, char **argv)
 int main(int argc, char **argv)
 {
     crosstalk_ctx_t *ctx = 0x0;
-    uint32_t launch_app_id = 0;
     uint64_t join_lobby = 0;
     uint32_t err = 0;
 
@@ -54,15 +52,6 @@ int main(int argc, char **argv)
     {
         fprintf(stdout, "crosstalk: mem init failed; err: %u\n", err);
         return (int32_t)(err & 0xFFu);
-    }
-
-    launch_app_id = crosstalk_core_launch_app_id_get();
-
-    if (launch_app_id != UINT32_MAX && ldg_net_steamworks_restart_needed_is(launch_app_id) == LDG_TRUTH_TRUE)
-    {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: relaunching through Steam; app: %u32", launch_app_id);
-        ldg_mem_shutdown();
-        return CROSSTALK_EXIT_OK;
     }
 
     err = crosstalk_core_create(&ctx);

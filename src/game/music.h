@@ -5,6 +5,8 @@
 
 #include <dangling/term/render.h>
 
+#include <libresteam/backend/backend.h>
+
 #define CROSSTALK_GAME_MUSIC_TITLE_CAP 96
 #define CROSSTALK_GAME_MUSIC_ACTION_PREV 0
 #define CROSSTALK_GAME_MUSIC_ACTION_TOGGLE 1
@@ -49,6 +51,7 @@ typedef struct crosstalk_game_music_ctx
     char title[CROSSTALK_GAME_MUSIC_TITLE_CAP];
     char artist[CROSSTALK_GAME_MUSIC_TITLE_CAP];
     crosstalk_game_music_snap_t back;
+    const libresteam_backend_set_t *set;
     double poll_next;
     uint32_t track_idx;
     uint32_t track_cunt;
@@ -64,7 +67,7 @@ typedef struct crosstalk_game_music_ctx
     uint8_t pudding[2];
 } crosstalk_game_music_ctx_t;
 
-uint32_t crosstalk_game_music_init(crosstalk_game_music_ctx_t *ctx);
+uint32_t crosstalk_game_music_init(crosstalk_game_music_ctx_t *ctx, const libresteam_backend_set_t *set);
 uint32_t crosstalk_game_music_src_set(crosstalk_game_music_ctx_t *ctx, uint8_t src);
 uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, double dt);
 uint8_t crosstalk_game_music_poll_due_is(const crosstalk_game_music_ctx_t *ctx);

@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "net/steam.h"
+#include "net/libresteam.h"
 
 #define CROSSTALK_NET_WIRE_TAG 0xC7
 #define CROSSTALK_NET_WIRE_MAGIC 0x4B4C5458
@@ -231,10 +231,10 @@ typedef struct crosstalk_net_wire_hdr
     uint64_t sender;
 } crosstalk_net_wire_hdr_t;
 
-uint32_t crosstalk_net_wire_send(steam_net_ctx_t *ctx, uint8_t kind, const void *payload, uint32_t len, uint8_t reliable);
-uint32_t crosstalk_net_wire_blob_send(steam_net_ctx_t *ctx, uint8_t kind, const void *blob, uint32_t len);
-uint32_t crosstalk_net_wire_blob_recv(steam_net_ctx_t *ctx, const uint8_t *payload, uint32_t len, uint8_t *out_complete);
-uint32_t crosstalk_net_wire_relay(steam_net_ctx_t *ctx, const void *data, uint32_t len, uint8_t reliable);
+uint32_t crosstalk_net_wire_send(crosstalk_net_libresteam_ctx_t *ctx, uint8_t kind, const void *payload, uint32_t len, uint8_t reliable);
+uint32_t crosstalk_net_wire_blob_send(crosstalk_net_libresteam_ctx_t *ctx, uint8_t kind, const void *blob, uint32_t len);
+uint32_t crosstalk_net_wire_blob_recv(crosstalk_net_libresteam_ctx_t *ctx, const uint8_t *payload, uint32_t len, uint8_t *out_complete);
+uint32_t crosstalk_net_wire_relay(crosstalk_net_libresteam_ctx_t *ctx, const void *data, uint32_t len, uint8_t reliable);
 uint32_t crosstalk_net_wire_decode(const void *data, uint32_t len, crosstalk_net_wire_hdr_t *out_hdr, const uint8_t **out_payload);
 
 #endif

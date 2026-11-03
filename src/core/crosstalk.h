@@ -23,11 +23,14 @@
 #include <dangling/thread/yield.h>
 #include <dangling/term/input.h>
 #include <dangling/term/sesh.h>
-#include <dangling/net/steamworks.h>
-#include <dangling/net/steamworks_lobby.h>
-#include <dangling/net/steamworks_wshop.h>
-#include <dangling/net/steamworks_tkt.h>
 #include <dangling/logging/logging.h>
+
+#include <libresteam/apps/apps.h>
+#include <libresteam/backend/backend.h>
+#include <libresteam/backend/steam/steam.h>
+#include <libresteam/friends/friends.h>
+#include <libresteam/timeline/timeline.h>
+#include <libresteam/utils/utils.h>
 
 #include "eda/eda.h"
 #include "emu/net.h"
@@ -49,7 +52,7 @@
 #include "game/music.h"
 #include "game/menu.h"
 #include "game/settings_menu.h"
-#include "net/steam.h"
+#include "net/libresteam.h"
 #include "net/wire.h"
 #include "net/relay.h"
 #include "net/discord.h"
@@ -780,13 +783,19 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_IDENT_FILE "ident.dat"
 #define CROSSTALK_CORE_IDENT_MODE 0600
 #define CROSSTALK_CORE_LOBBY_TOAST_PAD 32
+#define CROSSTALK_CORE_STORE_FLAG_NONE 0U
+#define CROSSTALK_CORE_COUNTRY_SIZE 3U
+#define CROSSTALK_CORE_LIBRESTEAM_BACKEND_CUNT 1U
+#define CROSSTALK_CORE_LIBRESTEAM_BACKEND_PRIMARY 0U
 
 typedef struct crosstalk_ctx
 {
     ldg_sched_ctx_t sched;
-    ldg_net_steamworks_ctx_t net;
-    ldg_net_cb_t net_cb;
-    steam_net_ctx_t steam_net;
+    libresteam_backend_steam_t libresteam_steam;
+    libresteam_backend_t libresteam_backend;
+    libresteam_backend_set_t libresteam_set;
+    crosstalk_net_libresteam_cb_t net_cb;
+    crosstalk_net_libresteam_ctx_t libresteam_net;
     crosstalk_net_discord_ctx_t discord;
     crosstalk_net_inventory_ctx_t inventory;
     crosstalk_net_relay_ctx_t relay;
@@ -797,7 +806,7 @@ typedef struct crosstalk_ctx
     uint8_t discord_auth_req;
     uint8_t discord_restore_req;
     uint8_t discord_relink_req;
-    uint8_t steam_live;
+    uint8_t libresteam_live;
     uint8_t discord_pudding[4];
     uint64_t join_lobby_pending;
     uint64_t connect_lobby_prev;
@@ -976,7 +985,7 @@ typedef struct crosstalk_ctx
     crosstalk_wshop_manifest_t wshop_pub;
     char wshop_stage_root[LDG_IO_PATH_MAX];
     char wshop_stage_dir[LDG_IO_PATH_MAX];
-    ldg_net_steamworks_wshop_upload_ctx_t wshop_up;
+    crosstalk_net_wshop_upload_t wshop_up;
     uint32_t wshop_up_state;
     char lobby_items[CROSSTALK_CORE_LOBBY_ITEMS_CAP];
     char member_items[CROSSTALK_CORE_MEMBER_ITEMS_CAP];
@@ -995,7 +1004,7 @@ typedef struct crosstalk_ctx
     uint8_t mp_host_pending;
     uint8_t mp_lobby_state_prev;
     uint8_t mp_host_retry;
-    ldg_net_lobby_member_t lobby_member_prev[LDG_NET_LOBBY_MEMBER_MAX];
+    crosstalk_net_libresteam_lobby_member_t lobby_member_prev[CROSSTALK_NET_LOBBY_MEMBER_MAX];
     uint32_t lobby_member_prev_cunt;
     crosstalk_game_settings_t settings_applied;
     uint8_t settings_applied_ok;

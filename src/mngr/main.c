@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <yder.h>
+#include <dangling/logging/logging.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
@@ -21,8 +21,6 @@
 #define MAIN_EXIT_OK 0
 #define MAIN_EXIT_FAIL 1
 #define MAIN_STEP 1
-#define MAIN_LOG_NAME "dangcsaemumngr"
-#define MAIN_LOG_FILE "dangcsaemumngr.log"
 #define MAIN_LOG_START "dangcsaemumngr logging started"
 #define MAIN_TITLE "DANGCSA emulator manager"
 #define MAIN_FRAME_MS 33
@@ -888,7 +886,7 @@ static uint32_t main_keys_drain(main_state_t *state, ldg_term_input_t *input)
     while (ldg_term_input_event_next(input, &key) == LDG_ERR_AOK)
     {
         ret = main_key_isr(state, &key);
-        if (ret != LDG_ERR_AOK) { y_log_message(Y_LOG_LEVEL_WARNING, "mngr: key isr failed; mode: %u; key: %u; codepoint: %u; err: %u", state->mode, (uint32_t)key.key, key.codepoint, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: key isr failed; mode: %u32; key: %u32; codepoint: %u32; err: %u32", state->mode, (uint32_t)key.key, (uint32_t)key.codepoint, ret); }
     }
 
     return LDG_ERR_AOK;
@@ -903,10 +901,10 @@ static uint32_t main_launch(main_state_t *state, main_term_t *term)
     state->launch_req = LDG_TRUTH_FALSE;
 
     ret = main_term_close(term);
-    if (ret != LDG_ERR_AOK) { y_log_message(Y_LOG_LEVEL_WARNING, "mngr: terminal handover failed; err: %u", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: terminal handover failed; err: %u32", ret); }
 
     ret = crosstalk_mngr_launch(state->mngr, state->mngr->sel);
-    if (ret != LDG_ERR_AOK) { y_log_message(Y_LOG_LEVEL_WARNING, "mngr: launch failed; sel: %u; err: %u", state->mngr->sel, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: launch failed; sel: %u32; err: %u32", state->mngr->sel, ret); }
 
     return main_term_open(term);
 }
@@ -946,7 +944,8 @@ int main(int argc, char **argv)
         return MAIN_EXIT_FAIL;
     }
 
-    if (y_init_logs(MAIN_LOG_NAME, Y_LOG_MODE_FILE, Y_LOG_LEVEL_INFO, MAIN_LOG_FILE, MAIN_LOG_START) == 0) { printf(MAIN_TRACE_FMT, MAIN_TRACE_LOGS, ret); }
+    ret = ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, MAIN_LOG_START);
+    if (ret != LDG_ERR_AOK) { printf(MAIN_TRACE_FMT, MAIN_TRACE_LOGS, ret); }
 
     printf(MAIN_TRACE_FMT, MAIN_TRACE_MEM_OK, ret);
 
@@ -1008,19 +1007,19 @@ int main(int argc, char **argv)
             ret = main_launch(&state, &term);
             if (ret != LDG_ERR_AOK)
             {
-                y_log_message(Y_LOG_LEVEL_ERROR, "mngr: terminal reopen failed; err: %u", ret);
+                ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: terminal reopen failed; err: %u32", ret);
 
                 break;
             }
         }
 
         ret = main_frame_draw(&state, term.render);
-        if (ret != LDG_ERR_AOK) { y_log_message(Y_LOG_LEVEL_WARNING, "mngr: frame draw failed; mode: %u; err: %u", state.mode, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: frame draw failed; mode: %u32; err: %u32", state.mode, ret); }
 
         ret = ldg_term_sesh_wr(term.sesh);
         if (ret != LDG_ERR_AOK)
         {
-            y_log_message(Y_LOG_LEVEL_ERROR, "mngr: terminal write failed; err: %u", ret);
+            ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: terminal write failed; err: %u32", ret);
 
             break;
         }
@@ -1035,8 +1034,6 @@ int main(int argc, char **argv)
     if (ldg_mem_dealloc(mngr) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr ctx dealloc failed"); }
 
     if (ldg_mem_shutdown() != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr memory shutdown failed"); }
-
-    y_close_logs();
 
     return MAIN_EXIT_OK;
 }

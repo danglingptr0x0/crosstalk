@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <inttypes.h>
 
+#include <libresteam/backend/backend.h>
+
 #define CROSSTALK_NET_PRESENCE_KIND_NONE 0
 #define CROSSTALK_NET_PRESENCE_KIND_MENU 1
 #define CROSSTALK_NET_PRESENCE_KIND_SANDBOX 2
@@ -17,6 +19,10 @@
 #define CROSSTALK_NET_PRESENCE_CONNECT_FMT "+connect_lobby %" PRIu64
 #define CROSSTALK_NET_PRESENCE_CONNECT_CAP 48
 #define CROSSTALK_NET_PRESENCE_GROUP_CLEAR 0
+#define CROSSTALK_NET_PRESENCE_VAL_CLEAR ""
+#define CROSSTALK_NET_PRESENCE_NUM_CAP 16
+#define CROSSTALK_NET_PRESENCE_ID_CAP 32
+#define CROSSTALK_NET_PRESENCE_PLAYERS_SOLO 1U
 #define CROSSTALK_NET_PRESENCE_KEY_MENU "menu"
 #define CROSSTALK_NET_PRESENCE_DISPLAY_LOBBY "#Lobby"
 #define CROSSTALK_NET_PRESENCE_DISPLAY_MENU "#InMenu"
@@ -47,20 +53,20 @@
 #define CROSSTALK_NET_PRESENCE_PROJ_ZONE "a Zone"
 #define CROSSTALK_NET_PRESENCE_PROJ_REVERSE "a Reverse project"
 
-void crosstalk_net_presence_set(const char *key, const char *val);
-void crosstalk_net_presence_paused_set(uint8_t in_lobby);
-void crosstalk_net_presence_lines_set(const char *op, const char *att, uint8_t in_lobby);
-void crosstalk_net_presence_sandbox_solo_set(void);
-void crosstalk_net_presence_sandbox_set(uint32_t players);
-void crosstalk_net_presence_lobby_set(uint32_t players, uint32_t players_max);
-void crosstalk_net_presence_menu_set(const char *menu);
-void crosstalk_net_presence_ld_set(void);
-void crosstalk_net_presence_browse_set(void);
-void crosstalk_net_presence_newproj_set(const char *kind);
-void crosstalk_net_presence_extras_set(void);
-void crosstalk_net_presence_credits_set(void);
-void crosstalk_net_presence_group_set(uint64_t group_id, uint32_t players);
-void crosstalk_net_presence_joinable_set(uint64_t host_steam_id, int32_t players);
-void crosstalk_net_presence_connect_set(uint64_t lobby_id);
+void crosstalk_net_presence_set(const libresteam_backend_set_t *set, const char *key, const char *val);
+void crosstalk_net_presence_paused_set(const libresteam_backend_set_t *set, uint8_t in_lobby);
+void crosstalk_net_presence_lines_set(const libresteam_backend_set_t *set, const char *op, const char *att, uint8_t in_lobby);
+void crosstalk_net_presence_sandbox_solo_set(const libresteam_backend_set_t *set);
+void crosstalk_net_presence_sandbox_set(const libresteam_backend_set_t *set, uint32_t players);
+void crosstalk_net_presence_lobby_set(const libresteam_backend_set_t *set, uint32_t players, uint32_t players_max);
+void crosstalk_net_presence_menu_set(const libresteam_backend_set_t *set, const char *menu);
+void crosstalk_net_presence_ld_set(const libresteam_backend_set_t *set);
+void crosstalk_net_presence_browse_set(const libresteam_backend_set_t *set);
+void crosstalk_net_presence_newproj_set(const libresteam_backend_set_t *set, const char *kind);
+void crosstalk_net_presence_extras_set(const libresteam_backend_set_t *set);
+void crosstalk_net_presence_credits_set(const libresteam_backend_set_t *set);
+void crosstalk_net_presence_group_set(const libresteam_backend_set_t *set, uint64_t group_id, uint32_t players);
+void crosstalk_net_presence_joinable_set(const libresteam_backend_set_t *set, uint64_t host_steam_id, uint32_t players);
+void crosstalk_net_presence_connect_set(const libresteam_backend_set_t *set, uint64_t lobby_id);
 
 #endif

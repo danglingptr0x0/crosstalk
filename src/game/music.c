@@ -8,11 +8,12 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/path.h>
-#include <dangling/net/steamworks.h>
 #include <dangling/sys/info.h>
 #include <dangling/str/str.h>
 
 #include <dangling/logging/logging.h>
+
+#include <libresteam/music/music.h>
 
 #include "core/log.h"
 #include "game/hub.h"
@@ -35,13 +36,14 @@
 #define CROSSTALK_GAME_MUSIC_ELLIPSIS_TEXT "..."
 #define CROSSTALK_GAME_MUSIC_FIT_FMT "%.*s%.3s"
 
-uint32_t crosstalk_game_music_init(crosstalk_game_music_ctx_t *ctx)
+uint32_t crosstalk_game_music_init(crosstalk_game_music_ctx_t *ctx, const libresteam_backend_set_t *set)
 {
     crosstalk_game_music_ctx_t empty = LDG_STRUCT_ZERO_INIT;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *ctx = empty;
+    ctx->set = set;
     ctx->src = (uint8_t)CROSSTALK_GAME_MUSIC_SRC_NATIVE;
     ctx->state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_IDLE;
 
@@ -204,9 +206,12 @@ uint32_t crosstalk_game_music_src_set(crosstalk_game_music_ctx_t *ctx, uint8_t s
 
 static void crosstalk_game_music_steam_poll(crosstalk_game_music_ctx_t *ctx)
 {
-    ldg_net_steamworks_music_status_t status = LDG_NET_STEAMWORKS_MUSIC_STATUS_UNDEFINED;
+    libresteam_music_status_t status = LIBRESTEAM_MUSIC_STATUS_UNDEFINED;
+    uint8_t avail = LDG_TRUTH_FALSE;
 
-    ctx->back.avail = ldg_net_steamworks_music_en_is();
+    ctx->back.avail = LDG_TRUTH_FALSE;
+
+    if (ctx->set != 0x0 && libresteam_music_en_get(ctx->set, &avail) == LDG_ERR_AOK && avail != LDG_TRUTH_FALSE) { ctx->back.avail = LDG_TRUTH_TRUE; }
 
     if (ctx->back.avail != LDG_TRUTH_TRUE)
     {
@@ -214,10 +219,10 @@ static void crosstalk_game_music_steam_poll(crosstalk_game_music_ctx_t *ctx)
         return;
     }
 
-    status = ldg_net_steamworks_music_status_get();
+    if (libresteam_music_status_get(ctx->set, &status) != LDG_ERR_AOK) { status = LIBRESTEAM_MUSIC_STATUS_UNDEFINED; }
 
-    if (status == LDG_NET_STEAMWORKS_MUSIC_STATUS_PLAYING) { ctx->back.state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING; }
-    else if (status == LDG_NET_STEAMWORKS_MUSIC_STATUS_PAUSED) { ctx->back.state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PAUSED; }
+    if (status == LIBRESTEAM_MUSIC_STATUS_PLAYING) { ctx->back.state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING; }
+    else if (status == LIBRESTEAM_MUSIC_STATUS_PAUSED) { ctx->back.state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PAUSED; }
     else { ctx->back.state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_IDLE; }
 }
 
@@ -383,10 +388,11 @@ uint32_t crosstalk_game_music_transport(crosstalk_game_music_ctx_t *ctx, uint32_
         else if (next_pressed != 0) { ret = ldg_sys_media_next_skip(); }
         else if (ctx->state == (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING) { ret = ldg_sys_media_pause(); }
         else { ret = ldg_sys_media_play(); } }
-    else { if (prev_pressed != 0) { ret = ldg_net_steamworks_music_prev_play(); }
-        else if (next_pressed != 0) { ret = ldg_net_steamworks_music_next_play(); }
-        else if (ctx->state == (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING) { ret = ldg_net_steamworks_music_pause(); }
-        else { ret = ldg_net_steamworks_music_play(); } }
+    else if (ctx->set == 0x0) { ret = LDG_ERR_NOT_INIT; }
+    else { if (prev_pressed != 0) { ret = libresteam_music_prev_play(ctx->set); }
+        else if (next_pressed != 0) { ret = libresteam_music_next_play(ctx->set); }
+        else if (ctx->state == (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING) { ret = libresteam_music_pause(ctx->set); }
+        else { ret = libresteam_music_play(ctx->set); } }
 
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music transport failed"); }
 

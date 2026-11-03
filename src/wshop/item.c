@@ -153,7 +153,7 @@ uint32_t crosstalk_wshop_item_ld(const char *dir, char *src_buff, uint64_t src_c
 uint32_t crosstalk_wshop_list_build(crosstalk_wshop_list_t *out, const crosstalk_net_wshop_ctx_t *net)
 {
     const uint32_t type_arr[CROSSTALK_WSHOP_ITEM_SCAN_CUNT] = { CROSSTALK_NET_WSHOP_TYPE_CORE, CROSSTALK_NET_WSHOP_TYPE_SOFTWARE };
-    const ldg_net_steamworks_wshop_item_t *ent = 0x0;
+    const crosstalk_net_wshop_item_t *ent = 0x0;
     crosstalk_wshop_item_t *slot = 0x0;
     uint32_t type_idx = 0;
     uint32_t ent_cunt = 0;
