@@ -115,7 +115,7 @@ static uint32_t brainomatic_dangcsa_draw(crosstalk_eda_ui_brainomatic_ctx_t *ctx
         { "idx 0x18 up", "", "reserved", "any reference raises 0x6" },
         { "C", "", "carry", "single bit; set by every ADD and SUB" },
         { "mem map", 0x0, 0x0, 0x0 },
-        { "RAM", "", "0x0000000000000000", "top 0x0000FFFFFFFFFFFF; RST vec at 0x0" },
+        { "mem", "", "0x0000000000000000", "top 0x0000FFFFFFFFFFFF; RST vec at 0x0" },
         { "I/O", "", "0x0001000000000000", "bits [63:48] select the page" },
         { "ctrl", "", "0x0001000080000000", "page one holds the device map" },
         { "exc", "", "0x0001000080000000", "handler, 64-bit; cause at +8" },

@@ -1,157 +1,88 @@
 #include <stdint.h>
-#include <stdio.h>
-#include <inttypes.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/logging/logging.h>
-
-#include <libresteam/friends/friends.h>
+#include <dangling/time/time.h>
 
 #include "core/log.h"
 #include "net/presence.h"
 
-static void presence_kv_set(const libresteam_backend_set_t *set, const char *key, const char *val)
+#define NET_PRESENCE_STEP 1U
+
+uint32_t crosstalk_net_presence_init(crosstalk_net_presence_ctx_t *ctx)
 {
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    for (uint32_t idx = 0; idx < CROSSTALK_NET_PRESENCE_BACKEND_CAP; idx++)
+    {
+        ctx->backend[idx].backend_ctx = 0x0;
+        ctx->backend[idx].push = 0x0;
+    }
+
+    ctx->next_ms = 0;
+    ctx->backend_cunt = 0;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_net_presence_reg(crosstalk_net_presence_ctx_t *ctx, void *backend_ctx, crosstalk_net_presence_push_cb_t push)
+{
+    if (LDG_UNLIKELY(ctx == 0x0 || backend_ctx == 0x0 || push == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    for (uint32_t idx = 0; idx < ctx->backend_cunt; idx++) { if (ctx->backend[idx].backend_ctx == backend_ctx) { return LDG_ERR_EXISTS; } }
+
+    if (ctx->backend_cunt >= CROSSTALK_NET_PRESENCE_BACKEND_CAP) { return LDG_ERR_FULL; }
+
+    ctx->backend[ctx->backend_cunt].backend_ctx = backend_ctx;
+    ctx->backend[ctx->backend_cunt].push = push;
+    ctx->backend_cunt = ctx->backend_cunt + NET_PRESENCE_STEP;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_net_presence_unreg(crosstalk_net_presence_ctx_t *ctx, void *backend_ctx)
+{
+    uint32_t last = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || backend_ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    for (uint32_t idx = 0; idx < ctx->backend_cunt; idx++)
+    {
+        if (ctx->backend[idx].backend_ctx != backend_ctx) { continue; }
+
+        last = ctx->backend_cunt - NET_PRESENCE_STEP;
+        ctx->backend[idx] = ctx->backend[last];
+        ctx->backend[last].backend_ctx = 0x0;
+        ctx->backend[last].push = 0x0;
+        ctx->backend_cunt = last;
+
+        return LDG_ERR_AOK;
+    }
+
+    return LDG_ERR_NOT_FOUND;
+}
+
+uint32_t crosstalk_net_presence_push(crosstalk_net_presence_ctx_t *ctx, const crosstalk_net_presence_desc_t *desc)
+{
+    uint64_t now_ms = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(set == 0x0 || key == 0x0 || val == 0x0)) { return; }
+    if (LDG_UNLIKELY(ctx == 0x0 || desc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ret = libresteam_friends_rich_presence_set(set, key, val);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "presence: set failed; key: %.63s; err: %u32", key, ret); }
-}
+    if (desc->proj_open != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-void crosstalk_net_presence_set(const libresteam_backend_set_t *set, const char *key, const char *val)
-{
-    presence_kv_set(set, key, val);
-}
+    now_ms = ldg_time_epoch_ms_get();
 
-void crosstalk_net_presence_paused_set(const libresteam_backend_set_t *set, uint8_t in_lobby)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, in_lobby != LDG_TRUTH_FALSE ? CROSSTALK_NET_PRESENCE_DISPLAY_LOBBY_PAUSED : CROSSTALK_NET_PRESENCE_DISPLAY_KB_PAUSED);
-}
+    if (now_ms < ctx->next_ms) { return LDG_ERR_AOK; }
 
-void crosstalk_net_presence_lines_set(const libresteam_backend_set_t *set, const char *op, const char *att, uint8_t in_lobby)
-{
-    const char *display = 0x0;
-    uint8_t op_on = (op != 0x0 && op[0] != LDG_STR_TERM) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    uint8_t att_on = (att != 0x0 && att[0] != LDG_STR_TERM) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    ctx->next_ms = now_ms + (uint64_t)CROSSTALK_NET_PRESENCE_PERIOD_MS;
 
-    if (op_on != LDG_TRUTH_TRUE && att_on != LDG_TRUTH_TRUE) { return; }
-
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_OP, op_on == LDG_TRUTH_TRUE ? op : CROSSTALK_NET_PRESENCE_VAL_CLEAR);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_ACTIVITY, att_on == LDG_TRUTH_TRUE ? att : CROSSTALK_NET_PRESENCE_VAL_CLEAR);
-
-    if (op_on == LDG_TRUTH_TRUE && att_on == LDG_TRUTH_TRUE) { display = in_lobby != LDG_TRUTH_FALSE ? CROSSTALK_NET_PRESENCE_DISPLAY_LOBBY_OP_ACT : CROSSTALK_NET_PRESENCE_DISPLAY_KB_OP_ACT; }
-    else if (op_on == LDG_TRUTH_TRUE) { display = in_lobby != LDG_TRUTH_FALSE ? CROSSTALK_NET_PRESENCE_DISPLAY_LOBBY_OP : CROSSTALK_NET_PRESENCE_DISPLAY_KB_OP; }
-    else { display = in_lobby != LDG_TRUTH_FALSE ? CROSSTALK_NET_PRESENCE_DISPLAY_LOBBY_ACT : CROSSTALK_NET_PRESENCE_DISPLAY_KB_ACT; }
-
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, display);
-}
-
-void crosstalk_net_presence_sandbox_solo_set(const libresteam_backend_set_t *set)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_KB_SOLO);
-}
-
-void crosstalk_net_presence_sandbox_set(const libresteam_backend_set_t *set, uint32_t players)
-{
-    char players_str[CROSSTALK_NET_PRESENCE_NUM_CAP] = LDG_ARR_ZERO_INIT;
-
-    if (players <= CROSSTALK_NET_PRESENCE_PLAYERS_SOLO)
+    for (uint32_t idx = 0; idx < ctx->backend_cunt; idx++)
     {
-        crosstalk_net_presence_sandbox_solo_set(set);
-        return;
+        ret = ctx->backend[idx].push(ctx->backend[idx].backend_ctx, desc);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "presence: push failed; backend: %u32; err: %u32", idx, ret); }
     }
 
-    if (snprintf(players_str, sizeof(players_str), "%" PRIu32, players) < 0) { return; }
-
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_PLAYERS, players_str);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_KB);
-}
-
-void crosstalk_net_presence_lobby_set(const libresteam_backend_set_t *set, uint32_t players, uint32_t players_max)
-{
-    char players_str[CROSSTALK_NET_PRESENCE_NUM_CAP] = LDG_ARR_ZERO_INIT;
-    char max_str[CROSSTALK_NET_PRESENCE_NUM_CAP] = LDG_ARR_ZERO_INIT;
-
-    if (snprintf(players_str, sizeof(players_str), "%" PRIu32, players) < 0) { return; }
-
-    if (snprintf(max_str, sizeof(max_str), "%" PRIu32, players_max) < 0) { return; }
-
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_PLAYERS, players_str);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_PLAYERS_MAX, max_str);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_LOBBY);
-}
-
-void crosstalk_net_presence_menu_set(const libresteam_backend_set_t *set, const char *menu)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_MENU, menu != 0x0 ? menu : CROSSTALK_NET_PRESENCE_MENU_MAIN);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_MENU);
-}
-
-void crosstalk_net_presence_ld_set(const libresteam_backend_set_t *set)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_LD);
-}
-
-void crosstalk_net_presence_browse_set(const libresteam_backend_set_t *set)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_BROWSE);
-}
-
-void crosstalk_net_presence_newproj_set(const libresteam_backend_set_t *set, const char *kind)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_ACTIVITY, kind != 0x0 ? kind : CROSSTALK_NET_PRESENCE_PROJ_RTL);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_NEWPROJ);
-}
-
-void crosstalk_net_presence_extras_set(const libresteam_backend_set_t *set)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_EXTRAS);
-}
-
-void crosstalk_net_presence_credits_set(const libresteam_backend_set_t *set)
-{
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_PRESENCE_DISPLAY_CREDITS);
-}
-
-void crosstalk_net_presence_group_set(const libresteam_backend_set_t *set, uint64_t group_id, uint32_t players)
-{
-    char group_str[CROSSTALK_NET_PRESENCE_ID_CAP] = LDG_ARR_ZERO_INIT;
-    char size_str[CROSSTALK_NET_PRESENCE_NUM_CAP] = LDG_ARR_ZERO_INIT;
-
-    if (group_id == CROSSTALK_NET_PRESENCE_GROUP_CLEAR || players == 0)
-    {
-        presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_GROUP, CROSSTALK_NET_PRESENCE_VAL_CLEAR);
-        presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_GROUP_SIZE, CROSSTALK_NET_PRESENCE_VAL_CLEAR);
-        return;
-    }
-
-    if (snprintf(group_str, sizeof(group_str), "%" PRIu64, group_id) < 0) { return; }
-
-    if (snprintf(size_str, sizeof(size_str), "%" PRIu32, players) < 0) { return; }
-
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_GROUP, group_str);
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_GROUP_SIZE, size_str);
-}
-
-void crosstalk_net_presence_joinable_set(const libresteam_backend_set_t *set, uint64_t host_steam_id, uint32_t players)
-{
-    crosstalk_net_presence_group_set(set, host_steam_id, players);
-}
-
-void crosstalk_net_presence_connect_set(const libresteam_backend_set_t *set, uint64_t lobby_id)
-{
-    char connect[CROSSTALK_NET_PRESENCE_CONNECT_CAP] = LDG_ARR_ZERO_INIT;
-
-    if (lobby_id == 0)
-    {
-        presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_CONNECT, CROSSTALK_NET_PRESENCE_VAL_CLEAR);
-        return;
-    }
-
-    if (snprintf(connect, sizeof(connect), CROSSTALK_NET_PRESENCE_CONNECT_FMT, lobby_id) < 0) { return; }
-
-    presence_kv_set(set, CROSSTALK_NET_PRESENCE_KEY_CONNECT, connect);
+    return LDG_ERR_AOK;
 }

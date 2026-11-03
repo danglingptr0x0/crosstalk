@@ -512,7 +512,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
 
         if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves guest ram");
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves DLU mem");
 
             ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX;
         }
@@ -524,7 +524,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
     {
         if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves guest ram");
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves DLU mem");
 
             ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX;
         }

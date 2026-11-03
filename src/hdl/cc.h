@@ -13,8 +13,7 @@
 
 #define CROSSTALK_HDL_CC_EXE "clang"
 #define CROSSTALK_HDL_CC_EXE_WIN "clang.exe"
-#define CROSSTALK_HDL_CC_TGT_WIN "--tar" "get=x86_64-pc-windows-msvc"
-#define CROSSTALK_HDL_CC_TGT_UNIX "--tar" "get=x86_64-pc-linux-gnu"
+#define CROSSTALK_HDL_CC_TGT "--tar" "get=x86_64-unknown-none"
 #define CROSSTALK_HDL_CC_OPT "-O3"
 #define CROSSTALK_HDL_CC_ARCH "-march=x86-64-v2"
 #define CROSSTALK_HDL_CC_FREE "-ffreestanding"
@@ -22,15 +21,15 @@
 #define CROSSTALK_HDL_CC_NOLIB "-nostdlib"
 #define CROSSTALK_HDL_CC_SHARED "-shared"
 #define CROSSTALK_HDL_CC_LD "-fuse-ld=lld"
-#define CROSSTALK_HDL_CC_NOENTRY "-Wl,-noentry"
-#define CROSSTALK_HDL_CC_NOPROBE "-mno-stack-arg-probe"
 #define CROSSTALK_HDL_CC_PIC "-fPIC"
+#define CROSSTALK_HDL_CC_NOREDZONE "-mno-red-zone"
+#define CROSSTALK_HDL_CC_LINK "-Wl,--hash-style=sysv,-z,defs"
 #define CROSSTALK_HDL_CC_OUT_FLAG "-o"
 
 #define CROSSTALK_HDL_CC_ARG_MAX 16
 #define CROSSTALK_HDL_CC_LINE_MUL 4
 #define CROSSTALK_HDL_CC_WAIT_FLAGS 0
-#define CROSSTALK_HDL_CC_REV "24"
+#define CROSSTALK_HDL_CC_REV "1"
 #define CROSSTALK_HDL_CC_STEP 1
 #define CROSSTALK_HDL_CC_EXIT_OK 0
 

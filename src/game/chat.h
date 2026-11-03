@@ -24,6 +24,8 @@ typedef struct crosstalk_game_chat_msg
 {
     char name[CROSSTALK_GAME_CHAT_NAME_CAP];
     char text[CROSSTALK_GAME_CHAT_TEXT_CAP];
+    uint8_t self;
+    uint8_t pudding[7];
 } crosstalk_game_chat_msg_t;
 
 typedef struct crosstalk_game_chat_conv
@@ -65,7 +67,7 @@ uint32_t crosstalk_game_chat_rst(crosstalk_game_chat_ctx_t *ctx);
 uint32_t crosstalk_game_chat_conv_get(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *name, uint32_t *out_idx);
 uint32_t crosstalk_game_chat_conv_sel(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *name);
 uint32_t crosstalk_game_chat_conv_reach_set(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, uint8_t reach);
-uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *conv_name, const char *name, const char *text);
+uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *conv_name, const char *name, const char *text, uint8_t self);
 uint64_t crosstalk_game_chat_peer_get(const crosstalk_game_chat_ctx_t *ctx, uint8_t group);
 uint32_t crosstalk_game_chat_win_reg(crosstalk_game_chat_ctx_t *ctx, crosstalk_ui_window_ctx_t *win_nav, uint32_t *out_slot);
 uint32_t crosstalk_game_chat_frame_set(crosstalk_game_chat_ctx_t *ctx, uint8_t sesh_live, uint8_t discord_live);

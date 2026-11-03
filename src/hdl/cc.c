@@ -26,7 +26,7 @@ static uint32_t cc_argv_build(const crosstalk_hdl_cc_ctx_t *ctx, const char *src
     argv[at] = ctx->exe;
     at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
 
-    argv[at] = CROSSTALK_HDL_CC_TGT_WIN;
+    argv[at] = CROSSTALK_HDL_CC_TGT;
     at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
 
     argv[at] = CROSSTALK_HDL_CC_OPT;
@@ -50,10 +50,13 @@ static uint32_t cc_argv_build(const crosstalk_hdl_cc_ctx_t *ctx, const char *src
     argv[at] = CROSSTALK_HDL_CC_LD;
     at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
 
-    argv[at] = CROSSTALK_HDL_CC_NOENTRY;
+    argv[at] = CROSSTALK_HDL_CC_PIC;
     at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
 
-    argv[at] = CROSSTALK_HDL_CC_NOPROBE;
+    argv[at] = CROSSTALK_HDL_CC_NOREDZONE;
+    at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
+
+    argv[at] = CROSSTALK_HDL_CC_LINK;
     at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
 
     argv[at] = src_path;

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include "net/presence.h"
+
 #define CROSSTALK_NET_DISCORD_SDK_REV "1.10.18247"
 #define CROSSTALK_NET_DISCORD_APP_ID 1530141048104288377ULL
 
@@ -263,6 +265,7 @@ uint32_t crosstalk_net_discord_presence_newproj_set(crosstalk_net_discord_ctx_t 
 uint32_t crosstalk_net_discord_presence_extras_set(crosstalk_net_discord_ctx_t *ctx);
 uint32_t crosstalk_net_discord_presence_credits_set(crosstalk_net_discord_ctx_t *ctx);
 uint32_t crosstalk_net_discord_presence_clear(crosstalk_net_discord_ctx_t *ctx);
+uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_net_presence_desc_t *desc);
 
 uint32_t crosstalk_net_discord_join_secret_get(crosstalk_net_discord_ctx_t *ctx, uint64_t *out_lobby_id);
 

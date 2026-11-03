@@ -23,7 +23,7 @@ static uint16_t img_word_rd(const ldg_byte_t *raw, uint64_t at)
 
 static uint32_t img_dword_rd(const ldg_byte_t *raw, uint64_t at)
 {
-    return (uint32_t)img_word_rd(raw, at) | ((uint32_t)img_word_rd(raw, at + (uint64_t)CROSSTALK_HDL_IMG_RELOC_ENTRY_SIZE) << (uint32_t)(LDG_BYTE_BITS * CROSSTALK_HDL_IMG_RELOC_ENTRY_SIZE));
+    return (uint32_t)img_word_rd(raw, at) | ((uint32_t)img_word_rd(raw, at + (uint64_t)CROSSTALK_HDL_IMG_WORD_SIZE) << (uint32_t)(LDG_BYTE_BITS * CROSSTALK_HDL_IMG_WORD_SIZE));
 }
 
 static uint64_t img_qword_rd(const ldg_byte_t *raw, uint64_t at)
@@ -76,8 +76,8 @@ static uint32_t img_pages_drop(ldg_byte_t *base, uint64_t span)
 
 static uint32_t img_pages_protect(ldg_byte_t *at, uint64_t span, uint32_t flags)
 {
-    uint8_t exec = (flags & (uint32_t)CROSSTALK_HDL_IMG_SCN_EXEC) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    uint8_t wr = (flags & (uint32_t)CROSSTALK_HDL_IMG_SCN_WR) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    uint8_t exec = (flags & (uint32_t)CROSSTALK_HDL_IMG_PF_EXEC) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    uint8_t wr = (flags & (uint32_t)CROSSTALK_HDL_IMG_PF_WR) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     if (LDG_UNLIKELY(at == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -106,161 +106,270 @@ static uint32_t img_pages_protect(ldg_byte_t *at, uint64_t span, uint32_t flags)
     return LDG_ERR_AOK;
 }
 
-static uint32_t img_reloc_apply(ldg_byte_t *base, uint32_t rva, uint32_t span, uint64_t delta, uint64_t *out)
+typedef struct img_dyn
 {
-    uint32_t at = 0;
+    uint64_t hash;
+    uint64_t sym;
+    uint64_t str;
+    uint64_t str_span;
+    uint64_t rela;
+    uint64_t rela_span;
+    uint64_t plt;
+    uint64_t plt_span;
+} img_dyn_t;
+
+static uint8_t img_range_is(uint64_t at, uint64_t len, uint64_t span)
+{
+    if (at > span) { return LDG_TRUTH_FALSE; }
+
+    return len <= span - at ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+static uint32_t img_dyn_parse(const ldg_byte_t *base, uint64_t span, uint64_t at, uint64_t dyn_span, img_dyn_t *out)
+{
+    uint64_t pos = 0;
 
     if (LDG_UNLIKELY(base == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out = 0x0;
+    memset(out, 0x0, sizeof(*out));
 
-    if (delta == 0) { return LDG_ERR_AOK; }
+    if (img_range_is(at, dyn_span, span) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_FORM_DIR; }
 
-    if (rva == 0 || span == 0) { return CROSSTALK_HDL_ERR_IMG_RELOC_NONE; }
-
-    while (at + (uint32_t)CROSSTALK_HDL_IMG_RELOC_HDR_SIZE <= span)
+    for (pos = 0; pos + (uint64_t)CROSSTALK_HDL_IMG_DYN_SIZE <= dyn_span; pos = pos + (uint64_t)CROSSTALK_HDL_IMG_DYN_SIZE)
     {
-        uint32_t blk_rva = img_dword_rd(base, (uint64_t)rva + at);
-        uint32_t blk_span = img_dword_rd(base, (uint64_t)rva + at + (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE);
-        uint32_t pos = (uint32_t)CROSSTALK_HDL_IMG_RELOC_HDR_SIZE;
+        uint64_t tag = img_qword_rd(base, at + pos);
+        uint64_t val = img_qword_rd(base, at + pos + (uint64_t)CROSSTALK_HDL_IMG_QWORD_SIZE);
 
-        if (blk_span < (uint32_t)CROSSTALK_HDL_IMG_RELOC_HDR_SIZE || at + blk_span > span) { return CROSSTALK_HDL_ERR_IMG_RELOC_BLK; }
+        if (tag == (uint64_t)CROSSTALK_HDL_IMG_DT_NULL) { break; }
 
-        while (pos + (uint32_t)CROSSTALK_HDL_IMG_RELOC_ENTRY_SIZE <= blk_span)
+        switch (tag)
         {
-            uint16_t entry = img_word_rd(base, (uint64_t)rva + at + pos);
-            uint32_t kind = (uint32_t)(entry >> (uint32_t)CROSSTALK_HDL_IMG_RELOC_TYPE_SHIFT);
-            uint32_t off = (uint32_t)(entry & (uint16_t)CROSSTALK_HDL_IMG_RELOC_OFF_MASK);
+            case CROSSTALK_HDL_IMG_DT_NEEDED:
+                return CROSSTALK_HDL_ERR_IMG_IMPORT;
+            case CROSSTALK_HDL_IMG_DT_REL:
+                return CROSSTALK_HDL_ERR_IMG_RELOC;
+            case CROSSTALK_HDL_IMG_DT_HASH:
+                out->hash = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_SYMTAB:
+                out->sym = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_STRTAB:
+                out->str = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_STRSZ:
+                out->str_span = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_RELA:
+                out->rela = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_RELASZ:
+                out->rela_span = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_JMPREL:
+                out->plt = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_PLTRELSZ:
+                out->plt_span = val;
+                break;
+            case CROSSTALK_HDL_IMG_DT_RELAENT:
+                if (val != (uint64_t)CROSSTALK_HDL_IMG_RELA_SIZE) { return CROSSTALK_HDL_ERR_IMG_RELOC; }
 
-            if (kind == (uint32_t)CROSSTALK_HDL_IMG_RELOC_DIR64)
-            {
-                uint64_t slot = (uint64_t)blk_rva + off;
+                break;
+            case CROSSTALK_HDL_IMG_DT_SYMENT:
+                if (val != (uint64_t)CROSSTALK_HDL_IMG_SYM_SIZE) { return CROSSTALK_HDL_ERR_IMG_FORM; }
 
-                img_qword_wr(base, slot, img_qword_rd(base, slot) + delta);
-                *out = *out + (uint64_t)CROSSTALK_HDL_IMG_STEP;
-            }
-            else if (kind != (uint32_t)CROSSTALK_HDL_IMG_RELOC_ABS) { return CROSSTALK_HDL_ERR_IMG_RELOC; }
+                break;
+            case CROSSTALK_HDL_IMG_DT_PLTREL:
+                if (val != (uint64_t)CROSSTALK_HDL_IMG_DT_RELA) { return CROSSTALK_HDL_ERR_IMG_RELOC; }
 
-            pos = pos + (uint32_t)CROSSTALK_HDL_IMG_RELOC_ENTRY_SIZE;
+                break;
+            default:
+                break;
         }
-
-        at = at + blk_span;
     }
 
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *pe, uint64_t span, crosstalk_hdl_img_t *out)
+static uint32_t img_rela_apply(const crosstalk_hdl_img_t *img, uint64_t tbl, uint64_t tbl_span, uint64_t *fixups)
 {
+    uint64_t at = 0;
+
+    if (LDG_UNLIKELY(img == 0x0 || fixups == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (tbl_span == (uint64_t)CROSSTALK_HDL_IMG_NONE) { return LDG_ERR_AOK; }
+
+    if (img_range_is(tbl, tbl_span, img->span) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_RELOC; }
+
+    for (at = 0; at + (uint64_t)CROSSTALK_HDL_IMG_RELA_SIZE <= tbl_span; at = at + (uint64_t)CROSSTALK_HDL_IMG_RELA_SIZE)
+    {
+        uint64_t entry = tbl + at;
+        uint64_t slot = img_qword_rd(img->base, entry);
+        uint64_t info = img_qword_rd(img->base, entry + (uint64_t)CROSSTALK_HDL_IMG_RELA_OFF_INFO);
+        uint64_t addend = img_qword_rd(img->base, entry + (uint64_t)CROSSTALK_HDL_IMG_RELA_OFF_ADDEND);
+        uint64_t kind = info & CROSSTALK_HDL_IMG_RELA_KIND_MASK;
+        uint64_t sym = info >> (uint64_t)CROSSTALK_HDL_IMG_RELA_SYM_SHIFT;
+        uint64_t val = 0;
+
+        if (kind == (uint64_t)CROSSTALK_HDL_IMG_R_NONE) { continue; }
+
+        if (img_range_is(slot, (uint64_t)CROSSTALK_HDL_IMG_QWORD_SIZE, img->span) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_RELOC; }
+
+        if (kind == (uint64_t)CROSSTALK_HDL_IMG_R_RELATIVE) { val = (uint64_t)(uintptr_t)img->base + addend; }
+        else if (kind == (uint64_t)CROSSTALK_HDL_IMG_R_64 || kind == (uint64_t)CROSSTALK_HDL_IMG_R_GLOB_DAT || kind == (uint64_t)CROSSTALK_HDL_IMG_R_JMP_SLOT)
+        {
+            uint64_t ent = img->sym_rva + sym * (uint64_t)CROSSTALK_HDL_IMG_SYM_SIZE;
+
+            if (sym >= (uint64_t)img->sym_cunt) { return CROSSTALK_HDL_ERR_IMG_SYM; }
+
+            if (img_word_rd(img->base, ent + (uint64_t)CROSSTALK_HDL_IMG_SYM_OFF_SECT) == (uint16_t)CROSSTALK_HDL_IMG_SYM_SECT_UNDEF) { return CROSSTALK_HDL_ERR_IMG_IMPORT; }
+
+            val = (uint64_t)(uintptr_t)img->base + img_qword_rd(img->base, ent + (uint64_t)CROSSTALK_HDL_IMG_SYM_OFF_VAL) + addend;
+        }
+        else { return CROSSTALK_HDL_ERR_IMG_RELOC; }
+
+        img_qword_wr(img->base, slot, val);
+        *fixups = *fixups + (uint64_t)CROSSTALK_HDL_IMG_STEP;
+    }
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hdl_img_t *out)
+{
+    img_dyn_t dyn = LDG_STRUCT_ZERO_INIT;
     ldg_byte_t *base = 0x0;
-    uint64_t nt = 0;
-    uint64_t opt = 0;
-    uint64_t sect = 0;
+    uint64_t ph = 0;
     uint64_t want = 0;
-    uint64_t link_base = 0;
+    uint64_t dyn_rva = 0;
+    uint64_t dyn_span = 0;
     uint64_t fixups = 0;
-    uint64_t dir = 0;
-    uint32_t hdr_span = 0;
-    uint32_t dir_cunt = 0;
-    uint32_t sect_cunt = 0;
+    uint32_t ph_cunt = 0;
+    uint32_t seg_cunt = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
+    uint8_t dyn_found = LDG_TRUTH_FALSE;
 
-    if (LDG_UNLIKELY(pe == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(raw == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     memset(out, 0x0, sizeof(*out));
 
-    if (span < (uint64_t)CROSSTALK_HDL_IMG_OFF_LFANEW + (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE) { return CROSSTALK_HDL_ERR_IMG_TRUNC; }
+    if (span < (uint64_t)CROSSTALK_HDL_IMG_HDR_SIZE) { return CROSSTALK_HDL_ERR_IMG_TRUNC; }
 
-    if (img_word_rd(pe, 0x0) != (uint16_t)CROSSTALK_HDL_IMG_DOS_MAGIC) { return CROSSTALK_HDL_ERR_IMG_MAGIC; }
+    if (img_dword_rd(raw, 0x0) != (uint32_t)CROSSTALK_HDL_IMG_ELF_MAGIC) { return CROSSTALK_HDL_ERR_IMG_MAGIC; }
 
-    nt = (uint64_t)img_dword_rd(pe, (uint64_t)CROSSTALK_HDL_IMG_OFF_LFANEW);
-    if (nt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_DIR > span) { return CROSSTALK_HDL_ERR_IMG_TRUNC; }
+    if (raw[CROSSTALK_HDL_IMG_OFF_CLASS] != (ldg_byte_t)CROSSTALK_HDL_IMG_ELF_CLASS_64 || raw[CROSSTALK_HDL_IMG_OFF_DATA] != (ldg_byte_t)CROSSTALK_HDL_IMG_ELF_DATA_LSB) { return CROSSTALK_HDL_ERR_IMG_FORM; }
 
-    if (img_dword_rd(pe, nt) != (uint32_t)CROSSTALK_HDL_IMG_NT_MAGIC) { return CROSSTALK_HDL_ERR_IMG_MAGIC; }
+    if (img_word_rd(raw, (uint64_t)CROSSTALK_HDL_IMG_OFF_TYPE) != (uint16_t)CROSSTALK_HDL_IMG_ELF_TYPE_DYN) { return CROSSTALK_HDL_ERR_IMG_FORM; }
 
-    if (img_word_rd(pe, nt + (uint64_t)CROSSTALK_HDL_IMG_OFF_MACHINE) != (uint16_t)CROSSTALK_HDL_IMG_MACHINE_AMD64) { return CROSSTALK_HDL_ERR_IMG_MACHINE; }
+    if (img_word_rd(raw, (uint64_t)CROSSTALK_HDL_IMG_OFF_MACHINE) != (uint16_t)CROSSTALK_HDL_IMG_ELF_MACHINE_X86_64) { return CROSSTALK_HDL_ERR_IMG_MACHINE; }
 
-    opt = nt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT;
-    dir = opt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_DIR;
+    ph = img_qword_rd(raw, (uint64_t)CROSSTALK_HDL_IMG_OFF_PH);
+    ph_cunt = (uint32_t)img_word_rd(raw, (uint64_t)CROSSTALK_HDL_IMG_OFF_PH_CUNT);
 
-    if (img_word_rd(pe, opt) != (uint16_t)CROSSTALK_HDL_IMG_OPT_MAGIC) { return CROSSTALK_HDL_ERR_IMG_FORM; }
+    if (img_word_rd(raw, (uint64_t)CROSSTALK_HDL_IMG_OFF_PH_SIZE) != (uint16_t)CROSSTALK_HDL_IMG_PH_SIZE || ph_cunt == (uint32_t)CROSSTALK_HDL_IMG_NONE) { return CROSSTALK_HDL_ERR_IMG_FORM; }
 
-    sect_cunt = (uint32_t)img_word_rd(pe, nt + (uint64_t)CROSSTALK_HDL_IMG_OFF_SECT_CUNT);
-    want = (uint64_t)img_dword_rd(pe, opt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_SPAN);
-    hdr_span = img_dword_rd(pe, opt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_HDR_SPAN);
-    link_base = img_qword_rd(pe, opt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_BASE);
-    dir_cunt = img_dword_rd(pe, opt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_DIR_CUNT);
+    if (img_range_is(ph, (uint64_t)ph_cunt * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE, span) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_TRUNC; }
 
-    if (want == 0 || hdr_span == 0 || (uint64_t)hdr_span > span) { return CROSSTALK_HDL_ERR_IMG_FORM_SPAN; }
+    for (idx = 0; idx < ph_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
+    {
+        uint64_t entry = ph + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE;
+        uint32_t kind = img_dword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_TYPE);
+        uint64_t file = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE);
+        uint64_t vaddr = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_VADDR);
+        uint64_t file_span = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE_SPAN);
+        uint64_t mem_span = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_MEM_SPAN);
 
-    if (dir_cunt <= (uint32_t)CROSSTALK_HDL_IMG_DIR_RELOC) { return CROSSTALK_HDL_ERR_IMG_FORM_DIR; }
+        if (kind == (uint32_t)CROSSTALK_HDL_IMG_PT_TLS) { return CROSSTALK_HDL_ERR_IMG_TLS; }
 
-    if (img_dword_rd(pe, dir + (uint64_t)CROSSTALK_HDL_IMG_DIR_IMPORT * (uint64_t)CROSSTALK_HDL_IMG_DIR_ENTRY_SIZE) != 0) { return CROSSTALK_HDL_ERR_IMG_IMPORT; }
+        if (kind == (uint32_t)CROSSTALK_HDL_IMG_PT_INTERP) { return CROSSTALK_HDL_ERR_IMG_IMPORT; }
 
-    if (dir_cunt > (uint32_t)CROSSTALK_HDL_IMG_DIR_TLS && img_dword_rd(pe, dir + (uint64_t)CROSSTALK_HDL_IMG_DIR_TLS * (uint64_t)CROSSTALK_HDL_IMG_DIR_ENTRY_SIZE) != 0) { return CROSSTALK_HDL_ERR_IMG_TLS; }
+        if (kind == (uint32_t)CROSSTALK_HDL_IMG_PT_DYNAMIC)
+        {
+            dyn_rva = vaddr;
+            dyn_span = mem_span;
+            dyn_found = LDG_TRUTH_TRUE;
+
+            continue;
+        }
+
+        if (kind != (uint32_t)CROSSTALK_HDL_IMG_PT_LD) { continue; }
+
+        if (file_span > mem_span || img_range_is(file, file_span, span) != LDG_TRUTH_TRUE || vaddr > UINT64_MAX - mem_span) { return CROSSTALK_HDL_ERR_IMG_SECT; }
+
+        if (vaddr + mem_span > want) { want = vaddr + mem_span; }
+
+        seg_cunt = seg_cunt + (uint32_t)CROSSTALK_HDL_IMG_STEP;
+    }
+
+    if (seg_cunt == (uint32_t)CROSSTALK_HDL_IMG_NONE || want == (uint64_t)CROSSTALK_HDL_IMG_NONE || want > UINT64_MAX - CROSSTALK_HDL_IMG_PAGE_MASK) { return CROSSTALK_HDL_ERR_IMG_FORM_SPAN; }
+
+    if (dyn_found != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_FORM_DIR; }
+
+    want = (want + CROSSTALK_HDL_IMG_PAGE_MASK) & ~CROSSTALK_HDL_IMG_PAGE_MASK;
 
     ret = img_pages_take(want, &base);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    memcpy(base, pe, (uint64_t)hdr_span);
-
-    sect = opt + (uint64_t)img_word_rd(pe, nt + (uint64_t)CROSSTALK_HDL_IMG_OFF_OPT_SIZE);
-
-    for (idx = 0; idx < sect_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
+    for (idx = 0; idx < ph_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
     {
-        uint64_t entry = sect + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_SECT_SIZE;
-        uint32_t vaddr = 0;
-        uint32_t rspan = 0;
-        uint32_t raddr = 0;
+        uint64_t entry = ph + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE;
+        uint64_t file_span = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE_SPAN);
 
-        if (entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_SIZE > span) { ret = CROSSTALK_HDL_ERR_IMG_SECT; break; }
+        if (img_dword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_TYPE) != (uint32_t)CROSSTALK_HDL_IMG_PT_LD || file_span == (uint64_t)CROSSTALK_HDL_IMG_NONE) { continue; }
 
-        vaddr = img_dword_rd(pe, entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_OFF_VADDR);
-        rspan = img_dword_rd(pe, entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_OFF_RSPAN);
-        raddr = img_dword_rd(pe, entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_OFF_RADDR);
-
-        if ((uint64_t)vaddr + rspan > want || (uint64_t)raddr + rspan > span) { ret = CROSSTALK_HDL_ERR_IMG_SECT; break; }
-
-        if (rspan != 0) { memcpy(base + vaddr, pe + raddr, (uint64_t)rspan); }
-    }
-
-    if (ret == LDG_ERR_AOK)
-    {
-        uint32_t reloc_rva = img_dword_rd(pe, dir + (uint64_t)CROSSTALK_HDL_IMG_DIR_RELOC * (uint64_t)CROSSTALK_HDL_IMG_DIR_ENTRY_SIZE);
-        uint32_t reloc_span = img_dword_rd(pe, dir + (uint64_t)CROSSTALK_HDL_IMG_DIR_RELOC * (uint64_t)CROSSTALK_HDL_IMG_DIR_ENTRY_SIZE + (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE);
-
-        ret = img_reloc_apply(base, reloc_rva, reloc_span, (uint64_t)base - link_base, &fixups);
-
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "img: relocs missing; link base: 0x%X64; load base: %p; reloc rva: %u32; reloc span: %u32", link_base, (void *)base, reloc_rva, reloc_span); }
-    }
-
-    for (idx = 0; ret == LDG_ERR_AOK && idx < sect_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
-    {
-        uint64_t entry = sect + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_SECT_SIZE;
-        uint32_t vaddr = img_dword_rd(pe, entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_OFF_VADDR);
-        uint32_t vspan = img_dword_rd(pe, entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_OFF_VSPAN);
-        uint32_t flags = img_dword_rd(pe, entry + (uint64_t)CROSSTALK_HDL_IMG_SECT_OFF_FLAGS);
-
-        if (vspan == 0) { continue; }
-
-        ret = img_pages_protect(base + vaddr, (uint64_t)vspan, flags);
-    }
-
-    if (ret != LDG_ERR_AOK)
-    {
-        if (img_pages_drop(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
-
-        return ret;
+        memcpy(base + img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_VADDR), raw + img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE), file_span);
     }
 
     out->base = base;
     out->span = want;
-    out->exp_rva = img_dword_rd(pe, dir + (uint64_t)CROSSTALK_HDL_IMG_DIR_EXPORT * (uint64_t)CROSSTALK_HDL_IMG_DIR_ENTRY_SIZE);
-    out->exp_span = img_dword_rd(pe, dir + (uint64_t)CROSSTALK_HDL_IMG_DIR_EXPORT * (uint64_t)CROSSTALK_HDL_IMG_DIR_ENTRY_SIZE + (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE);
+
+    ret = img_dyn_parse(base, want, dyn_rva, dyn_span, &dyn);
+
+    if (ret == LDG_ERR_AOK && dyn.hash != (uint64_t)CROSSTALK_HDL_IMG_NONE) { if (img_range_is(dyn.hash, (uint64_t)CROSSTALK_HDL_IMG_HASH_OFF_CHAIN_CUNT + (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE, want) != LDG_TRUTH_TRUE) { ret = CROSSTALK_HDL_ERR_IMG_FORM_DIR; }
+        else { out->sym_cunt = img_dword_rd(base, dyn.hash + (uint64_t)CROSSTALK_HDL_IMG_HASH_OFF_CHAIN_CUNT); } }
+
+    if (ret == LDG_ERR_AOK && (img_range_is(dyn.sym, (uint64_t)out->sym_cunt * (uint64_t)CROSSTALK_HDL_IMG_SYM_SIZE, want) != LDG_TRUTH_TRUE || img_range_is(dyn.str, dyn.str_span, want) != LDG_TRUTH_TRUE)) { ret = CROSSTALK_HDL_ERR_IMG_FORM_DIR; }
+
+    if (ret == LDG_ERR_AOK)
+    {
+        out->sym_rva = dyn.sym;
+        out->str_rva = dyn.str;
+        out->str_span = dyn.str_span;
+
+        ret = img_rela_apply(out, dyn.rela, dyn.rela_span, &fixups);
+    }
+
+    if (ret == LDG_ERR_AOK) { ret = img_rela_apply(out, dyn.plt, dyn.plt_span, &fixups); }
+
+    for (idx = 0; ret == LDG_ERR_AOK && idx < ph_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
+    {
+        uint64_t entry = ph + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE;
+        uint64_t vaddr = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_VADDR);
+        uint64_t mem_span = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_MEM_SPAN);
+        uint64_t lo = vaddr & ~CROSSTALK_HDL_IMG_PAGE_MASK;
+        uint64_t hi = (vaddr + mem_span + CROSSTALK_HDL_IMG_PAGE_MASK) & ~CROSSTALK_HDL_IMG_PAGE_MASK;
+
+        if (img_dword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_TYPE) != (uint32_t)CROSSTALK_HDL_IMG_PT_LD || mem_span == (uint64_t)CROSSTALK_HDL_IMG_NONE) { continue; }
+
+        ret = img_pages_protect(base + lo, hi - lo, img_dword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FLAGS));
+    }
+
+    if (ret != LDG_ERR_AOK)
+    {
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "img: load refused; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64; err: %u32", (void *)base, want, seg_cunt, out->sym_cunt, fixups, ret);
+
+        if (img_pages_drop(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
+
+        memset(out, 0x0, sizeof(*out));
+
+        return ret;
+    }
+
     out->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "img: mapped; base: %p; span: %u64; sections: %u32; exports: %u32 bytes; link base: 0x%X64; fixups: %u64", (void *)base, want, sect_cunt, out->exp_span, link_base, fixups);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "img: mapped; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64", (void *)base, want, seg_cunt, out->sym_cunt, fixups);
 
     return LDG_ERR_AOK;
 }
@@ -282,10 +391,7 @@ uint32_t crosstalk_hdl_img_unld(crosstalk_hdl_img_t *img)
 
 uint32_t crosstalk_hdl_img_sym_get(const crosstalk_hdl_img_t *img, const char *name, void **out)
 {
-    uint32_t func_tbl = 0;
-    uint32_t name_tbl = 0;
-    uint32_t ord_tbl = 0;
-    uint32_t name_cunt = 0;
+    uint64_t name_span = 0;
     uint32_t idx = 0;
 
     if (LDG_UNLIKELY(img == 0x0 || name == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -294,21 +400,25 @@ uint32_t crosstalk_hdl_img_sym_get(const crosstalk_hdl_img_t *img, const char *n
 
     if (img->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    if (img->exp_rva == 0 || img->exp_span == 0) { return CROSSTALK_HDL_ERR_IMG_SYM; }
+    if (img->sym_cunt == (uint32_t)CROSSTALK_HDL_IMG_NONE) { return CROSSTALK_HDL_ERR_IMG_SYM; }
 
-    name_cunt = img_dword_rd(img->base, (uint64_t)img->exp_rva + (uint64_t)CROSSTALK_HDL_IMG_EXP_OFF_NAME_CUNT);
-    func_tbl = img_dword_rd(img->base, (uint64_t)img->exp_rva + (uint64_t)CROSSTALK_HDL_IMG_EXP_OFF_FUNC_TBL);
-    name_tbl = img_dword_rd(img->base, (uint64_t)img->exp_rva + (uint64_t)CROSSTALK_HDL_IMG_EXP_OFF_NAME_TBL);
-    ord_tbl = img_dword_rd(img->base, (uint64_t)img->exp_rva + (uint64_t)CROSSTALK_HDL_IMG_EXP_OFF_ORD_TBL);
+    name_span = (uint64_t)strlen(name) + (uint64_t)LDG_STR_TERM_SIZE;
 
-    for (idx = 0; idx < name_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
+    for (idx = 0; idx < img->sym_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
     {
-        uint32_t name_rva = img_dword_rd(img->base, (uint64_t)name_tbl + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE);
-        uint16_t ord = img_word_rd(img->base, (uint64_t)ord_tbl + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_RELOC_ENTRY_SIZE);
+        uint64_t ent = img->sym_rva + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_SYM_SIZE;
+        uint64_t name_off = (uint64_t)img_dword_rd(img->base, ent + (uint64_t)CROSSTALK_HDL_IMG_SYM_OFF_NAME);
+        uint64_t val = img_qword_rd(img->base, ent + (uint64_t)CROSSTALK_HDL_IMG_SYM_OFF_VAL);
 
-        if (strcmp((const char *)img->base + name_rva, name) != 0) { continue; }
+        if (img_word_rd(img->base, ent + (uint64_t)CROSSTALK_HDL_IMG_SYM_OFF_SECT) == (uint16_t)CROSSTALK_HDL_IMG_SYM_SECT_UNDEF) { continue; }
 
-        *out = (void *)(img->base + img_dword_rd(img->base, (uint64_t)func_tbl + (uint64_t)ord * (uint64_t)CROSSTALK_HDL_IMG_DWORD_SIZE));
+        if (img_range_is(name_off, name_span, img->str_span) != LDG_TRUTH_TRUE) { continue; }
+
+        if (memcmp(img->base + img->str_rva + name_off, name, name_span) != CROSSTALK_HDL_IMG_NONE) { continue; }
+
+        if (val >= img->span) { return CROSSTALK_HDL_ERR_IMG_SYM; }
+
+        *out = (void *)(img->base + val);
 
         return LDG_ERR_AOK;
     }

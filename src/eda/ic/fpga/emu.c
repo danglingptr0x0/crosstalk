@@ -17,7 +17,6 @@
 
 #include "core/log.h"
 #include "eda/ic/fpga/emu.h"
-#include "eda/ic/fpga/dangemu_rva.h"
 
 #define EMU_DISK_BKP_FMT "%s.%" PRIu64 ".bkp"
 
@@ -34,7 +33,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_init(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
     ret = ldg_mem_pool_create((uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_POOL_VAR_SIZE, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, &ctx->pool_backing);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: guest ram refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU mem refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
 
         return ret;
     }
@@ -42,14 +41,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_init(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
     ret = ldg_mem_pool_alloc(ctx->pool_backing, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, (void **)&ctx->pool);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: guest ram alloc refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU mem alloc refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
 
         return ret;
     }
 
     ctx->pool_span = (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: guest ram reserved; bytes: %u64", ctx->pool_span);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: DLU mem reserved; bytes: %u64", ctx->pool_span);
 
     return LDG_ERR_AOK;
 }
@@ -694,7 +693,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_shutdown(crosstalk_eda_ic_fpga_emu_ctx_t *ctx
 
     ret = crosstalk_eda_ic_fpga_emu_detach(ctx);
 
-    if (ctx->pool_backing != 0x0) { if (ldg_mem_pool_destroy(&ctx->pool_backing) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu guest pool destroy failed"); } }
+    if (ctx->pool_backing != 0x0) { if (ldg_mem_pool_destroy(&ctx->pool_backing) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU pool destroy failed"); } }
 
     for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + 0x1)
     {
@@ -774,14 +773,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_rst(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
     {
         if (LDG_IS_POW2(ctx->pool_span) == 0 || ctx->pool_span < (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_POOL_BYTES_MIN || ctx->pool_span > (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "emu: the guest pool is not a legal memory width; bytes: %u64", ctx->pool_span);
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "emu: the DLU pool is not a legal mem width; bytes: %u64", ctx->pool_span);
 
             return CROSSTALK_EDA_IC_FPGA_EMU_ERR_POOL;
         }
 
         ret = ctx->abi.mem_init(ctx->pool, ctx->pool_span, (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: guest pool handed to the emulator; bytes: %u64; ram window top: 0x%X64; err: %u32", ctx->pool_span, (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP, ret);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: DLU pool handed to the emulator; bytes: %u64; mem window top: 0x%X64; err: %u32", ctx->pool_span, (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP, ret);
 
         if (ret != LDG_ERR_AOK) { return CROSSTALK_EDA_IC_FPGA_EMU_ERR_POOL; }
     }
@@ -864,14 +863,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
 
     if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_img_ld(ctx->blob, ctx->blob_span, &ctx->img); }
 
-    if (ret == LDG_ERR_AOK)
-    {
-        static const uint32_t emu_rva[CROSSTALK_HDL_ABI_RVA_CUNT] = {
-            DANGEMU_RVA_HDL_ABI_REV, DANGEMU_RVA_HDL_ABI_INIT, DANGEMU_RVA_HDL_ABI_MEM_INIT, DANGEMU_RVA_HDL_ABI_N_CYCLE, DANGEMU_RVA_HDL_ABI_SERIAL_DRAIN, DANGEMU_RVA_HDL_ABI_CYCLE, DANGEMU_RVA_HDL_ABI_SIG_FIND, DANGEMU_RVA_HDL_ABI_POKE, DANGEMU_RVA_HDL_ABI_PEEK, DANGEMU_RVA_HDL_ABI_MEM_ST, DANGEMU_RVA_HDL_ABI_MEM_LD, DANGEMU_RVA_HDL_ABI_STATE_GET, DANGEMU_RVA_HDL_ABI_TOUCH, DANGEMU_RVA_HDL_ABI_HLT_MASK_SET, DANGEMU_RVA_HDL_ABI_DISK_SET, DANGEMU_RVA_HDL_ABI_DISK_DRIVE_SET, DANGEMU_RVA_HDL_ABI_DISK_BLK_WIDTH_GET, DANGEMU_RVA_HDL_ABI_DISK_DIRTY_IS, DANGEMU_RVA_HDL_ABI_DISK_DIRTY_LO_GET, DANGEMU_RVA_HDL_ABI_DISK_DIRTY_HI_GET, DANGEMU_RVA_HDL_ABI_DISK_DIRTY_CLEAR, DANGEMU_RVA_HDL_ABI_AUDIO_DRAIN, DANGEMU_RVA_HDL_ABI_AUDIO_RATE_GET, DANGEMU_RVA_HDL_ABI_PROF_EN, DANGEMU_RVA_HDL_ABI_BRK_SET, DANGEMU_RVA_HDL_ABI_BRK_SKIP_SET, DANGEMU_RVA_HDL_ABI_BRK_COND_SET, DANGEMU_RVA_HDL_ABI_WATCH_SET, DANGEMU_RVA_HDL_ABI_TIME_SET, DANGEMU_RVA_HDL_ABI_IO_RD, DANGEMU_RVA_HDL_ABI_IO_MAP_GET, DANGEMU_RVA_HDL_ABI_IO_WR, DANGEMU_RVA_HDL_ABI_RELAY_REQ_TAKE, DANGEMU_RVA_HDL_ABI_RELAY_REPLY_PUSH, DANGEMU_RVA_HDL_ABI_RELAY_PAYLOAD_CAP_GET, [CROSSTALK_HDL_ABI_RVA_EPOCH_SET] = DANGEMU_RVA_HDL_ABI_EPOCH_SET, [CROSSTALK_HDL_ABI_RVA_DDU_FRAME_GET] = DANGEMU_RVA_HDL_ABI_DDU_FRAME_GET, [CROSSTALK_HDL_ABI_RVA_NET_DRAIN] = DANGEMU_RVA_HDL_ABI_NET_DRAIN, [CROSSTALK_HDL_ABI_RVA_NET_FEED] = DANGEMU_RVA_HDL_ABI_NET_FEED, [CROSSTALK_HDL_ABI_RVA_DDU_TEXT_GET] = DANGEMU_RVA_HDL_ABI_DDU_TEXT_GET
-        };
-
-        ret = crosstalk_hdl_abi_bind(&ctx->img, emu_rva, (uint32_t)CROSSTALK_HDL_ABI_RVA_CUNT, &ctx->abi);
-    }
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_abi_bind(&ctx->img, 0x0, 0x0, &ctx->abi); }
 
     if (ret == LDG_ERR_AOK && ctx->abi.ok != LDG_TRUTH_TRUE) { ret = CROSSTALK_EDA_IC_FPGA_EMU_ERR_BIND; }
 

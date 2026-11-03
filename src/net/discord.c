@@ -18,6 +18,9 @@
 #include "net/discord.h"
 
 #define CROSSTALK_NET_DISCORD_ASSET_LARGE "crosstalk_icon_alpha"
+#define NET_DISCORD_PRESENCE_CUNT_NONE 0U
+#define NET_DISCORD_STR_STEP 1U
+#define NET_DISCORD_STR_ASCII_MAX 0x7FU
 #define CROSSTALK_NET_DISCORD_ASSET_SMALL ""
 #define CROSSTALK_NET_DISCORD_ASSET_LARGE_TEXT "Crosstalk on Steam"
 #define CROSSTALK_NET_DISCORD_WSHOP_URL "https://steamcommunity.com/app/4898790/workshop/"
@@ -135,18 +138,27 @@ static void crosstalk_net_discord_str_make(const char *text, Discord_String *out
 static void crosstalk_net_discord_str_copy(const Discord_String *src, char *dst, uint32_t cap)
 {
     uint64_t len = 0;
+    uint64_t out = 0;
 
     if (LDG_UNLIKELY(!dst || cap == 0)) { return; }
 
-    dst[0] = '\0';
+    dst[0] = LDG_STR_TERM;
 
     if (LDG_UNLIKELY(!src || !src->ptr || (uint64_t)src->size == 0)) { return; }
 
     len = (uint64_t)src->size;
-    if (len >= (uint64_t)cap) { len = (uint64_t)cap - CROSSTALK_NET_DISCORD_CK_OK; }
 
-    memcpy(dst, src->ptr, len);
-    dst[len] = '\0';
+    for (uint64_t at = 0; at < len && out + NET_DISCORD_STR_STEP < (uint64_t)cap; at++)
+    {
+        uint8_t byte = (uint8_t)src->ptr[at];
+
+        if (byte > NET_DISCORD_STR_ASCII_MAX) { continue; }
+
+        dst[out] = (char)byte;
+        out = out + NET_DISCORD_STR_STEP;
+    }
+
+    dst[out] = LDG_STR_TERM;
 }
 
 static uint8_t crosstalk_net_discord_url_safe_is(char ch)
@@ -1987,6 +1999,47 @@ uint32_t crosstalk_net_discord_presence_lobby_set(crosstalk_net_discord_ctx_t *c
     ctx->presence.joinable = (players < players_max) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_net_presence_desc_t *desc)
+{
+    crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)backend_ctx;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || desc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ret = crosstalk_net_discord_presence_activity_set(ctx, desc->state);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    ret = crosstalk_net_discord_presence_music_set(ctx, desc->music);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    ret = crosstalk_net_discord_presence_paused_set(ctx, desc->paused);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    switch (desc->screen)
+    {
+        case CROSSTALK_NET_PRESENCE_SCREEN_LOBBY:
+            return crosstalk_net_discord_presence_lobby_set(ctx, desc->members, desc->members_max, desc->lobby_id);
+        case CROSSTALK_NET_PRESENCE_SCREEN_SANDBOX:
+            return crosstalk_net_discord_presence_sandbox_set(ctx, desc->members, NET_DISCORD_PRESENCE_CUNT_NONE, NET_DISCORD_PRESENCE_CUNT_NONE);
+        case CROSSTALK_NET_PRESENCE_SCREEN_LD:
+            return crosstalk_net_discord_presence_ld_set(ctx);
+        case CROSSTALK_NET_PRESENCE_SCREEN_BROWSE:
+            return crosstalk_net_discord_presence_browse_set(ctx);
+        case CROSSTALK_NET_PRESENCE_SCREEN_NEWDESIGN:
+            return crosstalk_net_discord_presence_menu_set(ctx, CROSSTALK_NET_DISCORD_TEXT_MENU_NEW);
+        case CROSSTALK_NET_PRESENCE_SCREEN_NEWPROJ:
+            return crosstalk_net_discord_presence_newproj_set(ctx, desc->proj_reverse == LDG_TRUTH_TRUE ? CROSSTALK_NET_DISCORD_TEXT_PROJ_REVERSE : CROSSTALK_NET_DISCORD_TEXT_PROJ_RTL);
+        case CROSSTALK_NET_PRESENCE_SCREEN_EXTRAS:
+            return crosstalk_net_discord_presence_extras_set(ctx);
+        case CROSSTALK_NET_PRESENCE_SCREEN_CREDITS:
+            return crosstalk_net_discord_presence_credits_set(ctx);
+        case CROSSTALK_NET_PRESENCE_SCREEN_SETTINGS:
+            return crosstalk_net_discord_presence_menu_set(ctx, CROSSTALK_NET_DISCORD_TEXT_MENU_SETTINGS);
+        default:
+            return crosstalk_net_discord_presence_menu_set(ctx, CROSSTALK_NET_DISCORD_TEXT_MENU_MAIN);
+    }
 }
 
 uint32_t crosstalk_net_discord_presence_clear(crosstalk_net_discord_ctx_t *ctx)

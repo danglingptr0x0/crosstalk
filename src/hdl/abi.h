@@ -157,46 +157,48 @@
 
 #define CROSSTALK_HDL_ABI_SIG_NONE 4294967295U
 
-typedef void (*crosstalk_hdl_abi_init_cb)(void);
-typedef uint32_t (*crosstalk_hdl_abi_mem_init_cb)(void *ram, uint64_t len, uint64_t ram_limit);
-typedef uint32_t (*crosstalk_hdl_abi_n_cycle_cb)(uint32_t clk_sig, uint64_t cunt, uint64_t *ran);
-typedef uint32_t (*crosstalk_hdl_abi_serial_drain_cb)(uint8_t *dst, uint64_t cap, uint64_t *got);
-typedef uint32_t (*crosstalk_hdl_abi_rev_cb)(void);
-typedef uint32_t (*crosstalk_hdl_abi_cycle_cb)(uint32_t clk_sig);
-typedef uint32_t (*crosstalk_hdl_abi_sig_find_cb)(const char *name);
-typedef void (*crosstalk_hdl_abi_poke_cb)(uint32_t sig, uint64_t val);
-typedef uint64_t (*crosstalk_hdl_abi_peek_cb)(uint32_t sig);
-typedef void (*crosstalk_hdl_abi_mem_st_cb)(uint32_t sig, uint64_t addr, uint64_t val);
-typedef uint64_t (*crosstalk_hdl_abi_mem_ld_cb)(uint32_t sig, uint64_t addr);
-typedef uint32_t (*crosstalk_hdl_abi_state_cb)(uint32_t kind, uint64_t **out_base, uint32_t *out_cunt);
-typedef void (*crosstalk_hdl_abi_touch_cb)(void);
-typedef uint32_t (*crosstalk_hdl_abi_hlt_mask_set_cb)(uint32_t mask);
-typedef uint32_t (*crosstalk_hdl_abi_disk_set_cb)(void *media, uint64_t len);
-typedef uint32_t (*crosstalk_hdl_abi_disk_drive_set_cb)(uint32_t drive, void *media, uint64_t len);
-typedef uint32_t (*crosstalk_hdl_abi_disk_blk_width_get_cb)(void);
-typedef uint8_t (*crosstalk_hdl_abi_disk_dirty_is_cb)(uint32_t drive);
-typedef uint64_t (*crosstalk_hdl_abi_disk_dirty_lo_get_cb)(uint32_t drive);
-typedef uint64_t (*crosstalk_hdl_abi_disk_dirty_hi_get_cb)(uint32_t drive);
-typedef uint32_t (*crosstalk_hdl_abi_disk_dirty_clear_cb)(uint32_t drive);
-typedef uint32_t (*crosstalk_hdl_abi_audio_drain_cb)(uint8_t *dst, uint64_t cap, uint64_t *got);
-typedef uint32_t (*crosstalk_hdl_abi_audio_rate_get_cb)(void);
-typedef uint32_t (*crosstalk_hdl_abi_net_drain_cb)(uint8_t *dst, uint64_t cap, uint64_t *got);
-typedef uint32_t (*crosstalk_hdl_abi_net_feed_cb)(const uint8_t *src, uint64_t len, uint64_t *taken);
-typedef uint32_t (*crosstalk_hdl_abi_prof_en_cb)(uint32_t on);
-typedef uint32_t (*crosstalk_hdl_abi_brk_set_cb)(uint64_t addr, uint8_t on);
-typedef uint32_t (*crosstalk_hdl_abi_brk_skip_set_cb)(uint32_t cunt);
-typedef uint32_t (*crosstalk_hdl_abi_brk_cond_set_cb)(uint8_t reg, uint64_t min);
-typedef uint32_t (*crosstalk_hdl_abi_watch_set_cb)(uint64_t lo, uint64_t hi, uint8_t on);
-typedef uint32_t (*crosstalk_hdl_abi_io_rd_cb)(uint64_t addr, uint64_t *out);
-typedef uint32_t (*crosstalk_hdl_abi_io_map_get_cb)(uint32_t idx, uint64_t *out_base, uint64_t *out_span, const char **out_name);
-typedef uint32_t (*crosstalk_hdl_abi_io_wr_cb)(uint64_t addr, uint64_t val);
-typedef uint32_t (*crosstalk_hdl_abi_time_set_cb)(uint64_t ns);
-typedef uint32_t (*crosstalk_hdl_abi_epoch_set_cb)(uint64_t sec);
-typedef uint32_t (*crosstalk_hdl_abi_ddu_frame_get_cb)(uint8_t *dst, uint64_t cap, uint32_t *out_w, uint32_t *out_h);
-typedef uint32_t (*crosstalk_hdl_abi_ddu_text_get_cb)(uint8_t *dst, uint64_t cap, uint32_t *out_cols, uint32_t *out_rows);
-typedef uint32_t (*crosstalk_hdl_abi_relay_req_take_cb)(uint8_t *dst, uint32_t cap, uint32_t *got);
-typedef uint32_t (*crosstalk_hdl_abi_relay_reply_push_cb)(const uint8_t *payload, uint32_t len);
-typedef uint32_t (*crosstalk_hdl_abi_relay_payload_cap_get_cb)(void);
+#define CROSSTALK_HDL_ABI_CC __attribute__((sysv_abi))
+
+typedef void (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_init_cb)(void);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_mem_init_cb)(void *ram, uint64_t len, uint64_t ram_limit);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_n_cycle_cb)(uint32_t clk_sig, uint64_t cunt, uint64_t *ran);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_serial_drain_cb)(uint8_t *dst, uint64_t cap, uint64_t *got);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_rev_cb)(void);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_cycle_cb)(uint32_t clk_sig);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_sig_find_cb)(const char *name);
+typedef void (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_poke_cb)(uint32_t sig, uint64_t val);
+typedef uint64_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_peek_cb)(uint32_t sig);
+typedef void (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_mem_st_cb)(uint32_t sig, uint64_t addr, uint64_t val);
+typedef uint64_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_mem_ld_cb)(uint32_t sig, uint64_t addr);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_state_cb)(uint32_t kind, uint64_t **out_base, uint32_t *out_cunt);
+typedef void (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_touch_cb)(void);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_hlt_mask_set_cb)(uint32_t mask);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_set_cb)(void *media, uint64_t len);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_drive_set_cb)(uint32_t drive, void *media, uint64_t len);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_blk_width_get_cb)(void);
+typedef uint8_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_dirty_is_cb)(uint32_t drive);
+typedef uint64_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_dirty_lo_get_cb)(uint32_t drive);
+typedef uint64_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_dirty_hi_get_cb)(uint32_t drive);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_disk_dirty_clear_cb)(uint32_t drive);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_audio_drain_cb)(uint8_t *dst, uint64_t cap, uint64_t *got);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_audio_rate_get_cb)(void);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_net_drain_cb)(uint8_t *dst, uint64_t cap, uint64_t *got);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_net_feed_cb)(const uint8_t *src, uint64_t len, uint64_t *taken);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_prof_en_cb)(uint32_t on);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_brk_set_cb)(uint64_t addr, uint8_t on);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_brk_skip_set_cb)(uint32_t cunt);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_brk_cond_set_cb)(uint8_t reg, uint64_t min);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_watch_set_cb)(uint64_t lo, uint64_t hi, uint8_t on);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_io_rd_cb)(uint64_t addr, uint64_t *out);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_io_map_get_cb)(uint32_t idx, uint64_t *out_base, uint64_t *out_span, const char **out_name);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_io_wr_cb)(uint64_t addr, uint64_t val);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_time_set_cb)(uint64_t ns);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_epoch_set_cb)(uint64_t sec);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_ddu_frame_get_cb)(uint8_t *dst, uint64_t cap, uint32_t *out_w, uint32_t *out_h);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_ddu_text_get_cb)(uint8_t *dst, uint64_t cap, uint32_t *out_cols, uint32_t *out_rows);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_relay_req_take_cb)(uint8_t *dst, uint32_t cap, uint32_t *got);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_relay_reply_push_cb)(const uint8_t *payload, uint32_t len);
+typedef uint32_t (CROSSTALK_HDL_ABI_CC *crosstalk_hdl_abi_relay_payload_cap_get_cb)(void);
 
 typedef enum crosstalk_hdl_abi_rva
 {

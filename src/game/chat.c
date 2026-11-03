@@ -29,6 +29,7 @@
 #define CROSSTALK_GAME_CHAT_INPUT_MARK_W 2
 #define CROSSTALK_GAME_CHAT_CURSOR_W 1
 #define CROSSTALK_GAME_CHAT_MSG_FMT "%.63s: %.239s"
+#define CROSSTALK_GAME_CHAT_NAME_FMT "%.63s:"
 #define CROSSTALK_GAME_CHAT_SEL_FIRST 0
 
 static const char* crosstalk_game_chat_group_name_get(uint8_t group)
@@ -204,7 +205,7 @@ uint64_t crosstalk_game_chat_peer_get(const crosstalk_game_chat_ctx_t *ctx, uint
     return ctx->conv[idx].peer_id;
 }
 
-uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *conv_name, const char *name, const char *text)
+uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *conv_name, const char *name, const char *text, uint8_t self)
 {
     crosstalk_game_chat_conv_t *conv = 0x0;
     uint32_t conv_idx = 0;
@@ -227,6 +228,8 @@ uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group,
 
     ret = ldg_str_rbrcpy(conv->msg[slot].text, text, (uint64_t)sizeof(conv->msg[slot].text));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
+
+    conv->msg[slot].self = self == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     if (ctx->win.open == LDG_TRUTH_FALSE || ctx->group != group || ctx->conv_sel[group] != conv_idx)
     {
@@ -317,10 +320,16 @@ static LDG_NOINLINE uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_
 {
     char line[CROSSTALK_GAME_CHAT_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t self_fg = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t peer_fg = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t pane = LDG_STRUCT_ZERO_INIT;
     uint32_t ret = 0;
 
     ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, &fg);
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_SELF_RGBA, &self_fg); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_ACCENT_RGBA, &peer_fg); }
+
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &pane); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -331,17 +340,36 @@ static LDG_NOINLINE uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_
         uint32_t seg_len[CROSSTALK_GAME_CHAT_WRAP_CAP] = LDG_ARR_ZERO_INIT;
         uint32_t seg_cunt = 0;
         uint32_t slot = (conv->hd + idx) % CROSSTALK_GAME_CHAT_HISTORY_CAP;
+        int32_t name_w = 0;
+        uint32_t name_end = 0;
+        const ldg_term_render_color_t *name_fg = conv->msg[slot].self == LDG_TRUTH_TRUE ? &self_fg : &peer_fg;
 
-        snprintf(line, sizeof(line), CROSSTALK_GAME_CHAT_MSG_FMT, conv->msg[slot].name, conv->msg[slot].text);
+        name_w = snprintf(line, sizeof(line), CROSSTALK_GAME_CHAT_NAME_FMT, conv->msg[slot].name);
+        if (name_w < 0) { return LDG_ERR_STR_FMT; }
+
+        name_end = (uint32_t)name_w;
+
+        if (snprintf(line, sizeof(line), CROSSTALK_GAME_CHAT_MSG_FMT, conv->msg[slot].name, conv->msg[slot].text) < 0) { return LDG_ERR_STR_FMT; }
 
         ret = crosstalk_game_chat_wrap(line, col_cunt, seg_start, seg_len, &seg_cunt);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         for (uint32_t seg = 0; seg < seg_cunt; seg++)
         {
-            if (seg_len[seg] != 0)
+            uint32_t seg_end = seg_start[seg] + seg_len[seg];
+            uint32_t split = seg_start[seg];
+
+            if (split < name_end) { split = seg_end < name_end ? seg_end : name_end; }
+
+            if (split > seg_start[seg])
             {
-                ret = ldg_term_render_text_draw(render, (uint32_t)CROSSTALK_GAME_CHAT_ORIG_COL, *row, line + seg_start[seg], (uint64_t)seg_len[seg], &fg, &pane);
+                ret = ldg_term_render_text_draw(render, (uint32_t)CROSSTALK_GAME_CHAT_ORIG_COL, *row, line + seg_start[seg], (uint64_t)(split - seg_start[seg]), name_fg, &pane);
+                if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+            }
+
+            if (seg_end > split)
+            {
+                ret = ldg_term_render_text_draw(render, (uint32_t)CROSSTALK_GAME_CHAT_ORIG_COL + (split - seg_start[seg]), *row, line + split, (uint64_t)(seg_end - split), &fg, &pane);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
 

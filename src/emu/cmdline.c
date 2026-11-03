@@ -119,19 +119,19 @@ uint32_t crosstalk_emu_cmdline_usage_put(void)
 {
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: usage: dangcsaemu [--core <core.bin>] [options]");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --core <path>; emulator core to run");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --memld <path>[@<word off>]; image stored into guest memory at reset; repeatable");
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --memld <path>[@<word off>]; image stored into DLU mem at rst; repeatable");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --prog <path>; the same, at the start of memory");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --disk [N:]<path>; disk image for drive N; repeatable");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --hz <cycles>; operating frequency the guest is paced at");
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --hz <cycles>; operating frequency the DLU is paced at");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --clk <name>; clock signal name; defaults to %s", CROSSTALK_EMU_CLK_SIG_DEFAULT);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --mem <name>; memory signal name; defaults to %s", CROSSTALK_EMU_MEM_SIG_DEFAULT);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --font <path>; console font");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --win <WxH>; window size; defaults to %u32x%u32", (uint32_t)CROSSTALK_EMU_WIN_W_DEFAULT, (uint32_t)CROSSTALK_EMU_WIN_H_DEFAULT);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --gamma <value>; display gamma; %.1f to %.1f", CROSSTALK_EMU_SCREEN_GAMMA_MIN, CROSSTALK_EMU_SCREEN_GAMMA_MAX);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --keys raw|scan; key delivery; defaults to scan");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --net <path>; serial endpoint the guest network bytes move through");
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --net <path>; serial endpoint the program's network bytes move through");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-audio; leave sound off");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-serial; do not mirror guest serial to the log");
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-serial; do not mirror the program's serial to the log");
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-persist; do not write disk images back on exit");
 
     return LDG_ERR_AOK;

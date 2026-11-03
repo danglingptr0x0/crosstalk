@@ -62,6 +62,8 @@
 
 #define CROSSTALK_CORE_TOAST_TEXT_CAP 192
 #define CROSSTALK_CORE_TOAST_SHOW_MS 4000
+#define CROSSTALK_CORE_HUB_SYNC_PERIOD_MS 30000
+#define CROSSTALK_CORE_PRIVACY_STEP 1U
 #define CROSSTALK_CORE_TERM_SLOT 0
 #define CROSSTALK_CORE_TERM_SESH 0
 #define CROSSTALK_CORE_PTY_SETTLE_FRAMES 30
@@ -295,7 +297,7 @@
 #define CROSSTALK_CORE_SERIAL_ACCESS_QUIET_TEXT "the shared serial device went quiet; detached"
 #define CROSSTALK_CORE_MP_HOST_RETRY_CUNT 5
 #define CROSSTALK_CORE_MP_HOST_RETRY_SECS 1.0
-#define CROSSTALK_CORE_MP_HOST_FAIL_TEXT "hosting failed; Steam is still connecting - press host again"
+#define CROSSTALK_CORE_MP_HOST_FAIL_TEXT "hosting failed; Steam is still connecting; pressing host again retries"
 #define CROSSTALK_CORE_PROFILE_START_TOK "start"
 #define CROSSTALK_CORE_PROFILE_END_TOK "end"
 #define CROSSTALK_CORE_PROFILE_RST_TOK "reset"
@@ -682,8 +684,8 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_DISCORD_INVITE_CMD "/invite"
 #define CROSSTALK_CORE_DISCORD_INVITE_TEXT "join my board"
 #define CROSSTALK_CORE_DISCORD_LINK_FAIL_TEXT "linking needs the official Discord client running"
-#define CROSSTALK_CORE_NOTIFY_TITLE_DISCORD "Crosstalk - Discord"
-#define CROSSTALK_CORE_NOTIFY_TITLE_STEAM "Crosstalk - Steam"
+#define CROSSTALK_CORE_NOTIFY_TITLE_DISCORD "Crosstalk: Discord"
+#define CROSSTALK_CORE_NOTIFY_TITLE_STEAM "Crosstalk: Steam"
 #define CROSSTALK_CORE_NOTIFY_TITLE_SESH "Crosstalk"
 #define CROSSTALK_CORE_HUB_OTHER_GAME_TEXT "Playing other game"
 #define CROSSTALK_CORE_MUSIC_NEEDS_NATIVE_TEXT "the in-game player is off; set Music source to Native in the settings"
@@ -710,6 +712,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_PRESENCE_SI_FMT "%" PRIu64 "%s"
 #define CROSSTALK_CORE_PRESENCE_SI_CAP 16
 #define CROSSTALK_CORE_PTY_PRESENCE_TEXT "Pseudoterminalicious"
+#define CROSSTALK_CORE_CHAT_PRESENCE_TEXT "Fraternizing instead of working"
 #define CROSSTALK_CORE_STREAM_PRESENCE_TEXT "Streaming a terminal"
 #define CROSSTALK_CORE_CAST_PRESENCE_FMT "Casting the %.15s to %.31s"
 #define CROSSTALK_CORE_PIPE_PRESENCE_TEXT "Piping to the wire"
@@ -725,6 +728,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_WINDOW_NAME_WSHOP "workshop"
 #define CROSSTALK_CORE_WINDOW_NAME_WSHOP_PUB "workshop publish"
 #define CROSSTALK_CORE_WINDOW_NAME_TERM "terminal"
+#define CROSSTALK_CORE_WINDOW_NAME_HUB "Friends hub"
 #define CROSSTALK_CORE_MUSIC_POOL_WORKERS 1
 #define CROSSTALK_CORE_PERSONA_UNKNOWN "a Steam friend"
 #define CROSSTALK_CORE_NOTIFY_ICO_REL "img/crosstalk.ico"
@@ -809,7 +813,6 @@ typedef struct crosstalk_ctx
     uint8_t libresteam_live;
     uint8_t discord_pudding[4];
     uint64_t join_lobby_pending;
-    uint64_t connect_lobby_prev;
     uint64_t discord_invite_prev;
     crosstalk_game_progression_queue_ctx_t progression_queue;
     uint8_t progression_queue_ok;
@@ -833,6 +836,9 @@ typedef struct crosstalk_ctx
     uint64_t presence_rate;
     uint64_t presence_cyc;
     uint64_t presence_num_next_ms;
+    uint64_t hub_sync_next_ms;
+    uint8_t privacy_on;
+    uint8_t privacy_pudding[7];
     crosstalk_game_menu_nav_t menu_nav;
     crosstalk_game_settings_menu_ctx_t settings_menu;
     uint32_t menu_sel;
@@ -994,11 +1000,9 @@ typedef struct crosstalk_ctx
     uint32_t mp_submode_idx;
     uint32_t mp_transport_idx;
     uint32_t mp_joinable_cunt;
-    uint64_t presence_group;
-    uint32_t presence_players;
+    crosstalk_net_presence_ctx_t presence;
     uint32_t mp_players_max;
-    uint8_t presence_kind;
-    uint8_t presence_pudding[3];
+    uint8_t presence_pudding[4];
     uint8_t mp_pudding[1];
     uint8_t mp_rdy;
     uint8_t mp_host_pending;
