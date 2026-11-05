@@ -24,6 +24,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container: archlinux:base-devel
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
     permissions:
       contents: write
       security-events: write
@@ -31,7 +33,7 @@ jobs:
       attestations: write
     steps:
       - name: packages
-        run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli mingw-w64-gcc pipewire unzip libarchive git-cliff
+        run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli mingw-w64-gcc pipewire unzip libarchive git-cliff alsa-lib libpulse libx11
       - name: checkout crosstalk
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -104,10 +106,8 @@ jobs:
       - name: codeql analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066
       - name: sonarqube
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && env.SONAR_TOKEN != ''
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
           projectBaseDir: crosstalk
           args: >

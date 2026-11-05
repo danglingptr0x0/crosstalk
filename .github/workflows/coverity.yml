@@ -22,7 +22,7 @@ jobs:
     container: archlinux:base-devel
     steps:
       - name: packages
-        run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli pipewire unzip
+        run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli pipewire unzip alsa-lib libpulse libx11
       - name: checkout crosstalk
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
