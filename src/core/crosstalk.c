@@ -14051,7 +14051,6 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
         ldg_term_input_conf_t irq_conf = LDG_STRUCT_ZERO_INIT;
 
         ret = ldg_term_input_conf_default_get(&irq_conf);
-        irq_conf.kitty_en = LDG_TRUTH_FALSE;
         if (ret == LDG_ERR_AOK) { ret = ldg_term_input_create(&irq_conf, &ctx->irq_src); }
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
