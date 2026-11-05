@@ -278,19 +278,6 @@ endif()
 add_executable(crosstalk ${CROSSTALK_SRC})
 target_include_directories(crosstalk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-set(CROSSTALK_GEN "${CMAKE_CURRENT_BINARY_DIR}/gen")
-file(MAKE_DIRECTORY "${CROSSTALK_GEN}")
-
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/ml-dsa-87.pub" CROSSTALK_SIGN_PK_HEX HEX)
-string(LENGTH "${CROSSTALK_SIGN_PK_HEX}" CROSSTALK_SIGN_PK_NIBBLES)
-if(NOT CROSSTALK_SIGN_PK_NIBBLES EQUAL 5184)
-    message(FATAL_ERROR "ml-dsa-87.pub must be 2592 raw bytes (AC_SIG_PUBKEY_LEN); got ${CROSSTALK_SIGN_PK_NIBBLES} hex nibbles")
-endif()
-string(REGEX REPLACE "(..)" "0x\\1," CROSSTALK_SIGN_PK_ARR "${CROSSTALK_SIGN_PK_HEX}")
-file(WRITE "${CROSSTALK_GEN}/crosstalk_sign_pubkey.h" "#ifndef CROSSTALK_SIGN_PUBKEY_GEN_H\n#define CROSSTALK_SIGN_PUBKEY_GEN_H\n#include <stdint.h>\nstatic const uint8_t crosstalk_sign_pubkey_bytes[] = { ${CROSSTALK_SIGN_PK_ARR} };\n#endif\n")
-
-target_include_directories(crosstalk PRIVATE "${CROSSTALK_GEN}")
-
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.dll.a")
 
@@ -492,7 +479,6 @@ set_target_properties(emu PROPERTIES OUTPUT_NAME "dangcsaemu")
 target_include_directories(emu PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_include_directories(emu PRIVATE "${CROSSTALK_GEN}")
     target_include_directories(emu SYSTEM PRIVATE ${CROSSTALK_DANGLING_INC})
     target_compile_options(emu PRIVATE -Werror=incompatible-pointer-types)
     target_link_libraries(emu PRIVATE
@@ -549,7 +535,6 @@ target_compile_options(mngr PRIVATE -Werror=incompatible-pointer-types)
 target_link_options(mngr PRIVATE -Wl,-Map=$<TARGET_FILE_DIR:mngr>/dangcsaemumngr.map)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    target_include_directories(mngr PRIVATE "${CROSSTALK_GEN}")
     target_include_directories(mngr SYSTEM PRIVATE ${CROSSTALK_DANGLING_INC})
     target_link_libraries(mngr PRIVATE
         -Wl,--start-group
