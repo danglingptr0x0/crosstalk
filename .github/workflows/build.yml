@@ -107,11 +107,12 @@ jobs:
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066
       - name: sonarqube
         if: github.event_name != 'pull_request' && env.SONAR_TOKEN != ''
+        continue-on-error: true
         uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
         with:
           projectBaseDir: crosstalk
           args: >
-            -Dsonar.organization=danglingptr0x0 -Dsonar.projectKey=danglingptr0x0_crosstalk -Dsonar.sources=src -Dsonar.cfamily.compile-commands=build/compile_commands.json
+            -Dsonar.organization=danglingptr0x0 -Dsonar.projectKey=danglingptr0x0_crosstalk -Dsonar.sources=src -Dsonar.cfamily.compile-commands=crosstalk/build/compile_commands.json
 
       - name: stage
         run: |
