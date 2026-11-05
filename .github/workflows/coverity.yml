@@ -1,0 +1,83 @@
+name: coverity
+on:
+  schedule:
+    - cron: '41 4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  attestations: read
+env:
+  LDG_REPO: danglingptr0x0/libdangling
+  LRS_REPO: danglingptr0x0/libresteam
+  TC_REPO: danglingptr0x0/llvm-project-dangcsa_dangxa
+  LRS_LINUX: /opt/libresteam-linux
+  COV_PROJECT: danglingptr0x0/crosstalk
+  DISCORD_TAG: discordsdk
+  DISCORD_ZIP: DiscordSocialSdk-1.10.18247.zip
+  DISCORD_DIR: DiscordSocialSdk-1.10.18247
+  DISCORD_SHA512: f5269886f10855f445ce0bfc9a315013725955a1210684d33fe244823b482479a17766518280453accbd873e2097f836ddb7d742ee2245162f1729513d1a0dc3
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    steps:
+      - name: packages
+        run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli pipewire unzip
+      - name: checkout crosstalk
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: crosstalk
+          persist-credentials: false
+      - name: discord sdk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$DISCORD_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$DISCORD_ZIP" --dir "$RUNNER_TEMP"
+          sdk_actual="$(sha512sum "$RUNNER_TEMP/$DISCORD_ZIP")"
+          test "${sdk_actual%% *}" = "$DISCORD_SHA512"
+          mkdir -p "crosstalk/$DISCORD_DIR"
+          unzip -q "$RUNNER_TEMP/$DISCORD_ZIP" -d "crosstalk/$DISCORD_DIR"
+          if [ ! -d "crosstalk/$DISCORD_DIR/discord_social_sdk" ]; then mv "crosstalk/$DISCORD_DIR"/*/discord_social_sdk "crosstalk/$DISCORD_DIR/"; fi
+          test -d "crosstalk/$DISCORD_DIR/discord_social_sdk/include"
+      - name: toolchain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$TC_REPO/releases/latest" | jq -r '[.assets[] | select(.name | test("linux"; "i"))][0].browser_download_url')"
+          test -n "$url" && test "$url" != "null"
+          mkdir -p "$RUNNER_TEMP/tc"
+          curl -fsSL -o "$RUNNER_TEMP/tc.archive" "$url"
+          gh attestation verify "$RUNNER_TEMP/tc.archive" --repo "$TC_REPO"
+          tar -xf "$RUNNER_TEMP/tc.archive" -C "$RUNNER_TEMP/tc"
+          cc="$(find "$RUNNER_TEMP/tc" -type f -path '*/bin/clang' | head -n 1)"
+          test -x "$cc"
+          echo "CC=$cc" >> "$GITHUB_ENV"
+      - name: deps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          fetch() { url="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$1/releases/latest" | jq -r --arg sfx "$2" '[.assets[] | select(.name | endswith($sfx))][0].browser_download_url')"; test -n "$url" && test "$url" != "null"; curl -fsSL -o "$RUNNER_TEMP/$3" "$url"; gh attestation verify "$RUNNER_TEMP/$3" --repo "$1"; mkdir -p "$4"; tar -xJf "$RUNNER_TEMP/$3" -C "$4"; }
+          fetch "$LDG_REPO" -linux-amd64.tar.xz ldg-linux.tar.xz /usr/local
+          fetch "$LRS_REPO" -linux-amd64.tar.xz lrs-linux.tar.xz "$LRS_LINUX"
+          ldconfig
+      - name: coverity tool
+        env:
+          COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        run: |
+          curl -fsSL --form "token=$COVERITY_SCAN_TOKEN" --form "project=$COV_PROJECT" -o "$RUNNER_TEMP/cov.tar.gz" https://scan.coverity.com/download/linux64
+          mkdir -p "$RUNNER_TEMP/cov"
+          tar -xzf "$RUNNER_TEMP/cov.tar.gz" -C "$RUNNER_TEMP/cov" --strip-components=1
+          echo "$RUNNER_TEMP/cov/bin" >> "$GITHUB_PATH"
+      - name: capture
+        run: |
+          cov-configure --template --compiler "$(basename "$CC")" --comptype clangcc
+          cmake -S crosstalk -B crosstalk/build -G Ninja -DCMAKE_C_COMPILER="$CC" -DCROSSTALK_LIBRESTEAM_PREFIX="$LRS_LINUX"
+          cov-build --dir cov-int cmake --build crosstalk/build
+          tail -n 5 cov-int/build-log.txt
+          tar -czf crosstalk-cov.tar.gz cov-int
+      - name: submit
+        env:
+          COVERITY_SCAN_TOKEN: ${{ secrets.COVERITY_SCAN_TOKEN }}
+          COVERITY_SCAN_EMAIL: ${{ secrets.COVERITY_SCAN_EMAIL }}
+        run: |
+          curl -fsS --form "token=$COVERITY_SCAN_TOKEN" --form "email=$COVERITY_SCAN_EMAIL" --form "file=@crosstalk-cov.tar.gz" --form "version=$GITHUB_SHA" --form "description=ci ${GITHUB_REF_NAME}" "https://scan.coverity.com/builds?project=$(printf '%s' "$COV_PROJECT" | jq -sRr @uri)"

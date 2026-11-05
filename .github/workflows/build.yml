@@ -1,0 +1,170 @@
+name: build
+on:
+  push:
+    branches: [main]
+    tags: ['[0-9]*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  LDG_REPO: danglingptr0x0/libdangling
+  LRS_REPO: danglingptr0x0/libresteam
+  TC_REPO: danglingptr0x0/llvm-project-dangcsa_dangxa
+  WIN_PREFIX: /opt/x86_64-w64-mingw32
+  MINGW_ROOT: /usr/x86_64-w64-mingw32
+  LRS_LINUX: /opt/libresteam-linux
+  LRS_WIN: /opt/libresteam-windows
+  DISCORD_TAG: discordsdk
+  DISCORD_ZIP: DiscordSocialSdk-1.10.18247.zip
+  DISCORD_DIR: DiscordSocialSdk-1.10.18247
+  DISCORD_SHA512: f5269886f10855f445ce0bfc9a315013725955a1210684d33fe244823b482479a17766518280453accbd873e2097f836ddb7d742ee2245162f1729513d1a0dc3
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:base-devel
+    permissions:
+      contents: write
+      security-events: write
+      id-token: write
+      attestations: write
+    steps:
+      - name: packages
+        run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli mingw-w64-gcc pipewire unzip libarchive git-cliff
+      - name: checkout crosstalk
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: crosstalk
+          fetch-depth: 0
+          persist-credentials: false
+      - name: discord sdk
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$DISCORD_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$DISCORD_ZIP" --dir "$RUNNER_TEMP"
+          sdk_actual="$(sha512sum "$RUNNER_TEMP/$DISCORD_ZIP")"
+          test "${sdk_actual%% *}" = "$DISCORD_SHA512"
+          mkdir -p "crosstalk/$DISCORD_DIR"
+          unzip -q "$RUNNER_TEMP/$DISCORD_ZIP" -d "crosstalk/$DISCORD_DIR"
+          if [ ! -d "crosstalk/$DISCORD_DIR/discord_social_sdk" ]; then mv "crosstalk/$DISCORD_DIR"/*/discord_social_sdk "crosstalk/$DISCORD_DIR/"; fi
+          test -d "crosstalk/$DISCORD_DIR/discord_social_sdk/include"
+      - name: toolchain
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          url="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$TC_REPO/releases/latest" | jq -r '[.assets[] | select(.name | test("linux"; "i"))][0].browser_download_url')"
+          test -n "$url" && test "$url" != "null"
+          mkdir -p "$RUNNER_TEMP/tc"
+          curl -fsSL -o "$RUNNER_TEMP/tc.archive" "$url"
+          gh attestation verify "$RUNNER_TEMP/tc.archive" --repo "$TC_REPO"
+          tar -xf "$RUNNER_TEMP/tc.archive" -C "$RUNNER_TEMP/tc"
+          cc="$(find "$RUNNER_TEMP/tc" -type f -path '*/bin/clang' | head -n 1)"
+          test -x "$cc"
+          echo "CC=$cc" >> "$GITHUB_ENV"
+          echo "CC_DIR=$(dirname "$cc")" >> "$GITHUB_ENV"
+          "$cc" --version
+      - name: deps
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          fetch() { url="$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" "https://api.github.com/repos/$1/releases/latest" | jq -r --arg sfx "$2" '[.assets[] | select(.name | endswith($sfx))][0].browser_download_url')"; test -n "$url" && test "$url" != "null"; curl -fsSL -o "$RUNNER_TEMP/$3" "$url"; gh attestation verify "$RUNNER_TEMP/$3" --repo "$1"; mkdir -p "$4"; tar -xJf "$RUNNER_TEMP/$3" -C "$4"; }
+          fetch "$LDG_REPO" -linux-amd64.tar.xz ldg-linux.tar.xz /usr/local
+          fetch "$LDG_REPO" -windows-amd64.tar.xz ldg-windows.tar.xz "$WIN_PREFIX"
+          fetch "$LRS_REPO" -linux-amd64.tar.xz lrs-linux.tar.xz "$LRS_LINUX"
+          fetch "$LRS_REPO" -windows-amd64.tar.xz lrs-windows.tar.xz "$LRS_WIN"
+          ldconfig
+      - name: codeql init
+        uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066
+        with:
+          languages: c-cpp
+          build-mode: manual
+      - name: crosstalk linux
+        run: |
+          cmake -S crosstalk -B crosstalk/build -G Ninja -DCMAKE_C_COMPILER="$CC" -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCROSSTALK_LIBRESTEAM_PREFIX="$LRS_LINUX"
+          cmake --build crosstalk/build
+      - name: crosstalk windows
+        env:
+          PKG_CONFIG_LIBDIR: ${{ env.WIN_PREFIX }}/lib/pkgconfig
+          PKG_CONFIG_PATH: ${{ env.WIN_PREFIX }}/lib/pkgconfig
+        run: |
+          cmake -S crosstalk -B crosstalk/build-win -G Ninja -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=x86_64 -DCMAKE_C_COMPILER="$CC" -DCMAKE_C_COMPILER_TARGET=x86_64-w64-mingw32 -DCMAKE_FIND_ROOT_PATH="$WIN_PREFIX;$MINGW_ROOT" -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_PREFIX_PATH="$WIN_PREFIX" -DCMAKE_C_STANDARD_LIBRARIES="-lbcrypt -lxmllite -luuid" -DCROSSTALK_LIBRESTEAM_PREFIX="$LRS_WIN"
+          cmake --build crosstalk/build-win
+      - name: dangem linux
+        run: |
+          cmake -S crosstalk/tools/dangem -B crosstalk/tools/dangem/build -G Ninja -DCMAKE_C_COMPILER="$CC"
+          cmake --build crosstalk/tools/dangem/build
+      - name: dangem windows
+        env:
+          PKG_CONFIG_LIBDIR: ${{ env.WIN_PREFIX }}/lib/pkgconfig
+          PKG_CONFIG_PATH: ${{ env.WIN_PREFIX }}/lib/pkgconfig
+        run: |
+          cmake -S crosstalk/tools/dangem -B crosstalk/tools/dangem/build-win -G Ninja -DCMAKE_SYSTEM_NAME=Windows -DCMAKE_SYSTEM_PROCESSOR=x86_64 -DCMAKE_C_COMPILER="$CC" -DCMAKE_C_COMPILER_TARGET=x86_64-w64-mingw32 -DCMAKE_FIND_ROOT_PATH="$WIN_PREFIX;$MINGW_ROOT" -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY -DCMAKE_FIND_ROOT_PATH_MODE_PROGRAM=NEVER -DCMAKE_PREFIX_PATH="$WIN_PREFIX"
+          cmake --build crosstalk/tools/dangem/build-win
+      - name: codeql analyze
+        uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066
+      - name: sonarqube
+        if: github.event_name != 'pull_request'
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: crosstalk
+          args: >
+            -Dsonar.organization=danglingptr0x0 -Dsonar.projectKey=danglingptr0x0_crosstalk -Dsonar.sources=src -Dsonar.cfamily.compile-commands=build/compile_commands.json
+
+      - name: stage
+        run: |
+          rel="$GITHUB_REF_NAME"
+          if [ "$GITHUB_REF_TYPE" != "tag" ]; then rel="${GITHUB_SHA::12}"; fi
+          echo "REL=$rel" >> "$GITHUB_ENV"
+          sdk="crosstalk/$DISCORD_DIR/discord_social_sdk"
+          lin="out/crosstalk-$rel-linux-amd64"
+          win="out/crosstalk-$rel-windows"
+          mkdir -p "$lin" "$win"
+          cp -L crosstalk/build/crosstalk crosstalk/build/libresteam.so.0 /usr/local/lib/libdangling.so* "$sdk/lib/release/libdiscord_partner_sdk.so" "$sdk"/lib/release/*.kef crosstalk/LICENSE "$lin/"
+          cp -L crosstalk/build-win/crosstalk.exe crosstalk/build-win/libresteam.dll crosstalk/build-win/libdangling.dll "$sdk/bin/release/discord_partner_sdk.dll" "$sdk/bin/release/discord_krisp.dll" "$sdk"/bin/release/*.kef crosstalk/LICENSE "$win/"
+          cp -r crosstalk/res "$lin/res"
+          cp -r crosstalk/res "$win/res"
+          tar -cJf "crosstalk-$rel-linux-amd64.tar.xz" -C out "crosstalk-$rel-linux-amd64"
+          bsdtar --format zip -cf "crosstalk-$rel-windows.zip" -C out "crosstalk-$rel-windows"
+          tar -tvJf "crosstalk-$rel-linux-amd64.tar.xz"
+          bsdtar -tvf "crosstalk-$rel-windows.zip"
+          sha512sum "crosstalk-$rel-linux-amd64.tar.xz" "crosstalk-$rel-windows.zip" "$lin/crosstalk" "$win/crosstalk.exe"
+      - name: attest
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8
+        with:
+          subject-path: |
+            crosstalk-${{ env.REL }}-linux-amd64.tar.xz
+            crosstalk-${{ env.REL }}-windows.zip
+            out/crosstalk-${{ env.REL }}-linux-amd64/crosstalk
+            out/crosstalk-${{ env.REL }}-windows/crosstalk.exe
+      - name: upload linux
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          path: crosstalk-${{ env.REL }}-linux-amd64.tar.xz
+          archive: false
+          if-no-files-found: error
+      - name: upload windows
+        if: github.ref_type != 'tag'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          path: crosstalk-${{ env.REL }}-windows.zip
+          archive: false
+          if-no-files-found: error
+      - name: changelog
+        if: github.ref_type == 'tag'
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/crosstalk"
+          git-cliff --config crosstalk/.github/cliff.toml --repository crosstalk --latest --output changelog.md
+          cat changelog.md
+      - name: release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          kind=--latest
+          case "$REL" in *-rc*) kind=--prerelease ;; esac
+          gh release create "$REL" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$REL" --notes-file changelog.md "$kind" "crosstalk-$REL-linux-amd64.tar.xz" "crosstalk-$REL-windows.zip"
