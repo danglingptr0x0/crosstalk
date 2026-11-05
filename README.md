@@ -26,13 +26,13 @@ Crosstalk can interface with devices using virtual in-game serial ports or the r
 
 <br>
 
-<p align="center"><a href="img/extras/d0cf2f72b965d547d1f691957a9ac9ce.webm"><img src="img/extras/d0cf2f72b965d547d1f691957a9ac9ce.poster.avif" width="960"></a></p>
+<p align="center"><img src="img/extras/d0cf2f72b965d547d1f691957a9ac9ce.webp" width="960"></p>
 
 <p align="center"><i>Serial I/O works with physical devices. The above is TX.</i></p>
 
 <br>
 
-<p><a href="img/extras/21eef8218ae16628fe8d7f26adb59f3f.webm"><img src="img/extras/21eef8218ae16628fe8d7f26adb59f3f.poster.avif" width="960"></a></p>
+<p><img src="img/extras/21eef8218ae16628fe8d7f26adb59f3f.webp" width="960"></p>
 
 <p align="center">RX</p>
 
@@ -136,7 +136,7 @@ The game comes with a custom instruction set architecture and its first CPU call
 
 <br>
 
-<p align="center"><a href="img/extras/7d1d67db11e5c4b72049a135bfef5827.webm"><img src="img/extras/7d1d67db11e5c4b72049a135bfef5827.poster.avif" width="1170"></a></p>
+<p align="center"><img src="img/extras/7d1d67db11e5c4b72049a135bfef5827.webp" width="1170"></p>
 
 <p align="center"><i>A game running native DANGCSA/DANGXA code. Runtime memory manipulation is demonstrated here</i></p>
 
@@ -148,11 +148,11 @@ The game comes with a custom instruction set architecture and its first CPU call
 
 <br>
 
-<p align="center"><a href="img/extras/a24a7ba20c9f5aafbc6a0fe2200f7d7e.webm"><img src="img/extras/a24a7ba20c9f5aafbc6a0fe2200f7d7e.poster.avif" width="1170"></a></p>
+<p align="center"><img src="img/extras/a24a7ba20c9f5aafbc6a0fe2200f7d7e.webp" width="1170"></p>
 
-<p align="center"><a href="img/extras/604d7f49beb6aa233fe83b2a3702379a.webm"><img src="img/extras/604d7f49beb6aa233fe83b2a3702379a.poster.avif" width="1170"></a></p>
+<p align="center"><img src="img/extras/604d7f49beb6aa233fe83b2a3702379a.webp" width="1170"></p>
 
-<p align="center"><a href="img/extras/f225bd561fcf012ac15c9bbef125c57a.webm"><img src="img/extras/f225bd561fcf012ac15c9bbef125c57a.poster.avif" width="1170"></a></p>
+<p align="center"><img src="img/extras/f225bd561fcf012ac15c9bbef125c57a.webp" width="1170"></p>
 
 <p align="center"><i>A DANGCSA/DANGXA-native C99 reimplementation of the popular crafting game running as the client of the on-screen character, looking from the perspective of another client, which is running an original Java client superimposed on Crosstalk for clearer visual demonstration. The C99 client controls the displayed character by manipulating positions and actions in memory. In this case, only the C99 text client runs under DANGCSA/DANGXA, and is independent of the original client and Java</i></p>
 
