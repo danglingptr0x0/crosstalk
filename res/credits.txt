@@ -1,0 +1,136 @@
+THIRD-PARTY SOFTWARE AND ASSETS (included or referenced on store page, community posts)
+
+Steamworks SDK
+Valve Corporation
+
+Discord Social SDK
+Discord Inc.
+
+Krisp voice models
+Krisp Technologies Inc.
+
+Clang and LLD, from the LLVM Project
+Apache License 2.0 with LLVM Exceptions
+https://llvm.org
+
+mingw-w64
+The mingw-w64 project
+headers, CRT, import libraries, runtime and winpthreads
+https://www.mingw-w64.org
+
+GCC low-level runtime library (libgcc)
+Free Software Foundation
+GNU General Public License v3 with the
+GCC Runtime Library Exception
+https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+
+Anonymous Pro
+Mark Simonson
+SIL Open Font License 1.1
+see res/fonts/AnonymousPro-OFL.txt
+
+The Ultimate Oldschool PC Font Pack
+VileR
+Creative Commons Attribution-ShareAlike 4.0 International
+https://int10h.org/oldschool-pc-fonts
+see res/licenses/cc_sa.txt
+Px437_Compaq_Port3 is a dump of the Compaq Portable III
+character generator ROM
+
+DOOM
+id Software
+GNU General Public License v2
+https://github.com/id-Software/DOOM
+and John Carmack individually, for the engine and for
+releasing its source to the world,
+for BSP rendering, the WAD format, delta compression,
+and the netcode that so much has been built on since
+
+doomgeneric
+Wojciech Graj and contributors
+GNU General Public License v2
+https://github.com/ozkl/doomgeneric
+
+Freedoom
+The Freedoom Project
+BSD 3-clause license
+https://freedoom.github.io
+
+Sail
+The REMS project, University of Cambridge
+Computer Laboratory, and collaborators
+BSD 2-clause license
+https://github.com/rems-project/sail
+
+
+SPECIAL THANKS
+
+Compaq, for creating a cool set of computers that had personality, unlike what we have today
+
+Halt and Catch Fire, for fueling inspiration to explore retro tech
+Christopher Cantwell and Christopher C. Rogers
+AMC, 2014-2017
+
+Counter-Strike 1.6, for changing PC gaming
+Minh Le, Jess Cliffe, and Valve Corporation
+
+Deus Ex, for changing stealth gaming and inspiring writing mysterious yet entertaining dialogue
+Warren Spector, Harvey Smith, and the team
+at Ion Storm Austin
+
+Deus Ex: Human Revolution, for inviting thought about the human kind, where it's going, and the human nature
+Jean-Francois Dugas, Mary DeMarle, and the team
+at Eidos Montreal
+
+Metal Gear Solid, for a story that strangely reminds of how things are today and for changing the stealth genre
+Hideo Kojima
+Kojima Productions
+
+The Matrix, for changing the sci-fi culture for so long
+Lana and Lilly Wachowski
+
+Teletubbies, for creating characters that are fun to shoot at
+Anne Wood and Andrew Davenport
+Ragdoll Productions
+
+Valve product review
+Gordon, Barney, Default Player, Boomer, smejri,
+Grigori, Kerbeus Jr, Phantom Lancer
+for reviewing Crosstalk
+
+MUSIC, for powering the work sessions
+
+Michael McCann
+Alexander Brandon
+&ME
+Black Coffee
+Keinemusik
+DANCE WITH THE DEAD
+Midnight Danger
+F.O.O.L.
+Inexedra
+Scandroid
+Wice
+Martin O'Donnell
+Michael Salvatori
+Harry Gregson-Williams
+Kazuma Jinnouchi
+Neil Davidge
+Paul Haslinger
+Salvinsky
+OVERWERK
+Fury Weekend
+Danger
+Dos Brains
+Daft Punk
+Anyma
+Schiller
+Switch Angel
+Royksopp
+Konrad OldMoney
+Don Davis
+Juno Reactor
+
+
+and of course, GabeN, for leading a corporation unlike any other, especially these days, and letting us access the powerful tools that Steamworks provides
+

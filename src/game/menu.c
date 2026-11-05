@@ -375,7 +375,7 @@ static uint32_t menu_title_put(ldg_term_render_t *render, const ldg_term_rect_t 
     return ret;
 }
 
-static LDG_NOINLINE uint32_t menu_list_put(ldg_term_render_t *render, uint32_t col, uint32_t *row, uint32_t width, crosstalk_game_menu_nav_t *nav, const char *items, uint32_t cunt, uint8_t lit, const uint8_t *lock, uint32_t armed_row, const char *empty_text)
+static uint32_t menu_list_put(ldg_term_render_t *render, uint32_t col, uint32_t *row, uint32_t width, crosstalk_game_menu_nav_t *nav, const char *items, uint32_t cunt, uint8_t lit, const uint8_t *lock, uint32_t armed_row, const char *empty_text)
 {
     char seg[MENU_SEG_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;

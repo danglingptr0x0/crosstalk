@@ -1,3 +1,16 @@
+<a href="https://scan.coverity.com/projects/danglingptr0x0-crosstalk">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/33360/badge.svg"/>
+</a>
+<a href="https://sonarcloud.io/summary/new_code?id=danglingptr0x0_crosstalk"><img alt="Quality gate status" src="https://sonarcloud.io/api/project_badges/measure?project=danglingptr0x0_crosstalk&metric=alert_status"></a>
+<a href="https://scorecard.dev/viewer/?uri=github.com/danglingptr0x0/crosstalk">
+  <img alt="OpenSSF Scorecard"
+       src="https://api.scorecard.dev/projects/github.com/danglingptr0x0/crosstalk/badge"/>
+</a>
+<a href="https://www.bestpractices.dev/projects/16362"><img src="https://www.bestpractices.dev/projects/16362/badge"></a>
+
+Discord: https://discord.gg/9k729aJrPR
+
 The mission statement of Crosstalk is that I would like it to bring back the joy of tinkering, designing things from near-scratch, and taking one's time to create something new or recreate retro technology/port cool software. I don't see that much anymore in computing.
 
 <br>

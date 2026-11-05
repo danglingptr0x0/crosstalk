@@ -86,7 +86,7 @@ static uint32_t img_pages_protect(ldg_byte_t *at, uint64_t span, uint32_t flags)
         DWORD mode = PAGE_READONLY;
         DWORD prev = 0;
 
-        if (exec == LDG_TRUTH_TRUE) { mode = wr == LDG_TRUTH_TRUE ? PAGE_EXECUTE_READWRITE : PAGE_EXECUTE_READ; }
+        if (exec == LDG_TRUTH_TRUE) { mode = PAGE_EXECUTE_READ; }
         else if (wr == LDG_TRUTH_TRUE) { mode = PAGE_READWRITE; }
 
         if (VirtualProtect(at, span, mode, &prev) == 0) { return CROSSTALK_HDL_ERR_IMG_PROTECT; }
@@ -96,8 +96,7 @@ static uint32_t img_pages_protect(ldg_byte_t *at, uint64_t span, uint32_t flags)
         int32_t mode = PROT_READ;
 
         if (exec == LDG_TRUTH_TRUE) { mode = mode | PROT_EXEC; }
-
-        if (wr == LDG_TRUTH_TRUE) { mode = mode | PROT_WRITE; }
+        else if (wr == LDG_TRUTH_TRUE) { mode = mode | PROT_WRITE; }
 
         if (mprotect(at, span, mode) != 0) { return CROSSTALK_HDL_ERR_IMG_PROTECT; }
     }
@@ -295,6 +294,8 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
         }
 
         if (kind != (uint32_t)CROSSTALK_HDL_IMG_PT_LD) { continue; }
+
+        if ((img_dword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FLAGS) & ((uint32_t)CROSSTALK_HDL_IMG_PF_EXEC | (uint32_t)CROSSTALK_HDL_IMG_PF_WR)) == ((uint32_t)CROSSTALK_HDL_IMG_PF_EXEC | (uint32_t)CROSSTALK_HDL_IMG_PF_WR)) { return CROSSTALK_HDL_ERR_IMG_SECT; }
 
         if (file_span > mem_span || img_range_is(file, file_span, span) != LDG_TRUTH_TRUE || vaddr > UINT64_MAX - mem_span) { return CROSSTALK_HDL_ERR_IMG_SECT; }
 

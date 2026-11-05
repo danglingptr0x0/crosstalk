@@ -6,19 +6,26 @@ if(DEFINED CMAKE_CXX_COMPILER)
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "$ENV{HOME}/.config/cmake")
-include(std)
+include(std OPTIONAL RESULT_VARIABLE CROSSTALK_STD_FILE)
 set(STD_PROJ_PREFIX "crosstalk")
+
+if(NOT CROSSTALK_STD_FILE)
+    message(STATUS "std: not found; building with CMake defaults")
+endif()
 
 set(CROSSTALKRELEASE "0.2-rc1")
 
 set(STEAM_SDK "$ENV{HOME}/git/libdangling/steamworks_sdk/sdk")
-set(CROSSTALK_LIBRESTEAM_ROOT "$ENV{HOME}/git/libresteam" CACHE PATH "LibreSteam tree holding include/ and the build outputs")
+set(CROSSTALK_LIBRESTEAM_PREFIX "" CACHE PATH "LibreSteam install prefix holding include/ and lib/")
 
 set(DISCORD_SDK_REV "1.10.18247")
 set(DISCORD_SDK "${CMAKE_CURRENT_SOURCE_DIR}/DiscordSocialSdk-${DISCORD_SDK_REV}/discord_social_sdk")
 set(DISCORD_INC "${DISCORD_SDK}/include")
 set(DISCORD_LIB "${DISCORD_SDK}/lib/release")
 set(DISCORD_BIN "${DISCORD_SDK}/bin/release")
+if(NOT EXISTS "${DISCORD_INC}")
+    message(FATAL_ERROR "Discord's absolutely proprietary SDK isn't in cwd, but it's required for the time being for the social features. Please obtain version 1.10.18247 from the Discord dev portal at: https://discord.com/developers/applications/<appid>/social-sdk/downloads")
+endif()
 set(DISCORD_KRISP_MODELS
     krisp-bvc-o-pro-v3.kef
     krisp-nc-o-lite-v1.kef
@@ -294,8 +301,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     find_library(CROSSTALK_DANGLING_IMPLIB NAMES libdangling.dll.a REQUIRED)
     get_filename_component(CROSSTALK_DANGLING_LIB_DIR "${CROSSTALK_DANGLING_IMPLIB}" DIRECTORY)
     set(CROSSTALK_DANGLING_DLL "${CROSSTALK_DANGLING_LIB_DIR}/../bin/libdangling.dll")
-    set(CROSSTALK_LIBRESTEAM_LIB "${CROSSTALK_LIBRESTEAM_ROOT}/build-win/libresteam.dll.a")
-    set(CROSSTALK_LIBRESTEAM_DLL "${CROSSTALK_LIBRESTEAM_ROOT}/build-win/libresteam.dll")
+    find_path(CROSSTALK_LIBRESTEAM_INC libresteam/backend/backend.h PATHS "${CROSSTALK_LIBRESTEAM_PREFIX}/include" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED)
+    find_library(CROSSTALK_LIBRESTEAM_LIB NAMES libresteam.dll.a PATHS "${CROSSTALK_LIBRESTEAM_PREFIX}/lib" NO_DEFAULT_PATH NO_CMAKE_FIND_ROOT_PATH REQUIRED)
+    set(CROSSTALK_LIBRESTEAM_DLL "${CROSSTALK_LIBRESTEAM_PREFIX}/bin/libresteam.dll")
     foreach(CROSSTALK_SHIP_FILE IN ITEMS "${CROSSTALK_DANGLING_DLL}" "${CROSSTALK_LIBRESTEAM_LIB}" "${CROSSTALK_LIBRESTEAM_DLL}")
         if(NOT EXISTS "${CROSSTALK_SHIP_FILE}")
             message(FATAL_ERROR "missing ${CROSSTALK_SHIP_FILE}")
@@ -304,8 +312,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 
     target_include_directories(crosstalk SYSTEM PRIVATE
         ${CROSSTALK_DANGLING_INC}
-        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/none"
-        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/windows"
+        ${CROSSTALK_LIBRESTEAM_INC}
         ${DISCORD_INC}
     )
     target_compile_options(crosstalk PRIVATE -Werror=incompatible-pointer-types)
@@ -343,14 +350,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     endif()
 else()
     find_library(CROSSTALK_DANGLING_LIB NAMES dangling REQUIRED)
-    set(CROSSTALK_LIBRESTEAM_LIB "${CROSSTALK_LIBRESTEAM_ROOT}/build/libresteam.so")
-    if(NOT EXISTS "${CROSSTALK_LIBRESTEAM_LIB}")
-        message(FATAL_ERROR "missing ${CROSSTALK_LIBRESTEAM_LIB}")
+    find_path(CROSSTALK_LIBRESTEAM_INC libresteam/backend/backend.h PATHS "${CROSSTALK_LIBRESTEAM_PREFIX}/include" NO_DEFAULT_PATH REQUIRED)
+    find_library(CROSSTALK_LIBRESTEAM_LIB NAMES libresteam.so PATHS "${CROSSTALK_LIBRESTEAM_PREFIX}/lib" NO_DEFAULT_PATH REQUIRED)
+    set(CROSSTALK_LIBRESTEAM_RT "${CROSSTALK_LIBRESTEAM_PREFIX}/lib/libresteam.so.0")
+    if(NOT EXISTS "${CROSSTALK_LIBRESTEAM_RT}")
+        message(FATAL_ERROR "missing ${CROSSTALK_LIBRESTEAM_RT}")
     endif()
 
     target_include_directories(crosstalk SYSTEM PRIVATE
-        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/none"
-        "${CROSSTALK_LIBRESTEAM_ROOT}/include/libresteam/none/linux"
+        ${CROSSTALK_LIBRESTEAM_INC}
         ${DISCORD_INC}
     )
     target_link_options(crosstalk PRIVATE -rdynamic)
@@ -394,15 +402,23 @@ ldflag $<JOIN:$<TARGET_PROPERTY:crosstalk,LINK_OPTIONS>,\nldflag >
 
 file(WRITE "${CMAKE_BINARY_DIR}/dangem/RELEASE" "${CROSSTALKRELEASE}\n")
 
-add_custom_command(TARGET crosstalk POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/res"
-        "$<TARGET_FILE_DIR:crosstalk>/res"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/steam_appid.txt"
-        "$<TARGET_FILE_DIR:crosstalk>/steam_appid.txt"
-    COMMENT "Staging res and steam_appid next to binary"
-)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/res")
+    add_custom_command(TARGET crosstalk POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_CURRENT_SOURCE_DIR}/res"
+            "$<TARGET_FILE_DIR:crosstalk>/res"
+        COMMENT "Staging res next to binary"
+    )
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/steam_appid.txt")
+    add_custom_command(TARGET crosstalk POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/steam_appid.txt"
+            "$<TARGET_FILE_DIR:crosstalk>/steam_appid.txt"
+        COMMENT "Staging steam_appid next to binary"
+    )
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     add_custom_command(TARGET crosstalk POST_BUILD
@@ -433,9 +449,9 @@ else()
     )
     add_custom_command(TARGET crosstalk POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${CROSSTALK_LIBRESTEAM_LIB}"
-            "$<TARGET_FILE_DIR:crosstalk>/libresteam.so"
-        COMMENT "Staging libresteam.so next to binary"
+            "${CROSSTALK_LIBRESTEAM_RT}"
+            "$<TARGET_FILE_DIR:crosstalk>/libresteam.so.0"
+        COMMENT "Staging libresteam.so.0 next to binary"
     )
     set(DISCORD_MODEL_DIR "${DISCORD_LIB}")
 endif()

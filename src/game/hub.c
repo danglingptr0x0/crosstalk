@@ -251,7 +251,7 @@ static uint32_t crosstalk_game_hub_row_draw(const crosstalk_game_hub_row_t *row_
     return crosstalk_ui_cell_text_put(render, col_cunt - (uint32_t)act_len, row, act, (uint64_t)sizeof(act), &fg_col, &bg_col);
 }
 
-static LDG_NOINLINE uint32_t crosstalk_game_hub_section_draw(crosstalk_game_hub_ctx_t *ctx, ldg_term_render_t *render, uint8_t src, const char *hd, uint32_t col_cunt, uint32_t *row)
+static uint32_t crosstalk_game_hub_section_draw(crosstalk_game_hub_ctx_t *ctx, ldg_term_render_t *render, uint8_t src, const char *hd, uint32_t col_cunt, uint32_t *row)
 {
     uint32_t shown = 0;
     uint32_t ret = 0;

@@ -283,7 +283,7 @@ uint32_t crosstalk_mngr_machine_drop(crosstalk_mngr_ctx_t *ctx, uint32_t idx)
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t mngr_argv_build(const crosstalk_mngr_machine_t *machine, const char *exe, mngr_argv_t *argv)
+static uint32_t mngr_argv_build(const crosstalk_mngr_machine_t *machine, const char *exe, mngr_argv_t *argv)
 {
     uint32_t drive = 0;
     uint32_t at = 0;

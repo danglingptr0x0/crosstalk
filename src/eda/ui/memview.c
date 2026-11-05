@@ -2929,7 +2929,7 @@ static uint32_t memview_seps_draw(ldg_term_render_t *render, uint32_t pane_col, 
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t memview_overview_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t col_cunt)
+static uint32_t memview_overview_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t col_cunt)
 {
     uint32_t cell_h = render->sample_row_cunt;
     uint32_t band_w = col_cunt * render->sample_col_cunt;
@@ -2985,7 +2985,7 @@ static LDG_NOINLINE uint32_t memview_overview_draw(const crosstalk_eda_ui_memvie
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t memview_hdr_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t pane_end, uint32_t go_col)
+static uint32_t memview_hdr_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t pane_end, uint32_t go_col)
 {
     char text[MEMVIEW_ROW_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     char stat[MEMVIEW_STAT_CAP] = LDG_ARR_ZERO_INIT;
@@ -3028,7 +3028,7 @@ static LDG_NOINLINE uint32_t memview_hdr_draw(const crosstalk_eda_ui_memview_ctx
     return memview_span_put(render, (uint32_t)MEMVIEW_ORIG_COL, (uint32_t)MEMVIEW_ROW_HDR, text, len, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, (uint32_t)CROSSTALK_UI_CELL_PANE_RGBA);
 }
 
-static LDG_NOINLINE uint32_t memview_mut_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render)
+static uint32_t memview_mut_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render)
 {
     char text[MEMVIEW_ROW_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     char ascii[CROSSTALK_EDA_UI_MEMVIEW_COL_CUNT + LDG_STR_TERM_SIZE] = LDG_ARR_ZERO_INIT;
@@ -3089,7 +3089,7 @@ static LDG_NOINLINE uint32_t memview_mut_draw(const crosstalk_eda_ui_memview_ctx
     return memview_seps_draw(render, pane_col, UINT32_MAX);
 }
 
-static LDG_NOINLINE uint32_t memview_annot_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t row, uint32_t pane_end, uint32_t *out_w)
+static uint32_t memview_annot_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t row, uint32_t pane_end, uint32_t *out_w)
 {
     char frag[MEMVIEW_ANNOT_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     char name[MEMVIEW_FIELD_TEXT_CAP] = LDG_ARR_ZERO_INIT;
@@ -3164,7 +3164,7 @@ static LDG_NOINLINE uint32_t memview_annot_draw(crosstalk_eda_ui_memview_ctx_t *
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t memview_rows_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t pane_end, uint32_t go_row, uint32_t go_col)
+static uint32_t memview_rows_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t pane_end, uint32_t go_row, uint32_t go_col)
 {
     char text[MEMVIEW_ROW_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     char ascii[CROSSTALK_EDA_UI_MEMVIEW_COL_CUNT + LDG_STR_TERM_SIZE] = LDG_ARR_ZERO_INIT;
@@ -3253,7 +3253,7 @@ static uint32_t memview_tabs_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t memview_dis_list_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t col_cunt)
+static uint32_t memview_dis_list_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t col_cunt)
 {
     uint32_t col_w = col_cunt / (uint32_t)MEMVIEW_DIS_COL_CUNT;
     uint32_t text_w = col_w > (uint32_t)MEMVIEW_DIS_COL_GAP ? col_w - (uint32_t)MEMVIEW_DIS_COL_GAP : (uint32_t)MEMVIEW_STEP;
@@ -3278,7 +3278,7 @@ static LDG_NOINLINE uint32_t memview_dis_list_draw(crosstalk_eda_ui_memview_ctx_
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t memview_hit_list_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t col_cunt)
+static uint32_t memview_hit_list_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t col_cunt)
 {
     char hit_text[MEMVIEW_TAB_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t cols_fit = col_cunt / (uint32_t)MEMVIEW_HIT_CELL_W;

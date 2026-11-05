@@ -563,7 +563,6 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_SPLASH_CW_PROBABILITY 0.20
 #define CROSSTALK_CORE_CARD_KIND_PAL 0
 #define CROSSTALK_CORE_CARD_KIND_NTSC 1
-#define CROSSTALK_CORE_CARD_COUNTRY_NTSC "US"
 #define CROSSTALK_CORE_MEMFIND_FAIL_TEXT "the memory window refused that pattern"
 #define CROSSTALK_CORE_MEMFIND_OK_TEXT "searching memory"
 #define CROSSTALK_CORE_MEMLD_NO_SIG_TEXT "no such memory in the design"
@@ -797,7 +796,6 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_IDENT_MODE 0600
 #define CROSSTALK_CORE_LOBBY_TOAST_PAD 32
 #define CROSSTALK_CORE_STORE_FLAG_NONE 0U
-#define CROSSTALK_CORE_COUNTRY_SIZE 3U
 #define CROSSTALK_CORE_LIBRESTEAM_BACKEND_CUNT 1U
 #define CROSSTALK_CORE_LIBRESTEAM_BACKEND_PRIMARY 0U
 

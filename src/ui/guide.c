@@ -71,7 +71,7 @@ static uint32_t guide_wrap(const char *text, uint32_t max_w, uint32_t *seg_start
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t guide_body_draw(ldg_term_render_t *render, const char *body, uint32_t col_cunt, uint32_t *row)
+static uint32_t guide_body_draw(ldg_term_render_t *render, const char *body, uint32_t col_cunt, uint32_t *row)
 {
     uint32_t seg_start[CROSSTALK_UI_GUIDE_WRAP_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t seg_len[CROSSTALK_UI_GUIDE_WRAP_CAP] = LDG_ARR_ZERO_INIT;

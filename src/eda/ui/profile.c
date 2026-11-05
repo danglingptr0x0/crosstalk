@@ -155,7 +155,7 @@ static void profile_fn_tally(crosstalk_eda_ui_profile_ctx_t *ctx, uint64_t sym_a
     ctx->fn_total = ctx->fn_total + 0x1;
 }
 
-static LDG_NOINLINE uint32_t profile_fn_scan(crosstalk_eda_ui_profile_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx)
+static uint32_t profile_fn_scan(crosstalk_eda_ui_profile_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx)
 {
     uint64_t bytes[CROSSTALK_EDA_UI_PROFILE_FN_WORD_CUNT] = LDG_ARR_ZERO_INIT;
     const crosstalk_hdl_elf_sym_t *sym = 0x0;
@@ -536,7 +536,7 @@ static uint32_t profile_bar_row_put(ldg_term_render_t *render, uint32_t row, con
     return ldg_term_render_text_draw(render, (uint32_t)lead, row, text + lead, len - lead, &fg, &pane);
 }
 
-static LDG_NOINLINE uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t slot, const uint64_t *eff_t, const uint64_t *eff_c, const uint64_t *eff_sub, uint32_t *row)
+static uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t slot, const uint64_t *eff_t, const uint64_t *eff_c, const uint64_t *eff_sub, uint32_t *row)
 {
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     double avg = 0.0;
@@ -585,7 +585,7 @@ static LDG_NOINLINE uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at, uint32_t col_cunt)
+static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at, uint32_t col_cunt)
 {
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     char label[PROFILE_ROW_LABEL_CAP] = LDG_ARR_ZERO_INIT;
@@ -685,7 +685,7 @@ static LDG_NOINLINE uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ct
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t profile_controls_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
+static uint32_t profile_controls_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
 {
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     const char *btn[PROFILE_BTN_CUNT] = { PROFILE_BTN_START_TEXT, PROFILE_BTN_END_TEXT, PROFILE_BTN_RST_TEXT, PROFILE_BTN_LIVE_TEXT };
@@ -711,7 +711,7 @@ static LDG_NOINLINE uint32_t profile_controls_draw(crosstalk_eda_ui_profile_ctx_
     return crosstalk_ui_cell_rgba_put(render, pos_col, row, text, (uint64_t)sizeof(text), (uint32_t)PROFILE_TEXT_COL, 0x0);
 }
 
-static LDG_NOINLINE uint32_t profile_evt_row_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
+static uint32_t profile_evt_row_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
 {
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t pos_col = PROFILE_ORIG_COL;
@@ -736,7 +736,7 @@ static LDG_NOINLINE uint32_t profile_evt_row_draw(crosstalk_eda_ui_profile_ctx_t
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t profile_tab_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
+static uint32_t profile_tab_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
 {
     const char *tab_text[PROFILE_TAB_CUNT] = { PROFILE_TAB_SIM_TEXT, PROFILE_TAB_PROG_TEXT, PROFILE_TAB_EMU_TEXT };
     uint32_t pos_col = PROFILE_ORIG_COL;
@@ -757,7 +757,7 @@ static LDG_NOINLINE uint32_t profile_tab_draw(crosstalk_eda_ui_profile_ctx_t *ct
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at)
+static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at)
 {
     static const char *trap_text[CROSSTALK_HDL_ABI_TRAP_CUNT] = { "invalid op", "unaligned", "stack over", "stack under", "divide by zero", "dr14 write", "TRAP6", "TRAP7" };
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
@@ -844,7 +844,7 @@ static LDG_NOINLINE uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ct
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at, uint32_t col_cunt)
+static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at, uint32_t col_cunt)
 {
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint8_t used[CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP] = LDG_ARR_ZERO_INIT;
@@ -981,7 +981,7 @@ static LDG_NOINLINE uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *c
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t profile_strip_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t strip_row, uint32_t col_cunt, uint64_t have, uint64_t first_cyc)
+static uint32_t profile_strip_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t strip_row, uint32_t col_cunt, uint64_t have, uint64_t first_cyc)
 {
     uint64_t peak = 0;
     uint32_t cell_w = 0;

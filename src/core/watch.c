@@ -55,7 +55,7 @@ static uint32_t watch_copy(crosstalk_core_watch_t *watch, uint64_t size)
     return ret;
 }
 
-static LDG_NOINLINE uint32_t watch_set_sample(const char *dir, const char *files, uint64_t *size, uint64_t *modified_ns, uint32_t *out_cunt)
+static uint32_t watch_set_sample(const char *dir, const char *files, uint64_t *size, uint64_t *modified_ns, uint32_t *out_cunt)
 {
     char name[CROSSTALK_CORE_WATCH_SET_NAME_CAP];
     char path[LDG_IO_PATH_MAX];

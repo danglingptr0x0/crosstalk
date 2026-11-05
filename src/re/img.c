@@ -167,9 +167,7 @@ static uint32_t img_emiru_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *
     ret = ldg_emiru_decode(file, (ldg_dword_t)span, &decoded);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    hdr = decoded.hdr;
-
-    if (hdr == 0x0) { return CROSSTALK_RE_IMG_ERR_TRUNC; }
+    hdr = &decoded.hdr;
 
     ret = img_seg_push(ctx, IMG_SEG_TEXT_NAME, base, (uint64_t)hdr->text_size, text_off, (uint64_t)hdr->text_size, (uint32_t)(CROSSTALK_RE_IMG_SEG_FLAG_R | CROSSTALK_RE_IMG_SEG_FLAG_X));
     if (ret != LDG_ERR_AOK) { return ret; }

@@ -1,0 +1,12 @@
+ld . demo.sv demo;
+prof on;
+text vmem 0;
+term serial_out;
+ind led;
+scope osc;
+analyzer osc led serial_out exc_cause;
+feed exc_cause led;
+memview mem;
+progview mem;
+stackview mem;
+pipeview fetch_instr exec_instr;

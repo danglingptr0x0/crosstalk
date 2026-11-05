@@ -292,7 +292,7 @@ static uint32_t crosstalk_game_chat_tab_put(ldg_term_render_t *render, uint32_t 
     return ret;
 }
 
-static LDG_NOINLINE uint32_t crosstalk_game_chat_tabs_draw(const crosstalk_game_chat_ctx_t *ctx, ldg_term_render_t *render)
+static uint32_t crosstalk_game_chat_tabs_draw(const crosstalk_game_chat_ctx_t *ctx, ldg_term_render_t *render)
 {
     uint32_t pos_col = CROSSTALK_GAME_CHAT_ORIG_COL;
     uint32_t ret = LDG_ERR_AOK;
@@ -316,7 +316,7 @@ static LDG_NOINLINE uint32_t crosstalk_game_chat_tabs_draw(const crosstalk_game_
     return ret;
 }
 
-static LDG_NOINLINE uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_chat_conv_t *conv, ldg_term_render_t *render, uint32_t col_cunt, uint32_t *row)
+static uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_chat_conv_t *conv, ldg_term_render_t *render, uint32_t col_cunt, uint32_t *row)
 {
     char line[CROSSTALK_GAME_CHAT_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;

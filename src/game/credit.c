@@ -8,12 +8,6 @@
 #include "game/credit.h"
 
 #define CREDIT_VISIT_SEQ_FIRST 0U
-#define CREDIT_LEGACY_ENTRY_SIZE 96U
-#define CREDIT_LEGACY_SEG_SIZE 120U
-#define CREDIT_LEGACY_LOG_SIZE 104U
-#define CREDIT_LEGACY_ENTRY_CAP 512U
-#define CREDIT_LEGACY_SEG_CAP 4096U
-#define CREDIT_LEGACY_LOG_CAP 32U
 
 typedef struct credit_save_hdr
 {
@@ -210,27 +204,6 @@ uint32_t crosstalk_game_credit_serialize(const crosstalk_game_credit_ctx_t *ctx,
     return LDG_ERR_AOK;
 }
 
-static uint32_t credit_legacy_deserialize(crosstalk_game_credit_ctx_t *ctx, const credit_save_hdr_t *hdr, const uint8_t *blob, uint32_t len)
-{
-    uint64_t skip = 0;
-    uint64_t time_bytes = 0;
-
-    if (LDG_UNLIKELY(hdr->entry_cunt > CREDIT_LEGACY_ENTRY_CAP || hdr->seg_cunt > CREDIT_LEGACY_SEG_CAP || hdr->log_cunt > CREDIT_LEGACY_LOG_CAP || hdr->time_cunt > (uint32_t)CROSSTALK_GAME_CREDIT_TIME_CAP)) { return LDG_ERR_IO_FMT; }
-
-    skip = (uint64_t)sizeof(*hdr) + (uint64_t)hdr->entry_cunt * (uint64_t)CREDIT_LEGACY_ENTRY_SIZE + (uint64_t)hdr->seg_cunt * (uint64_t)CREDIT_LEGACY_SEG_SIZE + (uint64_t)hdr->log_cunt * (uint64_t)CREDIT_LEGACY_LOG_SIZE;
-    if (LDG_UNLIKELY(skip > (uint64_t)len)) { return LDG_ERR_IO_FMT; }
-
-    time_bytes = (uint64_t)hdr->time_cunt * (uint64_t)sizeof(crosstalk_game_credit_time_t);
-    if ((uint64_t)len - skip < time_bytes) { return LDG_ERR_AOK; }
-
-    if (time_bytes > 0) { memcpy(ctx->time, blob + skip, time_bytes); }
-
-    for (uint32_t idx = 0; idx < hdr->time_cunt; idx++) { ctx->time[idx].persona[sizeof(ctx->time[idx].persona) - LDG_STR_TERM_SIZE] = LDG_STR_TERM; }
-
-    ctx->time_cunt = hdr->time_cunt;
-    return LDG_ERR_AOK;
-}
-
 uint32_t crosstalk_game_credit_deserialize(crosstalk_game_credit_ctx_t *ctx, const uint8_t *blob, uint32_t len)
 {
     credit_save_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
@@ -248,7 +221,7 @@ uint32_t crosstalk_game_credit_deserialize(crosstalk_game_credit_ctx_t *ctx, con
 
     memcpy(&hdr, blob, sizeof(hdr));
 
-    if (hdr.entry_cunt != 0 || hdr.seg_cunt != 0 || hdr.log_cunt != 0) { return credit_legacy_deserialize(ctx, &hdr, blob, len); }
+    if (LDG_UNLIKELY(hdr.entry_cunt != 0 || hdr.seg_cunt != 0 || hdr.log_cunt != 0)) { return LDG_ERR_IO_FMT; }
 
     if (LDG_UNLIKELY(hdr.time_cunt > (uint32_t)CROSSTALK_GAME_CREDIT_TIME_CAP)) { return LDG_ERR_IO_FMT; }
 

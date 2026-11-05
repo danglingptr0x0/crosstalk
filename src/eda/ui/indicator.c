@@ -125,7 +125,7 @@ static uint32_t indicator_lamp_draw(ldg_term_render_t *render, uint32_t col, uin
     return crosstalk_ui_cell_span_fill(render, col, row, width, &lamp, &lamp);
 }
 
-static LDG_NOINLINE uint32_t indicator_acc_draw(crosstalk_eda_ui_indicator_ctx_t *ctx, ldg_term_render_t *render)
+static uint32_t indicator_acc_draw(crosstalk_eda_ui_indicator_ctx_t *ctx, ldg_term_render_t *render)
 {
     const char *acc_text[CROSSTALK_EDA_UI_INDICATOR_ACC_CUNT] = { CROSSTALK_EDA_UI_INDICATOR_ACC_RAM_RD_TEXT, CROSSTALK_EDA_UI_INDICATOR_ACC_RAM_WR_TEXT, CROSSTALK_EDA_UI_INDICATOR_ACC_MMIO_RD_TEXT, CROSSTALK_EDA_UI_INDICATOR_ACC_MMIO_WR_TEXT };
     uint32_t idx = 0;

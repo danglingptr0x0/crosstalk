@@ -23,7 +23,7 @@
 #define CAST_PX_G_OFF 1
 #define CAST_PX_R_OFF 2
 
-static LDG_NOINLINE uint32_t cast_payload_build(const crosstalk_eda_io_cast_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint8_t *payload)
+static uint32_t cast_payload_build(const crosstalk_eda_io_cast_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint8_t *payload)
 {
     static const uint8_t ramp[CAST_RAMP_CUNT] = { 0x20, 0xB0, 0xB1, 0xB2, 0xDB };
     uint64_t chunk[CAST_CHUNK_PX * CAST_PX_BYTES] = LDG_ARR_ZERO_INIT;

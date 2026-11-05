@@ -1,0 +1,17 @@
+emu DANGCSA/emu/dangemu.bin;
+delay 100 ms;
+hlt all;
+memld cells DANGCSA/DANGLING/dangling.img;
+delay 100 ms;
+memview;
+profile;
+analyzer;
+term serial_out;
+receptacle serial_in serial_rdy scan;
+gfx cells;
+memview;
+profile;
+feed exc_cause;
+analyzer serial_out;
+scope clk;
+ind serial_out;

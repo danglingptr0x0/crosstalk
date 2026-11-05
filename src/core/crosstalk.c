@@ -208,7 +208,7 @@ static uint32_t crosstalk_install_dir_resolve(char *out, uint64_t out_size)
 */
 
 /*
-static LDG_NOINLINE uint32_t crosstalk_scan_tree(crosstalk_ctx_t *ctx, const char *dir, uint32_t depth, uint64_t *out_files, uint64_t *out_hits, uint64_t *out_refused)
+static uint32_t crosstalk_scan_tree(crosstalk_ctx_t *ctx, const char *dir, uint32_t depth, uint64_t *out_files, uint64_t *out_hits, uint64_t *out_refused)
 {
     char child[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     ldg_io_entry_t entry = LDG_STRUCT_ZERO_INIT;
@@ -1897,31 +1897,8 @@ static uint32_t crosstalk_card_needle_step_draw(ldg_term_render_t *render, doubl
 
 static void crosstalk_card_kind_resolve(crosstalk_ctx_t *ctx)
 {
-    char country[CROSSTALK_CORE_COUNTRY_SIZE] = LDG_ARR_ZERO_INIT;
-    const char *code = 0x0;
-    uint32_t ret = 0;
-
-    if (ctx->card_kind_set == LDG_TRUTH_TRUE) { return; }
-
-    ret = ctx->libresteam_live == LDG_TRUTH_TRUE ? libresteam_utils_ip_country_get(&ctx->libresteam_set, &code) : LDG_ERR_NOT_FOUND;
-    if (ret == LDG_ERR_AOK && (code == 0x0 || code[0] == LDG_STR_TERM)) { ret = LDG_ERR_NOT_FOUND; }
-
-    if (ret == LDG_ERR_AOK) { ret = ldg_str_rbrcpy(country, code, (uint64_t)sizeof(country)); }
-
-    if (ret == LDG_ERR_NOT_FOUND) { return; }
-
-    ctx->card_kind = (uint8_t)CROSSTALK_CORE_CARD_KIND_PAL;
+    ctx->card_kind = (uint8_t)CROSSTALK_CORE_CARD_KIND_NTSC;
     ctx->card_kind_set = LDG_TRUTH_TRUE;
-
-    if (ret != LDG_ERR_AOK)
-    {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: card country; err: %u32", ret);
-        return;
-    }
-
-    if (strcmp(country, CROSSTALK_CORE_CARD_COUNTRY_NTSC) == 0) { ctx->card_kind = (uint8_t)CROSSTALK_CORE_CARD_KIND_NTSC; }
-
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: card country: %s; kind: %u32", country, ctx->card_kind);
 }
 
 static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
@@ -4464,7 +4441,7 @@ static void crosstalk_bench_caps_fill(crosstalk_eda_ic_fpga_comp_t *caps)
     caps->f_op_hz = CROSSTALK_CORE_BENCH_CLK_HZ;
 }
 
-static LDG_NOINLINE void crosstalk_fileset_apply(crosstalk_ctx_t *ctx, const char *dir, const char *files, const char *top)
+static void crosstalk_fileset_apply(crosstalk_ctx_t *ctx, const char *dir, const char *files, const char *top)
 {
     crosstalk_eda_ic_fpga_comp_t caps = LDG_STRUCT_ZERO_INIT;
     uint32_t bytes = 0;
@@ -4574,7 +4551,7 @@ static void crosstalk_dir_fetch(crosstalk_ctx_t *ctx, const char *dir, const cha
     toast_push(ctx, CROSSTALK_CORE_FETCH_FAIL_TEXT);
 }
 
-static LDG_NOINLINE void crosstalk_dir_ld(crosstalk_ctx_t *ctx, const char *arg)
+static void crosstalk_dir_ld(crosstalk_ctx_t *ctx, const char *arg)
 {
     char lead[CROSSTALK_CORE_LD_DIR_CAP] = LDG_ARR_ZERO_INIT;
     char dir[CROSSTALK_CORE_LD_DIR_CAP] = LDG_ARR_ZERO_INIT;
@@ -4640,7 +4617,7 @@ static void crosstalk_fetch_tick(crosstalk_ctx_t *ctx)
     if (crosstalk_core_fetch_stop(&ctx->fetch) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: stop failed"); }
 }
 
-static LDG_NOINLINE void crosstalk_design_probes_reattach(crosstalk_ctx_t *ctx, char port[CROSSTALK_EDA_LOGIC_PROBE_MAX][CROSSTALK_EDA_LOGIC_PROBE_PORT_CAP], const uint64_t *period, const uint32_t *width, const uint8_t *host, const uint8_t *held)
+static void crosstalk_design_probes_reattach(crosstalk_ctx_t *ctx, char port[CROSSTALK_EDA_LOGIC_PROBE_MAX][CROSSTALK_EDA_LOGIC_PROBE_PORT_CAP], const uint64_t *period, const uint32_t *width, const uint8_t *host, const uint8_t *held)
 {
     const crosstalk_hdl_exec_ctx_t *exec = 0x0;
     const crosstalk_hdl_abi_t *abi = 0x0;
@@ -4671,7 +4648,7 @@ static LDG_NOINLINE void crosstalk_design_probes_reattach(crosstalk_ctx_t *ctx, 
     }
 }
 
-static LDG_NOINLINE void crosstalk_design_reload(crosstalk_ctx_t *ctx)
+static void crosstalk_design_reload(crosstalk_ctx_t *ctx)
 {
     char dir[CROSSTALK_EDA_IC_FPGA_DIR_CAP] = LDG_ARR_ZERO_INIT;
     char files[CROSSTALK_EDA_IC_FPGA_FILESET_MAX * CROSSTALK_EDA_IC_FPGA_FILESET_NAME_CAP] = LDG_ARR_ZERO_INIT;
@@ -5022,7 +4999,7 @@ static uint32_t crosstalk_render_sample_conv(uint64_t val, uint32_t width)
     return out ^ 0x80000000;
 }
 
-static LDG_NOINLINE void crosstalk_verb_render(crosstalk_ctx_t *ctx, const char *arg)
+static void crosstalk_verb_render(crosstalk_ctx_t *ctx, const char *arg)
 {
     uint8_t chunk[CROSSTALK_CORE_RENDER_CHUNK_SAMPLES * CROSSTALK_CORE_RENDER_BYTES_PER_SAMPLE];
     uint8_t wav_hdr[CROSSTALK_CORE_RENDER_HDR_SIZE] = LDG_ARR_ZERO_INIT;

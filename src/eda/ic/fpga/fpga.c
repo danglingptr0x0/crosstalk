@@ -647,7 +647,7 @@ static uint32_t abi_step_once(const crosstalk_eda_ic_fpga_slot_t *slot)
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE void hlt_log(const crosstalk_eda_ic_fpga_slot_t *slot, uint32_t slot_idx, uint64_t cycle, uint32_t ret)
+static void hlt_log(const crosstalk_eda_ic_fpga_slot_t *slot, uint32_t slot_idx, uint64_t cycle, uint32_t ret)
 {
     uint64_t rec[CROSSTALK_HDL_ABI_FAULT_CUNT] = LDG_ARR_ZERO_INIT;
     uint64_t *base = 0x0;
@@ -2969,7 +2969,7 @@ static uint8_t mem_hex_path_is(const char *path)
     return strncmp(&path[at], CROSSTALK_EDA_IC_FPGA_MEM_HEX_EXT, (uint64_t)CROSSTALK_EDA_IC_FPGA_MEM_HEX_EXT_LEN) == 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
-LDG_NOINLINE uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const char *sig_name, const char *path, uint64_t word_off, uint64_t *out_words, uint64_t *out_bytes)
+uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const char *sig_name, const char *path, uint64_t word_off, uint64_t *out_words, uint64_t *out_bytes)
 {
     ldg_byte_t chunk[CROSSTALK_EDA_IC_FPGA_MEM_CHUNK];
     crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
@@ -3181,7 +3181,7 @@ LDG_NOINLINE uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t file_append(const char *dir, const char *name, char *dst, uint32_t *io_len, uint64_t cap)
+static uint32_t file_append(const char *dir, const char *name, char *dst, uint32_t *io_len, uint64_t cap)
 {
     char path[LDG_IO_PATH_MAX];
     ldg_io_info_t st = LDG_STRUCT_ZERO_INIT;
@@ -3260,7 +3260,7 @@ static uint32_t fileset_size_get(const char *dir, const char *files, uint64_t *o
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t fileset_rd(const char *dir, const char *files, char *dst, uint64_t cap, uint32_t *out_len, uint32_t *out_cunt)
+static uint32_t fileset_rd(const char *dir, const char *files, char *dst, uint64_t cap, uint32_t *out_len, uint32_t *out_cunt)
 {
     char name[CROSSTALK_EDA_IC_FPGA_FILESET_NAME_CAP];
     uint32_t files_len = 0;

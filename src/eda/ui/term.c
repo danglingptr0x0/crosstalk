@@ -734,7 +734,7 @@ static uint32_t term_img_rgba_get(const uint8_t *pixel, uint64_t at, uint32_t px
     return ((uint32_t)pixel[base] << (uint32_t)CROSSTALK_UI_CELL_RGBA_RED_SHIFT) | ((uint32_t)pixel[base + (uint64_t)TERM_IMG_GREEN_AT] << (uint32_t)CROSSTALK_UI_CELL_RGBA_GREEN_SHIFT) | ((uint32_t)pixel[base + (uint64_t)TERM_IMG_BLUE_AT] << (uint32_t)CROSSTALK_UI_CELL_RGBA_BLUE_SHIFT) | (uint32_t)TERM_PTY_ALPHA_BYTE;
 }
 
-static LDG_NOINLINE uint32_t term_img_draw(ldg_term_render_t *render, const ldg_term_img_t *img, const uint8_t *pixel, uint32_t pixel_size, const ldg_term_placement_t *placement, uint32_t row_base)
+static uint32_t term_img_draw(ldg_term_render_t *render, const ldg_term_img_t *img, const uint8_t *pixel, uint32_t pixel_size, const ldg_term_placement_t *placement, uint32_t row_base)
 {
     uint32_t cell_w = render->sample_col_cunt;
     uint32_t cell_h = render->sample_row_cunt;
@@ -779,7 +779,7 @@ static LDG_NOINLINE uint32_t term_img_draw(ldg_term_render_t *render, const ldg_
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t term_placement_draw(ldg_term_render_t *render, const ldg_term_t *term, uint32_t row_base, uint8_t front)
+static uint32_t term_placement_draw(ldg_term_render_t *render, const ldg_term_t *term, uint32_t row_base, uint8_t front)
 {
     ldg_term_placement_t placement = LDG_STRUCT_ZERO_INIT;
     ldg_term_img_t img = LDG_STRUCT_ZERO_INIT;
@@ -810,7 +810,7 @@ static LDG_NOINLINE uint32_t term_placement_draw(ldg_term_render_t *render, cons
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_render_t *render, ldg_term_t *grid, const crosstalk_eda_io_pty_ctx_t *exit_pty, uint32_t row_base, uint32_t col_cunt, uint32_t row_avail)
+static uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_render_t *render, ldg_term_t *grid, const crosstalk_eda_io_pty_ctx_t *exit_pty, uint32_t row_base, uint32_t col_cunt, uint32_t row_avail)
 {
     ldg_term_cell_t row_cell[CROSSTALK_EDA_IO_PTY_COL_MAX];
     char run[TERM_PTY_RUN_CAP] = LDG_ARR_ZERO_INIT;
@@ -910,7 +910,7 @@ static LDG_NOINLINE uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx
     return crosstalk_ui_cell_rgba_put(render, (uint32_t)TERM_ORIG_COL, row_base + rows, status, (uint64_t)sizeof(status), (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA, 0x0);
 }
 
-static LDG_NOINLINE uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *sesh, ldg_term_render_t *render, uint32_t row_base, uint32_t col_cunt, uint32_t row_cunt)
+static uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *sesh, ldg_term_render_t *render, uint32_t row_base, uint32_t col_cunt, uint32_t row_cunt)
 {
     char ascii[CROSSTALK_EDA_UI_TERM_CELL_CAP] = LDG_ARR_ZERO_INIT;
     char hex[CROSSTALK_EDA_UI_TERM_CELL_CAP] = LDG_ARR_ZERO_INIT;
@@ -1009,7 +1009,7 @@ static LDG_NOINLINE uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *s
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t term_tabs_draw(const crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_render_t *render, uint32_t *out_rows)
+static uint32_t term_tabs_draw(const crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_render_t *render, uint32_t *out_rows)
 {
     char tab_text[CROSSTALK_EDA_UI_TERM_TITLE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t pos_col = TERM_ORIG_COL;

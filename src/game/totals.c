@@ -59,7 +59,7 @@ uint32_t crosstalk_game_totals_open_set(crosstalk_game_totals_ctx_t *ctx, uint8_
     return LDG_ERR_AOK;
 }
 
-static LDG_NOINLINE uint32_t totals_emu_draw(const crosstalk_eda_ic_fpga_emu_stat_t *stat, ldg_term_render_t *render, uint32_t *row)
+static uint32_t totals_emu_draw(const crosstalk_eda_ic_fpga_emu_stat_t *stat, ldg_term_render_t *render, uint32_t *row)
 {
     char line[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     char span[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;

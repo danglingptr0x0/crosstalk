@@ -520,7 +520,7 @@ static uint32_t cmdline_row_clear(ldg_term_render_t *render, uint32_t col, uint3
     return crosstalk_ui_cell_span_fill(render, col, row, width, &fg, &bg);
 }
 
-static LDG_NOINLINE uint32_t drawer_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_render_t *render, uint32_t col, uint32_t row, uint32_t width)
+static uint32_t drawer_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_render_t *render, uint32_t col, uint32_t row, uint32_t width)
 {
     char lines[CROSSTALK_CORE_CMDLINE_DRAWER_SHOW_CUNT][CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP];
     uint32_t top_row = 0;
