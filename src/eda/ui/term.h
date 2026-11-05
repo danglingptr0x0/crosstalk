@@ -102,6 +102,8 @@ typedef struct crosstalk_eda_ui_term_sesh
     uint8_t pudding[4];
 } crosstalk_eda_ui_term_sesh_t;
 
+typedef uint32_t (*crosstalk_eda_ui_term_tee_cb_t)(void *user, uint32_t sesh_idx, const uint8_t *bytes, uint32_t len);
+
 typedef struct crosstalk_eda_ui_term_ctx
 {
     crosstalk_eda_ui_term_sesh_t sesh[CROSSTALK_EDA_UI_TERM_SESH_MAX];
@@ -109,6 +111,8 @@ typedef struct crosstalk_eda_ui_term_ctx
     crosstalk_ui_window_ctx_t *win_nav;
     ldg_mem_pool_t *pool;
     const crosstalk_eda_io_pty_ctx_t *pty;
+    crosstalk_eda_ui_term_tee_cb_t tee_cb;
+    void *tee_user;
     uint8_t key_out[CROSSTALK_EDA_UI_TERM_KEY_OUT_CAP];
     uint32_t key_out_cunt;
     uint32_t sesh_active;
@@ -140,6 +144,8 @@ uint32_t crosstalk_eda_ui_term_sesh_sink_cb(void *user, const uint8_t *bytes, ui
 uint32_t crosstalk_eda_ui_term_bytes_put(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, const uint8_t *bytes, uint32_t len);
 uint32_t crosstalk_eda_ui_term_sink_cb(void *user, const uint8_t *bytes, uint32_t len);
 uint32_t crosstalk_eda_ui_term_keys_drain(crosstalk_eda_ui_term_ctx_t *ctx, uint8_t *out, uint32_t cap, uint32_t *out_cunt);
+uint32_t crosstalk_eda_ui_term_keys_put(crosstalk_eda_ui_term_ctx_t *ctx, const uint8_t *bytes, uint32_t len);
+uint32_t crosstalk_eda_ui_term_tee_set(crosstalk_eda_ui_term_ctx_t *ctx, crosstalk_eda_ui_term_tee_cb_t cb, void *user);
 uint32_t crosstalk_eda_ui_term_focus_set(crosstalk_eda_ui_term_ctx_t *ctx, uint8_t focus);
 uint8_t crosstalk_eda_ui_term_focus_is(const crosstalk_eda_ui_term_ctx_t *ctx);
 uint8_t crosstalk_eda_ui_term_serial_live_is(const crosstalk_eda_ui_term_ctx_t *ctx);

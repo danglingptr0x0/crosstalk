@@ -530,6 +530,8 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
             {
                 ret = ldg_term_vt_feed(&ctx->vt, fold, fold_len);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+                if (ctx->tee_cb != 0x0) { if (ctx->tee_cb(ctx->tee_user, fold, (uint32_t)fold_len) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "pty: tee failed; len: %u64", fold_len); } }
             }
         }
 
@@ -659,4 +661,14 @@ uint8_t crosstalk_eda_io_pty_live_is(const crosstalk_eda_io_pty_ctx_t *ctx)
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     return ctx->live == LDG_TRUTH_TRUE && ctx->exited != LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+uint32_t crosstalk_eda_io_pty_tee_set(crosstalk_eda_io_pty_ctx_t *ctx, crosstalk_eda_io_pty_tee_cb_t cb, void *user)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->tee_cb = cb;
+    ctx->tee_user = user;
+
+    return LDG_ERR_AOK;
 }

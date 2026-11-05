@@ -33,6 +33,7 @@
 #include <libresteam/utils/utils.h>
 
 #include "eda/eda.h"
+#include "eda/ic/fpga/remote.h"
 #include "emu/net.h"
 #include "hdl/aig.h"
 #include "hdl/elf.h"
@@ -63,6 +64,13 @@
 #define CROSSTALK_CORE_TOAST_TEXT_CAP 192
 #define CROSSTALK_CORE_TOAST_SHOW_MS 4000
 #define CROSSTALK_CORE_HUB_SYNC_PERIOD_MS 30000
+#define CROSSTALK_CORE_REMOTE_OWNER_SECS 0.25
+#define CROSSTALK_CORE_REMOTE_OUT_MAX 128
+#define CROSSTALK_CORE_REMOTE_OUT_CAP (CROSSTALK_EDA_IC_FPGA_REMOTE_WR_ARGS_CAP + CROSSTALK_EDA_IC_FPGA_REMOTE_KEY_CAP)
+#define CROSSTALK_CORE_CREDIT_TIME_PERIOD 5.0
+#define CROSSTALK_CORE_CREDIT_TIME_DELTA_MAX 30.0
+#define CROSSTALK_CORE_CREDIT_DISCORD_UNKNOWN 0U
+#define CROSSTALK_CORE_CREDIT_PEER_NONE 0U
 #define CROSSTALK_CORE_PRIVACY_STEP 1U
 #define CROSSTALK_CORE_TERM_SLOT 0
 #define CROSSTALK_CORE_TERM_SESH 0
@@ -298,6 +306,7 @@
 #define CROSSTALK_CORE_MP_HOST_RETRY_CUNT 5
 #define CROSSTALK_CORE_MP_HOST_RETRY_SECS 1.0
 #define CROSSTALK_CORE_MP_HOST_FAIL_TEXT "hosting failed; Steam is still connecting; pressing host again retries"
+#define CROSSTALK_CORE_AUTO_HOST_RETRY_SECS 10.0
 #define CROSSTALK_CORE_PROFILE_START_TOK "start"
 #define CROSSTALK_CORE_PROFILE_END_TOK "end"
 #define CROSSTALK_CORE_PROFILE_RST_TOK "reset"
@@ -943,6 +952,17 @@ typedef struct crosstalk_ctx
     uint8_t timeline_screen_prev;
     uint8_t timeline_set;
     uint8_t peer_pudding[2];
+    crosstalk_eda_ic_fpga_remote_t remote;
+    double remote_owner_next;
+    uint8_t remote_owner_seen;
+    uint8_t remote_owner_editor;
+    uint8_t remote_entered;
+    uint8_t auto_host;
+    uint8_t remote_pudding[4];
+    double auto_host_next;
+    double credit_time_seen;
+    uint64_t credit_peer_steam[CROSSTALK_NET_CLIENT_MAX];
+    uint64_t credit_peer_seq[CROSSTALK_NET_CLIENT_MAX];
     crosstalk_eda_ctx_t eda;
     crosstalk_core_task_ctx_t task;
     crosstalk_ui_window_ctx_t win_nav;

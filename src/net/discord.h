@@ -256,7 +256,7 @@ uint32_t crosstalk_net_discord_presence_on_set(crosstalk_net_discord_ctx_t *ctx,
 uint32_t crosstalk_net_discord_presence_menu_set(crosstalk_net_discord_ctx_t *ctx, const char *menu);
 uint32_t crosstalk_net_discord_presence_ld_set(crosstalk_net_discord_ctx_t *ctx);
 uint32_t crosstalk_net_discord_presence_browse_set(crosstalk_net_discord_ctx_t *ctx);
-uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t *ctx, uint32_t players, uint32_t comp_cunt, uint32_t trace_cunt);
+uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t *ctx, uint32_t players, uint32_t players_max, uint64_t lobby_id, uint32_t comp_cunt, uint32_t trace_cunt);
 uint32_t crosstalk_net_discord_presence_music_set(crosstalk_net_discord_ctx_t *ctx, const char *text);
 uint32_t crosstalk_net_discord_presence_activity_set(crosstalk_net_discord_ctx_t *ctx, const char *text);
 uint32_t crosstalk_net_discord_presence_paused_set(crosstalk_net_discord_ctx_t *ctx, uint8_t paused);

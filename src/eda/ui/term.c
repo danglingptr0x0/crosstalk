@@ -564,6 +564,18 @@ uint32_t crosstalk_eda_ui_term_bytes_put(crosstalk_eda_ui_term_ctx_t *ctx, uint3
 
     if (sesh->term != 0x0) { if (ldg_term_vt_feed(&sesh->vt, bytes, (uint64_t)len) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "term session vt feed failed"); } }
 
+    if (ctx->tee_cb != 0x0 && len != 0) { if (ctx->tee_cb(ctx->tee_user, sesh_idx, bytes, len) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "term tee failed; sesh: %u32; len: %u32", sesh_idx, len); } }
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_eda_ui_term_tee_set(crosstalk_eda_ui_term_ctx_t *ctx, crosstalk_eda_ui_term_tee_cb_t cb, void *user)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->tee_cb = cb;
+    ctx->tee_user = user;
+
     return LDG_ERR_AOK;
 }
 
@@ -681,6 +693,20 @@ uint32_t crosstalk_eda_ui_term_keys_drain(crosstalk_eda_ui_term_ctx_t *ctx, uint
 
     ctx->key_out_cunt = ctx->key_out_cunt - take;
     *out_cunt = take;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_eda_ui_term_keys_put(crosstalk_eda_ui_term_ctx_t *ctx, const uint8_t *bytes, uint32_t len)
+{
+    if (LDG_UNLIKELY(ctx == 0x0 || bytes == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ui_term_focus_is(ctx) != LDG_TRUTH_TRUE) { return LDG_ERR_DENIED; }
+
+    if (len > (uint32_t)CROSSTALK_EDA_UI_TERM_KEY_OUT_CAP - ctx->key_out_cunt) { return LDG_ERR_FULL; }
+
+    memcpy(ctx->key_out + ctx->key_out_cunt, bytes, (uint64_t)len);
+    ctx->key_out_cunt = ctx->key_out_cunt + len;
 
     return LDG_ERR_AOK;
 }

@@ -17,6 +17,7 @@
 
 #include "core/log.h"
 #include "eda/ic/fpga/fpga.h"
+#include "eda/ic/fpga/remote.h"
 #include "hdl/aig.h"
 #include "hdl/diag/sv.h"
 #include "hdl/logic_gate.h"
@@ -1022,6 +1023,8 @@ uint32_t crosstalk_eda_ic_fpga_slot_freq_get(const crosstalk_eda_ic_fpga_ctx_t *
 {
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_slot_freq_get(ctx, slot_idx, out); }
+
     *out = 0;
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
@@ -1075,6 +1078,8 @@ uint32_t crosstalk_eda_ic_fpga_slot_exec_get(const crosstalk_eda_ic_fpga_ctx_t *
 
     *out_exec = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     if (ctx->slot[slot_idx].runnable != LDG_TRUTH_TRUE || ctx->slot[slot_idx].emu == LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
@@ -1089,6 +1094,8 @@ uint32_t crosstalk_eda_ic_fpga_slot_hlt_set(crosstalk_eda_ic_fpga_ctx_t *ctx, ui
     crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_slot_hlt_set(ctx, slot_idx, on); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1107,6 +1114,8 @@ uint8_t crosstalk_eda_ic_fpga_slot_hlt_is(const crosstalk_eda_ic_fpga_ctx_t *ctx
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_TRUTH_FALSE; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_slot_hlt_is(ctx, slot_idx); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return LDG_TRUTH_FALSE; }
 
     return ctx->slot[slot_idx].hlt == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -1117,6 +1126,8 @@ uint32_t crosstalk_eda_ic_fpga_slot_abi_get(const crosstalk_eda_ic_fpga_ctx_t *c
     if (LDG_UNLIKELY(ctx == 0x0 || out_abi == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_abi = 0x0;
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1134,6 +1145,8 @@ uint32_t crosstalk_eda_ic_fpga_slot_gate_set(crosstalk_eda_ic_fpga_ctx_t *ctx, u
     crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_slot_gate_set(ctx, slot_idx, on); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1158,6 +1171,8 @@ uint32_t crosstalk_eda_ic_fpga_slot_ir_get(const crosstalk_eda_ic_fpga_ctx_t *ct
     *out_ir = 0x0;
     *out_src = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_slot_ir_get(ctx, slot_idx, out_ir, out_src); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     if (ctx->slot[slot_idx].runnable != LDG_TRUTH_TRUE || ctx->slot[slot_idx].emu == LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
@@ -1176,6 +1191,8 @@ uint32_t crosstalk_eda_ic_fpga_program(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || src == 0x0 || top == 0x0 || caps == 0x0 || clk_name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_DENIED; }
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
@@ -1214,6 +1231,8 @@ uint32_t crosstalk_eda_ic_fpga_unprogram(crosstalk_eda_ic_fpga_ctx_t *ctx, uint3
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_DENIED; }
+
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
@@ -1235,6 +1254,8 @@ uint32_t crosstalk_eda_ic_fpga_emu_engage(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || abi == 0x0 || clk_name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_DENIED; }
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
@@ -1423,6 +1444,8 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
 uint32_t crosstalk_eda_ic_fpga_clk_domain_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint32_t domain)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_clk_domain_set(ctx, slot_idx, domain); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1717,6 +1740,8 @@ uint32_t crosstalk_eda_ic_fpga_cycles_total_get(const crosstalk_eda_ic_fpga_ctx_
 
     *out_cycles = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_cycles_total_get(ctx, slot_idx, out_cycles); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     *out_cycles = ctx->slot[slot_idx].cycles_run;
@@ -1726,6 +1751,8 @@ uint32_t crosstalk_eda_ic_fpga_cycles_total_get(const crosstalk_eda_ic_fpga_ctx_
 uint32_t crosstalk_eda_ic_fpga_verdict_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, crosstalk_eda_ic_fpga_verdict_t *out)
 {
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_verdict_get(ctx, slot_idx, out); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1739,6 +1766,8 @@ uint32_t crosstalk_eda_ic_fpga_pin_wr(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || port == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_pin_wr(ctx, slot_idx, port, val); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1775,6 +1804,8 @@ uint32_t crosstalk_eda_ic_fpga_pin_rd(const crosstalk_eda_ic_fpga_ctx_t *ctx, ui
 
     *out_val = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_pin_rd(ctx, slot_idx, port, out_val); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     if (ctx->slot[slot_idx].runnable != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
@@ -1801,6 +1832,8 @@ uint8_t crosstalk_eda_ic_fpga_slot_live_is(const crosstalk_eda_ic_fpga_ctx_t *ct
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_slot_live_is(ctx, slot_idx); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return LDG_ERR_FUNC_ARG_INVALID; }
 
     return ctx->slot[slot_idx].live;
@@ -1812,6 +1845,8 @@ uint8_t crosstalk_eda_ic_fpga_running_is(const crosstalk_eda_ic_fpga_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_running_is(ctx); }
+
     for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++) { if (ctx->slot[idx].live == LDG_TRUTH_TRUE && ctx->slot[idx].runnable == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; } }
 
     return LDG_TRUTH_FALSE;
@@ -1822,6 +1857,8 @@ const char* crosstalk_eda_ic_fpga_running_top_get(const crosstalk_eda_ic_fpga_ct
     uint32_t idx = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return ""; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_running_top_get(ctx); }
 
     for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++) { if (ctx->slot[idx].live == LDG_TRUTH_TRUE && ctx->slot[idx].runnable == LDG_TRUTH_TRUE) { return ctx->slot[idx].top; } }
 
@@ -1835,6 +1872,8 @@ uint32_t crosstalk_eda_ic_fpga_sig_poke(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || sig_name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_sig_poke(ctx, slot_idx, sig_name, val, quiet); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1893,6 +1932,8 @@ uint32_t crosstalk_eda_ic_fpga_sig_peek(const crosstalk_eda_ic_fpga_ctx_t *ctx, 
 
     *out_val = 0x0;
     *out_width = 0x0;
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_sig_peek(ctx, slot_idx, sig_name, out_val, out_width); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1973,6 +2014,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_width_get(const crosstalk_eda_ic_fpga_ctx_t *
     *out_width = 0x0;
     *out_elem_width = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_width_get(ctx, slot_idx, sig_name, out_width, out_elem_width); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2013,6 +2056,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_offset_get(const crosstalk_eda_ic_fpga_ctx_t 
 
     *out = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_offset_get(ctx, slot_idx, sig_name, out); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2042,6 +2087,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_rd(const crosstalk_eda_ic_fpga_ctx_t *ctx, ui
     if (LDG_UNLIKELY(ctx == 0x0 || sig_name == 0x0 || out == 0x0 || out_rd == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_rd = 0;
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_rd(ctx, slot_idx, sig_name, addr, out, cunt, out_rd); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2117,6 +2164,8 @@ uint32_t crosstalk_eda_ic_fpga_prof_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, 
     *out_base = 0x0;
     *out_cunt = 0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_prof_get(ctx, slot_idx, kind, out_base, out_cunt); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2141,6 +2190,8 @@ uint32_t crosstalk_eda_ic_fpga_dsu_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, u
     if (cap < (uint32_t)CROSSTALK_HDL_ABI_DSU_CUNT) { return LDG_ERR_BOUNDS; }
 
     memset(out, 0x0, (uint64_t)cap * sizeof(uint64_t));
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_dsu_get(ctx, slot_idx, out, cap); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2220,6 +2271,8 @@ uint32_t crosstalk_eda_ic_fpga_emu_state_get(const crosstalk_eda_ic_fpga_ctx_t *
 
     memset(out, 0x0, (uint64_t)cap * sizeof(uint64_t));
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_emu_state_get(ctx, slot_idx, kind, out, cap); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2249,6 +2302,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_acc_get(const crosstalk_eda_ic_fpga_ctx_t *ct
 
     memset(out, 0x0, (uint64_t)cap * sizeof(uint64_t));
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_acc_get(ctx, slot_idx, out, cap); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2270,6 +2325,8 @@ uint32_t crosstalk_eda_ic_fpga_prof_en_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uin
     crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_prof_en_set(ctx, slot_idx, on); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2308,6 +2365,8 @@ uint32_t crosstalk_eda_ic_fpga_audio_rate_get(const crosstalk_eda_ic_fpga_ctx_t 
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out = 0x0;
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_audio_rate_get(ctx, slot_idx, out); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2375,6 +2434,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_watch_get(const crosstalk_eda_ic_fpga_ctx_t *
 
     *out = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_watch_get(ctx, idx, out); }
+
     if (idx >= ctx->mem_watch_cunt) { return LDG_ERR_BOUNDS; }
 
     *out = &ctx->mem_watch[idx];
@@ -2388,6 +2449,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_watch_clear(crosstalk_eda_ic_fpga_ctx_t *ctx,
     uint32_t keep = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_watch_clear(ctx, slot_idx); }
 
     for (at = 0; at < ctx->mem_watch_cunt; at = at + 0x1)
     {
@@ -2458,6 +2521,8 @@ uint32_t crosstalk_eda_ic_fpga_fault_get(const crosstalk_eda_ic_fpga_ctx_t *ctx,
 
     memset(out, 0x0, (uint64_t)cap * sizeof(uint64_t));
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_fault_get(ctx, slot_idx, out, cap); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2487,6 +2552,8 @@ uint32_t crosstalk_eda_ic_fpga_ring_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, 
 
     *out_cunt = 0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_ring_get(ctx, slot_idx, out, cap, out_cunt); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2511,6 +2578,8 @@ uint32_t crosstalk_eda_ic_fpga_brk_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_brk_set(ctx, slot_idx, addr, on); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2532,6 +2601,8 @@ uint32_t crosstalk_eda_ic_fpga_ddu_frame_get(const crosstalk_eda_ic_fpga_ctx_t *
     *out_h = 0x0;
     if (LDG_UNLIKELY(ctx == 0x0 || dst == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_ddu_frame_get(ctx, slot_idx, dst, cap, out_w, out_h); }
+
     if (LDG_UNLIKELY(slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX)) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2552,6 +2623,8 @@ uint32_t crosstalk_eda_ic_fpga_ddu_text_get(const crosstalk_eda_ic_fpga_ctx_t *c
     *out_rows = 0x0;
     if (LDG_UNLIKELY(ctx == 0x0 || dst == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_ddu_text_get(ctx, slot_idx, dst, cap, out_cols, out_rows); }
+
     if (LDG_UNLIKELY(slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX)) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2570,6 +2643,8 @@ uint32_t crosstalk_eda_ic_fpga_io_rd(const crosstalk_eda_ic_fpga_ctx_t *ctx, uin
 
     *out = 0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_io_rd(ctx, slot_idx, addr, out); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2586,6 +2661,8 @@ uint32_t crosstalk_eda_ic_fpga_io_wr(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t 
     const crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_io_wr(ctx, slot_idx, addr, val); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2611,6 +2688,8 @@ uint32_t crosstalk_eda_ic_fpga_io_map_get(const crosstalk_eda_ic_fpga_ctx_t *ctx
     *out_span = 0;
     *out_name = 0x0;
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_io_map_get(ctx, slot_idx, idx, out_base, out_span, out_name); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2634,6 +2713,8 @@ uint32_t crosstalk_eda_ic_fpga_watch_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint3
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_watch_set(ctx, slot_idx, lo, hi, on); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     if (hi < lo) { return LDG_ERR_FUNC_ARG_INVALID; }
@@ -2653,6 +2734,8 @@ uint32_t crosstalk_eda_ic_fpga_brk_skip_set(crosstalk_eda_ic_fpga_ctx_t *ctx, ui
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_brk_skip_set(ctx, slot_idx, cunt); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2670,6 +2753,8 @@ uint32_t crosstalk_eda_ic_fpga_brk_cond_set(crosstalk_eda_ic_fpga_ctx_t *ctx, ui
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_brk_cond_set(ctx, slot_idx, reg, min); }
+
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
     slot = &ctx->slot[slot_idx];
@@ -2685,6 +2770,8 @@ uint32_t crosstalk_eda_ic_fpga_emu_step_set(crosstalk_eda_ic_fpga_ctx_t *ctx, ui
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_emu_step_set(ctx, cunt); }
+
     if (cunt == 0) { return LDG_ERR_FUNC_ARG_INVALID; }
 
     ctx->emu_step = cunt;
@@ -2697,6 +2784,8 @@ uint32_t crosstalk_eda_ic_fpga_prof_en(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_
     crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_prof_en(ctx, slot_idx, on); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2715,6 +2804,8 @@ uint32_t crosstalk_eda_ic_fpga_hlt_mask_set(crosstalk_eda_ic_fpga_ctx_t *ctx, ui
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_hlt_mask_set(ctx, slot_idx, mask); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -2795,6 +2886,8 @@ uint32_t crosstalk_eda_ic_fpga_mem_wr(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
     if (LDG_UNLIKELY(ctx == 0x0 || sig_name == 0x0 || vals == 0x0 || out_wrote == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_wrote = 0;
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_wr(ctx, slot_idx, sig_name, addr, vals, cunt, out_wrote); }
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -3234,6 +3327,8 @@ uint32_t crosstalk_eda_ic_fpga_fileset_ck(crosstalk_eda_ic_fpga_ctx_t *ctx, cons
 
     if (LDG_UNLIKELY(ctx == 0x0 || dir == 0x0 || files == 0x0 || top == 0x0 || caps == 0x0 || clk_name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_DENIED; }
+
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (caps->logic_cells == 0 || caps->user_io == 0) { return CROSSTALK_EDA_IC_FPGA_ERR_COMP; }
@@ -3299,6 +3394,8 @@ uint32_t crosstalk_eda_ic_fpga_fileset_program(crosstalk_eda_ic_fpga_ctx_t *ctx,
     if (LDG_UNLIKELY(ctx == 0x0 || dir == 0x0 || files == 0x0 || top == 0x0 || caps == 0x0 || clk_name == 0x0 || out_bytes == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_bytes = 0x0;
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return LDG_ERR_DENIED; }
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 

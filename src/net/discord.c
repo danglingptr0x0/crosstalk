@@ -1913,7 +1913,7 @@ uint32_t crosstalk_net_discord_presence_credits_set(crosstalk_net_discord_ctx_t 
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t *ctx, uint32_t players, uint32_t comp_cunt, uint32_t trace_cunt)
+uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t *ctx, uint32_t players, uint32_t players_max, uint64_t lobby_id, uint32_t comp_cunt, uint32_t trace_cunt)
 {
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -1933,6 +1933,18 @@ uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t 
     }
 
     snprintf(ctx->presence.state, sizeof(ctx->presence.state), "%" PRIu32 " components/%" PRIu32 " traces", comp_cunt, trace_cunt);
+
+    if (lobby_id != 0 && players_max != 0)
+    {
+        snprintf(ctx->presence.party_id, sizeof(ctx->presence.party_id), "%.16s%" PRIu64, CROSSTALK_NET_DISCORD_PARTY_PREFIX, lobby_id);
+        snprintf(ctx->presence.join_secret, sizeof(ctx->presence.join_secret), "%.32s%" PRIu64, CROSSTALK_NET_DISCORD_SECRET_PREFIX, lobby_id);
+        ctx->presence.party_cunt = players;
+        ctx->presence.party_cunt_max = players_max;
+        ctx->presence.joinable = (players < players_max) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+        return LDG_ERR_AOK;
+    }
+
     ctx->presence.party_id[0] = LDG_STR_TERM;
     ctx->presence.join_secret[0] = LDG_STR_TERM;
     ctx->presence.party_cunt = 0;
@@ -2022,7 +2034,7 @@ uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_
         case CROSSTALK_NET_PRESENCE_SCREEN_LOBBY:
             return crosstalk_net_discord_presence_lobby_set(ctx, desc->members, desc->members_max, desc->lobby_id);
         case CROSSTALK_NET_PRESENCE_SCREEN_SANDBOX:
-            return crosstalk_net_discord_presence_sandbox_set(ctx, desc->members, NET_DISCORD_PRESENCE_CUNT_NONE, NET_DISCORD_PRESENCE_CUNT_NONE);
+            return crosstalk_net_discord_presence_sandbox_set(ctx, desc->members, desc->members_max, desc->connect_lobby_id, NET_DISCORD_PRESENCE_CUNT_NONE, NET_DISCORD_PRESENCE_CUNT_NONE);
         case CROSSTALK_NET_PRESENCE_SCREEN_LD:
             return crosstalk_net_discord_presence_ld_set(ctx);
         case CROSSTALK_NET_PRESENCE_SCREEN_BROWSE:

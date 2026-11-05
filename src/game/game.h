@@ -11,6 +11,7 @@
 #include "game/fx/sfx.h"
 #include "game/caption.h"
 #include "game/settings.h"
+#include "game/credit.h"
 
 #define CROSSTALK_GAME_FX_EXPOSURE 1.58
 #define CROSSTALK_GAME_FX_BLOOM_THRESH 0.65
@@ -103,6 +104,7 @@ typedef struct crosstalk_game_ctx
     crosstalk_game_progression_state_t progression;
     crosstalk_game_settings_t settings;
     crosstalk_game_last_state_t last_state;
+    crosstalk_game_credit_ctx_t credit;
     crosstalk_game_fx_sfx_ctx_t sfx_sound;
     crosstalk_game_caption_ctx_t caption;
     uint64_t author_steam_id;

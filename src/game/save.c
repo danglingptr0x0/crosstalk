@@ -242,7 +242,7 @@ static uint32_t bkp_wr(const char *path)
     return ret;
 }
 
-uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const crosstalk_game_last_state_t *state, uint64_t author_steam_id, const char *author_name, uint64_t created_epoch_ms, uint64_t bench_ms_total, uint64_t sim_ms_total, const crosstalk_game_save_editor_sect_t *editor_sects, uint32_t editor_sect_cunt, const char *path)
+uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const crosstalk_game_last_state_t *state, const crosstalk_game_credit_ctx_t *credit, uint64_t author_steam_id, const char *author_name, uint64_t created_epoch_ms, uint64_t bench_ms_total, uint64_t sim_ms_total, const crosstalk_game_save_editor_sect_t *editor_sects, uint32_t editor_sect_cunt, const char *path)
 {
     game_save_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
     game_save_sect_t sects[GAME_SAVE_SECT_MAX] = LDG_ARR_ZERO_INIT;
@@ -302,6 +302,20 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
         if (ret == LDG_ERR_AOK && state_buff != 0x0) { ret = save_sect_add(sects, &sect_cunt, GAME_SAVE_SECT_LASTSTAT, state_buff, state_len); }
 
         if (ret != LDG_ERR_AOK && state_buff != 0x0) { ldg_mem_dealloc(state_buff); }
+    }
+
+    if (ret == LDG_ERR_AOK && credit != 0x0)
+    {
+        ldg_byte_t *credit_buff = 0x0;
+        uint32_t credit_len = 0;
+        ret = crosstalk_game_credit_serialize(credit, 0x0, GAME_SAVE_SIZE_PROBE, &credit_len);
+        if (ret == LDG_ERR_AOK && credit_len > 0) { ret = ldg_mem_alloc((uint64_t)credit_len, (void **)&credit_buff); }
+
+        if (ret == LDG_ERR_AOK && credit_buff != 0x0) { ret = crosstalk_game_credit_serialize(credit, credit_buff, credit_len, &credit_len); }
+
+        if (ret == LDG_ERR_AOK && credit_buff != 0x0) { ret = save_sect_add(sects, &sect_cunt, GAME_SAVE_SECT_CREDIT, credit_buff, credit_len); }
+
+        if (ret != LDG_ERR_AOK && credit_buff != 0x0) { ldg_mem_dealloc(credit_buff); }
     }
 
     if (ret == LDG_ERR_AOK && editor_sects != 0x0)
@@ -428,7 +442,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
     return LDG_ERR_AOK;
 }
 
-static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payload_len, crosstalk_game_settings_t *out_settings, uint8_t *out_settings_present, crosstalk_game_last_state_t *out_state, uint8_t *out_state_present, uint64_t *out_author_steam_id, char *out_author_name, uint32_t author_name_cap, uint64_t *out_created_epoch_ms, uint64_t *out_ld_ms_total, uint64_t *out_sim_ms_total)
+static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payload_len, crosstalk_game_settings_t *out_settings, uint8_t *out_settings_present, crosstalk_game_last_state_t *out_state, uint8_t *out_state_present, crosstalk_game_credit_ctx_t *out_credit, uint64_t *out_author_steam_id, char *out_author_name, uint32_t author_name_cap, uint64_t *out_created_epoch_ms, uint64_t *out_ld_ms_total, uint64_t *out_sim_ms_total)
 {
     game_save_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
     const ldg_byte_t *data = 0x0;
@@ -493,6 +507,25 @@ static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payl
     else if (LDG_UNLIKELY(ret != LDG_ERR_NOT_FOUND)) { return ret; }
 
     if (found == LDG_TRUTH_TRUE && out_state != 0x0 && out_state_present != 0x0 && len > 0) { if (crosstalk_game_last_state_deserialize(out_state, data, len) == LDG_ERR_AOK) { *out_state_present = LDG_TRUTH_TRUE; } }
+
+    if (out_credit != 0x0)
+    {
+        ret = crosstalk_game_credit_init(out_credit);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        ret = save_sect_find(payload, payload_len, GAME_SAVE_SECT_CREDIT, &data, &len);
+        if (ret == LDG_ERR_AOK && len > 0)
+        {
+            ret = crosstalk_game_credit_deserialize(out_credit, data, len);
+            if (ret != LDG_ERR_AOK)
+            {
+                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save credit sect rejected; err: %u32; len: %u32", ret, len);
+                ret = crosstalk_game_credit_init(out_credit);
+                if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+            }
+        }
+        else if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND)) { return ret; }
+    }
 
     return LDG_ERR_AOK;
 }
@@ -737,7 +770,7 @@ uint32_t crosstalk_game_save_editor_sect_rd(const char *path, const char *name, 
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_game_save_rd(const char *path, crosstalk_game_settings_t *out_settings, uint8_t *out_settings_present, crosstalk_game_last_state_t *out_state, uint8_t *out_state_present, uint64_t *out_author_steam_id, char *out_author_name, uint32_t author_name_cap, uint64_t *out_created_epoch_ms, uint64_t *out_ld_ms_total, uint64_t *out_sim_ms_total)
+uint32_t crosstalk_game_save_rd(const char *path, crosstalk_game_settings_t *out_settings, uint8_t *out_settings_present, crosstalk_game_last_state_t *out_state, uint8_t *out_state_present, crosstalk_game_credit_ctx_t *out_credit, uint64_t *out_author_steam_id, char *out_author_name, uint32_t author_name_cap, uint64_t *out_created_epoch_ms, uint64_t *out_ld_ms_total, uint64_t *out_sim_ms_total)
 {
     ldg_io_info_t st = LDG_STRUCT_ZERO_INIT;
     ldg_io_file_t *file = 0x0;
@@ -795,7 +828,7 @@ uint32_t crosstalk_game_save_rd(const char *path, crosstalk_game_settings_t *out
         return ret;
     }
 
-    ret = save_payload_sect_rd(payload, payload_len, out_settings, out_settings_present, out_state, out_state_present, out_author_steam_id, out_author_name, author_name_cap, out_created_epoch_ms, out_ld_ms_total, out_sim_ms_total);
+    ret = save_payload_sect_rd(payload, payload_len, out_settings, out_settings_present, out_state, out_state_present, out_credit, out_author_steam_id, out_author_name, author_name_cap, out_created_epoch_ms, out_ld_ms_total, out_sim_ms_total);
     ldg_mem_dealloc(frame);
     return ret;
 }

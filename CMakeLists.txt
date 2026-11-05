@@ -9,7 +9,7 @@ list(APPEND CMAKE_MODULE_PATH "$ENV{HOME}/.config/cmake")
 include(std)
 set(STD_PROJ_PREFIX "crosstalk")
 
-set(CROSSTALKRELEASE "0.1")
+set(CROSSTALKRELEASE "0.2-rc1")
 
 set(STEAM_SDK "$ENV{HOME}/git/libdangling/steamworks_sdk/sdk")
 set(CROSSTALK_LIBRESTEAM_ROOT "$ENV{HOME}/git/libresteam" CACHE PATH "LibreSteam tree holding include/ and the build outputs")
@@ -52,6 +52,7 @@ set(CROSSTALK_SRC_LINUX
     src/eda/ic/fpga/build.c
     src/eda/ic/fpga/emu.c
     src/eda/ic/fpga/fpga.c
+    src/eda/ic/fpga/remote.c
     src/eda/ic/fpga/run.c
     src/eda/io/cast.c
     src/eda/io/display.c
@@ -124,6 +125,7 @@ set(CROSSTALK_SRC_LINUX
     src/game/progression/stat.c
     src/game/board.c
     src/game/caption.c
+    src/game/credit.c
     src/game/menu.c
     src/game/save.c
     src/game/settings.c
@@ -165,6 +167,7 @@ set(CROSSTALK_SRC_WIN
     src/eda/ic/fpga/build.c
     src/eda/ic/fpga/emu.c
     src/eda/ic/fpga/fpga.c
+    src/eda/ic/fpga/remote.c
     src/eda/ic/fpga/run.c
     src/eda/io/cast.c
     src/eda/io/display.c
@@ -237,6 +240,7 @@ set(CROSSTALK_SRC_WIN
     src/game/progression/stat.c
     src/game/board.c
     src/game/caption.c
+    src/game/credit.c
     src/game/menu.c
     src/game/save.c
     src/game/settings.c

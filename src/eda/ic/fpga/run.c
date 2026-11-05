@@ -11,6 +11,7 @@
 #include <dangling/logging/logging.h>
 
 #include "core/log.h"
+#include "eda/ic/fpga/remote.h"
 #include "eda/ic/fpga/run.h"
 
 static uint32_t run_worker(uint32_t worker_id, void *arg)
@@ -173,6 +174,8 @@ uint32_t crosstalk_eda_ic_fpga_run_pin_set(crosstalk_eda_ic_fpga_run_ctx_t *ctx,
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_pin_set(ctx->fpga, hz); }
+
     ctx->pin_hz = hz;
 
     if (hz == 0)
@@ -213,6 +216,8 @@ uint32_t crosstalk_eda_ic_fpga_run_cpuset_set(crosstalk_eda_ic_fpga_run_ctx_t *c
 uint32_t crosstalk_eda_ic_fpga_run_pin_get(const crosstalk_eda_ic_fpga_run_ctx_t *ctx, uint64_t *out)
 {
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_pin_get(ctx->fpga, out); }
 
     *out = ctx->pin_hz;
 
@@ -273,6 +278,8 @@ uint32_t crosstalk_eda_ic_fpga_run_start(crosstalk_eda_ic_fpga_run_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_start(ctx->fpga); }
+
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (ctx->live == LDG_TRUTH_TRUE) { return CROSSTALK_EDA_IC_FPGA_RUN_ERR_LIVE; }
@@ -295,6 +302,8 @@ uint32_t crosstalk_eda_ic_fpga_run_hlt(crosstalk_eda_ic_fpga_run_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->live != LDG_TRUTH_TRUE && ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_hlt(ctx->fpga); }
+
     if (ctx->live != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     LDG_ST_RELEASE(ctx->stop, LDG_TRUTH_TRUE);
@@ -314,6 +323,8 @@ uint32_t crosstalk_eda_ic_fpga_run_cycles_get(const crosstalk_eda_ic_fpga_run_ct
 {
     if (LDG_UNLIKELY(ctx == 0x0 || out_cycles == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_cycles_get(ctx->fpga, out_cycles); }
+
     *out_cycles = ctx->cycles_total;
 
     return LDG_ERR_AOK;
@@ -323,6 +334,8 @@ uint32_t crosstalk_eda_ic_fpga_run_rate_get(const crosstalk_eda_ic_fpga_run_ctx_
 {
     if (LDG_UNLIKELY(ctx == 0x0 || out_hz == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_rate_get(ctx->fpga, out_hz); }
+
     *out_hz = ctx->rate_hz;
 
     return LDG_ERR_AOK;
@@ -331,6 +344,8 @@ uint32_t crosstalk_eda_ic_fpga_run_rate_get(const crosstalk_eda_ic_fpga_run_ctx_
 uint8_t crosstalk_eda_ic_fpga_run_live_is(const crosstalk_eda_ic_fpga_run_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->fpga != 0x0 && crosstalk_eda_ic_fpga_remote_active_is(ctx->fpga) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_run_live_is(ctx->fpga); }
 
     return ctx->live == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }

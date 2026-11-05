@@ -800,6 +800,14 @@ static uint32_t lobby_join_enter(crosstalk_ctx_t *ctx, uint64_t lobby_id)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->auto_host == LDG_TRUTH_TRUE)
+    {
+        crosstalk_net_libresteam_lobby_leave(&ctx->libresteam_net);
+        crosstalk_net_libresteam_sesh_stop(&ctx->libresteam_net);
+        ctx->auto_host = LDG_TRUTH_FALSE;
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: auto host dropped for join; lobby: %u64", lobby_id);
+    }
+
     ret = crosstalk_net_libresteam_lobby_join(&ctx->libresteam_net, lobby_id);
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -1360,11 +1368,28 @@ static uint8_t crosstalk_sesh_joined_is(const crosstalk_ctx_t *ctx)
     return LDG_TRUTH_FALSE;
 }
 
+static void crosstalk_remote_stop(crosstalk_ctx_t *ctx)
+{
+    uint32_t ret = 0;
+
+    ret = crosstalk_eda_ic_fpga_remote_on_set(&ctx->remote, LDG_TRUTH_FALSE);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "remote: viewer off; err: %u32", ret);
+
+    if (ctx->remote_entered == LDG_TRUTH_TRUE) { for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++) { if (ctx->eda.term.sesh[idx].src != (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE) { ret = crosstalk_eda_ui_term_sesh_close(&ctx->eda.term, idx); } } }
+
+    ctx->remote_sesh = LDG_TRUTH_FALSE;
+    ctx->remote_owner_seen = LDG_TRUTH_FALSE;
+    ctx->remote_owner_editor = LDG_TRUTH_FALSE;
+    ctx->remote_entered = LDG_TRUTH_FALSE;
+}
+
 static void crosstalk_sesh_leave(crosstalk_ctx_t *ctx)
 {
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
+
+    if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) == LDG_TRUTH_TRUE) { crosstalk_remote_stop(ctx); }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: session leave; remote: %u32; busy: %u32; rdy: %u32", (uint32_t)ctx->remote_sesh, (uint32_t)ctx->mp_busy, (uint32_t)ctx->mp_rdy);
 
@@ -1475,7 +1500,7 @@ static uint32_t ld_worker(uint32_t worker_id, void *arg)
         if (ctx->save_path[0] != 0 && ldg_io_path_exists_is(ctx->save_path) == LDG_TRUTH_TRUE)
         {
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: ld save preload; path: %s", ctx->save_path);
-            ret = crosstalk_game_save_rd(ctx->save_path, &ctx->game.settings, &ld->settings_present, &ctx->game.last_state, &ld->state_present, &ctx->game.author_steam_id, ctx->game.author_name, CROSSTALK_GAME_AUTHOR_NAME_CAP, &ctx->game.created_epoch_ms, &ctx->game.bench_ms_total, &ctx->game.sim_ms_total);
+            ret = crosstalk_game_save_rd(ctx->save_path, &ctx->game.settings, &ld->settings_present, &ctx->game.last_state, &ld->state_present, &ctx->game.credit, &ctx->game.author_steam_id, ctx->game.author_name, CROSSTALK_GAME_AUTHOR_NAME_CAP, &ctx->game.created_epoch_ms, &ctx->game.bench_ms_total, &ctx->game.sim_ms_total);
             if (ret == LDG_ERR_AOK) { ld->preloaded = LDG_TRUTH_TRUE; }
             else
             {
@@ -1497,7 +1522,7 @@ static uint32_t ld_worker(uint32_t worker_id, void *arg)
     else
     {
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: ld save path: %s", ctx->save_path);
-        ret = crosstalk_game_save_rd(ctx->save_path, &ctx->game.settings, &ld->settings_present, &ctx->game.last_state, &ld->state_present, &ctx->game.author_steam_id, ctx->game.author_name, CROSSTALK_GAME_AUTHOR_NAME_CAP, &ctx->game.created_epoch_ms, &ctx->game.bench_ms_total, &ctx->game.sim_ms_total);
+        ret = crosstalk_game_save_rd(ctx->save_path, &ctx->game.settings, &ld->settings_present, &ctx->game.last_state, &ld->state_present, &ctx->game.credit, &ctx->game.author_steam_id, ctx->game.author_name, CROSSTALK_GAME_AUTHOR_NAME_CAP, &ctx->game.created_epoch_ms, &ctx->game.bench_ms_total, &ctx->game.sim_ms_total);
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: ld game_save_rd done; ret: %u32", ret);
 
         now = ldg_time_epoch_ms_get();
@@ -2794,6 +2819,13 @@ static uint32_t ld_finalize(crosstalk_ctx_t *ctx)
 
     ret = LDG_LD_ACQUIRE(ctx->game.ld.err);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: ld_finalize; kind: %u32; ld_err: %u32", (uint32_t)ctx->game.ld.kind, ret);
+
+    if (ctx->game.ld.kind == CROSSTALK_LD_NEW || ctx->game.ld.kind == CROSSTALK_LD_BARE)
+    {
+        if (crosstalk_game_credit_init(&ctx->game.credit) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: credit rst failed"); }
+
+        ctx->credit_time_seen = 0.0;
+    }
 
     if (ctx->game.ld.kind == CROSSTALK_LD_NEW)
     {
@@ -8526,6 +8558,393 @@ static void crosstalk_notice_raise(crosstalk_ctx_t *ctx, const char *title, cons
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: notify failed; err: %u32", ret); }
 }
 
+static uint32_t crosstalk_remote_term_tee_cb(void *user, uint32_t sesh_idx, const uint8_t *bytes, uint32_t len)
+{
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+    crosstalk_net_wire_remote_term_out_t out = LDG_STRUCT_ZERO_INIT;
+    uint32_t done = 0;
+    uint32_t ret = LDG_ERR_AOK;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || bytes == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->libresteam_net.sesh_live == 0 || crosstalk_net_libresteam_mode_get(&ctx->libresteam_net) != CROSSTALK_NET_LIBRESTEAM_MODE_SRV) { return LDG_ERR_AOK; }
+
+    while (done < len)
+    {
+        uint32_t chunk = len - done < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_TERM_CHUNK_CAP ? len - done : (uint32_t)CROSSTALK_NET_WIRE_REMOTE_TERM_CHUNK_CAP;
+
+        out.sesh = sesh_idx;
+        out.len = chunk;
+        memcpy(out.bytes, bytes + done, chunk);
+
+        ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_OUT, &out, (uint32_t)CROSSTALK_NET_WIRE_REMOTE_TERM_OUT_HDR_SIZE + chunk, CROSSTALK_NET_WIRE_RELIABLE);
+        if (ret != LDG_ERR_AOK) { break; }
+
+        done = done + chunk;
+    }
+
+    return ret;
+}
+
+static uint32_t crosstalk_remote_pty_tee_cb(void *user, const uint8_t *bytes, uint32_t len)
+{
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+    uint32_t sesh_idx = UINT32_MAX;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || bytes == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_eda_ui_term_sesh_src_find(&ctx->eda.term, CROSSTALK_EDA_UI_TERM_SRC_PTY, &sesh_idx) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
+
+    return crosstalk_remote_term_tee_cb(ctx, sesh_idx, bytes, len);
+}
+
+static void crosstalk_remote_owner_send(crosstalk_ctx_t *ctx)
+{
+    crosstalk_net_wire_remote_owner_t owner = LDG_STRUCT_ZERO_INIT;
+    uint32_t ret = 0;
+
+    if (ctx->time < ctx->remote_owner_next) { return; }
+
+    ctx->remote_owner_next = ctx->time + CROSSTALK_CORE_REMOTE_OWNER_SECS;
+    owner.editor = ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_SESH_CAP && idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++)
+    {
+        const crosstalk_eda_ui_term_sesh_t *sesh = &ctx->eda.term.sesh[idx];
+
+        owner.sesh[idx].src = sesh->src;
+        owner.sesh[idx].live = sesh->live;
+
+        ret = ldg_str_rbrcpy(owner.sesh[idx].title, sesh->title, (uint64_t)sizeof(owner.sesh[idx].title));
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { owner.sesh[idx].title[0] = LDG_STR_TERM; }
+    }
+
+    ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_REMOTE_OWNER, &owner, (uint32_t)sizeof(owner), CROSSTALK_NET_WIRE_RELIABLE);
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: owner send failed; err: %u32", ret); }
+}
+
+static void crosstalk_remote_owner_apply(crosstalk_ctx_t *ctx, const crosstalk_net_wire_remote_owner_t *owner)
+{
+    uint32_t ret = 0;
+
+    ctx->remote_owner_seen = LDG_TRUTH_TRUE;
+    ctx->remote_owner_editor = owner->editor == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) != LDG_TRUTH_TRUE) { return; }
+
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_SESH_CAP && idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++)
+    {
+        const crosstalk_eda_ui_term_sesh_t *mine = &ctx->eda.term.sesh[idx];
+        char title[CROSSTALK_NET_WIRE_REMOTE_TITLE_CAP] = LDG_ARR_ZERO_INIT;
+
+        if (owner->sesh[idx].src == (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE)
+        {
+            if (mine->src != (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE) { ret = crosstalk_eda_ui_term_sesh_close(&ctx->eda.term, idx); }
+
+            continue;
+        }
+
+        memcpy(title, owner->sesh[idx].title, sizeof(title));
+        title[sizeof(title) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
+
+        if (mine->src == (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_STREAM && strncmp(mine->title, title, sizeof(title)) == 0) { continue; }
+
+        ret = crosstalk_eda_ui_term_sesh_clear(&ctx->eda.term, idx);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_eda_ui_term_sesh_bind(&ctx->eda.term, idx, CROSSTALK_EDA_UI_TERM_SRC_STREAM, 0x0, title); }
+
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: term session bind failed; sesh: %u32; err: %u32", idx, ret); }
+    }
+}
+
+static void crosstalk_remote_pump(crosstalk_ctx_t *ctx)
+{
+    uint8_t out[CROSSTALK_CORE_REMOTE_OUT_CAP] = LDG_ARR_ZERO_INIT;
+    uint32_t ret = 0;
+
+    ret = crosstalk_eda_ic_fpga_remote_tick(&ctx->remote, ldg_time_epoch_ms_get());
+    if (ret != LDG_ERR_AOK) { return; }
+
+    for (uint32_t sent = 0; sent < (uint32_t)CROSSTALK_CORE_REMOTE_OUT_MAX; sent++)
+    {
+        uint32_t out_len = 0;
+        uint32_t out_kind = (uint32_t)CROSSTALK_EDA_IC_FPGA_REMOTE_KIND_NONE;
+        uint8_t wire_kind = CROSSTALK_NET_WIRE_KIND_REMOTE_REQ;
+
+        ret = crosstalk_eda_ic_fpga_remote_out_next(&ctx->remote, out, (uint32_t)sizeof(out), &out_len, &out_kind);
+        if (ret != LDG_ERR_AOK) { break; }
+
+        if (out_kind == (uint32_t)CROSSTALK_EDA_IC_FPGA_REMOTE_KIND_WR) { wire_kind = CROSSTALK_NET_WIRE_KIND_REMOTE_WR; }
+
+        ret = crosstalk_net_wire_send(&ctx->libresteam_net, wire_kind, out, out_len, CROSSTALK_NET_WIRE_RELIABLE);
+        if (ret != LDG_ERR_AOK)
+        {
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: send failed; err: %u32; kind: %u32", ret, (uint32_t)wire_kind);
+            break;
+        }
+    }
+
+    if (crosstalk_eda_ui_term_focus_is(&ctx->eda.term) == LDG_TRUTH_TRUE)
+    {
+        crosstalk_net_wire_remote_term_in_t term_in = LDG_STRUCT_ZERO_INIT;
+        uint32_t key_cunt = 0;
+
+        if (crosstalk_eda_ui_term_keys_drain(&ctx->eda.term, term_in.bytes, (uint32_t)sizeof(term_in.bytes), &key_cunt) == LDG_ERR_AOK && key_cunt != 0)
+        {
+            term_in.len = key_cunt;
+
+            ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN, &term_in, (uint32_t)sizeof(term_in), CROSSTALK_NET_WIRE_RELIABLE);
+            if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: term keys send failed; err: %u32", ret); }
+        }
+    }
+}
+
+static void crosstalk_remote_tick(crosstalk_ctx_t *ctx)
+{
+    uint8_t srv = crosstalk_net_libresteam_mode_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_MODE_SRV ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    uint8_t viewer = LDG_TRUTH_FALSE;
+    uint32_t ret = 0;
+
+    if (srv == LDG_TRUTH_TRUE && ctx->libresteam_net.sesh_live != 0) { crosstalk_remote_owner_send(ctx); }
+
+    if (srv != LDG_TRUTH_TRUE && ctx->libresteam_net.sesh_live != 0 && crosstalk_net_libresteam_status_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_CONN_STATUS_CONN) { viewer = LDG_TRUTH_TRUE; }
+
+    if (viewer != LDG_TRUTH_TRUE)
+    {
+        if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) == LDG_TRUTH_TRUE) { crosstalk_remote_stop(ctx); }
+
+        return;
+    }
+
+    if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) != LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_eda_ic_fpga_remote_on_set(&ctx->remote, LDG_TRUTH_TRUE);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "remote: viewer on; host: %u64; err: %u32", crosstalk_net_libresteam_lobby_host_steam_id_get(&ctx->libresteam_net), ret);
+        if (ret != LDG_ERR_AOK) { return; }
+
+        ctx->remote_sesh = LDG_TRUTH_TRUE;
+        ctx->remote_owner_seen = LDG_TRUTH_FALSE;
+        ctx->remote_owner_editor = LDG_TRUTH_FALSE;
+        ctx->remote_entered = LDG_TRUTH_FALSE;
+    }
+
+    if (ctx->remote_entered != LDG_TRUTH_TRUE && ctx->remote_owner_seen == LDG_TRUTH_TRUE && ctx->remote_owner_editor == LDG_TRUTH_TRUE)
+    {
+        ctx->game.screen = CROSSTALK_GAME_SCREEN_EDITOR;
+        ctx->remote_entered = LDG_TRUTH_TRUE;
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "remote: entering owner editor");
+    }
+
+    if (ctx->remote_entered == LDG_TRUTH_TRUE && ctx->remote_owner_editor != LDG_TRUTH_TRUE)
+    {
+        crosstalk_remote_stop(ctx);
+        crosstalk_sesh_leave(ctx);
+        ctx->game.screen = CROSSTALK_GAME_SCREEN_MENU;
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "remote: owner left the editor; session ended");
+        return;
+    }
+
+    crosstalk_remote_pump(ctx);
+}
+
+static void crosstalk_auto_host_tick(crosstalk_ctx_t *ctx)
+{
+    uint8_t keep = LDG_TRUTH_FALSE;
+    uint32_t ret = 0;
+
+    if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR && ctx->privacy_on != LDG_TRUTH_TRUE && ctx->remote_sesh == 0) { keep = LDG_TRUTH_TRUE; }
+
+    if (ctx->auto_host == LDG_TRUTH_TRUE)
+    {
+        if (keep != LDG_TRUTH_TRUE)
+        {
+            crosstalk_sesh_leave(ctx);
+            ctx->auto_host = LDG_TRUTH_FALSE;
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: auto host closed; privacy: %u32", (uint32_t)ctx->privacy_on);
+            return;
+        }
+
+        if (crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE && crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net) == 0)
+        {
+            crosstalk_net_libresteam_sesh_stop(&ctx->libresteam_net);
+            ctx->auto_host = LDG_TRUTH_FALSE;
+            ctx->auto_host_next = ctx->time + CROSSTALK_CORE_AUTO_HOST_RETRY_SECS;
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: auto host lobby lost; retrying");
+        }
+
+        return;
+    }
+
+    if (keep != LDG_TRUTH_TRUE || ctx->game.ld_active != 0 || ctx->time < ctx->auto_host_next) { return; }
+
+    if (crosstalk_sesh_joined_is(ctx) != LDG_TRUTH_FALSE) { return; }
+
+    ctx->mp_players_max = CROSSTALK_MP_PLAYERS_MIN + ctx->mp_players_idx * CROSSTALK_MP_PLAYERS_STEP;
+
+    ret = crosstalk_net_libresteam_lobby_mode_set(&ctx->libresteam_net, CROSSTALK_LOBBY_MODE_TEXT);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "auto host lobby mode set failed"); }
+
+    ret = crosstalk_net_libresteam_host_start(&ctx->libresteam_net, CROSSTALK_NET_VIRTUAL_PORT);
+    if (ret == LDG_ERR_AOK)
+    {
+        ret = crosstalk_net_libresteam_lobby_create(&ctx->libresteam_net, (int32_t)ctx->mp_players_max);
+        if (ret != LDG_ERR_AOK) { crosstalk_net_libresteam_sesh_stop(&ctx->libresteam_net); }
+    }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: auto host; err: %u32; players: %u32", ret, ctx->mp_players_max);
+
+    if (ret == LDG_ERR_AOK) { ctx->auto_host = LDG_TRUTH_TRUE; }
+    else { ctx->auto_host_next = ctx->time + CROSSTALK_CORE_AUTO_HOST_RETRY_SECS; }
+}
+
+static uint64_t crosstalk_credit_discord_get(const crosstalk_ctx_t *ctx, uint64_t steam_id)
+{
+    for (uint32_t idx = 0; idx < ctx->ident_cunt && idx < (uint32_t)CROSSTALK_CORE_IDENT_CAP; idx++) { if (ctx->ident[idx].steam_id == steam_id) { return ctx->ident[idx].discord_id; } }
+
+    return CROSSTALK_CORE_CREDIT_DISCORD_UNKNOWN;
+}
+
+static void crosstalk_credit_visit_sync(crosstalk_ctx_t *ctx)
+{
+    uint8_t srv = LDG_TRUTH_FALSE;
+    uint64_t now_ms = ldg_time_epoch_ms_get();
+    uint32_t ret = 0;
+
+    if (crosstalk_net_libresteam_mode_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_MODE_SRV && ctx->libresteam_net.sesh_live != 0 && ctx->remote_sesh == 0) { srv = LDG_TRUTH_TRUE; }
+
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_CLIENT_MAX; idx++)
+    {
+        const crosstalk_net_libresteam_client_t *client = &ctx->libresteam_net.client[idx];
+        uint64_t live_id = 0;
+
+        if (srv == LDG_TRUTH_TRUE && client->live != 0) { live_id = client->steam_id; }
+
+        if (ctx->credit_peer_steam[idx] != 0)
+        {
+            ret = crosstalk_game_credit_visit_touch(&ctx->game.credit, ctx->credit_peer_seq[idx], now_ms);
+            if (ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "credit: visit touch failed; err: %u32", ret); }
+
+            if (ctx->credit_peer_steam[idx] == live_id) { continue; }
+
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "credit: visit closed; steam: %u64; seq: %u64", ctx->credit_peer_steam[idx], ctx->credit_peer_seq[idx]);
+            ctx->credit_peer_steam[idx] = CROSSTALK_CORE_CREDIT_PEER_NONE;
+            ctx->credit_peer_seq[idx] = CROSSTALK_GAME_CREDIT_VISIT_SEQ_NONE;
+        }
+
+        if (live_id == 0) { continue; }
+
+        {
+            char persona[CROSSTALK_GAME_CREDIT_PERSONA_CAP] = LDG_ARR_ZERO_INIT;
+            uint64_t seq = CROSSTALK_GAME_CREDIT_VISIT_SEQ_NONE;
+
+            if (crosstalk_persona_resolve(ctx, live_id, persona, (uint64_t)sizeof(persona)) != LDG_ERR_AOK) { persona[0] = LDG_STR_TERM; }
+
+            ret = crosstalk_game_credit_visit_open(&ctx->game.credit, live_id, persona, now_ms, &seq);
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "credit: visit opened; steam: %u64; name: %.63s; seq: %u64; err: %u32", live_id, persona, seq, ret);
+            if (ret != LDG_ERR_AOK) { continue; }
+
+            ctx->credit_peer_steam[idx] = live_id;
+            ctx->credit_peer_seq[idx] = seq;
+        }
+    }
+}
+
+static void crosstalk_credit_time_tick(crosstalk_ctx_t *ctx)
+{
+    char persona[CROSSTALK_GAME_CREDIT_PERSONA_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t local_id = 0;
+    double delta = 0.0;
+    uint32_t secs = 0;
+    uint32_t ret = 0;
+
+    crosstalk_credit_visit_sync(ctx);
+
+    if (ctx->remote_sesh != 0 || ctx->game.screen != CROSSTALK_GAME_SCREEN_EDITOR)
+    {
+        ctx->credit_time_seen = 0.0;
+        return;
+    }
+
+    if (ctx->credit_time_seen <= 0.0)
+    {
+        ctx->credit_time_seen = ctx->time;
+        return;
+    }
+
+    delta = ctx->time - ctx->credit_time_seen;
+    if (delta < CROSSTALK_CORE_CREDIT_TIME_PERIOD) { return; }
+
+    ctx->credit_time_seen = ctx->time;
+
+    if (delta > CROSSTALK_CORE_CREDIT_TIME_DELTA_MAX) { return; }
+
+    secs = (uint32_t)delta;
+    if (secs == 0) { return; }
+
+    local_id = crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net);
+    if (local_id != 0)
+    {
+        if (crosstalk_persona_resolve(ctx, local_id, persona, (uint64_t)sizeof(persona)) != LDG_ERR_AOK) { persona[0] = LDG_STR_TERM; }
+
+        ret = crosstalk_game_credit_time_cum(&ctx->game.credit, local_id, persona, crosstalk_net_discord_user_id_get(&ctx->discord), secs, secs);
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_FULL) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "credit: owner time cum rejected; err: %u32", ret); }
+    }
+
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_CLIENT_MAX; idx++)
+    {
+        uint64_t steam_id = ctx->credit_peer_steam[idx];
+
+        if (steam_id == 0 || steam_id == local_id) { continue; }
+
+        persona[0] = LDG_STR_TERM;
+        if (crosstalk_persona_resolve(ctx, steam_id, persona, (uint64_t)sizeof(persona)) != LDG_ERR_AOK) { persona[0] = LDG_STR_TERM; }
+
+        ret = crosstalk_game_credit_time_cum(&ctx->game.credit, steam_id, persona, crosstalk_credit_discord_get(ctx, steam_id), secs, secs);
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_FULL) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "credit: viewer time cum rejected; steam: %u64; err: %u32", steam_id, ret); }
+    }
+}
+
+static void crosstalk_remote_recv(crosstalk_ctx_t *ctx, crosstalk_net_libresteam_ctx_t *net, const crosstalk_net_wire_hdr_t *hdr, const uint8_t *payload)
+{
+    uint32_t ret = LDG_ERR_AOK;
+
+    if (net->mode == CROSSTALK_NET_LIBRESTEAM_MODE_SRV)
+    {
+        if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_REQ)
+        {
+            const uint8_t *frame = 0x0;
+            uint32_t frame_len = 0;
+
+            ret = crosstalk_eda_ic_fpga_remote_serve(&ctx->eda.fpga, &ctx->remote, payload, hdr->len, &frame, &frame_len);
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_net_wire_send(&ctx->libresteam_net, CROSSTALK_NET_WIRE_KIND_REMOTE_RESP, frame, frame_len, CROSSTALK_NET_WIRE_RELIABLE); }
+        }
+        else if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_WR) { ret = crosstalk_eda_ic_fpga_remote_apply(&ctx->eda.fpga, payload, hdr->len); }
+        else if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN && hdr->len == (uint32_t)sizeof(crosstalk_net_wire_remote_term_in_t))
+        {
+            crosstalk_net_wire_remote_term_in_t term_in = LDG_STRUCT_ZERO_INIT;
+
+            memcpy(&term_in, payload, sizeof(term_in));
+            if (term_in.len <= (uint32_t)sizeof(term_in.bytes)) { ret = crosstalk_eda_ui_term_keys_put(&ctx->eda.term, term_in.bytes, term_in.len); }
+        }
+
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: srv frame refused; err: %u32; kind: %u32; from: %u64", ret, (uint32_t)hdr->kind, hdr->sender); }
+
+        return;
+    }
+
+    if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) != LDG_TRUTH_TRUE) { return; }
+
+    if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_RESP) { ret = crosstalk_eda_ic_fpga_remote_resp_put(&ctx->remote, payload, hdr->len); }
+    else if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_OUT && hdr->len >= (uint32_t)CROSSTALK_NET_WIRE_REMOTE_TERM_OUT_HDR_SIZE && hdr->len <= (uint32_t)sizeof(crosstalk_net_wire_remote_term_out_t))
+    {
+        crosstalk_net_wire_remote_term_out_t out = LDG_STRUCT_ZERO_INIT;
+
+        memcpy(&out, payload, hdr->len);
+        if (out.len == hdr->len - (uint32_t)CROSSTALK_NET_WIRE_REMOTE_TERM_OUT_HDR_SIZE && out.sesh < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX) { ret = crosstalk_eda_ui_term_bytes_put(&ctx->eda.term, out.sesh, out.bytes, out.len); }
+    }
+
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: viewer frame refused; err: %u32; kind: %u32", ret, (uint32_t)hdr->kind); }
+}
+
 static void sesh_data_cb(crosstalk_net_libresteam_ctx_t *net, uint32_t conn_id, const void *data, uint32_t len)
 {
     crosstalk_ctx_t *ctx = 0x0;
@@ -8547,6 +8966,23 @@ static void sesh_data_cb(crosstalk_net_libresteam_ctx_t *net, uint32_t conn_id, 
     }
 
     if (hdr.sender == crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net)) { return; }
+
+    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_REQ || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_RESP || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_WR || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_OUT || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN)
+    {
+        crosstalk_remote_recv(ctx, net, &hdr, payload);
+        return;
+    }
+
+    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_OWNER)
+    {
+        crosstalk_net_wire_remote_owner_t owner = LDG_STRUCT_ZERO_INIT;
+
+        if (net->mode == CROSSTALK_NET_LIBRESTEAM_MODE_SRV || hdr.len != (uint32_t)sizeof(owner)) { return; }
+
+        memcpy(&owner, payload, sizeof(owner));
+        crosstalk_remote_owner_apply(ctx, &owner);
+        return;
+    }
 
     if (net->mode == CROSSTALK_NET_LIBRESTEAM_MODE_SRV)
     {
@@ -13223,6 +13659,13 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     if (ret == LDG_ERR_AOK && ctx->cpuset_ok == LDG_TRUTH_TRUE) { if (crosstalk_eda_ic_fpga_run_cpuset_set(&ctx->eda.fpga_run, ctx->cpuset_id, ctx->cpuset_cunt) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run cpuset set failed"); } }
 
+    ret = crosstalk_eda_ic_fpga_remote_init(&ctx->remote);
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_eda_ic_fpga_remote_bind(&ctx->eda.fpga, &ctx->remote); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_eda_ic_fpga_remote_run_bind(&ctx->remote, &ctx->eda.fpga_run); }
+
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote init failed; err: %u32", ret); }
+
     ret = crosstalk_eda_logic_probe_init(&ctx->eda.logic_probe);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "logic probe init failed"); }
 
@@ -13252,6 +13695,11 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     ret = crosstalk_eda_ui_term_init(&ctx->eda.term);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "term init failed"); }
+
+    ret = crosstalk_eda_ui_term_tee_set(&ctx->eda.term, crosstalk_remote_term_tee_cb, ctx);
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_eda_io_pty_tee_set(&ctx->eda.pty, crosstalk_remote_pty_tee_cb, ctx); }
+
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote term tee set failed; err: %u32", ret); }
 
     ret = crosstalk_eda_ui_indicator_init(&ctx->eda.indicator);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "indicator init failed"); }
@@ -13815,7 +14263,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save path compose failed"); }
         }
 
-        ret = crosstalk_game_save_wr(&ctx->game.settings, &ctx->game.last_state, ctx->game.author_steam_id, ctx->game.author_name, ctx->game.created_epoch_ms, ctx->game.bench_ms_total, ctx->game.sim_ms_total, editor_sect, editor_sect_cunt, ctx->save_path);
+        ret = crosstalk_game_save_wr(&ctx->game.settings, &ctx->game.last_state, &ctx->game.credit, ctx->game.author_steam_id, ctx->game.author_name, ctx->game.created_epoch_ms, ctx->game.bench_ms_total, ctx->game.sim_ms_total, editor_sect, editor_sect_cunt, ctx->save_path);
         if (layout_buff != 0x0) { ldg_mem_dealloc(layout_buff); }
 
         if (rtl_buff != 0x0) { ldg_mem_dealloc(rtl_buff); }
@@ -13954,7 +14402,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect_cunt = editor_sect_cunt + 0x1;
         }
 
-        ret = crosstalk_game_save_wr(&ctx->game.settings, &ctx->game.last_state, ctx->game.author_steam_id, ctx->game.author_name, ctx->game.created_epoch_ms, ctx->game.bench_ms_total, ctx->game.sim_ms_total, editor_sect, editor_sect_cunt, autosave_path);
+        ret = crosstalk_game_save_wr(&ctx->game.settings, &ctx->game.last_state, &ctx->game.credit, ctx->game.author_steam_id, ctx->game.author_name, ctx->game.created_epoch_ms, ctx->game.bench_ms_total, ctx->game.sim_ms_total, editor_sect, editor_sect_cunt, autosave_path);
         if (layout_buff != 0x0) { ldg_mem_dealloc(layout_buff); }
 
         if (rtl_buff != 0x0) { ldg_mem_dealloc(rtl_buff); }
@@ -15407,6 +15855,10 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             ctx->game.screen = CROSSTALK_GAME_SCREEN_MENU;
             crosstalk_net_libresteam_notice_push(&ctx->libresteam_net, "left host board");
         }
+
+        crosstalk_remote_tick(ctx);
+        crosstalk_auto_host_tick(ctx);
+        crosstalk_credit_time_tick(ctx);
 
         if (ctx->snap_req_sent == 0 && crosstalk_net_libresteam_mode_get(&ctx->libresteam_net) != CROSSTALK_NET_LIBRESTEAM_MODE_SRV && ctx->libresteam_net.sesh_live != 0 && ctx->mp_rdy != LDG_TRUTH_FALSE && ctx->mp_busy == LDG_TRUTH_FALSE && crosstalk_net_libresteam_status_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_CONN_STATUS_CONN)
         {
@@ -17274,6 +17726,10 @@ uint32_t crosstalk_core_destroy(crosstalk_ctx_t *ctx)
     mark = crosstalk_shutdown_mark("watch", mark);
 
     if (LDG_UNLIKELY(crosstalk_eda_ic_fpga_run_shutdown(&ctx->eda.fpga_run) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run shutdown failed"); }
+
+    if (LDG_UNLIKELY(crosstalk_eda_ic_fpga_remote_bind(&ctx->eda.fpga, 0x0) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote unbind failed"); }
+
+    if (LDG_UNLIKELY(crosstalk_eda_ic_fpga_remote_shutdown(&ctx->remote) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote shutdown failed"); }
 
     mark = crosstalk_shutdown_mark("fpga_run", mark);
 

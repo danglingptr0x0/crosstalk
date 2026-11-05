@@ -235,6 +235,7 @@ typedef struct crosstalk_eda_ic_fpga_ctx
     crosstalk_eda_ic_fpga_mem_watch_t mem_watch[CROSSTALK_EDA_IC_FPGA_MEM_WATCH_MAX];
     crosstalk_eda_ic_fpga_refused_log_t refused_st;
     crosstalk_eda_ic_fpga_refused_log_t *refused;
+    void *remote;
     double mem_watch_next;
     uint64_t emu_step;
     uint64_t src_cap;

@@ -15,12 +15,16 @@
 #define CROSSTALK_EDA_IO_PTY_ROW_MAX 120
 #define CROSSTALK_EDA_IO_PTY_UTF_SEQ_CAP 4
 
+typedef uint32_t (*crosstalk_eda_io_pty_tee_cb_t)(void *user, const uint8_t *bytes, uint32_t len);
+
 typedef struct crosstalk_eda_io_pty_ctx
 {
     ldg_io_pty_t pty;
     ldg_term_vt_t vt;
     ldg_term_t *term;
     ldg_mem_pool_t *pool;
+    crosstalk_eda_io_pty_tee_cb_t tee_cb;
+    void *tee_user;
     char title[CROSSTALK_EDA_IO_PTY_TITLE_CAP];
     char clip[CROSSTALK_EDA_IO_PTY_CLIP_CAP];
     uint64_t rd_total;
@@ -52,5 +56,6 @@ uint32_t crosstalk_eda_io_pty_grid_resize(crosstalk_eda_io_pty_ctx_t *ctx, uint3
 uint32_t crosstalk_eda_io_pty_focus_put(crosstalk_eda_io_pty_ctx_t *ctx, uint8_t focused);
 uint32_t crosstalk_eda_io_pty_clip_take(crosstalk_eda_io_pty_ctx_t *ctx, char *out, uint32_t cap, uint32_t *out_len);
 uint8_t crosstalk_eda_io_pty_live_is(const crosstalk_eda_io_pty_ctx_t *ctx);
+uint32_t crosstalk_eda_io_pty_tee_set(crosstalk_eda_io_pty_ctx_t *ctx, crosstalk_eda_io_pty_tee_cb_t cb, void *user);
 
 #endif
