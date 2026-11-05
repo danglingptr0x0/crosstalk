@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      steam:
+        description: build the latest Crosstalk release and force its Steam upload, live set and post
+        type: boolean
+        default: false
 permissions:
   contents: read
 env:
@@ -26,6 +31,8 @@ jobs:
     container: archlinux:base-devel
     env:
       SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+    outputs:
+      rel: ${{ steps.stage.outputs.rel }}
     permissions:
       contents: write
       security-events: write
@@ -34,9 +41,18 @@ jobs:
     steps:
       - name: packages
         run: pacman -Syu --noconfirm --needed cmake ninja nasm pkgconf curl jq git github-cli mingw-w64-gcc pipewire unzip libarchive git-cliff alsa-lib libpulse libx11
+      - name: latest release
+        if: inputs.steam
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$(gh api "repos/$GITHUB_REPOSITORY/releases?per_page=50" --jq '[.[] | select(.draft == false) | select(.tag_name | test("^[0-9]"))][0].tag_name')"
+          test -n "$tag" && test "$tag" != "null"
+          echo "RELTAG=$tag" >> "$GITHUB_ENV"
       - name: checkout crosstalk
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
+          ref: ${{ env.RELTAG || github.ref }}
           path: crosstalk
           fetch-depth: 0
           persist-credentials: false
@@ -115,10 +131,13 @@ jobs:
             -Dsonar.organization=danglingptr0x0 -Dsonar.projectKey=danglingptr0x0_crosstalk -Dsonar.sources=src -Dsonar.cfamily.compile-commands=crosstalk/build/compile_commands.json
 
       - name: stage
+        id: stage
         run: |
           rel="$GITHUB_REF_NAME"
           if [ "$GITHUB_REF_TYPE" != "tag" ]; then rel="${GITHUB_SHA::12}"; fi
+          if [ -n "${RELTAG:-}" ]; then rel="$RELTAG"; fi
           echo "REL=$rel" >> "$GITHUB_ENV"
+          echo "rel=$rel" >> "$GITHUB_OUTPUT"
           sdk="crosstalk/$DISCORD_DIR/discord_social_sdk"
           lin="out/crosstalk-$rel-linux-amd64"
           win="out/crosstalk-$rel-windows"
@@ -169,3 +188,73 @@ jobs:
           kind=--latest
           case "$REL" in *-rc*) kind=--prerelease ;; esac
           gh release create "$REL" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$REL" --notes-file changelog.md "$kind" "crosstalk-$REL-linux-amd64.tar.xz" "crosstalk-$REL-windows.zip"
+      - name: steam stage
+        if: github.ref_type == 'tag' || inputs.steam
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sdk="crosstalk/$DISCORD_DIR/discord_social_sdk"
+          c=steam/content
+          mkdir -p "$c/win" "$c/linux" "$c/bloat_win" "$c/bloat_linux" "$RUNNER_TEMP/tcw" "$RUNNER_TEMP/wincc"
+          gh release download --repo "$TC_REPO" --pattern '*-windows-amd64.tar.xz' --dir "$RUNNER_TEMP/tcw"
+          for archive in "$RUNNER_TEMP"/tcw/*-windows-amd64.tar.xz; do gh attestation verify "$archive" --repo "$TC_REPO"; tar -xJf "$archive" -C "$RUNNER_TEMP/tcw"; done
+          gccdir="$(find /usr/lib/gcc/x86_64-w64-mingw32 -mindepth 1 -maxdepth 1 -type d | head -n 1)"
+          cp -r "$RUNNER_TEMP/tcw/windows/." "$RUNNER_TEMP/wincc/"
+          mkdir -p "$RUNNER_TEMP/wincc/x86_64-w64-mingw32" "$RUNNER_TEMP/wincc/lib/gcc/x86_64-w64-mingw32/$(basename "$gccdir")"
+          cp -rL "$MINGW_ROOT/include" "$MINGW_ROOT/lib" "$RUNNER_TEMP/wincc/x86_64-w64-mingw32/"
+          cp -L "$gccdir/crtbegin.o" "$gccdir/crtend.o" "$gccdir/crtfastmath.o" "$gccdir/libgcc.a" "$gccdir/libgcc_eh.a" "$RUNNER_TEMP/wincc/lib/gcc/x86_64-w64-mingw32/$(basename "$gccdir")/"
+          cp -r "out/crosstalk-$REL-windows/." "$c/bloat_win/"
+          cp -r "out/crosstalk-$REL-linux-amd64/." "$c/bloat_linux/"
+          cp -L crosstalk/tools/dangem/build-win/dangem.exe crosstalk/build-win/libresteam.dll crosstalk/build-win/libdangling.dll "$sdk/bin/release/discord_partner_sdk.dll" "$sdk/bin/release/discord_krisp.dll" "$sdk"/bin/release/*.kef crosstalk/LICENSE crosstalk/CONTRIBUTING "$c/win/"
+          cp -L crosstalk/tools/dangem/build/dangem crosstalk/build/libresteam.so.0 "$sdk/lib/release/libdiscord_partner_sdk.so" "$sdk"/lib/release/*.kef crosstalk/LICENSE crosstalk/CONTRIBUTING "$c/linux/"
+          mkdir -p "$c/linux/ldg/lib"
+          cp -L /usr/local/lib/libdangling.so* "$c/linux/ldg/lib/"
+          for t in win linux; do cp -r crosstalk/res "$c/$t/res"; cp -r crosstalk/src "$c/$t/src"; mkdir -p "$c/$t/$DISCORD_DIR/discord_social_sdk"; cp -r "$sdk/include" "$c/$t/$DISCORD_DIR/discord_social_sdk/include"; done
+          mkdir -p "$c/win/build-win/dangem" "$c/linux/build/dangem"
+          cp crosstalk/build-win/dangem/build-windows.lst crosstalk/build-win/dangem/RELEASE "$c/win/build-win/dangem/"
+          cp crosstalk/build/dangem/build-linux.lst crosstalk/build/dangem/RELEASE "$c/linux/build/dangem/"
+          for t in win bloat_win; do mkdir -p "$c/$t/res/utils/cc"; cp -r "$RUNNER_TEMP/wincc/." "$c/$t/res/utils/cc/"; done
+          for t in linux bloat_linux; do mkdir -p "$c/$t/res/utils/cc"; cp -r "$(dirname "$CC_DIR")/." "$c/$t/res/utils/cc/"; done
+          script="$(cat crosstalk/.github/steam/installscript_win.vdf)"
+          printf '%s\n' "$script" | tee "$c/win/installscript_win.vdf"
+          printf '%s\n' "${script//4898790/5466650}" | tee "$c/bloat_win/installscript_win.vdf"
+          git-cliff --config crosstalk/.github/steam/cliff_bbcode.toml --repository crosstalk --latest --output steam/changelog.bbcode
+          cat steam/changelog.bbcode
+          tar -cf steam.tar steam
+          du -sh steam.tar
+      - name: steam upload artifact
+        if: github.ref_type == 'tag' || inputs.steam
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: steam
+          path: steam.tar
+          if-no-files-found: error
+  steam:
+    needs: build
+    if: github.ref_type == 'tag' || inputs.steam
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: packages
+        run: sudo apt-get update && sudo apt-get install -y lib32gcc-s1 qrencode
+      - name: checkout crosstalk
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          path: crosstalk
+          persist-credentials: false
+      - name: download
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name steam --dir "$RUNNER_TEMP/dl"
+          tar -xf "$RUNNER_TEMP/dl/steam.tar" -C "$RUNNER_TEMP"
+      - name: deploy
+        env:
+          REL: ${{ needs.build.outputs.rel }}
+          STEAM_USER: ${{ secrets.STEAMWORKS_USER }}
+          STEAM_PASS: ${{ secrets.STEAMWORKS_PASS }}
+          STEAM_PUBLISHER_KEY: ${{ secrets.STEAMWORKS_PUBLISHER_KEY }}
+        run: CONTENT="$RUNNER_TEMP/steam/content" WORK="$RUNNER_TEMP/work" CHANGELOG="$RUNNER_TEMP/steam/changelog.bbcode" bash crosstalk/.github/steam/deploy.sh

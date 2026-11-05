@@ -1,0 +1,12 @@
+"InstallScript"
+{
+	"Run Process"
+	{
+		"WezTerm"
+		{
+			"HasRunKey" "HKEY_LOCAL_MACHINE\\Software\\Valve\\Steam\\Apps\\4898790"
+			"Process 1" "%WinDir%\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+			"Command 1" "-NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"%INSTALLDIR%\\res\\wezterm\\install.ps1\""
+		}
+	}
+}
