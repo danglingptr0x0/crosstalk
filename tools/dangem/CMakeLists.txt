@@ -2,8 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 project(dangem VERSION 0.1.0 LANGUAGES C)
 
 list(APPEND CMAKE_MODULE_PATH "$ENV{HOME}/.config/cmake")
-include(std)
+include(std OPTIONAL RESULT_VARIABLE DANGEM_STD_FILE)
 set(STD_PROJ_PREFIX "dangem")
+
+if(NOT DANGEM_STD_FILE)
+    message(STATUS "std: not found; building with CMake defaults")
+endif()
 
 set(DANGEM_SRC
     src/core/core.c
