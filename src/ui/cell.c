@@ -12,6 +12,8 @@
 
 #define CELL_BLANK_CAP 32
 #define CELL_BLANK_CH ' '
+#define CELL_MNEMONIC_GLYPH_CAP 2
+#define CELL_MNEMONIC_GLYPH_FIRST 0
 
 uint32_t crosstalk_ui_cell_color_get(uint32_t rgba, ldg_term_render_color_t *out)
 {
@@ -23,6 +25,27 @@ uint32_t crosstalk_ui_cell_color_get(uint32_t rgba, ldg_term_render_color_t *out
     out->pudding[0] = 0;
 
     return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_ui_cell_mnemonic_draw(ldg_term_render_t *render, uint32_t col, uint32_t row, const char *label, uint32_t pos, uint32_t width, uint32_t bg_rgba)
+{
+    char glyph[CELL_MNEMONIC_GLYPH_CAP] = LDG_ARR_ZERO_INIT;
+    ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t bg = LDG_STRUCT_ZERO_INIT;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(render == 0x0 || label == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (pos == (uint32_t)UINT32_MAX || pos >= width) { return LDG_ERR_AOK; }
+
+    glyph[CELL_MNEMONIC_GLYPH_FIRST] = label[pos];
+
+    ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_MNEMONIC_RGBA, &fg);
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get(bg_rgba, &bg); }
+
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    return crosstalk_ui_cell_text_put(render, col + pos, row, glyph, (uint64_t)sizeof(glyph), &fg, &bg);
 }
 
 uint32_t crosstalk_ui_cell_text_put(ldg_term_render_t *render, uint32_t col, uint32_t row, const char *text, uint64_t cap, const ldg_term_render_color_t *fg, const ldg_term_render_color_t *bg)

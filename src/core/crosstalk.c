@@ -1005,7 +1005,11 @@ static uint32_t crosstalk_extras_refresh(crosstalk_ctx_t *ctx)
             {
                 char title[CROSSTALK_CORE_EXTRAS_NAME_CAP] = LDG_ARR_ZERO_INIT;
 
-                if (crosstalk_extras_title_get(dir, name, title, (uint64_t)sizeof(title)) == LDG_ERR_AOK) { ret = ldg_str_rbrcpy(label, title, (uint64_t)sizeof(label)); }
+                if (crosstalk_extras_title_get(dir, name, title, (uint64_t)sizeof(title)) == LDG_ERR_AOK)
+                {
+                    ret = ldg_str_rbrcpy(label, title, (uint64_t)sizeof(label));
+                    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: extras title copy failed; file: %.95s; err: %u32", name, ret); }
+                }
                 else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: extras title absent; file: %.95s", name); }
             }
 
@@ -1115,7 +1119,11 @@ static uint32_t crosstalk_ost_start(crosstalk_ctx_t *ctx)
 
     if (crosstalk_game_music_native_is(&ctx->music) != LDG_TRUTH_TRUE) { return LDG_ERR_UNSUPPORTED; }
 
-    if (ctx->ost_cunt == 0) { ret = crosstalk_ost_refresh(ctx); }
+    if (ctx->ost_cunt == 0)
+    {
+        ret = crosstalk_ost_refresh(ctx);
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: ost refresh failed; err: %u32", ret); }
+    }
 
     if (ctx->ost_cunt == 0)
     {
@@ -1224,7 +1232,8 @@ static uint32_t crosstalk_ident_cache_ld(crosstalk_ctx_t *ctx)
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_io_file_rd(file, &ctx->ident[0], (uint64_t)sizeof(ctx->ident), &rd);
-    ldg_io_file_close(file);
+
+    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: ident cache close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -1252,7 +1261,12 @@ static uint32_t crosstalk_ident_cache_wr(crosstalk_ctx_t *ctx)
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_io_file_wr(file, &ctx->ident[0], (uint64_t)ctx->ident_cunt * sizeof(crosstalk_net_wire_ident_t), &wrote);
-    ldg_io_file_close(file);
+
+    if (ldg_io_file_close(file) != LDG_ERR_AOK)
+    {
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: ident cache close failed");
+        if (ret == LDG_ERR_AOK) { ret = LDG_ERR_IO_CLOSE; }
+    }
 
     return ret;
 }
@@ -3326,7 +3340,11 @@ static void crosstalk_pack_start(crosstalk_ctx_t *ctx)
 
         const char *cc_rel = (ldg_io_path_sep_get() == '\\') ? CROSSTALK_CORE_PACK_CC_REL_WIN : CROSSTALK_CORE_PACK_CC_REL_UNIX;
 
-        if (ldg_io_path_parent_get(cc_dir, cc_bin, (uint64_t)sizeof(cc_bin)) == LDG_ERR_AOK && ldg_io_path_join(cc_bin, cc_rel, cc_join, (uint64_t)sizeof(cc_join)) == LDG_ERR_AOK) { ret = ldg_str_rbrcpy(cc_dir, cc_join, (uint64_t)sizeof(cc_dir)); }
+        if (ldg_io_path_parent_get(cc_dir, cc_bin, (uint64_t)sizeof(cc_bin)) == LDG_ERR_AOK && ldg_io_path_join(cc_bin, cc_rel, cc_join, (uint64_t)sizeof(cc_join)) == LDG_ERR_AOK)
+        {
+            ret = ldg_str_rbrcpy(cc_dir, cc_join, (uint64_t)sizeof(cc_dir));
+            if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pack: cc dir copy failed; err: %u32", ret); }
+        }
     }
 
     if (ctx->eda.fpga_build.ok != LDG_TRUTH_TRUE)
@@ -4759,7 +4777,6 @@ static void crosstalk_wshop_publish(crosstalk_ctx_t *ctx, const char *title, con
 {
     const crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
     const char *persona = 0x0;
-    const char *preview = 0x0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || title == 0x0 || isa == 0x0)) { return; }
@@ -4804,9 +4821,9 @@ static void crosstalk_wshop_publish(crosstalk_ctx_t *ctx, const char *title, con
         return;
     }
 
-    ret = crosstalk_net_wshop_upload_start(&ctx->wshop, &ctx->wshop_up, CROSSTALK_NET_WSHOP_TYPE_CORE, ctx->wshop_pub.name, ctx->wshop_pub.isa, ctx->wshop_stage_dir, preview);
+    ret = crosstalk_net_wshop_upload_start(&ctx->wshop, &ctx->wshop_up, CROSSTALK_NET_WSHOP_TYPE_CORE, ctx->wshop_pub.name, ctx->wshop_pub.isa, ctx->wshop_stage_dir, 0x0);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "publish: core; dir: %.191s; top: %.63s; isa: %.31s; bytes: %u32; preview: %u32; err: %u32", ctx->wshop_stage_dir, ctx->wshop_pub.top, isa, slot->src_len, preview != 0x0 ? 0x1 : 0x0, ret);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "publish: core; dir: %.191s; top: %.63s; isa: %.31s; bytes: %u32; err: %u32", ctx->wshop_stage_dir, ctx->wshop_pub.top, isa, slot->src_len, ret);
 
     if (ret != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_PUBLISH_FAIL_TEXT); return; }
 
@@ -14680,7 +14697,7 @@ static uint32_t crosstalk_menu_switch_draw(ldg_term_render_t *render, const ldg_
         ret = crosstalk_row_fill(render, left, row, (uint32_t)CROSSTALK_MENU_SWITCH_COL_CUNT, bg_rgba);
         if (ret == LDG_ERR_AOK) { ret = crosstalk_text_clip_put(render, left + (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, row, (uint32_t)CROSSTALK_MENU_SWITCH_COL_CUNT - (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, label, fg_rgba, bg_rgba, &drawn); }
 
-        if (ret == LDG_ERR_AOK && mnemonic_pos != 0x0 && idx < (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP && label == item[idx]) { ret = crosstalk_ui_key_mnemonic_draw(render, left + (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, row, label, mnemonic_pos[idx], drawn, bg_rgba); }
+        if (ret == LDG_ERR_AOK && mnemonic_pos != 0x0 && idx < (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP && label == item[idx]) { ret = crosstalk_ui_cell_mnemonic_draw(render, left + (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, row, label, mnemonic_pos[idx], drawn, bg_rgba); }
 
         if (ret != LDG_ERR_AOK) { return ret; }
     }

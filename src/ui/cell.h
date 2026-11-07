@@ -11,6 +11,7 @@
 #define CROSSTALK_UI_CELL_RGBA_GREEN_SHIFT 16
 #define CROSSTALK_UI_CELL_RGBA_BLUE_SHIFT 8
 #define CROSSTALK_UI_CELL_PANE_RGBA 0x000000FFU
+#define CROSSTALK_UI_CELL_MNEMONIC_RGBA 0xFFC24AFFU
 
 uint32_t crosstalk_ui_cell_color_get(uint32_t rgba, ldg_term_render_color_t *out);
 uint32_t crosstalk_ui_cell_rgba_put(ldg_term_render_t *render, uint32_t col, uint32_t row, const char *text, uint64_t cap, uint32_t fg_rgba, uint32_t *out_w);
@@ -21,5 +22,6 @@ uint32_t crosstalk_ui_cell_line_draw(ldg_term_render_t *render, uint32_t x_lhs, 
 uint32_t crosstalk_ui_cell_sample_fill(ldg_term_render_t *render, uint32_t pos_x, uint32_t pos_y, uint32_t extent_w, uint32_t extent_h, uint32_t rgba);
 uint32_t crosstalk_ui_cell_dot_draw(ldg_term_render_t *render, uint32_t pos_x, uint32_t pos_y, uint32_t rgba);
 uint32_t crosstalk_ui_cell_span_fill(ldg_term_render_t *render, uint32_t col, uint32_t row, uint32_t width, const ldg_term_render_color_t *fg, const ldg_term_render_color_t *bg);
+uint32_t crosstalk_ui_cell_mnemonic_draw(ldg_term_render_t *render, uint32_t col, uint32_t row, const char *label, uint32_t pos, uint32_t width, uint32_t bg_rgba);
 
 #endif

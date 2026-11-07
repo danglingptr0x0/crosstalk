@@ -895,6 +895,7 @@ static uint32_t text_ch_insert(crosstalk_core_cmdline_ctx_t *ctx, uint32_t codep
     if (len + (uint32_t)LDG_STR_TERM_SIZE >= (uint32_t)CROSSTALK_CORE_CMDLINE_CAP) { return LDG_ERR_FULL; }
 
     pos = cursor_pos_get(ctx);
+    if (pos > len) { pos = len; }
 
     memmove(&ctx->buff[pos + (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_STEP], &ctx->buff[pos], (uint64_t)(len - pos + (uint32_t)LDG_STR_TERM_SIZE));
     ctx->buff[pos] = (char)codepoint;
@@ -1182,6 +1183,8 @@ static uint32_t candidate_gather(crosstalk_core_cmdline_ctx_t *ctx)
 
     ctx->candidate_cunt = 0;
     ctx->candidate_at = word_at_get(ctx->buff);
+    if (LDG_UNLIKELY(ctx->candidate_at >= (uint32_t)CROSSTALK_CORE_CMDLINE_CAP)) { return LDG_ERR_OVERFLOW; }
+
     word = &ctx->buff[ctx->candidate_at];
     word_len = (uint64_t)strlen(word);
 
@@ -1303,6 +1306,8 @@ static uint32_t ghost_accept(crosstalk_core_cmdline_ctx_t *ctx, uint8_t word_onl
 
         if (end < ghost_len && ctx->ghost[end] == CROSSTALK_CORE_CMDLINE_PATH_SEP) { end++; }
     }
+
+    if (LDG_UNLIKELY(end >= (uint32_t)CROSSTALK_CORE_CMDLINE_CAP)) { return LDG_ERR_OVERFLOW; }
 
     memcpy(ctx->buff, ctx->ghost, (uint64_t)end);
     ctx->buff[end] = LDG_STR_TERM;
@@ -1496,6 +1501,8 @@ uint32_t crosstalk_core_cmdline_key_isr(crosstalk_core_cmdline_ctx_t *ctx, const
     {
         uint32_t shift_len = crosstalk_core_cmdline_len_get(ctx->buff);
 
+        if (LDG_UNLIKELY(shift_len >= (uint32_t)CROSSTALK_CORE_CMDLINE_CAP)) { return LDG_ERR_OVERFLOW; }
+
         memmove(ctx->buff, &ctx->buff[LDG_STR_TERM_SIZE], (uint64_t)shift_len);
 
         if (ctx->cursor != (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_END && ctx->cursor != 0) { ctx->cursor = ctx->cursor - (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_STEP; }
@@ -1551,13 +1558,15 @@ uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term
 
     if (ctx->isearch_on == LDG_TRUTH_TRUE && ctx->isearch_sel != (uint32_t)UINT32_MAX && crosstalk_core_cmdline_hist_get(ctx, ctx->isearch_sel, &isearch_match) != LDG_ERR_AOK) { isearch_match = 0x0; }
 
-    if (ctx->isearch_on == LDG_TRUTH_TRUE) { if (isearch_match != 0x0) { ret = (uint32_t)snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_ISEARCH_HINT_FMT, isearch_match); }
+    if (ctx->isearch_on == LDG_TRUTH_TRUE) { if (isearch_match != 0x0) { ret = snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_ISEARCH_HINT_FMT, isearch_match) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
         else { ret = ldg_str_rbrcpy(ctx->hint, CROSSTALK_CORE_CMDLINE_ISEARCH_NONE_TEXT, (uint64_t)sizeof(ctx->hint)); } }
-    else if (ctx->candidate_on == LDG_TRUTH_TRUE && ctx->candidate_sel != (uint32_t)UINT32_MAX) { ret = (uint32_t)snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_CANDIDATE_SEL_FMT, ctx->candidate_sel + (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP, ctx->candidate_cunt); }
-    else if (ctx->candidate_on == LDG_TRUTH_TRUE) { ret = (uint32_t)snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_CANDIDATE_LIST_FMT, ctx->candidate_cunt); }
+    else if (ctx->candidate_on == LDG_TRUTH_TRUE && ctx->candidate_sel != (uint32_t)UINT32_MAX) { ret = snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_CANDIDATE_SEL_FMT, ctx->candidate_sel + (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP, ctx->candidate_cunt) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    else if (ctx->candidate_on == LDG_TRUTH_TRUE) { ret = snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_CANDIDATE_LIST_FMT, ctx->candidate_cunt) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
     else if (match_help != 0x0 && match_cunt == CROSSTALK_CORE_CMDLINE_MATCH_UNIQUE) { ret = ldg_str_rbrcpy(ctx->hint, match_help, (uint64_t)sizeof(ctx->hint)); }
-    else if (match_cunt > CROSSTALK_CORE_CMDLINE_MATCH_UNIQUE) { ret = (uint32_t)snprintf(ctx->hint, sizeof(ctx->hint), "%u matches; tab to complete", match_cunt); }
+    else if (match_cunt > CROSSTALK_CORE_CMDLINE_MATCH_UNIQUE) { ret = snprintf(ctx->hint, sizeof(ctx->hint), "%u matches; tab to complete", match_cunt) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
     else { ctx->hint[0] = LDG_STR_TERM; }
+
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
     prompt_w = (uint32_t)((double)col_cunt * CROSSTALK_CORE_CMDLINE_PROMPT_FRAC);
     if (prompt_w <= (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_W) { prompt_w = col_cunt; }

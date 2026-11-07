@@ -430,9 +430,9 @@ uint32_t crosstalk_game_board_size_fmt(uint64_t bytes, char *out, uint64_t out_s
 
     if (LDG_UNLIKELY(out_size == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (bytes >= LDG_GIB) { written = snprintf(out, out_size, "%" PRIu64 "G", bytes / LDG_GIB); }
-    else if (bytes >= LDG_MIB) { written = snprintf(out, out_size, "%" PRIu64 "M", bytes / LDG_MIB); }
-    else { written = snprintf(out, out_size, "%" PRIu64 "K", bytes / LDG_KIB); }
+    if (bytes >= LDG_GIB) { written = snprintf(out, out_size, "%" PRIu64 "G", (uint64_t)(bytes / LDG_GIB)); }
+    else if (bytes >= LDG_MIB) { written = snprintf(out, out_size, "%" PRIu64 "M", (uint64_t)(bytes / LDG_MIB)); }
+    else { written = snprintf(out, out_size, "%" PRIu64 "K", (uint64_t)(bytes / LDG_KIB)); }
 
     if (LDG_UNLIKELY(written <= 0)) { return LDG_ERR_STR_FMT; }
 
