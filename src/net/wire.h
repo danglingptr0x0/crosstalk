@@ -45,7 +45,9 @@ typedef enum crosstalk_net_wire_kind
     CROSSTALK_NET_WIRE_KIND_REMOTE_WR,
     CROSSTALK_NET_WIRE_KIND_REMOTE_OWNER,
     CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_OUT,
-    CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN
+    CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN,
+    CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_IN,
+    CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_OUT
 } crosstalk_net_wire_kind_t;
 
 #define CROSSTALK_NET_WIRE_REMOTE_SESH_CAP 8
@@ -83,6 +85,17 @@ typedef struct crosstalk_net_wire_remote_term_in
     uint8_t pudding[4];
     uint8_t bytes[CROSSTALK_NET_WIRE_REMOTE_KEY_CAP];
 } crosstalk_net_wire_remote_term_in_t;
+
+#define CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP 640
+
+typedef struct crosstalk_net_wire_remote_cmdline
+{
+    uint32_t len;
+    uint8_t pudding[4];
+    char text[CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP];
+} crosstalk_net_wire_remote_cmdline_t;
+
+#define CROSSTALK_NET_WIRE_REMOTE_CMDLINE_HDR_SIZE (sizeof(uint32_t) * 0x2)
 
 #define CROSSTALK_NET_WIRE_SERIAL_ID_CAP 192
 #define CROSSTALK_NET_WIRE_SERIAL_CHUNK_CAP 512

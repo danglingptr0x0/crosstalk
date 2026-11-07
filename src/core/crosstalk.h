@@ -66,6 +66,8 @@
 #define CROSSTALK_CORE_HUB_SYNC_PERIOD_MS 30000
 #define CROSSTALK_CORE_REMOTE_OWNER_SECS 0.25
 #define CROSSTALK_CORE_REMOTE_OUT_MAX 128
+#define CROSSTALK_CORE_REMOTE_CMD_MAX 8
+#define CROSSTALK_CORE_REMOTE_CMDLINE_OUT_MAX 32
 #define CROSSTALK_CORE_REMOTE_OUT_CAP (CROSSTALK_EDA_IC_FPGA_REMOTE_WR_ARGS_CAP + CROSSTALK_EDA_IC_FPGA_REMOTE_KEY_CAP)
 #define CROSSTALK_CORE_CREDIT_TIME_PERIOD 5.0
 #define CROSSTALK_CORE_CREDIT_TIME_DELTA_MAX 30.0
@@ -484,16 +486,9 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_SESH_ROW_MAX 192
 #define CROSSTALK_CORE_MUSIC_COL_CAP 40
 #define CROSSTALK_CORE_TEXT_CLIP_CAP 1024
+#define CROSSTALK_CORE_MENU_MNEMONIC_CAP 16
 #define CROSSTALK_CORE_MENU_ACTION_NONE 0U
 #define CROSSTALK_CORE_MP_HOST_SELF 1U
-#define CROSSTALK_CORE_MUSIC_KEY_PREV ','
-#define CROSSTALK_CORE_MUSIC_KEY_PREV_SHIFTED '<'
-#define CROSSTALK_CORE_MUSIC_KEY_NEXT '.'
-#define CROSSTALK_CORE_MUSIC_KEY_NEXT_SHIFTED '>'
-#define CROSSTALK_CORE_MUSIC_KEY_TOGGLE '/'
-#define CROSSTALK_CORE_MUSIC_KEY_TOGGLE_SHIFTED '?'
-#define CROSSTALK_CORE_KEY_SAVE_CODEPOINT 's'
-#define CROSSTALK_CORE_KEY_OPEN_CODEPOINT 'o'
 #define CROSSTALK_CORE_IDLE_RST 0.0
 #define CROSSTALK_CORE_DESK_FRAC_ORIG 0.0
 #define CROSSTALK_CORE_DESK_FRAC_FULL 1.0
@@ -852,6 +847,8 @@ typedef struct crosstalk_ctx
     uint32_t menu_action;
     uint32_t menu_row;
     uint32_t menu_screen_prev;
+    uint32_t menu_mnemonic_pos[CROSSTALK_CORE_MENU_MNEMONIC_CAP];
+    uint8_t menu_mnemonic_ch[CROSSTALK_CORE_MENU_MNEMONIC_CAP];
     uint32_t term_col_cunt;
     uint32_t term_row_cunt;
     uint32_t mp_transport_prev;
@@ -957,6 +954,10 @@ typedef struct crosstalk_ctx
     uint8_t remote_entered;
     uint8_t auto_host;
     uint8_t remote_pudding[4];
+    uint64_t remote_cmdline_seq;
+    uint32_t remote_cmd_hd;
+    uint32_t remote_cmd_cunt;
+    char remote_cmd[CROSSTALK_CORE_REMOTE_CMD_MAX][CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP];
     double auto_host_next;
     double credit_time_seen;
     uint64_t credit_peer_steam[CROSSTALK_NET_CLIENT_MAX];

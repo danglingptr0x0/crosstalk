@@ -224,12 +224,77 @@ uint32_t crosstalk_core_cmdline_out_push(crosstalk_core_cmdline_ctx_t *ctx, cons
         if (ctx->drawer_cunt < (uint32_t)CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CUNT) { ctx->drawer_cunt = ctx->drawer_cunt + (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP; }
         else { ctx->drawer_hd = (ctx->drawer_hd + (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP) % (uint32_t)CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CUNT; }
 
+        ctx->out_seq = ctx->out_seq + (uint64_t)CROSSTALK_CORE_CMDLINE_HIST_STEP;
         ret = LDG_ERR_AOK;
     }
 
     if (ldg_mut_unlock(&ctx->drawer_mut) != LDG_ERR_AOK) { return LDG_ERR_INVALID; }
 
     return ret;
+}
+
+uint32_t crosstalk_core_cmdline_out_seq_get(crosstalk_core_cmdline_ctx_t *ctx, uint64_t *out)
+{
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = 0;
+
+    if (ctx->drawer_ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
+
+    ret = ldg_mut_lock(&ctx->drawer_mut);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    *out = ctx->out_seq;
+
+    if (ldg_mut_unlock(&ctx->drawer_mut) != LDG_ERR_AOK) { return LDG_ERR_INVALID; }
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_core_cmdline_out_get(crosstalk_core_cmdline_ctx_t *ctx, uint64_t seq, char *out, uint32_t out_cap, uint64_t *out_seq)
+{
+    uint64_t oldest = 0;
+    uint32_t slot = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0 || out_seq == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    out[0] = LDG_STR_TERM;
+    *out_seq = 0;
+
+    if (ctx->drawer_ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
+
+    ret = ldg_mut_lock(&ctx->drawer_mut);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    oldest = ctx->out_seq - (uint64_t)ctx->drawer_cunt;
+    if (seq < oldest) { seq = oldest; }
+
+    if (seq >= ctx->out_seq) { ret = LDG_ERR_EMPTY; }
+    else
+    {
+        slot = (uint32_t)(((uint64_t)ctx->drawer_hd + (seq - oldest)) % (uint64_t)CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CUNT);
+
+        ret = ldg_str_rbrcpy(out, ctx->drawer[slot], (uint64_t)out_cap);
+        if (ret == LDG_ERR_STR_TRUNC) { ret = LDG_ERR_AOK; }
+
+        *out_seq = seq;
+    }
+
+    if (ldg_mut_unlock(&ctx->drawer_mut) != LDG_ERR_AOK) { return LDG_ERR_INVALID; }
+
+    return ret;
+}
+
+uint32_t crosstalk_core_cmdline_echo_set(crosstalk_core_cmdline_ctx_t *ctx, uint8_t on)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->echo_off = on == LDG_TRUTH_TRUE ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
+
+    return LDG_ERR_AOK;
 }
 
 void crosstalk_core_cmdline_log_cb(void *cls, const char *app_name, const time_t date, const CROSSTALK_CORE_CMDLINE_LOG_LVL_T level, const char *msg)
@@ -987,7 +1052,7 @@ static uint32_t line_submit(crosstalk_core_cmdline_ctx_t *ctx)
     crosstalk_core_cmdline_trim(ctx->buff);
     if (crosstalk_core_cmdline_len_get(ctx->buff) == 0) { return crosstalk_core_cmdline_close(ctx); }
 
-    if (crosstalk_core_cmdline_out_push(ctx, ctx->buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline echo push failed"); }
+    if (ctx->echo_off != LDG_TRUTH_TRUE && crosstalk_core_cmdline_out_push(ctx, ctx->buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline echo push failed"); }
 
     if (crosstalk_core_cmdline_hist_push(ctx, ctx->buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline history push failed"); }
 

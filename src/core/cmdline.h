@@ -50,6 +50,7 @@ typedef struct crosstalk_core_cmdline_ctx
     ldg_mut_t drawer_mut;
     crosstalk_core_cmdline_candidate_cb_t candidate_cb;
     void *candidate_user;
+    uint64_t out_seq;
     uint32_t candidate_cunt;
     uint32_t candidate_sel;
     uint32_t candidate_at;
@@ -70,7 +71,8 @@ typedef struct crosstalk_core_cmdline_ctx
     uint8_t drawer_ok;
     uint8_t line_rdy;
     uint8_t candidate_on;
-    uint8_t pudding[7];
+    uint8_t echo_off;
+    uint8_t pudding[6];
 } crosstalk_core_cmdline_ctx_t;
 
 uint32_t crosstalk_core_cmdline_open(crosstalk_core_cmdline_ctx_t *ctx);
@@ -89,6 +91,9 @@ uint32_t crosstalk_core_cmdline_drawer_init(crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_drawer_shutdown(crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_drawer_overlay_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_render_t *render);
 uint32_t crosstalk_core_cmdline_out_push(crosstalk_core_cmdline_ctx_t *ctx, const char *text);
+uint32_t crosstalk_core_cmdline_out_seq_get(crosstalk_core_cmdline_ctx_t *ctx, uint64_t *out);
+uint32_t crosstalk_core_cmdline_out_get(crosstalk_core_cmdline_ctx_t *ctx, uint64_t seq, char *out, uint32_t out_cap, uint64_t *out_seq);
+uint32_t crosstalk_core_cmdline_echo_set(crosstalk_core_cmdline_ctx_t *ctx, uint8_t on);
 void crosstalk_core_cmdline_log_cb(void *cls, const char *app_name, const time_t date, const CROSSTALK_CORE_CMDLINE_LOG_LVL_T level, const char *msg);
 uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_render_t *render, uint32_t col, uint32_t row, uint32_t col_cunt);
 uint32_t crosstalk_core_cmdline_key_isr(crosstalk_core_cmdline_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed);

@@ -56,7 +56,7 @@
 #define CROSSTALK_NET_VIRTUAL_PORT 0
 #define CROSSTALK_NET_LOBBY_MEMBERS_DEFAULT 0
 #define CROSSTALK_APP_ID 4898790U
-#define CROSSTALK_MENU_SWITCH_ITEM_CUNT 10
+#define CROSSTALK_MENU_SWITCH_ITEM_CUNT 11
 #define CROSSTALK_MENU_SOON_TEXT "[SOON]"
 #define CROSSTALK_MENU_SWITCH_CAPTION "MENU"
 #define CROSSTALK_PAUSE_SWITCH_CAPTION "PAUSED"
@@ -84,8 +84,9 @@
 #define CROSSTALK_MENU_IDX_REVERSE 5U
 #define CROSSTALK_MENU_IDX_MP 6U
 #define CROSSTALK_MENU_IDX_EXTRAS 7U
-#define CROSSTALK_MENU_IDX_CREDITS 8U
-#define CROSSTALK_MENU_IDX_QUIT 9U
+#define CROSSTALK_MENU_IDX_SETTINGS 8U
+#define CROSSTALK_MENU_IDX_CREDITS 9U
+#define CROSSTALK_MENU_IDX_QUIT 10U
 #define CROSSTALK_PAUSE_SWITCH_ITEM_CUNT 3
 #define CROSSTALK_PAUSE_ITEM_RESUME 0
 #define CROSSTALK_PAUSE_ITEM_SETTINGS 1
@@ -1381,6 +1382,8 @@ static void crosstalk_remote_stop(crosstalk_ctx_t *ctx)
     ctx->remote_owner_seen = LDG_TRUTH_FALSE;
     ctx->remote_owner_editor = LDG_TRUTH_FALSE;
     ctx->remote_entered = LDG_TRUTH_FALSE;
+
+    if (crosstalk_core_cmdline_echo_set(&ctx->cmdline, LDG_TRUTH_TRUE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: cmdline echo restore failed"); }
 }
 
 static void crosstalk_sesh_leave(crosstalk_ctx_t *ctx)
@@ -2344,7 +2347,7 @@ static void crosstalk_guide_fit(crosstalk_ctx_t *ctx)
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: fit; cols: %u32; rows: %u32; w: %.6f; h: %.6f", (uint32_t)CROSSTALK_GUIDE_COL_CUNT, content_rows, frac_w, frac_h);
 }
 
-static uint32_t crosstalk_layout_default_apply(crosstalk_ctx_t *ctx)
+static uint32_t crosstalk_layout_default_apply(crosstalk_ctx_t *ctx, uint8_t tour_en)
 {
     const crosstalk_layout_default_t defaults[CROSSTALK_LAYOUT_DEFAULT_CUNT] = {
         { (uint64_t)CROSSTALK_EDA_UI_TERM_WINDOW_ID, { 0.512402, 0.312934, 0.479786, 0.580692 }, LDG_TRUTH_TRUE },
@@ -2380,7 +2383,7 @@ static uint32_t crosstalk_layout_default_apply(crosstalk_ctx_t *ctx)
         wins[at].win->open = LDG_TRUTH_FALSE;
     }
 
-    if (ctx->game.ld.kind == CROSSTALK_LD_BARE || ctx->game.ld.kind == CROSSTALK_LD_NEW) { if (crosstalk_ui_guide_at_start(&ctx->guide, (uint32_t)CROSSTALK_CORE_GUIDE_TOUR_IDX) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide tour start failed"); }
+    if (tour_en == LDG_TRUTH_TRUE && (ctx->game.ld.kind == CROSSTALK_LD_BARE || ctx->game.ld.kind == CROSSTALK_LD_NEW)) { if (crosstalk_ui_guide_at_start(&ctx->guide, (uint32_t)CROSSTALK_CORE_GUIDE_TOUR_IDX) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide tour start failed"); }
         else { crosstalk_guide_fit(ctx); } }
 
     if (ctx->editor_kind != (uint8_t)CROSSTALK_CORE_NEWPROJECT_KIND_RTL)
@@ -2814,7 +2817,7 @@ static uint32_t ld_finalize(crosstalk_ctx_t *ctx)
 
     if (ctx->game.ld.kind != CROSSTALK_LD_STARTUP || ctx->game.ld.preloaded != 0)
     {
-        ret = crosstalk_layout_default_apply(ctx);
+        ret = crosstalk_layout_default_apply(ctx, LDG_TRUTH_TRUE);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: window layout defaults failed; err: %u32", ret); }
     }
 
@@ -2914,6 +2917,8 @@ static void settings_default_fill(crosstalk_game_settings_t *settings)
     settings->discord_self_deaf = LDG_TRUTH_FALSE;
     settings->focus_pause_on = LDG_TRUTH_FALSE;
     settings->aa_mode = CROSSTALK_GAME_AA_MODE_TAA;
+
+    if (crosstalk_game_settings_keybind_default_fill(settings->keybind, (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "settings: keybind default fill failed"); }
 }
 
 static uint32_t crosstalk_author_sync_send(crosstalk_ctx_t *ctx)
@@ -6552,17 +6557,13 @@ static uint32_t crosstalk_win_tab_cycle(crosstalk_ctx_t *ctx)
     return LDG_ERR_AOK;
 }
 
-#define CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT ';'
-#define CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT_SHIFTED ':'
-
 static uint32_t crosstalk_win_nav_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
+    const uint32_t *binds = 0x0;
     uint64_t now_ms = 0;
     uint32_t dir = (uint32_t)UINT32_MAX;
-    uint32_t phys = 0;
+    uint32_t chord = 0;
     uint32_t ret = 0;
-    uint8_t ctrl_is = LDG_TRUTH_FALSE;
-    uint8_t shift_is = LDG_TRUTH_FALSE;
 
     if (LDG_UNLIKELY(ctx == 0x0 || irq == 0x0 || consumed == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -6570,15 +6571,10 @@ static uint32_t crosstalk_win_nav_key_isr(crosstalk_ctx_t *ctx, const ldg_term_k
 
     if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { return LDG_ERR_AOK; }
 
-    ctrl_is = (irq->mods & (uint32_t)LDG_TERM_MOD_CTRL) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    shift_is = (irq->mods & (uint32_t)LDG_TERM_MOD_SHIFT) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-
-    if (ctrl_is != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
-
+    binds = ctx->game.settings.keybind;
     now_ms = ldg_time_epoch_ms_get();
-    phys = irq->base != 0 ? irq->base : irq->codepoint;
 
-    if (shift_is == LDG_TRUTH_TRUE && (phys == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT || phys == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT_SHIFTED || irq->shifted == (uint32_t)CROSSTALK_CORE_IRQ_CMDLINE_CODEPOINT_SHIFTED))
+    if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_CMDLINE, irq) == LDG_TRUTH_TRUE)
     {
         *consumed = LDG_TRUTH_TRUE;
         ctx->win_nav.kbd_pending = LDG_TRUTH_TRUE;
@@ -6590,24 +6586,29 @@ static uint32_t crosstalk_win_nav_key_isr(crosstalk_ctx_t *ctx, const ldg_term_k
         return crosstalk_core_cmdline_open(&ctx->cmdline);
     }
 
-    if (irq->key == (uint8_t)LDG_TERM_KEY_TAB)
+    if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_WIN_CYCLE, irq) == LDG_TRUTH_TRUE)
     {
         *consumed = LDG_TRUTH_TRUE;
 
-        if (shift_is == LDG_TRUTH_TRUE) { return crosstalk_win_tab_cycle(ctx); }
+        return crosstalk_win_tab_cycle(ctx);
+    }
+
+    if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_WIN_RECENT, irq) == LDG_TRUTH_TRUE)
+    {
+        *consumed = LDG_TRUTH_TRUE;
 
         return crosstalk_ui_window_recent_focus(&ctx->win_nav, now_ms);
     }
 
-    if ((irq->key == (uint8_t)LDG_TERM_KEY_RHS || irq->key == (uint8_t)LDG_TERM_KEY_LHS) && crosstalk_core_cmdline_open_is(&ctx->cmdline) == LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
-
-    if (irq->key == (uint8_t)LDG_TERM_KEY_LHS) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_LHS; }
-    else if (irq->key == (uint8_t)LDG_TERM_KEY_RHS) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_RHS; }
-    else if (irq->key == (uint8_t)LDG_TERM_KEY_UP) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_UP; }
-    else if (irq->key == (uint8_t)LDG_TERM_KEY_DOWN) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_DOWN; }
-
-    if (dir != (uint32_t)UINT32_MAX)
+    if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_WIN_FOCUS, irq) == LDG_TRUTH_TRUE)
     {
+        if ((irq->key == (uint8_t)LDG_TERM_KEY_RHS || irq->key == (uint8_t)LDG_TERM_KEY_LHS) && crosstalk_core_cmdline_open_is(&ctx->cmdline) == LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
+
+        if (irq->key == (uint8_t)LDG_TERM_KEY_LHS) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_LHS; }
+        else if (irq->key == (uint8_t)LDG_TERM_KEY_RHS) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_RHS; }
+        else if (irq->key == (uint8_t)LDG_TERM_KEY_UP) { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_UP; }
+        else { dir = (uint32_t)CROSSTALK_UI_WINDOW_DIR_DOWN; }
+
         *consumed = LDG_TRUTH_TRUE;
 
         ret = crosstalk_ui_window_focus_dir(&ctx->win_nav, dir, now_ms);
@@ -6616,11 +6617,14 @@ static uint32_t crosstalk_win_nav_key_isr(crosstalk_ctx_t *ctx, const ldg_term_k
         return ret;
     }
 
-    if (irq->key != (uint8_t)LDG_TERM_KEY_NONE || irq->codepoint < (uint32_t)LDG_ASCII_DIGIT_ZERO || irq->codepoint >= (uint32_t)LDG_ASCII_DIGIT_ZERO + (uint32_t)CROSSTALK_UI_WINDOW_DIGIT_BASE) { return LDG_ERR_AOK; }
+    if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_WIN_DIGIT, irq) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
+
+    ret = crosstalk_game_settings_keybind_chord_get(irq, &chord);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     *consumed = LDG_TRUTH_TRUE;
 
-    return crosstalk_ui_window_digit_put(&ctx->win_nav, irq->codepoint - (uint32_t)LDG_ASCII_DIGIT_ZERO, now_ms);
+    return crosstalk_ui_window_digit_put(&ctx->win_nav, (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CODE_MASK) - (uint32_t)LDG_ASCII_DIGIT_ZERO, now_ms);
 }
 
 #define CROSSTALK_CORE_RESIZE_CODEPOINT_GROW_W 'l'
@@ -6633,16 +6637,12 @@ static uint32_t crosstalk_win_nav_key_isr(crosstalk_ctx_t *ctx, const ldg_term_k
 #define CROSSTALK_CORE_RESIZE_UPPER_FIRST 'A'
 #define CROSSTALK_CORE_RESIZE_UPPER_LAST 'Z'
 
-#define CROSSTALK_CORE_SHOT_CODEPOINT 'p'
-#define CROSSTALK_CORE_SHOT_CODEPOINT_SHIFTED 'P'
 #define CROSSTALK_CORE_SHOT_FLASH_MS 150
 #define CROSSTALK_CORE_SHOT_NAME_CAP 64
 
 #define CROSSTALK_HUB_FRAME_SIDES 2
 #define CROSSTALK_HUB_CHAT_COL_CUNT 64
 #define CROSSTALK_HUB_CHAT_ROW_MIN 12
-#define CROSSTALK_HUB_TOGGLE_CODEPOINT 'h'
-#define CROSSTALK_HUB_TOGGLE_CODEPOINT_SHIFTED 'H'
 
 static double crosstalk_hub_frac_get(uint32_t cells, uint32_t total)
 {
@@ -6722,7 +6722,6 @@ static uint32_t crosstalk_hub_toggle(crosstalk_ctx_t *ctx)
 
 static uint32_t crosstalk_hub_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
-    uint32_t phys = 0;
     uint32_t mods = 0;
     uint32_t ret = 0;
 
@@ -6746,11 +6745,7 @@ static uint32_t crosstalk_hub_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_e
         return crosstalk_ui_window_focus_set(&ctx->win_nav, (uint64_t)CROSSTALK_GAME_HUB_WINDOW_ID, ldg_time_epoch_ms_get());
     }
 
-    if (mods != ((uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_SHIFT)) { return LDG_ERR_AOK; }
-
-    phys = irq->base != 0 ? irq->base : irq->codepoint;
-
-    if (phys != (uint32_t)CROSSTALK_HUB_TOGGLE_CODEPOINT && phys != (uint32_t)CROSSTALK_HUB_TOGGLE_CODEPOINT_SHIFTED) { return LDG_ERR_AOK; }
+    if (crosstalk_game_settings_keybind_match_is(ctx->game.settings.keybind, (uint32_t)CROSSTALK_GAME_KEYBIND_HUB, irq) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     *consumed = LDG_TRUTH_TRUE;
 
@@ -6759,17 +6754,15 @@ static uint32_t crosstalk_hub_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_e
 
 static uint32_t crosstalk_pause_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
-    uint32_t mods = 0;
-
     if (LDG_UNLIKELY(ctx == 0x0 || irq == 0x0 || consumed == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *consumed = LDG_TRUTH_FALSE;
 
-    if (irq->kind != (uint8_t)LDG_TERM_KEY_KIND_PRESS || irq->key != (uint8_t)LDG_TERM_KEY_ESCAPE || ctx->game.screen != CROSSTALK_GAME_SCREEN_EDITOR) { return LDG_ERR_AOK; }
+    if (irq->kind != (uint8_t)LDG_TERM_KEY_KIND_PRESS || ctx->game.screen != CROSSTALK_GAME_SCREEN_EDITOR) { return LDG_ERR_AOK; }
 
-    mods = irq->mods & ((uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_SHIFT);
+    if (crosstalk_core_cmdline_open_is(&ctx->cmdline) == LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    if (mods != (uint32_t)LDG_TERM_MOD_SHIFT) { return LDG_ERR_AOK; }
+    if (crosstalk_game_settings_keybind_match_is(ctx->game.settings.keybind, (uint32_t)CROSSTALK_GAME_KEYBIND_PAUSE, irq) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     *consumed = LDG_TRUTH_TRUE;
     ctx->key_esc = LDG_TRUTH_TRUE;
@@ -6780,17 +6773,11 @@ static uint32_t crosstalk_pause_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key
 
 static uint32_t crosstalk_win_shot_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
-    uint32_t mods = 0;
-
     if (LDG_UNLIKELY(ctx == 0x0 || irq == 0x0 || consumed == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *consumed = LDG_TRUTH_FALSE;
 
-    if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE || irq->key != (uint8_t)LDG_TERM_KEY_NONE) { return LDG_ERR_AOK; }
-
-    mods = irq->mods & ((uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_SHIFT);
-
-    if (mods != (uint32_t)LDG_TERM_MOD_ALT || (irq->codepoint != (uint32_t)CROSSTALK_CORE_SHOT_CODEPOINT && irq->codepoint != (uint32_t)CROSSTALK_CORE_SHOT_CODEPOINT_SHIFTED)) { return LDG_ERR_AOK; }
+    if (crosstalk_game_settings_keybind_match_is(ctx->game.settings.keybind, (uint32_t)CROSSTALK_GAME_KEYBIND_SHOT, irq) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     *consumed = LDG_TRUTH_TRUE;
     ctx->shot.pending = LDG_TRUTH_TRUE;
@@ -6827,7 +6814,6 @@ static uint32_t crosstalk_win_resize_key_isr(crosstalk_ctx_t *ctx, const ldg_ter
 {
     crosstalk_layout_win_t wins[CROSSTALK_LAYOUT_WIN_CAP] = LDG_ARR_ZERO_INIT;
     crosstalk_ui_window_state_t *win = 0x0;
-    uint32_t mods = 0;
     uint32_t cp = 0;
     double step_w = 0.0;
     double step_h = 0.0;
@@ -6848,10 +6834,8 @@ static uint32_t crosstalk_win_resize_key_isr(crosstalk_ctx_t *ctx, const ldg_ter
 
     if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { return LDG_ERR_AOK; }
 
-    mods = irq->mods & ((uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_SHIFT);
-
-    if (mods == ((uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_SHIFT)) { mov = LDG_TRUTH_TRUE; }
-    else if (mods != (uint32_t)LDG_TERM_MOD_ALT) { return LDG_ERR_AOK; }
+    if (crosstalk_game_settings_keybind_match_is(ctx->game.settings.keybind, (uint32_t)CROSSTALK_GAME_KEYBIND_WIN_MOV, irq) == LDG_TRUTH_TRUE) { mov = LDG_TRUTH_TRUE; }
+    else if (crosstalk_game_settings_keybind_match_is(ctx->game.settings.keybind, (uint32_t)CROSSTALK_GAME_KEYBIND_WIN_RESIZE, irq) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     cp = irq->codepoint;
     if (cp >= (uint32_t)CROSSTALK_CORE_RESIZE_UPPER_FIRST && cp <= (uint32_t)CROSSTALK_CORE_RESIZE_UPPER_LAST) { cp = cp + (uint32_t)LDG_ASCII_CASE_GAP; }
@@ -8633,6 +8617,62 @@ static void crosstalk_remote_owner_apply(crosstalk_ctx_t *ctx, const crosstalk_n
     }
 }
 
+static uint32_t crosstalk_remote_cmdline_send(crosstalk_ctx_t *ctx, uint8_t kind, const char *text)
+{
+    crosstalk_net_wire_remote_cmdline_t msg = LDG_STRUCT_ZERO_INIT;
+    uint64_t text_len = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || text == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ldg_str_len_get(text, (uint64_t)sizeof(msg.text) - LDG_STR_TERM_SIZE, &text_len) != LDG_ERR_AOK) { return LDG_ERR_OVERFLOW; }
+
+    memcpy(msg.text, text, text_len);
+    msg.len = (uint32_t)text_len;
+
+    return crosstalk_net_wire_send(&ctx->libresteam_net, kind, &msg, (uint32_t)CROSSTALK_NET_WIRE_REMOTE_CMDLINE_HDR_SIZE + msg.len, CROSSTALK_NET_WIRE_RELIABLE);
+}
+
+static uint32_t crosstalk_remote_cmdline_decode(const uint8_t *payload, uint32_t len, char *out, uint32_t out_cap)
+{
+    crosstalk_net_wire_remote_cmdline_t msg = LDG_STRUCT_ZERO_INIT;
+
+    if (LDG_UNLIKELY(payload == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (LDG_UNLIKELY(out_cap == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    out[0] = LDG_STR_TERM;
+
+    if (len < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_CMDLINE_HDR_SIZE || len > (uint32_t)sizeof(msg)) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    memcpy(&msg, payload, len);
+
+    if (msg.len != len - (uint32_t)CROSSTALK_NET_WIRE_REMOTE_CMDLINE_HDR_SIZE || msg.len >= out_cap) { return LDG_ERR_BOUNDS; }
+
+    memcpy(out, msg.text, msg.len);
+    out[msg.len] = LDG_STR_TERM;
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t crosstalk_remote_cmd_queue(crosstalk_ctx_t *ctx, const uint8_t *payload, uint32_t len)
+{
+    uint32_t slot = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || payload == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->remote_cmd_cunt >= (uint32_t)CROSSTALK_CORE_REMOTE_CMD_MAX) { return LDG_ERR_FULL; }
+
+    slot = (ctx->remote_cmd_hd + ctx->remote_cmd_cunt) % (uint32_t)CROSSTALK_CORE_REMOTE_CMD_MAX;
+
+    ret = crosstalk_remote_cmdline_decode(payload, len, ctx->remote_cmd[slot], (uint32_t)sizeof(ctx->remote_cmd[slot]));
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    ctx->remote_cmd_cunt = ctx->remote_cmd_cunt + 0x1;
+
+    return LDG_ERR_AOK;
+}
+
 static void crosstalk_remote_pump(crosstalk_ctx_t *ctx)
 {
     uint8_t out[CROSSTALK_CORE_REMOTE_OUT_CAP] = LDG_ARR_ZERO_INIT;
@@ -8702,10 +8742,17 @@ static void crosstalk_remote_tick(crosstalk_ctx_t *ctx)
         ctx->remote_owner_seen = LDG_TRUTH_FALSE;
         ctx->remote_owner_editor = LDG_TRUTH_FALSE;
         ctx->remote_entered = LDG_TRUTH_FALSE;
+
+        if (crosstalk_core_cmdline_echo_set(&ctx->cmdline, LDG_TRUTH_FALSE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: cmdline echo off failed"); }
     }
 
     if (ctx->remote_entered != LDG_TRUTH_TRUE && ctx->remote_owner_seen == LDG_TRUTH_TRUE && ctx->remote_owner_editor == LDG_TRUTH_TRUE)
     {
+        ctx->editor_kind = (uint8_t)CROSSTALK_CORE_NEWPROJECT_KIND_RTL;
+
+        ret = crosstalk_layout_default_apply(ctx, LDG_TRUTH_FALSE);
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: viewer layout failed; err: %u32", ret); }
+
         ctx->game.screen = CROSSTALK_GAME_SCREEN_EDITOR;
         ctx->remote_entered = LDG_TRUTH_TRUE;
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "remote: entering owner editor");
@@ -8902,6 +8949,7 @@ static void crosstalk_remote_recv(crosstalk_ctx_t *ctx, crosstalk_net_libresteam
             memcpy(&term_in, payload, sizeof(term_in));
             if (term_in.len <= (uint32_t)sizeof(term_in.bytes)) { ret = crosstalk_eda_ui_term_keys_put(&ctx->eda.term, term_in.bytes, term_in.len); }
         }
+        else if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_IN) { ret = crosstalk_remote_cmd_queue(ctx, payload, hdr->len); }
 
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: srv frame refused; err: %u32; kind: %u32; from: %u64", ret, (uint32_t)hdr->kind, hdr->sender); }
 
@@ -8917,6 +8965,13 @@ static void crosstalk_remote_recv(crosstalk_ctx_t *ctx, crosstalk_net_libresteam
 
         memcpy(&out, payload, hdr->len);
         if (out.len == hdr->len - (uint32_t)CROSSTALK_NET_WIRE_REMOTE_TERM_OUT_HDR_SIZE && out.sesh < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX) { ret = crosstalk_eda_ui_term_bytes_put(&ctx->eda.term, out.sesh, out.bytes, out.len); }
+    }
+    else if (hdr->kind == CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_OUT)
+    {
+        char text[CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+
+        ret = crosstalk_remote_cmdline_decode(payload, hdr->len, text, (uint32_t)sizeof(text));
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_core_cmdline_out_push(&ctx->cmdline, text); }
     }
 
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: viewer frame refused; err: %u32; kind: %u32", ret, (uint32_t)hdr->kind); }
@@ -8944,7 +8999,7 @@ static void sesh_data_cb(crosstalk_net_libresteam_ctx_t *net, uint32_t conn_id, 
 
     if (hdr.sender == crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net)) { return; }
 
-    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_REQ || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_RESP || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_WR || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_OUT || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN)
+    if (hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_REQ || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_RESP || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_WR || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_OUT || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_TERM_IN || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_IN || hdr.kind == CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_OUT)
     {
         crosstalk_remote_recv(ctx, net, &hdr, payload);
         return;
@@ -9903,7 +9958,7 @@ static void crosstalk_prof_tick(crosstalk_ctx_t *ctx)
 
     if (want != ctx->prof_on)
     {
-        ret = crosstalk_eda_ic_fpga_prof_en_set(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, want);
+        if (crosstalk_eda_ic_fpga_remote_active_is(&ctx->eda.fpga) != LDG_TRUTH_TRUE) { ret = crosstalk_eda_ic_fpga_prof_en_set(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, want); }
 
         if (ret != LDG_ERR_AOK)
         {
@@ -10689,6 +10744,15 @@ static void crosstalk_watch_sync(crosstalk_ctx_t *ctx)
     uint32_t at = 0;
 
     if (ldg_mut_lock(&ctx->watch_mut) != LDG_ERR_AOK) { return; }
+
+    if (crosstalk_eda_ic_fpga_remote_active_is(&ctx->eda.fpga) == LDG_TRUTH_TRUE)
+    {
+        ctx->watch_cunt = 0;
+
+        if (ldg_mut_unlock(&ctx->watch_mut) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "watch sync unlock failed"); }
+
+        return;
+    }
 
     if (crosstalk_eda_ic_fpga_emu_live_is(&ctx->eda.fpga_emu) == LDG_TRUTH_TRUE) { crosstalk_watch_entry_put(ctx, &cunt, (uint32_t)CROSSTALK_CORE_WATCH_KIND_EMU, CROSSTALK_CORE_TERM_SLOT, ctx->eda.fpga_emu.path); }
 
@@ -12706,6 +12770,8 @@ static void crosstalk_instability_feed(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
+    if (crosstalk_eda_ic_fpga_remote_active_is(&ctx->eda.fpga) == LDG_TRUTH_TRUE) { return; }
+
     if (ctx->time < ctx->instability_next) { return; }
 
     ctx->instability_next = ctx->time + CROSSTALK_CORE_INSTABILITY_FEED_SECS;
@@ -13396,6 +13462,54 @@ static void crosstalk_script_line_exec(crosstalk_ctx_t *ctx, const char *line)
     if (snprintf(text, sizeof(text), CROSSTALK_CORE_SCRIPT_SUGGESTION_FMT, diag->suggestion) < 0) { return; }
 
     if (crosstalk_core_cmdline_out_push(&ctx->cmdline, text) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script suggestion push failed"); }
+}
+
+static void crosstalk_remote_cmdline_tick(crosstalk_ctx_t *ctx)
+{
+    char line[CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t seq = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0)) { return; }
+
+    if (crosstalk_net_libresteam_mode_get(&ctx->libresteam_net) != CROSSTALK_NET_LIBRESTEAM_MODE_SRV || ctx->libresteam_net.sesh_live == 0)
+    {
+        ctx->remote_cmd_hd = 0;
+        ctx->remote_cmd_cunt = 0;
+
+        if (crosstalk_core_cmdline_out_seq_get(&ctx->cmdline, &seq) == LDG_ERR_AOK) { ctx->remote_cmdline_seq = seq; }
+
+        return;
+    }
+
+    while (ctx->remote_cmd_cunt != 0)
+    {
+        ret = ldg_str_rbrcpy(line, ctx->remote_cmd[ctx->remote_cmd_hd], (uint64_t)sizeof(line));
+        ctx->remote_cmd_hd = (ctx->remote_cmd_hd + 0x1) % (uint32_t)CROSSTALK_CORE_REMOTE_CMD_MAX;
+        ctx->remote_cmd_cunt = ctx->remote_cmd_cunt - 0x1;
+
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { continue; }
+
+        if (crosstalk_core_cmdline_out_push(&ctx->cmdline, line) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: cmdline echo push failed"); }
+
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: cmdline from viewer; line: %.128s", line);
+        crosstalk_script_line_exec(ctx, line);
+    }
+
+    for (uint32_t sent = 0; sent < (uint32_t)CROSSTALK_CORE_REMOTE_CMDLINE_OUT_MAX; sent++)
+    {
+        ret = crosstalk_core_cmdline_out_get(&ctx->cmdline, ctx->remote_cmdline_seq, line, (uint32_t)sizeof(line), &seq);
+        if (ret != LDG_ERR_AOK) { break; }
+
+        ctx->remote_cmdline_seq = seq + 0x1;
+
+        ret = crosstalk_remote_cmdline_send(ctx, CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_OUT, line);
+        if (ret != LDG_ERR_AOK)
+        {
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: cmdline out send failed; err: %u32", ret);
+            break;
+        }
+    }
 }
 
 static void crosstalk_cpuset_reserve(crosstalk_ctx_t *ctx)
@@ -14508,7 +14622,14 @@ static uint32_t crosstalk_lobby_wave_draw(crosstalk_ctx_t *ctx, ldg_term_render_
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_menu_switch_draw(ldg_term_render_t *render, const ldg_term_rect_t *rect, const char *caption, const char **item, const uint8_t *item_hide, uint32_t item_cunt, uint32_t sel, uint8_t panel_on)
+static void crosstalk_menu_mnemonic_sync(crosstalk_ctx_t *ctx, const char *const *item, const uint8_t *item_hide, uint32_t item_cunt)
+{
+    uint32_t cunt = item_cunt < (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP ? item_cunt : (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP;
+
+    if (crosstalk_ui_key_mnemonic_assign(item, item_hide, cunt, ctx->menu_mnemonic_pos, ctx->menu_mnemonic_ch) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "menu: mnemonic assign failed"); }
+}
+
+static uint32_t crosstalk_menu_switch_draw(ldg_term_render_t *render, const ldg_term_rect_t *rect, const char *caption, const char **item, const uint8_t *item_hide, const uint32_t *mnemonic_pos, uint32_t item_cunt, uint32_t sel, uint8_t panel_on)
 {
     uint32_t need = item_cunt + (uint32_t)CROSSTALK_MENU_SWITCH_HD_ROWS;
     uint32_t top = 0;
@@ -14559,6 +14680,8 @@ static uint32_t crosstalk_menu_switch_draw(ldg_term_render_t *render, const ldg_
         ret = crosstalk_row_fill(render, left, row, (uint32_t)CROSSTALK_MENU_SWITCH_COL_CUNT, bg_rgba);
         if (ret == LDG_ERR_AOK) { ret = crosstalk_text_clip_put(render, left + (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, row, (uint32_t)CROSSTALK_MENU_SWITCH_COL_CUNT - (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, label, fg_rgba, bg_rgba, &drawn); }
 
+        if (ret == LDG_ERR_AOK && mnemonic_pos != 0x0 && idx < (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP && label == item[idx]) { ret = crosstalk_ui_key_mnemonic_draw(render, left + (uint32_t)CROSSTALK_MENU_SWITCH_INDENT, row, label, mnemonic_pos[idx], drawn, bg_rgba); }
+
         if (ret != LDG_ERR_AOK) { return ret; }
     }
 
@@ -14593,6 +14716,19 @@ static uint32_t crosstalk_menu_switch_key_isr(crosstalk_ctx_t *ctx, const ldg_te
     {
         *consumed = LDG_TRUTH_TRUE;
         ctx->menu_confirm = LDG_TRUTH_TRUE;
+    }
+    else
+    {
+        uint32_t mnemonic_idx = (uint32_t)UINT32_MAX;
+        uint32_t ret = crosstalk_ui_key_mnemonic_find(ctx->menu_mnemonic_ch, item_cunt < (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP ? item_cunt : (uint32_t)CROSSTALK_CORE_MENU_MNEMONIC_CAP, irq, &mnemonic_idx);
+
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        if (mnemonic_idx != (uint32_t)UINT32_MAX)
+        {
+            *consumed = LDG_TRUTH_TRUE;
+            ctx->menu_sel = mnemonic_idx;
+        }
     }
 
     if (ctx->menu_sel != sel_prev)
@@ -14786,9 +14922,8 @@ static uint32_t crosstalk_menu_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_
 
 static uint32_t crosstalk_music_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
-    const uint32_t chord = (uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_SHIFT;
+    const uint32_t *binds = 0x0;
     uint32_t action = (uint32_t)UINT32_MAX;
-    uint32_t codepoint = 0;
     uint32_t ret = 0;
     uint8_t ld_req = LDG_TRUTH_FALSE;
 
@@ -14796,13 +14931,11 @@ static uint32_t crosstalk_music_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key
 
     *consumed = LDG_TRUTH_FALSE;
 
-    if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE || (irq->mods & chord) != chord) { return LDG_ERR_AOK; }
+    binds = ctx->game.settings.keybind;
 
-    codepoint = irq->codepoint;
-
-    if (codepoint == (uint32_t)CROSSTALK_CORE_MUSIC_KEY_PREV || codepoint == (uint32_t)CROSSTALK_CORE_MUSIC_KEY_PREV_SHIFTED) { action = (uint32_t)CROSSTALK_GAME_MUSIC_ACTION_PREV; }
-    else if (codepoint == (uint32_t)CROSSTALK_CORE_MUSIC_KEY_NEXT || codepoint == (uint32_t)CROSSTALK_CORE_MUSIC_KEY_NEXT_SHIFTED) { action = (uint32_t)CROSSTALK_GAME_MUSIC_ACTION_NEXT; }
-    else if (codepoint == (uint32_t)CROSSTALK_CORE_MUSIC_KEY_TOGGLE || codepoint == (uint32_t)CROSSTALK_CORE_MUSIC_KEY_TOGGLE_SHIFTED) { action = (uint32_t)CROSSTALK_GAME_MUSIC_ACTION_TOGGLE; }
+    if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_MUSIC_PREV, irq) == LDG_TRUTH_TRUE) { action = (uint32_t)CROSSTALK_GAME_MUSIC_ACTION_PREV; }
+    else if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_MUSIC_NEXT, irq) == LDG_TRUTH_TRUE) { action = (uint32_t)CROSSTALK_GAME_MUSIC_ACTION_NEXT; }
+    else if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_MUSIC_TOGGLE, irq) == LDG_TRUTH_TRUE) { action = (uint32_t)CROSSTALK_GAME_MUSIC_ACTION_TOGGLE; }
     else { return LDG_ERR_AOK; }
 
     *consumed = LDG_TRUTH_TRUE;
@@ -14824,7 +14957,7 @@ static uint32_t crosstalk_music_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key
 
 static uint32_t crosstalk_global_key_isr(crosstalk_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
-    uint8_t ctrl_is = LDG_TRUTH_FALSE;
+    const uint32_t *binds = 0x0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || irq == 0x0 || consumed == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -14832,16 +14965,16 @@ static uint32_t crosstalk_global_key_isr(crosstalk_ctx_t *ctx, const ldg_term_ke
 
     if (irq->kind != (uint8_t)LDG_TERM_KEY_KIND_PRESS) { return LDG_ERR_AOK; }
 
-    ctrl_is = (irq->mods & (uint32_t)LDG_TERM_MOD_CTRL) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    binds = ctx->game.settings.keybind;
 
     if (irq->key == (uint8_t)LDG_TERM_KEY_ESCAPE)
     {
         ctx->key_esc = LDG_TRUTH_TRUE;
-        ctx->key_esc_shift = (irq->mods & (uint32_t)LDG_TERM_MOD_SHIFT) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+        ctx->key_esc_shift = crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_PAUSE, irq) == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     }
-    else if (irq->key == (uint8_t)LDG_TERM_KEY_F4) { ctx->key_invite = LDG_TRUTH_TRUE; }
-    else if (ctrl_is == LDG_TRUTH_TRUE && irq->codepoint == (uint32_t)CROSSTALK_CORE_KEY_SAVE_CODEPOINT) { ctx->key_save = LDG_TRUTH_TRUE; }
-    else if (ctrl_is == LDG_TRUTH_TRUE && irq->codepoint == (uint32_t)CROSSTALK_CORE_KEY_OPEN_CODEPOINT) { ctx->key_open = LDG_TRUTH_TRUE; }
+    else if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_INVITE, irq) == LDG_TRUTH_TRUE) { ctx->key_invite = LDG_TRUTH_TRUE; }
+    else if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_SAVE, irq) == LDG_TRUTH_TRUE) { ctx->key_save = LDG_TRUTH_TRUE; }
+    else if (crosstalk_game_settings_keybind_match_is(binds, (uint32_t)CROSSTALK_GAME_KEYBIND_OPEN, irq) == LDG_TRUTH_TRUE) { ctx->key_open = LDG_TRUTH_TRUE; }
     else { return LDG_ERR_AOK; }
 
     *consumed = LDG_TRUTH_TRUE;
@@ -14997,6 +15130,8 @@ static uint32_t crosstalk_core_irq_route(crosstalk_ctx_t *ctx, const ldg_term_ke
         ret = crosstalk_core_cmdline_key_isr(&ctx->cmdline, irq, &consumed);
         if (ret != LDG_ERR_AOK || consumed == LDG_TRUTH_TRUE) { return ret; }
     }
+
+    if (ctx->settings_open != LDG_TRUTH_FALSE && crosstalk_game_settings_menu_keybind_open_is(&ctx->settings_menu) == LDG_TRUTH_TRUE) { return crosstalk_menu_key_isr(ctx, irq, &consumed); }
 
     ret = crosstalk_music_key_isr(ctx, irq, &consumed);
     if (ret != LDG_ERR_AOK || consumed == LDG_TRUTH_TRUE) { return ret; }
@@ -15833,6 +15968,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         }
 
         crosstalk_remote_tick(ctx);
+        crosstalk_remote_cmdline_tick(ctx);
         crosstalk_auto_host_tick(ctx);
         crosstalk_credit_time_tick(ctx);
 
@@ -16325,7 +16461,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
     {
         if (ctx->settings_open == LDG_TRUTH_FALSE)
         {
-            const char *menu_item[CROSSTALK_MENU_SWITCH_ITEM_CUNT] = { "Load", "Story", "ISA design", "RTL", "Zone design", "Reverse", "Multiplayer", "Extras", "Credits", "Quit" };
+            const char *menu_item[CROSSTALK_MENU_SWITCH_ITEM_CUNT] = { "Load", "Story", "ISA design", "RTL", "Zone design", "Reverse", "Multiplayer", "Extras", "Settings", "Credits", "Quit" };
             uint8_t menu_hide[CROSSTALK_MENU_SWITCH_ITEM_CUNT] = LDG_ARR_ZERO_INIT;
             uint32_t menu_idx = 0;
 
@@ -16335,9 +16471,11 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             menu_hide[CROSSTALK_MENU_IDX_REVERSE] = crosstalk_dlc_installed_is(ctx, CROSSTALK_CORE_REVERSE_APP_ID) == LDG_TRUTH_TRUE ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
             menu_hide[CROSSTALK_MENU_IDX_ZONE] = LDG_TRUTH_TRUE;
 
+            crosstalk_menu_mnemonic_sync(ctx, menu_item, menu_hide, (uint32_t)CROSSTALK_MENU_SWITCH_ITEM_CUNT);
+
             if (render != 0x0)
             {
-                ret = crosstalk_menu_switch_draw(render, &screen_rect, CROSSTALK_MENU_SWITCH_CAPTION, menu_item, menu_hide, (uint32_t)CROSSTALK_MENU_SWITCH_ITEM_CUNT, ctx->menu_sel, LDG_TRUTH_FALSE);
+                ret = crosstalk_menu_switch_draw(render, &screen_rect, CROSSTALK_MENU_SWITCH_CAPTION, menu_item, menu_hide, ctx->menu_mnemonic_pos, (uint32_t)CROSSTALK_MENU_SWITCH_ITEM_CUNT, ctx->menu_sel, LDG_TRUTH_FALSE);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "menu switch draw failed"); }
             }
 
@@ -16374,6 +16512,13 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: extras refresh failed; err: %u32", ret); }
 
                     ctx->game.screen = CROSSTALK_GAME_SCREEN_EXTRAS;
+                }
+                else if (menu_idx == CROSSTALK_MENU_IDX_SETTINGS)
+                {
+                    ctx->settings_open = LDG_TRUTH_TRUE;
+
+                    ret = crosstalk_game_settings_menu_init(&ctx->settings_menu);
+                    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "settings menu rst failed"); }
                 }
                 else if (menu_idx == CROSSTALK_MENU_IDX_CREDITS)
                 {
@@ -17024,7 +17169,12 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             {
                 char cmdline_line[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
 
-                if (crosstalk_core_cmdline_line_take(&ctx->cmdline, cmdline_line, (uint32_t)sizeof(cmdline_line)) == LDG_ERR_AOK) { crosstalk_script_line_exec(ctx, cmdline_line); }
+                if (crosstalk_core_cmdline_line_take(&ctx->cmdline, cmdline_line, (uint32_t)sizeof(cmdline_line)) == LDG_ERR_AOK) { if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) == LDG_TRUTH_TRUE)
+                    {
+                        ret = crosstalk_remote_cmdline_send(ctx, CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_IN, cmdline_line);
+                        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: cmdline send failed; err: %u32", ret); }
+                    }
+                    else { crosstalk_script_line_exec(ctx, cmdline_line); } }
             }
 
             if (render != 0x0 && screen_rect.row_cunt > desk_rect.row_cunt)
@@ -17283,7 +17433,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             uint8_t gfx_on = crosstalk_emu_gfx_is(ctx);
             uint64_t step_want = gfx_on == LDG_TRUTH_TRUE ? (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_STEP_GFX : (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_STEP_TEXT;
 
-            if (crosstalk_eda_ic_fpga_emu_step_set(&ctx->eda.fpga, step_want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu step set failed"); }
+            if (crosstalk_eda_ic_fpga_remote_active_is(&ctx->eda.fpga) != LDG_TRUTH_TRUE && crosstalk_eda_ic_fpga_emu_step_set(&ctx->eda.fpga, step_want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu step set failed"); }
 
             if (step_want != ctx->emu_step_on)
             {
@@ -17475,9 +17625,11 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         const char *pause_item[CROSSTALK_PAUSE_SWITCH_ITEM_CUNT] = { "Resume", "Settings", ctx->mp_busy != LDG_TRUTH_FALSE ? "To lobby" : pause_quit_text };
         uint32_t pause_idx = 0;
 
+        crosstalk_menu_mnemonic_sync(ctx, pause_item, 0x0, (uint32_t)CROSSTALK_PAUSE_SWITCH_ITEM_CUNT);
+
         if (render != 0x0)
         {
-            ret = crosstalk_menu_switch_draw(render, &screen_rect, CROSSTALK_PAUSE_SWITCH_CAPTION, pause_item, 0x0, (uint32_t)CROSSTALK_PAUSE_SWITCH_ITEM_CUNT, ctx->menu_sel, LDG_TRUTH_TRUE);
+            ret = crosstalk_menu_switch_draw(render, &screen_rect, CROSSTALK_PAUSE_SWITCH_CAPTION, pause_item, 0x0, ctx->menu_mnemonic_pos, (uint32_t)CROSSTALK_PAUSE_SWITCH_ITEM_CUNT, ctx->menu_sel, LDG_TRUTH_TRUE);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pause switch draw failed"); }
         }
 

@@ -3,11 +3,42 @@
 
 #include <stdint.h>
 
+#include <dangling/term/vt.h>
+
 #define CROSSTALK_GAME_AA_MODE_OFF 0
 #define CROSSTALK_GAME_AA_MODE_SMAA 1
 #define CROSSTALK_GAME_AA_MODE_TAA 2
 #define CROSSTALK_GAME_AA_MODE_IDX_MAX 2
 #define CROSSTALK_GAME_LAST_STATE_LAYOUT_REV 1.0
+#define CROSSTALK_GAME_KEYBIND_CODE_MASK 0xFFU
+#define CROSSTALK_GAME_KEYBIND_SPECIAL 0x100U
+#define CROSSTALK_GAME_KEYBIND_CTRL 0x200U
+#define CROSSTALK_GAME_KEYBIND_SHIFT 0x400U
+#define CROSSTALK_GAME_KEYBIND_ALT 0x800U
+#define CROSSTALK_GAME_KEYBIND_MOD_MASK 0xE00U
+#define CROSSTALK_GAME_KEYBIND_UNBOUND 0x0U
+#define CROSSTALK_GAME_KEYBIND_FMT_CAP 48
+
+typedef enum crosstalk_game_keybind_action
+{
+    CROSSTALK_GAME_KEYBIND_CMDLINE = 0,
+    CROSSTALK_GAME_KEYBIND_HUB,
+    CROSSTALK_GAME_KEYBIND_MUSIC_PREV,
+    CROSSTALK_GAME_KEYBIND_MUSIC_NEXT,
+    CROSSTALK_GAME_KEYBIND_MUSIC_TOGGLE,
+    CROSSTALK_GAME_KEYBIND_WIN_RECENT,
+    CROSSTALK_GAME_KEYBIND_WIN_CYCLE,
+    CROSSTALK_GAME_KEYBIND_WIN_FOCUS,
+    CROSSTALK_GAME_KEYBIND_WIN_DIGIT,
+    CROSSTALK_GAME_KEYBIND_WIN_RESIZE,
+    CROSSTALK_GAME_KEYBIND_WIN_MOV,
+    CROSSTALK_GAME_KEYBIND_PAUSE,
+    CROSSTALK_GAME_KEYBIND_SHOT,
+    CROSSTALK_GAME_KEYBIND_SAVE,
+    CROSSTALK_GAME_KEYBIND_OPEN,
+    CROSSTALK_GAME_KEYBIND_INVITE,
+    CROSSTALK_GAME_KEYBIND_CUNT
+} crosstalk_game_keybind_action_t;
 
 typedef struct crosstalk_game_settings
 {
@@ -81,6 +112,8 @@ typedef struct crosstalk_game_settings
     uint8_t music_src;
     uint8_t music_presence_on;
     uint8_t focus_pause_on;
+    uint8_t pudding[2];
+    uint32_t keybind[CROSSTALK_GAME_KEYBIND_CUNT];
 } crosstalk_game_settings_t;
 
 typedef struct crosstalk_game_settings_tip
@@ -120,5 +153,12 @@ uint32_t crosstalk_game_settings_serialize(const crosstalk_game_settings_t *sett
 uint32_t crosstalk_game_settings_deserialize(crosstalk_game_settings_t *settings, const uint8_t *buff, uint32_t len);
 uint32_t crosstalk_game_last_state_serialize(const crosstalk_game_last_state_t *state, uint8_t *out, uint32_t cap, uint32_t *out_len);
 uint32_t crosstalk_game_last_state_deserialize(crosstalk_game_last_state_t *state, const uint8_t *buff, uint32_t len);
+uint32_t crosstalk_game_settings_keybind_default_fill(uint32_t *binds, uint32_t cunt);
+uint32_t crosstalk_game_settings_keybind_chord_get(const ldg_term_key_event_t *irq, uint32_t *out);
+uint8_t crosstalk_game_settings_keybind_family_is(uint32_t action);
+uint8_t crosstalk_game_settings_keybind_match_is(const uint32_t *binds, uint32_t action, const ldg_term_key_event_t *irq);
+uint32_t crosstalk_game_settings_keybind_capture_get(uint32_t action, const ldg_term_key_event_t *irq, uint32_t *out);
+uint32_t crosstalk_game_settings_keybind_conflict_get(const uint32_t *binds, uint32_t action, uint32_t chord, uint32_t *out_owner);
+uint32_t crosstalk_game_settings_keybind_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap);
 
 #endif
