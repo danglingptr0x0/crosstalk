@@ -634,8 +634,6 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_sync(crosstalk_eda_ic_fpga_emu_ctx_t *ct
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back skipped; the emulator cannot say which blocks are dirty, and a whole-image rewrite would drop anything past the block boundary; drive: %u32; path: %.127s; bytes: %u64", drive, ctx->disk_path[drive], ctx->disk_span[drive]);
 
-    if (file != 0x0 || bytes_wr != 0) { return LDG_ERR_IO_WR; }
-
     return LDG_ERR_AOK;
 }
 

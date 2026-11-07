@@ -97,12 +97,14 @@ uint8_t crosstalk_net_libresteam_notice_active_is(const crosstalk_net_libresteam
 
     if (ctx->notice_cunt == 0) { return LDG_TRUTH_FALSE; }
 
+    if (LDG_UNLIKELY(ctx->notice_hd >= (uint32_t)CROSSTALK_NET_NOTICE_RING)) { return LDG_ERR_BOUNDS; }
+
     return ctx->notice[ctx->notice_hd].ttl > 0.0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
 const char* crosstalk_net_libresteam_notice_text_get(const crosstalk_net_libresteam_ctx_t *ctx)
 {
-    if (LDG_UNLIKELY(!ctx) || ctx->notice_cunt == 0) { return 0x0; }
+    if (LDG_UNLIKELY(!ctx) || ctx->notice_cunt == 0 || ctx->notice_hd >= (uint32_t)CROSSTALK_NET_NOTICE_RING) { return 0x0; }
 
     return ctx->notice[ctx->notice_hd].text;
 }
@@ -112,6 +114,13 @@ static void net_libresteam_notice_tick(crosstalk_net_libresteam_ctx_t *ctx, doub
     crosstalk_net_libresteam_notice_t *slot = 0x0;
 
     if (LDG_UNLIKELY(!ctx) || ctx->notice_cunt == 0) { return; }
+
+    if (LDG_UNLIKELY(ctx->notice_hd >= (uint32_t)CROSSTALK_NET_NOTICE_RING))
+    {
+        ctx->notice_hd = 0;
+        ctx->notice_cunt = 0;
+        return;
+    }
 
     slot = &ctx->notice[ctx->notice_hd];
     if (dt > 0.0) { slot->ttl = slot->ttl - dt; }

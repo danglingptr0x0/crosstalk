@@ -369,6 +369,7 @@ uint32_t crosstalk_eda_ic_fpga_build_tick(crosstalk_eda_ic_fpga_build_ctx_t *ctx
 
 uint32_t crosstalk_eda_ic_fpga_build_status_get(crosstalk_eda_ic_fpga_build_ctx_t *ctx, const char **out)
 {
+    char top[CROSSTALK_EDA_IC_FPGA_BUILD_TOP_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t secs = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -381,7 +382,10 @@ uint32_t crosstalk_eda_ic_fpga_build_status_get(crosstalk_eda_ic_fpga_build_ctx_
 
     secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_EDA_IC_FPGA_BUILD_MS_PER_SEC;
 
-    if (snprintf(ctx->status, sizeof(ctx->status), "bake %.31s: %.15s; %" PRIu64 "s", ctx->top, build_phase_text[ctx->phase], secs) < 0) { return LDG_ERR_STR_FMT; }
+    memcpy(top, ctx->top, sizeof(top));
+    top[sizeof(top) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
+
+    if (snprintf(ctx->status, sizeof(ctx->status), "bake %.31s: %.15s; %" PRIu64 "s", top, build_phase_text[ctx->phase], secs) < 0) { return LDG_ERR_STR_FMT; }
 
     *out = ctx->status;
 

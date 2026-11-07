@@ -961,14 +961,14 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
             uint8_t lt_is = 0;
             uint8_t eq_is = 0;
 
-            if (op->width <= 64)
+            if (op->width != 0 && op->width <= 64)
             {
                 flip_a_lo = src0_val ^ ((uint64_t)0x1 << (op->width - 0x1));
                 flip_b_lo = src1_val ^ ((uint64_t)0x1 << (op->width - 0x1));
                 flip_a_hi = 0;
                 flip_b_hi = 0;
             }
-            else
+            else if (op->width > 64 && op->width <= 128)
             {
                 flip_a_hi = src0_hi ^ ((uint64_t)0x1 << (op->width - 65));
                 flip_b_hi = src1_hi ^ ((uint64_t)0x1 << (op->width - 65));

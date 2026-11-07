@@ -97,6 +97,7 @@ typedef struct crosstalk_hdl_elab_styp
 typedef struct crosstalk_hdl_elab_ctx
 {
     const char *src;
+    uint64_t src_len;
     const crosstalk_hdl_ast_t *ast;
     crosstalk_hdl_ir_t *ir_ctx;
     void *pool;

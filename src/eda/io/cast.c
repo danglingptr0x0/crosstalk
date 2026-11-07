@@ -49,6 +49,8 @@ static uint32_t cast_payload_build(const crosstalk_eda_io_cast_ctx_t *ctx, const
     cell_w = ctx->src_w / (uint32_t)CROSSTALK_EDA_IO_CAST_COLS;
     cell_h = ctx->src_h / (uint32_t)CROSSTALK_EDA_IO_CAST_ROWS;
 
+    if (LDG_UNLIKELY(cell_w == 0 || cell_h == 0)) { return LDG_ERR_RANGE; }
+
     for (cy = 0; cy < (uint32_t)CROSSTALK_EDA_IO_CAST_ROWS; cy++)
     {
         memset(sum, 0x0, sizeof(sum));
@@ -68,6 +70,8 @@ static uint32_t cast_payload_build(const crosstalk_eda_io_cast_ctx_t *ctx, const
 
                 for (px = 0; px < px_cunt; px++)
                 {
+                    if ((px_done + px) / cell_w >= (uint32_t)CROSSTALK_EDA_IO_CAST_COLS) { break; }
+
                     blu = (uint32_t)chunk[px * (uint32_t)CAST_PX_BYTES + CAST_PX_B_OFF];
                     grn = (uint32_t)chunk[px * (uint32_t)CAST_PX_BYTES + CAST_PX_G_OFF];
                     red = (uint32_t)chunk[px * (uint32_t)CAST_PX_BYTES + CAST_PX_R_OFF];

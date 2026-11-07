@@ -184,6 +184,8 @@ uint32_t crosstalk_eda_ic_fpga_run_pin_set(crosstalk_eda_ic_fpga_run_ctx_t *ctx,
         return LDG_ERR_AOK;
     }
 
+    if (LDG_UNLIKELY(ctx->fpga == 0x0)) { return LDG_ERR_NOT_INIT; }
+
     for (slot_idx = 0; slot_idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; slot_idx = slot_idx + (uint32_t)CROSSTALK_EDA_IC_FPGA_RUN_STEP)
     {
         if (crosstalk_eda_ic_fpga_slot_live_is(ctx->fpga, slot_idx) != LDG_TRUTH_TRUE) { continue; }

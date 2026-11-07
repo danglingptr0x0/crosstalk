@@ -1,5 +1,6 @@
 #include "game/settings.h"
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -76,34 +77,44 @@ static void buff_rd(const uint8_t *buff, uint32_t *offset, void *dst, uint32_t l
     *offset = *offset + len;
 }
 
-static const double* settings_double_at_get(const crosstalk_game_settings_t *settings, uint32_t idx)
+static const uint8_t* settings_double_at_get(const crosstalk_game_settings_t *settings, uint32_t idx)
 {
-    return &settings->tonemap_exposure + idx;
+    return (const uint8_t *)settings + offsetof(crosstalk_game_settings_t, tonemap_exposure) + (uint64_t)idx * (uint64_t)sizeof(double);
 }
 
-static const uint32_t* settings_uint32_at_get(const crosstalk_game_settings_t *settings, uint32_t idx)
+static const uint8_t* settings_uint32_at_get(const crosstalk_game_settings_t *settings, uint32_t idx)
 {
-    return &settings->res_w + idx;
+    return (const uint8_t *)settings + offsetof(crosstalk_game_settings_t, res_w) + (uint64_t)idx * (uint64_t)sizeof(uint32_t);
 }
 
 static const uint8_t* settings_toggle_at_get(const crosstalk_game_settings_t *settings, uint32_t idx)
 {
-    return &settings->bloom_on + idx;
+    return (const uint8_t *)settings + offsetof(crosstalk_game_settings_t, bloom_on) + (uint64_t)idx;
 }
 
-static double* settings_double_at_wr_get(crosstalk_game_settings_t *settings, uint32_t idx)
+static uint8_t* settings_double_at_wr_get(crosstalk_game_settings_t *settings, uint32_t idx)
 {
-    return &settings->tonemap_exposure + idx;
+    return (uint8_t *)settings + offsetof(crosstalk_game_settings_t, tonemap_exposure) + (uint64_t)idx * (uint64_t)sizeof(double);
 }
 
-static uint32_t* settings_uint32_at_wr_get(crosstalk_game_settings_t *settings, uint32_t idx)
+static uint8_t* settings_uint32_at_wr_get(crosstalk_game_settings_t *settings, uint32_t idx)
 {
-    return &settings->res_w + idx;
+    return (uint8_t *)settings + offsetof(crosstalk_game_settings_t, res_w) + (uint64_t)idx * (uint64_t)sizeof(uint32_t);
 }
 
 static uint8_t* settings_toggle_at_wr_get(crosstalk_game_settings_t *settings, uint32_t idx)
 {
-    return &settings->bloom_on + idx;
+    return (uint8_t *)settings + offsetof(crosstalk_game_settings_t, bloom_on) + (uint64_t)idx;
+}
+
+static const uint8_t* last_state_double_at_get(const crosstalk_game_last_state_t *state, uint32_t idx)
+{
+    return (const uint8_t *)state + offsetof(crosstalk_game_last_state_t, cam_hdg) + (uint64_t)idx * (uint64_t)sizeof(double);
+}
+
+static uint8_t* last_state_double_at_wr_get(crosstalk_game_last_state_t *state, uint32_t idx)
+{
+    return (uint8_t *)state + offsetof(crosstalk_game_last_state_t, cam_hdg) + (uint64_t)idx * (uint64_t)sizeof(double);
 }
 
 uint8_t crosstalk_game_settings_fab_unlocked_is(const crosstalk_game_settings_t *settings)
@@ -115,7 +126,8 @@ uint8_t crosstalk_game_settings_fab_unlocked_is(const crosstalk_game_settings_t 
 
 uint32_t crosstalk_game_settings_quantize(crosstalk_game_settings_t *settings)
 {
-    double *slot = 0x0;
+    uint8_t *slot = 0x0;
+    double val = 0.0;
     uint32_t idx = 0;
 
     if (LDG_UNLIKELY(settings == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -123,7 +135,9 @@ uint32_t crosstalk_game_settings_quantize(crosstalk_game_settings_t *settings)
     for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1)
     {
         slot = settings_double_at_wr_get(settings, idx);
-        *slot = round(*slot * SETTINGS_QUANT_SCALE) / SETTINGS_QUANT_SCALE;
+        memcpy(&val, slot, sizeof(val));
+        val = round(val * SETTINGS_QUANT_SCALE) / SETTINGS_QUANT_SCALE;
+        memcpy(slot, &val, sizeof(val));
     }
 
     return LDG_ERR_AOK;
@@ -268,7 +282,7 @@ uint32_t crosstalk_game_last_state_serialize(const crosstalk_game_last_state_t *
 
     if (cap < LAST_STATE_BLOB_LEN) { return LDG_ERR_BOUNDS; }
 
-    for (idx = 0; idx < LAST_STATE_DOUBLE_CUNT; idx = idx + 1) { buff_wr(out, &offset, &state->cam_hdg + idx, 8); }
+    for (idx = 0; idx < LAST_STATE_DOUBLE_CUNT; idx = idx + 1) { buff_wr(out, &offset, last_state_double_at_get(state, idx), 8); }
 
     return LDG_ERR_AOK;
 }
@@ -284,7 +298,7 @@ uint32_t crosstalk_game_last_state_deserialize(crosstalk_game_last_state_t *stat
     avail = len / 8;
     if (avail > LAST_STATE_DOUBLE_CUNT) { avail = LAST_STATE_DOUBLE_CUNT; }
 
-    for (idx = 0; idx < avail; idx = idx + 1) { buff_rd(buff, &offset, &state->cam_hdg + idx, 8); }
+    for (idx = 0; idx < avail; idx = idx + 1) { buff_rd(buff, &offset, last_state_double_at_wr_get(state, idx), 8); }
 
     return LDG_ERR_AOK;
 }

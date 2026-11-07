@@ -622,6 +622,8 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
 
         if (memcmp(&ctx->file[at], MIDI_TAG_TRACK, (uint64_t)MIDI_TAG_LEN) != 0)
         {
+            if (want > ctx->file_len - at - (uint32_t)CROSSTALK_EDA_IO_MIDI_CHUNK_HDR) { break; }
+
             at = at + (uint32_t)CROSSTALK_EDA_IO_MIDI_CHUNK_HDR + want;
             continue;
         }
@@ -629,7 +631,7 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
         at = at + (uint32_t)CROSSTALK_EDA_IO_MIDI_CHUNK_HDR;
 
         ctx->track[ctx->track_cunt].at = at;
-        ctx->track[ctx->track_cunt].end = at + want > ctx->file_len ? ctx->file_len : at + want;
+        ctx->track[ctx->track_cunt].end = want > ctx->file_len - at ? ctx->file_len : at + want;
         ctx->track[ctx->track_cunt].tick = 0;
         ctx->track[ctx->track_cunt].status = 0x0;
         ctx->track[ctx->track_cunt].done = LDG_TRUTH_FALSE;
@@ -637,8 +639,8 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
         ret = midi_track_delta_rd(ctx, ctx->track_cunt);
         if (ret != LDG_ERR_AOK) { return ret; }
 
+        at = ctx->track[ctx->track_cunt].end;
         ctx->track_cunt = ctx->track_cunt + (uint32_t)MIDI_STEP;
-        at = at + want;
     }
 
     if (ctx->track_cunt == 0) { return LDG_ERR_EMPTY; }

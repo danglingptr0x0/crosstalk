@@ -798,7 +798,7 @@ static uint32_t type_rec_add(type_build_t *build, const char *name, const char *
     return LDG_ERR_AOK;
 }
 
-static uint32_t type_kind_from_encoding(uint64_t encoding, uint64_t size)
+static uint32_t type_kind_from_encoding(uint64_t encoding)
 {
     if (encoding == (uint64_t)TYPE_ATE_BOOL) { return (uint32_t)CROSSTALK_HDL_TYPE_KIND_BOOL; }
 
@@ -807,8 +807,6 @@ static uint32_t type_kind_from_encoding(uint64_t encoding, uint64_t size)
     if (encoding == (uint64_t)TYPE_ATE_SIGNED) { return (uint32_t)CROSSTALK_HDL_TYPE_KIND_INT; }
 
     if (encoding == (uint64_t)TYPE_ATE_UNSIGNED) { return (uint32_t)CROSSTALK_HDL_TYPE_KIND_UINT; }
-
-    if (size == 0) { return (uint32_t)CROSSTALK_HDL_TYPE_KIND_NONE; }
 
     return (uint32_t)CROSSTALK_HDL_TYPE_KIND_NONE;
 }
@@ -1027,7 +1025,7 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
         }
         else if (tag == (uint64_t)TYPE_TAG_BASE)
         {
-            kind = type_kind_from_encoding(encoding, byte_size);
+            kind = type_kind_from_encoding(encoding);
 
             ret = type_named_find(build, name != 0x0 ? name : "", "", byte_size, kind, &idx);
             if (ret != LDG_ERR_AOK)
@@ -1418,6 +1416,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
     uint8_t hdr[TYPE_HDR64_LEN] = LDG_ARR_ZERO_INIT;
     type_parse_t parse = LDG_STRUCT_ZERO_INIT;
     type_build_t build = LDG_STRUCT_ZERO_INIT;
+    ldg_io_info_t file_info = LDG_STRUCT_ZERO_INIT;
     ldg_io_file_t *file = 0x0;
     uint8_t *sect = 0x0;
     char *shstr = 0x0;
@@ -1488,6 +1487,10 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
         if (shoff == 0 || shnum == 0 || shstrndx >= shnum) { ret = LDG_ERR_NOT_FOUND; }
         else if ((uint64_t)shentsize != ent_len) { ret = LDG_ERR_IO_FMT; }
     }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_io_file_info_get(file, &file_info); }
+
+    if (ret == LDG_ERR_AOK && (shoff > file_info.size || (uint64_t)shnum > (file_info.size - shoff) / ent_len)) { ret = LDG_ERR_IO_FMT; }
 
     if (ret == LDG_ERR_AOK)
     {

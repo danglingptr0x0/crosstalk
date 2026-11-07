@@ -1571,6 +1571,8 @@ uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term
     prompt_w = (uint32_t)((double)col_cunt * CROSSTALK_CORE_CMDLINE_PROMPT_FRAC);
     if (prompt_w <= (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_W) { prompt_w = col_cunt; }
 
+    if (prompt_w <= (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_W) { return LDG_ERR_AOK; }
+
     ret = cmdline_row_clear(render, col, row, col_cunt);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -1580,6 +1582,7 @@ uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     cursor_at = ctx->isearch_on == LDG_TRUTH_TRUE ? (uint32_t)text_len : cursor_pos_get(ctx);
+    if ((uint64_t)cursor_at > text_len) { cursor_at = (uint32_t)text_len; }
 
     text_start = (uint32_t)CROSSTALK_CORE_CMDLINE_TEXT_ORIG;
     if (cursor_at + (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_W > prompt_w) { text_start = cursor_at + (uint32_t)CROSSTALK_CORE_CMDLINE_CURSOR_W - prompt_w; }

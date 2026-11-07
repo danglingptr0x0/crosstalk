@@ -52,9 +52,11 @@ static uint32_t eval_diag_set(crosstalk_eda_script_eval_t *ctx, const crosstalk_
     ctx->diag.line = node != 0x0 ? node->line : 0x0;
     ctx->diag.col = node != 0x0 ? node->col : 0x0;
 
-    if (snprintf(ctx->diag.msg, sizeof(ctx->diag.msg), EVAL_DIAG_FMT, msg) < 0) { return code; }
-
-    if (snprintf(ctx->diag.suggestion, sizeof(ctx->diag.suggestion), EVAL_DIAG_FMT, suggestion) < 0) { return code; }
+    if (snprintf(ctx->diag.msg, sizeof(ctx->diag.msg), EVAL_DIAG_FMT, msg) < 0 || snprintf(ctx->diag.suggestion, sizeof(ctx->diag.suggestion), EVAL_DIAG_FMT, suggestion) < 0)
+    {
+        ctx->diag.msg[0] = LDG_STR_TERM;
+        ctx->diag.suggestion[0] = LDG_STR_TERM;
+    }
 
     return code;
 }
@@ -79,7 +81,9 @@ static const crosstalk_eda_script_builtin_t* eval_builtin_find(const crosstalk_e
 {
     uint32_t idx = 0;
 
-    for (idx = 0; idx < ctx->builtins_cunt; idx = idx + (uint32_t)EVAL_STEP)
+    if (name_len >= (uint32_t)CROSSTALK_EDA_SCRIPT_BUILTIN_NAME_CAP) { return 0x0; }
+
+    for (idx = 0; idx < ctx->builtins_cunt && idx < (uint32_t)CROSSTALK_EDA_SCRIPT_BUILTIN_MAX; idx = idx + (uint32_t)EVAL_STEP)
     {
         if (ctx->builtin[idx].name_len != name_len) { continue; }
 
@@ -151,7 +155,9 @@ static crosstalk_eda_script_switch_t* eval_switch_lookup(crosstalk_eda_script_ev
 {
     uint32_t idx = 0;
 
-    for (idx = 0; idx < ctx->switches_cunt; idx = idx + (uint32_t)EVAL_STEP)
+    if (name_len >= (uint32_t)CROSSTALK_EDA_SCRIPT_SLOT_NAME_CAP) { return 0x0; }
+
+    for (idx = 0; idx < ctx->switches_cunt && idx < (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_MAX; idx = idx + (uint32_t)EVAL_STEP)
     {
         if (ctx->switches[idx].name_len != name_len) { continue; }
 
@@ -533,6 +539,8 @@ static uint32_t eval_lv_resolve(crosstalk_eda_script_eval_t *ctx, const crosstal
 
 static uint32_t eval_lv_ld(crosstalk_eda_script_eval_t *ctx, const crosstalk_eda_script_node_t *node, const eval_lv_t *lv, uint64_t *out_val, uint32_t *out_width)
 {
+    if (LDG_UNLIKELY(lv->slot == 0x0)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_LVALUE, "target cannot be read", "read a variable, an array element, or a bit slice"); }
+
     if (LDG_UNLIKELY(lv->slot->inited != LDG_TRUTH_TRUE)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_UNDEF_VAR, "variable is used before it holds anything", "run the declaration before this line"); }
 
     if (lv->elem_is == LDG_TRUTH_TRUE)
@@ -804,6 +812,8 @@ static uint32_t eval_assign_node(crosstalk_eda_script_eval_t *ctx, const crossta
     uint32_t ret = eval_lv_resolve(ctx, node->lhs, &lv);
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    if (LDG_UNLIKELY(lv.slot == 0x0)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_LVALUE, "target cannot be assigned to", "assign to a variable, an array element, or a bit slice"); }
 
     ret = eval_expr(ctx, node->rhs, &rhs);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

@@ -335,6 +335,7 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
 {
     uint8_t ident[ELF_IDENT_LEN] = LDG_ARR_ZERO_INIT;
     uint8_t hdr[ELF_HDR64_LEN] = LDG_ARR_ZERO_INIT;
+    ldg_io_info_t info = LDG_STRUCT_ZERO_INIT;
     ldg_io_file_t *file = 0x0;
     uint8_t *sect = 0x0;
     uint8_t *tab = 0x0;
@@ -398,6 +399,10 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
         if (shoff == 0 || shnum == 0) { ret = LDG_ERR_NOT_FOUND; }
         else if ((uint64_t)shentsize != ent_len) { ret = LDG_ERR_IO_FMT; }
     }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_io_file_info_get(file, &info); }
+
+    if (ret == LDG_ERR_AOK && (shoff > info.size || (uint64_t)shnum > (info.size - shoff) / ent_len)) { ret = LDG_ERR_IO_FMT; }
 
     if (ret == LDG_ERR_AOK)
     {

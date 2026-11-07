@@ -269,7 +269,7 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
 
     if (img_word_rd(raw, (uint64_t)CROSSTALK_HDL_IMG_OFF_PH_SIZE) != (uint16_t)CROSSTALK_HDL_IMG_PH_SIZE || ph_cunt == (uint32_t)CROSSTALK_HDL_IMG_NONE) { return CROSSTALK_HDL_ERR_IMG_FORM; }
 
-    if (img_range_is(ph, (uint64_t)ph_cunt * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE, span) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_TRUNC; }
+    if ((uint64_t)ph_cunt > span / (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE || img_range_is(ph, (uint64_t)ph_cunt * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE, span) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_IMG_TRUNC; }
 
     for (idx = 0; idx < ph_cunt; idx = idx + (uint32_t)CROSSTALK_HDL_IMG_STEP)
     {

@@ -47,9 +47,11 @@ static uint32_t parse_diag_set(parse_ctx_t *ctx, const crosstalk_eda_script_tok_
     ctx->diag->line = tok->line;
     ctx->diag->col = tok->col;
 
-    if (snprintf(ctx->diag->msg, sizeof(ctx->diag->msg), PARSE_DIAG_FMT, msg) < 0) { return code; }
-
-    if (snprintf(ctx->diag->suggestion, sizeof(ctx->diag->suggestion), PARSE_DIAG_FMT, suggestion) < 0) { return code; }
+    if (snprintf(ctx->diag->msg, sizeof(ctx->diag->msg), PARSE_DIAG_FMT, msg) < 0 || snprintf(ctx->diag->suggestion, sizeof(ctx->diag->suggestion), PARSE_DIAG_FMT, suggestion) < 0)
+    {
+        ctx->diag->msg[0] = LDG_STR_TERM;
+        ctx->diag->suggestion[0] = LDG_STR_TERM;
+    }
 
     return code;
 }

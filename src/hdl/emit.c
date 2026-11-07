@@ -2821,7 +2821,7 @@ static uint32_t crosstalk_hdl_emit_opt_run(crosstalk_hdl_ir_t *ir2, const crosst
         {
             if (walk >= ir_src->sig_cunt || seq_wrf[walk] != 0x0) { break; }
 
-            if (wr_tally[walk] != 0x1) { break; }
+            if (wr_tally[walk] != 0x1 || wr_op[walk] >= ir_src->comb_cunt) { break; }
 
             if (crosstalk_hdl_emit_alias_safe_is(ir_src, &comb2[wr_op[walk]]) != LDG_TRUTH_TRUE) { break; }
 
@@ -2835,24 +2835,24 @@ static uint32_t crosstalk_hdl_emit_opt_run(crosstalk_hdl_ir_t *ir2, const crosst
     {
         crosstalk_hdl_ir_op_t *op2 = &comb2[idx];
 
-        if (op2->kind == CROSSTALK_HDL_IR_OP_MEM_WR) { if (op2->dst != UINT32_MAX && alias_map[op2->dst] != UINT32_MAX) { op2->dst = alias_map[op2->dst]; } }
-        else if (op2->kind != CROSSTALK_HDL_IR_OP_MEM_RD && op2->src0 != UINT32_MAX && alias_map[op2->src0] != UINT32_MAX) { op2->src0 = alias_map[op2->src0]; }
+        if (op2->kind == CROSSTALK_HDL_IR_OP_MEM_WR) { if (op2->dst < ir_src->sig_cunt && alias_map[op2->dst] != UINT32_MAX) { op2->dst = alias_map[op2->dst]; } }
+        else if (op2->kind != CROSSTALK_HDL_IR_OP_MEM_RD && op2->src0 < ir_src->sig_cunt && alias_map[op2->src0] != UINT32_MAX) { op2->src0 = alias_map[op2->src0]; }
 
-        if (op2->src1 != UINT32_MAX && alias_map[op2->src1] != UINT32_MAX) { op2->src1 = alias_map[op2->src1]; }
+        if (op2->src1 < ir_src->sig_cunt && alias_map[op2->src1] != UINT32_MAX) { op2->src1 = alias_map[op2->src1]; }
 
-        if (op2->src2 != UINT32_MAX && alias_map[op2->src2] != UINT32_MAX) { op2->src2 = alias_map[op2->src2]; }
+        if (op2->src2 < ir_src->sig_cunt && alias_map[op2->src2] != UINT32_MAX) { op2->src2 = alias_map[op2->src2]; }
     }
 
     for (idx = 0; idx < ir_src->seq_op_cunt; idx++)
     {
         crosstalk_hdl_ir_op_t *op2 = &seq2[idx];
 
-        if (op2->kind == CROSSTALK_HDL_IR_OP_MEM_WR) { if (op2->dst != UINT32_MAX && alias_map[op2->dst] != UINT32_MAX) { op2->dst = alias_map[op2->dst]; } }
-        else if (op2->kind != CROSSTALK_HDL_IR_OP_MEM_RD && op2->src0 != UINT32_MAX && alias_map[op2->src0] != UINT32_MAX) { op2->src0 = alias_map[op2->src0]; }
+        if (op2->kind == CROSSTALK_HDL_IR_OP_MEM_WR) { if (op2->dst < ir_src->sig_cunt && alias_map[op2->dst] != UINT32_MAX) { op2->dst = alias_map[op2->dst]; } }
+        else if (op2->kind != CROSSTALK_HDL_IR_OP_MEM_RD && op2->src0 < ir_src->sig_cunt && alias_map[op2->src0] != UINT32_MAX) { op2->src0 = alias_map[op2->src0]; }
 
-        if (op2->src1 != UINT32_MAX && alias_map[op2->src1] != UINT32_MAX) { op2->src1 = alias_map[op2->src1]; }
+        if (op2->src1 < ir_src->sig_cunt && alias_map[op2->src1] != UINT32_MAX) { op2->src1 = alias_map[op2->src1]; }
 
-        if (op2->src2 != UINT32_MAX && alias_map[op2->src2] != UINT32_MAX) { op2->src2 = alias_map[op2->src2]; }
+        if (op2->src2 < ir_src->sig_cunt && alias_map[op2->src2] != UINT32_MAX) { op2->src2 = alias_map[op2->src2]; }
     }
 
     {

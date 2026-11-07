@@ -290,6 +290,8 @@ uint32_t crosstalk_emu_init(crosstalk_emu_ctx_t *ctx, const crosstalk_emu_conf_t
 
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: image stored; path: %.127s; bytes: %u64; words: %u64; word off: %u64", conf->ld_path[at], prog_span, words, conf->ld_off[at]);
 
+        if (ctx->ld_cunt >= (uint32_t)CROSSTALK_EMU_LD_MAX) { break; }
+
         if (ldg_str_rbrcpy(ctx->ld_path[ctx->ld_cunt], conf->ld_path[at], (uint64_t)sizeof(ctx->ld_path[ctx->ld_cunt])) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu image path truncated"); continue; }
 
         ctx->ld_off[ctx->ld_cunt] = conf->ld_off[at];

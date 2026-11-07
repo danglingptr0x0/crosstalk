@@ -2967,7 +2967,11 @@ static uint32_t crosstalk_hdl_elab_port_mem_alias_get(crosstalk_hdl_elab_ctx_t *
 
     for (idx = 0; idx < ctx->port_conn_cunt; idx++)
     {
-        if (conns[idx].mem_sig == UINT32_MAX || crosstalk_hdl_elab_tok_eq_is(ctx->src, &conns[idx].name, name) != LDG_TRUTH_TRUE) { continue; }
+        if (conns[idx].mem_sig == UINT32_MAX) { continue; }
+
+        if ((uint64_t)conns[idx].name.off > ctx->src_len || (uint64_t)conns[idx].name.len > ctx->src_len - (uint64_t)conns[idx].name.off || (uint64_t)name->off > ctx->src_len || (uint64_t)name->len > ctx->src_len - (uint64_t)name->off) { continue; }
+
+        if (crosstalk_hdl_elab_tok_eq_is(ctx->src, &conns[idx].name, name) != LDG_TRUTH_TRUE) { continue; }
 
         if (LDG_UNLIKELY(conns[idx].mem_sig >= ctx->ir_ctx->sig_cunt)) { return LDG_ERR_BOUNDS; }
 
@@ -4429,6 +4433,7 @@ uint32_t crosstalk_hdl_elab_run(crosstalk_hdl_elab_ctx_t *ctx, const char *src, 
     if (LDG_UNLIKELY(ctx == 0x0 || src == 0x0 || ast == 0x0 || pool == 0x0 || ir_ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     src_len = (uint64_t)strlen(src);
+    ctx->src_len = src_len;
 
     ctx->src = src;
     ctx->ast = ast;
@@ -4553,6 +4558,8 @@ uint32_t crosstalk_hdl_elab_run(crosstalk_hdl_elab_ctx_t *ctx, const char *src, 
 
             while (pkg_idx != UINT32_MAX)
             {
+                if (LDG_UNLIKELY(pkg_idx >= ast->cunt)) { return LDG_ERR_BOUNDS; }
+
                 ret = crosstalk_hdl_ast_node_get(ast, pkg_idx, &pkg_item);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 

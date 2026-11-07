@@ -30,6 +30,7 @@
 #define PTY_GRID_ROW_TEXT_CAP 81
 #define PTY_UNHANDLED_CAP 64
 #define PTY_UNHANDLED_TEXT_CAP 192
+#define PTY_UNHANDLED_TEXT_STEP 2
 #define PTY_OSC52_MARK "\x1b]52;"
 #define PTY_OSC52_MARK_LEN 5
 #define PTY_UTF_CONT_MIN 0x80
@@ -253,7 +254,7 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
 
         if (ldg_term_vt_unhandled_get(&ctx->vt, final, (uint64_t)sizeof(final), &final_cunt) == LDG_ERR_AOK)
         {
-            for (final_at = 0; final_at < final_cunt && text_at + LDG_STR_TERM_SIZE < (uint32_t)sizeof(final_text); final_at = final_at + 0x1)
+            for (final_at = 0; final_at < final_cunt && final_at < (uint64_t)sizeof(final) && text_at + (uint32_t)PTY_UNHANDLED_TEXT_STEP + LDG_STR_TERM_SIZE <= (uint32_t)sizeof(final_text); final_at = final_at + 0x1)
             {
                 final_text[text_at] = (char)final[final_at];
                 text_at = text_at + 0x1;
