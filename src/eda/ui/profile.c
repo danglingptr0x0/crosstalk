@@ -404,7 +404,8 @@ uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, cros
 
     profile_prog_pull(ctx, fpga, slot_idx);
 
-    if (profile_fn_scan(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ctx->fn_total = ctx->fn_total; }
+    ret = profile_fn_scan(ctx, fpga, slot_idx);
+    if (ret == LDG_ERR_IO_RD) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
     profile_emu_pull(ctx, fpga, slot_idx);
 

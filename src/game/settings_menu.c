@@ -38,7 +38,8 @@
 #define SETTINGS_MENU_KB_TITLE "Settings > Key bindings"
 #define SETTINGS_MENU_KB_ARM_MS 3000
 #define SETTINGS_MENU_KB_NOTE_MS 3000
-#define SETTINGS_MENU_KB_LINE_FMT "%-24.24s %.47s%.2s"
+#define SETTINGS_MENU_KB_LINE_FMT "%-22.22s %-20.20s %-24.24s%.2s"
+#define SETTINGS_MENU_KB_LABEL_COL_CUNT 22
 #define SETTINGS_MENU_KB_CHANGED_MARK " *"
 #define SETTINGS_MENU_KB_ARMED_TEXT "press keys..."
 #define SETTINGS_MENU_KB_TAKEN_TEXT "[already taken]"
@@ -442,7 +443,8 @@ static uint32_t settings_menu_tip_draw(ldg_term_render_t *render, const char *ti
 
 static uint32_t settings_menu_kb_row_draw(const crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings, ldg_term_render_t *render, uint32_t action, uint32_t mnemonic_pos, uint64_t now_ms, uint32_t col, uint32_t row, uint32_t width)
 {
-    char cell[CROSSTALK_GAME_KEYBIND_FMT_CAP] = LDG_ARR_ZERO_INIT;
+    char vim[CROSSTALK_GAME_KEYBIND_FMT_CAP] = LDG_ARR_ZERO_INIT;
+    char unix_cell[CROSSTALK_GAME_KEYBIND_FMT_CAP] = LDG_ARR_ZERO_INIT;
     char line[SETTINGS_MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t bg = LDG_STRUCT_ZERO_INIT;
@@ -450,20 +452,24 @@ static uint32_t settings_menu_kb_row_draw(const crosstalk_game_settings_menu_ctx
     uint8_t note_live = (ctx->kb_note != (uint8_t)CROSSTALK_GAME_SETTINGS_KEYBIND_NOTE_NONE && ctx->kb_note_row == action && now_ms - ctx->kb_note_ms < (uint64_t)SETTINGS_MENU_KB_NOTE_MS) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     uint32_t ret = 0;
 
-    if (ctx->kb_armed == LDG_TRUTH_TRUE && ctx->kb_sel == action) { ret = snprintf(cell, sizeof(cell), "%.47s", SETTINGS_MENU_KB_ARMED_TEXT) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
-    else if (note_live == LDG_TRUTH_TRUE) { ret = snprintf(cell, sizeof(cell), "%.47s", ctx->kb_note == (uint8_t)CROSSTALK_GAME_SETTINGS_KEYBIND_NOTE_TAKEN ? SETTINGS_MENU_KB_TAKEN_TEXT : SETTINGS_MENU_KB_MOD_TEXT) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
-    else { ret = crosstalk_game_settings_keybind_fmt(action, ctx->kb_pending[action], cell, (uint32_t)sizeof(cell)); }
+    if (ctx->kb_armed == LDG_TRUTH_TRUE && ctx->kb_sel == action) { ret = snprintf(vim, sizeof(vim), "%.47s", SETTINGS_MENU_KB_ARMED_TEXT) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    else if (note_live == LDG_TRUTH_TRUE) { ret = snprintf(vim, sizeof(vim), "%.47s", ctx->kb_note == (uint8_t)CROSSTALK_GAME_SETTINGS_KEYBIND_NOTE_TAKEN ? SETTINGS_MENU_KB_TAKEN_TEXT : SETTINGS_MENU_KB_MOD_TEXT) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    else
+    {
+        ret = crosstalk_game_settings_keybind_vim_fmt(action, ctx->kb_pending[action], vim, (uint32_t)sizeof(vim));
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_game_settings_keybind_unix_fmt(action, ctx->kb_pending[action], unix_cell, (uint32_t)sizeof(unix_cell)); }
+    }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (snprintf(line, sizeof(line), SETTINGS_MENU_KB_LINE_FMT, settings_menu_kb_label_get(action), cell, mark) < 0) { return LDG_ERR_STR_FMT; }
+    if (snprintf(line, sizeof(line), SETTINGS_MENU_KB_LINE_FMT, settings_menu_kb_label_get(action), vim, unix_cell, mark) < 0) { return LDG_ERR_STR_FMT; }
 
     if (ctx->kb_sel != action)
     {
         ret = crosstalk_ui_cell_rgba_put(render, col, row, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, 0x0);
         if (ret != LDG_ERR_AOK) { return ret; }
 
-        return crosstalk_ui_cell_mnemonic_draw(render, col, row, settings_menu_kb_label_get(action), mnemonic_pos, (uint32_t)SETTINGS_MENU_LABEL_COL_CUNT, (uint32_t)CROSSTALK_UI_CELL_PANE_RGBA);
+        return crosstalk_ui_cell_mnemonic_draw(render, col, row, settings_menu_kb_label_get(action), mnemonic_pos, (uint32_t)SETTINGS_MENU_KB_LABEL_COL_CUNT, (uint32_t)CROSSTALK_UI_CELL_PANE_RGBA);
     }
 
     ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_LIT_RGBA, &fg);
@@ -475,7 +481,7 @@ static uint32_t settings_menu_kb_row_draw(const crosstalk_game_settings_menu_ctx
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    return crosstalk_ui_cell_mnemonic_draw(render, col, row, settings_menu_kb_label_get(action), mnemonic_pos, (uint32_t)SETTINGS_MENU_LABEL_COL_CUNT, (uint32_t)CROSSTALK_UI_THEME_SEL_BG_RGBA);
+    return crosstalk_ui_cell_mnemonic_draw(render, col, row, settings_menu_kb_label_get(action), mnemonic_pos, (uint32_t)SETTINGS_MENU_KB_LABEL_COL_CUNT, (uint32_t)CROSSTALK_UI_THEME_SEL_BG_RGBA);
 }
 
 static uint32_t settings_menu_kb_draw(const crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings, ldg_term_render_t *render, const ldg_term_rect_t *rect)

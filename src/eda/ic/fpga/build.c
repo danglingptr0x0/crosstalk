@@ -377,6 +377,8 @@ uint32_t crosstalk_eda_ic_fpga_build_status_get(crosstalk_eda_ic_fpga_build_ctx_
 
     if (ctx->phase == (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_IDLE) { return LDG_ERR_AOK; }
 
+    if (LDG_UNLIKELY(ctx->phase > (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_FAIL)) { return LDG_ERR_RANGE; }
+
     secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_EDA_IC_FPGA_BUILD_MS_PER_SEC;
 
     if (snprintf(ctx->status, sizeof(ctx->status), "bake %.31s: %.15s; %" PRIu64 "s", ctx->top, build_phase_text[ctx->phase], secs) < 0) { return LDG_ERR_STR_FMT; }

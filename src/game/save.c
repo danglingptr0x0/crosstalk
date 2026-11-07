@@ -206,7 +206,8 @@ static uint32_t bkp_wr(const char *path)
     ret = ldg_io_file_open(bkp_path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, GAME_SAVE_FILE_MODE, &dst);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_io_file_close(src);
+        if (ldg_io_file_close(src) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp source close failed"); }
+
         return ret;
     }
 
@@ -236,9 +237,10 @@ static uint32_t bkp_wr(const char *path)
     if (ret == LDG_ERR_AOK) { ret = ldg_io_file_commit(dst); }
 
     if (ret == LDG_ERR_AOK) { ret = ldg_io_file_close(dst); }
-    else { ldg_io_file_close(dst); }
+    else if (ldg_io_file_close(dst) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp target close failed"); }
 
-    ldg_io_file_close(src);
+    if (ldg_io_file_close(src) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp source close failed"); }
+
     return ret;
 }
 
@@ -358,12 +360,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
         hdr.sect_cunt = sect_cunt;
         hdr.difficulty = GAME_SAVE_DIFFICULTY_NONE;
         snprintf(hdr.author, sizeof(hdr.author), "%.63s", author_name != 0x0 ? author_name : "");
-        ret = save_proj_name_get(path, hdr.proj_name, (uint64_t)sizeof(hdr.proj_name));
-        if (ret != LDG_ERR_AOK)
-        {
-            hdr.proj_name[0] = LDG_STR_TERM;
-            ret = LDG_ERR_AOK;
-        }
+        if (save_proj_name_get(path, hdr.proj_name, (uint64_t)sizeof(hdr.proj_name)) != LDG_ERR_AOK) { hdr.proj_name[0] = LDG_STR_TERM; }
 
         hdr.author_steam_id = author_steam_id;
         hdr.created_epoch_ms = created_epoch_ms;

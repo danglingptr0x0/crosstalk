@@ -317,10 +317,25 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
     {
         uint64_t entry = ph + (uint64_t)idx * (uint64_t)CROSSTALK_HDL_IMG_PH_SIZE;
         uint64_t file_span = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE_SPAN);
+        uint64_t file = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE);
+        uint64_t vaddr = img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_VADDR);
 
         if (img_dword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_TYPE) != (uint32_t)CROSSTALK_HDL_IMG_PT_LD || file_span == (uint64_t)CROSSTALK_HDL_IMG_NONE) { continue; }
 
-        memcpy(base + img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_VADDR), raw + img_qword_rd(raw, entry + (uint64_t)CROSSTALK_HDL_IMG_PH_OFF_FILE), file_span);
+        if (vaddr > want || file_span > want - vaddr || img_range_is(file, file_span, span) != LDG_TRUTH_TRUE)
+        {
+            ret = CROSSTALK_HDL_ERR_IMG_SECT;
+            break;
+        }
+
+        memcpy(base + vaddr, raw + file, file_span);
+    }
+
+    if (ret != LDG_ERR_AOK)
+    {
+        if (img_pages_drop(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
+
+        return ret;
     }
 
     out->base = base;

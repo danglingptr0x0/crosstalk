@@ -566,7 +566,9 @@ static uint32_t scope_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *re
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    if (win_id != (uint64_t)CROSSTALK_EDA_UI_SCOPE_WINDOW_ID || col_cunt == 0 || row_cunt <= (uint32_t)CROSSTALK_EDA_UI_SCOPE_STATUS_ROW_CUNT) { return LDG_ERR_FUNC_ARG_INVALID; }
+    if (win_id != (uint64_t)CROSSTALK_EDA_UI_SCOPE_WINDOW_ID) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    if (col_cunt == 0 || row_cunt <= (uint32_t)CROSSTALK_EDA_UI_SCOPE_STATUS_ROW_CUNT) { return LDG_ERR_AOK; }
 
     if (ctx->live != LDG_TRUTH_TRUE && crosstalk_eda_ui_scope_mem_live_is(ctx) != LDG_TRUTH_TRUE) { return crosstalk_ui_cell_rgba_put(render, (uint32_t)SCOPE_ORIG_COL, (uint32_t)SCOPE_IDLE_ROW, CROSSTALK_EDA_UI_SCOPE_IDLE_TEXT, (uint64_t)sizeof(CROSSTALK_EDA_UI_SCOPE_IDLE_TEXT), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0); }
 

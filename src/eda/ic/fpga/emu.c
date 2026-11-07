@@ -444,18 +444,20 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_deserialize(crosstalk_eda_ic_fpga_emu_st
     blk_cunt = emu_stat_u32_get(buff + 0x8);
     pos = (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_HDR_BYTES;
 
+    if (blk_cunt > (len - pos) / (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES) { return LDG_ERR_IO_FMT; }
+
     for (blk_at = 0; blk_at < blk_cunt; blk_at = blk_at + 0x1)
     {
         uint32_t tag = 0;
         uint32_t span = 0;
 
-        if (pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES > len) { break; }
+        if (len - pos < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES) { break; }
 
         tag = emu_stat_u32_get(buff + pos);
         span = emu_stat_u32_get(buff + pos + 0x4);
         pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES;
 
-        if (pos + span > len) { break; }
+        if (span > len - pos) { break; }
 
         if (tag == (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TOTALS && span >= (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_TOTALS_WORDS * (uint32_t)sizeof(uint64_t))
         {
@@ -599,8 +601,6 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_sync(crosstalk_eda_ic_fpga_emu_ctx_t *ct
 
         off = (uint64_t)lo * (uint64_t)width;
         span = ((uint64_t)hi - (uint64_t)lo + (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_BLK_STEP) * (uint64_t)width;
-
-        if (off >= ctx->disk_span[drive]) { return LDG_ERR_BOUNDS; }
 
         if (span > ctx->disk_span[drive] - off) { span = ctx->disk_span[drive] - off; }
 

@@ -8576,6 +8576,12 @@ static uint32_t crosstalk_remote_pty_tee_cb(void *user, const uint8_t *bytes, ui
     return crosstalk_remote_term_tee_cb(ctx, sesh_idx, bytes, len);
 }
 
+#if CROSSTALK_NET_WIRE_REMOTE_SESH_CAP < CROSSTALK_EDA_UI_TERM_SESH_MAX
+#define CROSSTALK_CORE_REMOTE_SESH_CUNT CROSSTALK_NET_WIRE_REMOTE_SESH_CAP
+#else
+#define CROSSTALK_CORE_REMOTE_SESH_CUNT CROSSTALK_EDA_UI_TERM_SESH_MAX
+#endif
+
 static void crosstalk_remote_owner_send(crosstalk_ctx_t *ctx)
 {
     crosstalk_net_wire_remote_owner_t owner = LDG_STRUCT_ZERO_INIT;
@@ -8586,7 +8592,7 @@ static void crosstalk_remote_owner_send(crosstalk_ctx_t *ctx)
     ctx->remote_owner_next = ctx->time + CROSSTALK_CORE_REMOTE_OWNER_SECS;
     owner.editor = ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_SESH_CAP && idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++)
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_CORE_REMOTE_SESH_CUNT; idx++)
     {
         const crosstalk_eda_ui_term_sesh_t *sesh = &ctx->eda.term.sesh[idx];
 
@@ -8610,14 +8616,18 @@ static void crosstalk_remote_owner_apply(crosstalk_ctx_t *ctx, const crosstalk_n
 
     if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) != LDG_TRUTH_TRUE) { return; }
 
-    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_SESH_CAP && idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++)
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_CORE_REMOTE_SESH_CUNT; idx++)
     {
         const crosstalk_eda_ui_term_sesh_t *mine = &ctx->eda.term.sesh[idx];
         char title[CROSSTALK_NET_WIRE_REMOTE_TITLE_CAP] = LDG_ARR_ZERO_INIT;
 
         if (owner->sesh[idx].src == (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE)
         {
-            if (mine->src != (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE) { ret = crosstalk_eda_ui_term_sesh_close(&ctx->eda.term, idx); }
+            if (mine->src != (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE)
+            {
+                ret = crosstalk_eda_ui_term_sesh_close(&ctx->eda.term, idx);
+                if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "remote: term session close failed; sesh: %u32; err: %u32", idx, ret); }
+            }
 
             continue;
         }
@@ -9097,7 +9107,7 @@ static void sesh_data_cb(crosstalk_net_libresteam_ctx_t *net, uint32_t conn_id, 
         memcpy(&wire_chat, payload, sizeof(wire_chat));
         wire_chat.text[sizeof(wire_chat.text) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
         ret = crosstalk_persona_resolve(ctx, hdr.sender, peer_name, (uint64_t)sizeof(peer_name));
-        if (ret != LDG_ERR_AOK || peer_name[0] == LDG_STR_TERM) { ret = ldg_str_rbrcpy(peer_name, "peer", (uint64_t)sizeof(peer_name)); }
+        if ((ret != LDG_ERR_AOK || peer_name[0] == LDG_STR_TERM) && ldg_str_rbrcpy(peer_name, "peer", (uint64_t)sizeof(peer_name)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "net: chat peer name fallback failed"); }
 
         ret = crosstalk_game_chat_push(&ctx->chat, (uint8_t)CROSSTALK_GAME_CHAT_GROUP_SESH, CROSSTALK_GAME_CHAT_PEER_NONE, CROSSTALK_CORE_CHAT_SESH_NAME, peer_name, wire_chat.text, LDG_TRUTH_FALSE);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "net: chat push failed; err: %u32", ret); }
@@ -10644,8 +10654,6 @@ static void crosstalk_verb_delay(crosstalk_ctx_t *ctx, const char *arg)
     }
 
     span_ns = val > (uint64_t)CROSSTALK_CORE_DELAY_NS_MAX / mult ? (uint64_t)CROSSTALK_CORE_DELAY_NS_MAX : val * mult;
-
-    if (span_ns > (uint64_t)CROSSTALK_CORE_DELAY_NS_MAX) { span_ns = (uint64_t)CROSSTALK_CORE_DELAY_NS_MAX; }
 
     if (ldg_thread_yield(span_ns) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "delay yield failed"); }
 
@@ -15970,7 +15978,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 if (ctx->lobby_member_prev_cunt > 0)
                 {
                     ret = crosstalk_game_chat_rst(&ctx->chat);
-                    ret = crosstalk_game_chat_open_set(&ctx->chat, LDG_TRUTH_FALSE);
+                    if (ret == LDG_ERR_AOK) { ret = crosstalk_game_chat_open_set(&ctx->chat, LDG_TRUTH_FALSE); }
+
+                    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "chat: lobby reset failed; err: %u32", ret); }
                 }
 
                 ctx->lobby_member_prev_cunt = 0;
@@ -16375,11 +16385,16 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
     if (ctx->key_esc == LDG_TRUTH_TRUE && ctx->game.screen != CROSSTALK_GAME_SCREEN_LD)
     {
-        if (crosstalk_core_cmdline_open_is(&ctx->cmdline) == LDG_TRUTH_TRUE) { ret = LDG_ERR_AOK; }
+        if (crosstalk_core_cmdline_open_is(&ctx->cmdline) == LDG_TRUTH_TRUE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: escape left to the cmdline"); }
         else if (ctx->settings_open != LDG_TRUTH_FALSE)
         {
             ctx->settings_open = LDG_TRUTH_FALSE;
-            if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR) { ret = crosstalk_core_save_wr(ctx); }
+
+            if (ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR)
+            {
+                ret = crosstalk_core_save_wr(ctx);
+                if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "settings: save on close failed; err: %u32", ret); }
+            }
         }
         else if (ctx->game.paused != LDG_TRUTH_FALSE) { ctx->game.paused = LDG_TRUTH_FALSE; }
         else if (ctx->game.screen == CROSSTALK_GAME_SCREEN_MENU) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: escape ignored on menu"); }
@@ -16457,8 +16472,13 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
     crosstalk_menu_nav_sync(ctx);
 
     ret = crosstalk_game_fx_sfx_tone_tick(&ctx->game.sfx_sound);
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "sfx: tone tick failed; err: %u32", ret); }
 
-    if (ctx->game.screen != CROSSTALK_GAME_SCREEN_LD && crosstalk_game_fx_sfx_cw_on_is(&ctx->game.sfx_sound) != LDG_TRUTH_TRUE) { ret = crosstalk_game_fx_sfx_tone_stop(&ctx->game.sfx_sound); }
+    if (ctx->game.screen != CROSSTALK_GAME_SCREEN_LD && crosstalk_game_fx_sfx_cw_on_is(&ctx->game.sfx_sound) != LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_game_fx_sfx_tone_stop(&ctx->game.sfx_sound);
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "sfx: tone stop failed; err: %u32", ret); }
+    }
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_LD)
     {
@@ -16672,7 +16692,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 ctx->mp_rdy = LDG_TRUTH_FALSE;
                 ctx->mp_busy = LDG_TRUTH_FALSE;
                 ret = crosstalk_game_chat_rst(&ctx->chat);
-                ret = crosstalk_game_chat_open_set(&ctx->chat, LDG_TRUTH_FALSE);
+                if (ret == LDG_ERR_AOK) { ret = crosstalk_game_chat_open_set(&ctx->chat, LDG_TRUTH_FALSE); }
+
+                if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "chat: room leave reset failed; err: %u32", ret); }
             }
             else if (room_action == CROSSTALK_GAME_MENU_ROOM_BUILD)
             {
@@ -16719,7 +16741,11 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             {
                 if (crosstalk_game_fx_sfx_lever_play(&ctx->game.sfx_sound) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "lever sfx failed"); }
 
-                if (ctx->mp_transport_idx != (uint32_t)CROSSTALK_NET_TRANSPORT_LAN) { ret = crosstalk_net_libresteam_lobby_list_req(&ctx->libresteam_net); }
+                if (ctx->mp_transport_idx != (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
+                {
+                    ret = crosstalk_net_libresteam_lobby_list_req(&ctx->libresteam_net);
+                    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "mp: lobby list req failed; err: %u32", ret); }
+                }
             }
 
             if (mp_action == CROSSTALK_GAME_MENU_MP_REFRESH) { if (ctx->mp_transport_idx != (uint32_t)CROSSTALK_NET_TRANSPORT_LAN)
@@ -17558,7 +17584,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             }
             else { ret = crosstalk_persona_resolve(ctx, crosstalk_net_libresteam_local_steam_id_get(&ctx->libresteam_net), self_name, (uint64_t)sizeof(self_name)); }
 
-            if ((ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) || self_name[0] == LDG_STR_TERM) { ret = ldg_str_rbrcpy(self_name, "you", (uint64_t)sizeof(self_name)); }
+            if (((ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) || self_name[0] == LDG_STR_TERM) && ldg_str_rbrcpy(self_name, "you", (uint64_t)sizeof(self_name)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "chat: self name fallback failed"); }
 
             chat_peer = crosstalk_game_chat_peer_get(&ctx->chat, ctx->chat.group);
 
@@ -17801,7 +17827,11 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
         if (ctx->shot.pending == LDG_TRUTH_TRUE) { crosstalk_shot_take(ctx, render, &desk_rect); }
     }
 
-    if (ctx->game.ld_active != 0 && ctx->game.ld_finalized == 0 && ctx->ld_frames >= (uint8_t)CROSSTALK_CORE_LD_FRAME_MIN && LDG_LD_ACQUIRE(ctx->game.ld.done) != 0) { ret = ld_finalize(ctx); }
+    if (ctx->game.ld_active != 0 && ctx->game.ld_finalized == 0 && ctx->ld_frames >= (uint8_t)CROSSTALK_CORE_LD_FRAME_MIN && LDG_LD_ACQUIRE(ctx->game.ld.done) != 0)
+    {
+        ret = ld_finalize(ctx);
+        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "ld: finalize failed; err: %u32", ret); }
+    }
 }
 
 uint32_t crosstalk_core_run(crosstalk_ctx_t *ctx)

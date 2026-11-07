@@ -159,6 +159,7 @@ uint8_t crosstalk_game_settings_keybind_family_is(uint32_t action);
 uint8_t crosstalk_game_settings_keybind_match_is(const uint32_t *binds, uint32_t action, const ldg_term_key_event_t *irq);
 uint32_t crosstalk_game_settings_keybind_capture_get(uint32_t action, const ldg_term_key_event_t *irq, uint32_t *out);
 uint32_t crosstalk_game_settings_keybind_conflict_get(const uint32_t *binds, uint32_t action, uint32_t chord, uint32_t *out_owner);
-uint32_t crosstalk_game_settings_keybind_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap);
+uint32_t crosstalk_game_settings_keybind_vim_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap);
+uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap);
 
 #endif

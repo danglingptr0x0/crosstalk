@@ -60,6 +60,8 @@ typedef struct crosstalk_ui_window_slot
     crosstalk_ui_window_key_cb_t key_cb;
     void *user;
     uint64_t id;
+    uint32_t draw_fault;
+    uint8_t pudding[4];
 } crosstalk_ui_window_slot_t;
 
 typedef struct crosstalk_ui_window_ctx

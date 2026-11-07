@@ -55,7 +55,6 @@
 #define ELF_STT_MASK 0xF
 #define ELF_STT_OBJECT 1
 #define ELF_STT_FUNC 2
-#define ELF_SHNUM_MAX 65535
 #define ELF_SECT_BYTES_MAX (64 * LDG_MIB)
 #define ELF_POOL_SLACK 64
 #define ELF_POOL_ITEM_VAR 0
@@ -396,17 +395,15 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
             shnum = (uint32_t)elf_u16_get(hdr + ELF_SHNUM32_AT);
         }
 
-        if (shoff == 0 || shnum == 0 || shnum > (uint32_t)ELF_SHNUM_MAX) { ret = LDG_ERR_NOT_FOUND; }
+        if (shoff == 0 || shnum == 0) { ret = LDG_ERR_NOT_FOUND; }
         else if ((uint64_t)shentsize != ent_len) { ret = LDG_ERR_IO_FMT; }
     }
 
     if (ret == LDG_ERR_AOK)
     {
         sect_bytes = (uint64_t)shnum * ent_len;
-        if (sect_bytes > (uint64_t)ELF_SECT_BYTES_MAX) { ret = LDG_ERR_BOUNDS; }
+        ret = ldg_mem_alloc(sect_bytes, (void **)&sect);
     }
-
-    if (ret == LDG_ERR_AOK) { ret = ldg_mem_alloc(sect_bytes, (void **)&sect); }
 
     if (ret == LDG_ERR_AOK) { ret = elf_rd_at(file, shoff, sect, sect_bytes); }
 

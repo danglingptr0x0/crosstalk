@@ -233,19 +233,21 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
     at = (uint32_t)CROSSTALK_MNGR_CONF_HDR_BYTES;
 
+    if (blks > (len - at) / (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES) { return CROSSTALK_MNGR_ERR_TRUNC; }
+
     for (seen = 0; seen < blks; seen = seen + MNGR_CONF_STEP)
     {
         uint32_t kind = 0;
         uint32_t span = 0;
         uint32_t body = 0;
 
-        if (at + (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES > len) { return CROSSTALK_MNGR_ERR_TRUNC; }
+        if (len - at < (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES) { return CROSSTALK_MNGR_ERR_TRUNC; }
 
         kind = mngr_conf_u32_get(buff + at);
         span = mngr_conf_u32_get(buff + at + LDG_WORD_BYTES);
         body = at + (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES;
 
-        if (body + span > len) { return CROSSTALK_MNGR_ERR_TRUNC; }
+        if (span > len - body) { return CROSSTALK_MNGR_ERR_TRUNC; }
 
         if (kind == (uint32_t)CROSSTALK_MNGR_CONF_BLK_MACHINE)
         {

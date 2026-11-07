@@ -547,12 +547,78 @@ uint32_t crosstalk_game_settings_keybind_conflict_get(const uint32_t *binds, uin
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_game_settings_keybind_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap)
+static uint32_t settings_keybind_fkey_fmt(uint32_t code, char *out, uint64_t cap)
+{
+    if (code < (uint32_t)LDG_TERM_KEY_F1 || code > (uint32_t)LDG_TERM_KEY_F12) { return LDG_ERR_NOT_FOUND; }
+
+    return snprintf(out, cap, "F%u", code - (uint32_t)LDG_TERM_KEY_F1 + (uint32_t)SETTINGS_KEYBIND_FKEY_FIRST_NUM) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+}
+
+static const char* settings_keybind_vim_name_get(uint32_t code)
+{
+    if (code == (uint32_t)LDG_TERM_KEY_INSERT) { return "Insert"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_DELETE) { return "Del"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_PAGE_UP) { return "PageUp"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_PAGE_DOWN) { return "PageDown"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_BACKSPACE) { return "BS"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_ENTER) { return "CR"; }
+
+    return settings_keybind_special_name_get(code);
+}
+
+static const char* settings_keybind_unix_byte_get(uint32_t code)
+{
+    if (code == (uint32_t)LDG_TERM_KEY_ESCAPE) { return "^["; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_ENTER) { return "^M"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_TAB) { return "^I"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_BACKSPACE) { return "^?"; }
+
+    return 0x0;
+}
+
+static const char* settings_keybind_unix_name_get(uint32_t code)
+{
+    if (code == (uint32_t)LDG_TERM_KEY_INSERT) { return "Ins"; }
+
+    if (code == (uint32_t)LDG_TERM_KEY_DELETE) { return "Del"; }
+
+    return settings_keybind_special_name_get(code);
+}
+
+static uint32_t settings_keybind_shifted_get(uint32_t code)
+{
+    const char *shifted = SETTINGS_KEYBIND_SHIFTED;
+    const char *unshifted = SETTINGS_KEYBIND_UNSHIFTED;
+    uint32_t at = 0;
+
+    if (code >= (uint32_t)SETTINGS_KEYBIND_LOWER_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_LOWER_LAST) { return code - (uint32_t)SETTINGS_KEYBIND_CASE_GAP; }
+
+    for (at = 0; unshifted[at] != LDG_STR_TERM; at = at + 1) { if (code == (uint32_t)(uint8_t)unshifted[at]) { return (uint32_t)(uint8_t)shifted[at]; } }
+
+    return code;
+}
+
+static uint32_t settings_keybind_upper_get(uint32_t code)
+{
+    if (code >= (uint32_t)SETTINGS_KEYBIND_LOWER_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_LOWER_LAST) { return code - (uint32_t)SETTINGS_KEYBIND_CASE_GAP; }
+
+    return code;
+}
+
+uint32_t crosstalk_game_settings_keybind_vim_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap)
 {
     char key[SETTINGS_KEYBIND_KEY_TEXT_CAP] = LDG_ARR_ZERO_INIT;
-    const char *ctrl = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL) != 0 ? "Ctrl+" : "";
-    const char *alt = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_ALT) != 0 ? "Alt+" : "";
-    const char *shift = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT) != 0 ? "Shift+" : "";
+    const char *ctrl = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL) != 0 ? "C-" : "";
+    const char *shift = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT) != 0 ? "S-" : "";
+    const char *alt = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_ALT) != 0 ? "A-" : "";
     const char *name = 0x0;
     uint32_t code = chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CODE_MASK;
     uint32_t set = 0;
@@ -567,26 +633,78 @@ uint32_t crosstalk_game_settings_keybind_fmt(uint32_t action, uint32_t chord, ch
 
     if (set == (uint32_t)SETTINGS_KEYBIND_SET_ARROWS) { name = "arrows"; }
     else if (set == (uint32_t)SETTINGS_KEYBIND_SET_DIGITS) { name = "0..9"; }
-    else if (set != (uint32_t)SETTINGS_KEYBIND_SET_NONE) { name = "h/j/k/l, arrows"; }
+    else if (set != (uint32_t)SETTINGS_KEYBIND_SET_NONE) { name = "hjkl/arrows"; }
     else if ((chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SPECIAL) != 0)
     {
-        name = settings_keybind_special_name_get(code);
+        name = settings_keybind_vim_name_get(code);
 
-        if (name == 0x0 && code >= (uint32_t)LDG_TERM_KEY_F1 && code <= (uint32_t)LDG_TERM_KEY_F12)
-        {
-            if (snprintf(key, sizeof(key), "F%u", code - (uint32_t)LDG_TERM_KEY_F1 + (uint32_t)SETTINGS_KEYBIND_FKEY_FIRST_NUM) < 0) { return LDG_ERR_STR_FMT; }
-
-            name = key;
-        }
+        if (name == 0x0 && settings_keybind_fkey_fmt(code, key, (uint64_t)sizeof(key)) == LDG_ERR_AOK) { name = key; }
 
         if (name == 0x0) { name = "?"; }
     }
     else if (code == (uint32_t)SETTINGS_KEYBIND_SPACE) { name = "Space"; }
     else
     {
-        key[0] = (char)(code >= (uint32_t)SETTINGS_KEYBIND_LOWER_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_LOWER_LAST ? code - (uint32_t)SETTINGS_KEYBIND_CASE_GAP : code);
+        key[0] = (char)code;
+
+        if ((chord & (uint32_t)CROSSTALK_GAME_KEYBIND_MOD_MASK) == 0) { return snprintf(out, cap, "%.15s", key) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+
         name = key;
     }
 
-    return snprintf(out, cap, "%.5s%.4s%.6s%.15s", ctrl, alt, shift, name) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    return snprintf(out, cap, "<%.2s%.2s%.2s%.15s>", ctrl, shift, alt, name) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap)
+{
+    char key[SETTINGS_KEYBIND_KEY_TEXT_CAP] = LDG_ARR_ZERO_INIT;
+    const char *alt = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_ALT) != 0 ? "M-" : "";
+    const char *hat = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL) != 0 ? "^" : "";
+    const char *shift = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT) != 0 ? "Shift" : "";
+    const char *name = 0x0;
+    uint8_t ctrl_on = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    uint8_t shift_on = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    uint32_t code = chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CODE_MASK;
+    uint32_t set = 0;
+
+    if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (LDG_UNLIKELY(cap == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    if (chord == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { return snprintf(out, cap, "%.15s", "unbound") < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+
+    set = settings_keybind_set_get(action);
+
+    if (set == (uint32_t)SETTINGS_KEYBIND_SET_ARROWS) { name = "arrows"; }
+    else if (set == (uint32_t)SETTINGS_KEYBIND_SET_DIGITS) { name = "0..9"; }
+    else if (set != (uint32_t)SETTINGS_KEYBIND_SET_NONE)
+    {
+        if (ctrl_on != LDG_TRUTH_TRUE && shift_on == LDG_TRUTH_TRUE) { return snprintf(out, cap, "%.2s%.23s", alt, "HJKL/Shiftarrows") < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+
+        name = "hjkl/arrows";
+    }
+    else if ((chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SPECIAL) != 0)
+    {
+        if (ctrl_on != LDG_TRUTH_TRUE) { name = settings_keybind_unix_byte_get(code); }
+
+        if (name == 0x0) { name = settings_keybind_unix_name_get(code); }
+
+        if (name == 0x0 && settings_keybind_fkey_fmt(code, key, (uint64_t)sizeof(key)) == LDG_ERR_AOK) { name = key; }
+
+        if (name == 0x0) { name = "?"; }
+    }
+    else if (code == (uint32_t)SETTINGS_KEYBIND_SPACE) { name = "Space"; }
+    else if (ctrl_on == LDG_TRUTH_TRUE)
+    {
+        key[0] = (char)settings_keybind_upper_get(code);
+        name = key;
+    }
+    else
+    {
+        key[0] = (char)(shift_on == LDG_TRUTH_TRUE ? settings_keybind_shifted_get(code) : code);
+
+        return snprintf(out, cap, "%.2s%.15s", alt, key) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    }
+
+    return snprintf(out, cap, "%.2s%.1s%.5s%.15s", alt, hat, shift, name) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }

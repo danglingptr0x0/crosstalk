@@ -428,9 +428,9 @@ static uint32_t crosstalk_hdl_preproc_include_rd(crosstalk_hdl_preproc_ctx_t *ct
 
 static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, const char *src, uint32_t len, uint32_t *pos, uint32_t macro_idx)
 {
-    crosstalk_hdl_preproc_macro_t macro;
-    const char *arg[CROSSTALK_HDL_PREPROC_PARAM_MAX];
-    uint32_t arg_len[CROSSTALK_HDL_PREPROC_PARAM_MAX];
+    crosstalk_hdl_preproc_macro_t macro = LDG_STRUCT_ZERO_INIT;
+    const char *arg[CROSSTALK_HDL_PREPROC_PARAM_MAX] = LDG_ARR_ZERO_INIT;
+    uint32_t arg_len[CROSSTALK_HDL_PREPROC_PARAM_MAX] = LDG_ARR_ZERO_INIT;
     char *buff = 0x0;
     void *raw = 0x0;
     uint32_t arg_cunt = 0;
@@ -550,6 +550,7 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
 
         if (arg_cunt != macro.param_cunt) { return CROSSTALK_HDL_ERR_PREPROC_MACRO; }
     }
+    else if (macro.param_cunt != 0) { return CROSSTALK_HDL_ERR_PREPROC_MACRO; }
 
     if (macro.body_len == 0) { return LDG_ERR_AOK; }
 

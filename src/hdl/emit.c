@@ -10,6 +10,9 @@
 #define CROSSTALK_HDL_EMIT_DEPS_PER_OP 4
 #define CROSSTALK_HDL_EMIT_SETTLE_MAX 16
 #define CROSSTALK_HDL_EMIT_ALIAS_CAP 256
+#define CROSSTALK_HDL_EMIT_RMW_STK_CAP 128
+#define CROSSTALK_HDL_EMIT_RMW_SEEN_MAX 256
+#define CROSSTALK_HDL_EMIT_RMW_RD_CAP 4
 #define CROSSTALK_HDL_EMIT_ALIAS_DEPTH 64
 #define CROSSTALK_HDL_EMIT_PF_EXTRA 2
 #define CROSSTALK_HDL_EMIT_PF_RING 4096
@@ -2561,10 +2564,10 @@ static void crosstalk_hdl_emit_fuse_seq_mark(crosstalk_hdl_emit_ctx_t *ctx, uint
 static uint32_t crosstalk_hdl_emit_rmw_cone_get(const crosstalk_hdl_emit_ctx_t *ctx, uint32_t op_idx, uint32_t *out_arr, uint32_t cap)
 {
     const crosstalk_hdl_ir_t *ir_ctx = ctx->ir_ctx;
-    uint32_t stk[128];
+    uint32_t stk[CROSSTALK_HDL_EMIT_RMW_STK_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t stk_cunt = 0;
     uint32_t seen = 0;
-    uint32_t rd_arr[4];
+    uint32_t rd_arr[CROSSTALK_HDL_EMIT_RMW_RD_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t rd_cunt = 0;
     uint32_t rd_i = 0;
     uint32_t cur = op_idx;
@@ -2572,7 +2575,7 @@ static uint32_t crosstalk_hdl_emit_rmw_cone_get(const crosstalk_hdl_emit_ctx_t *
 
     while (cur != UINT32_MAX)
     {
-        if (stk_cunt >= 128) { return UINT32_MAX; }
+        if (stk_cunt >= (uint32_t)CROSSTALK_HDL_EMIT_RMW_STK_CAP || cur >= ir_ctx->comb_cunt) { return UINT32_MAX; }
 
         stk[stk_cunt] = cur;
         stk_cunt++;
@@ -2581,24 +2584,25 @@ static uint32_t crosstalk_hdl_emit_rmw_cone_get(const crosstalk_hdl_emit_ctx_t *
 
     while (stk_cunt > 0)
     {
-        if (seen >= 256) { return UINT32_MAX; }
+        if (seen >= (uint32_t)CROSSTALK_HDL_EMIT_RMW_SEEN_MAX) { return UINT32_MAX; }
 
         seen++;
         stk_cunt--;
         rd_cunt = crosstalk_hdl_emit_rsigs_get(&ir_ctx->comb_ops[stk[stk_cunt]], rd_arr);
+        if (rd_cunt > (uint32_t)CROSSTALK_HDL_EMIT_RMW_RD_CAP) { return UINT32_MAX; }
 
         for (rd_i = 0; rd_i < rd_cunt; rd_i++)
         {
             uint32_t rsig = rd_arr[rd_i];
 
-            if (cunt >= cap) { return UINT32_MAX; }
+            if (cunt >= cap || rsig >= ir_ctx->sig_cunt) { return UINT32_MAX; }
 
             out_arr[cunt] = rsig;
             cunt++;
 
             if (ctx->fuse_map[rsig] != UINT32_MAX)
             {
-                if (stk_cunt >= 128) { return UINT32_MAX; }
+                if (stk_cunt >= (uint32_t)CROSSTALK_HDL_EMIT_RMW_STK_CAP || ctx->fuse_map[rsig] >= ir_ctx->comb_cunt) { return UINT32_MAX; }
 
                 stk[stk_cunt] = ctx->fuse_map[rsig];
                 stk_cunt++;
@@ -2796,7 +2800,7 @@ static uint32_t crosstalk_hdl_emit_opt_run(crosstalk_hdl_ir_t *ir2, const crosst
 
         dropped[idx] = 0x0;
 
-        if (ws == UINT32_MAX) { continue; }
+        if (ws == UINT32_MAX || ws >= ir_src->sig_cunt) { continue; }
 
         wr_tally[ws] = wr_tally[ws] + 0x1;
         wr_op[ws] = idx;
@@ -2806,7 +2810,7 @@ static uint32_t crosstalk_hdl_emit_opt_run(crosstalk_hdl_ir_t *ir2, const crosst
     {
         uint32_t ws = crosstalk_hdl_emit_wsig_get(&seq2[idx]);
 
-        if (ws != UINT32_MAX) { seq_wrf[ws] = 0x1; }
+        if (ws != UINT32_MAX && ws < ir_src->sig_cunt) { seq_wrf[ws] = 0x1; }
     }
 
     for (idx = 0; idx < ir_src->sig_cunt; idx++)
@@ -2815,7 +2819,7 @@ static uint32_t crosstalk_hdl_emit_opt_run(crosstalk_hdl_ir_t *ir2, const crosst
 
         for (depth = 0; depth < 64; depth++)
         {
-            if (seq_wrf[walk] != 0x0) { break; }
+            if (walk >= ir_src->sig_cunt || seq_wrf[walk] != 0x0) { break; }
 
             if (wr_tally[walk] != 0x1) { break; }
 
@@ -2824,7 +2828,7 @@ static uint32_t crosstalk_hdl_emit_opt_run(crosstalk_hdl_ir_t *ir2, const crosst
             walk = comb2[wr_op[walk]].src0;
         }
 
-        if (walk != idx) { alias_map[idx] = walk; }
+        if (walk != idx && walk < ir_src->sig_cunt) { alias_map[idx] = walk; }
     }
 
     for (idx = 0; idx < ir_src->comb_cunt; idx++)

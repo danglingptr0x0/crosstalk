@@ -491,6 +491,13 @@ uint32_t crosstalk_ui_guide_show(crosstalk_ui_guide_ctx_t *ctx)
     if (ctx->tgt_open_cb != 0x0)
     {
         ret = ctx->tgt_open_cb(ctx->tgt_user, tgt_id);
+
+        if (ret == LDG_ERR_NOT_FOUND)
+        {
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "guide: target unavailable; id: 0x%X64", tgt_id);
+            return LDG_ERR_AOK;
+        }
+
         if (ret != LDG_ERR_AOK)
         {
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide: target open failed; id: 0x%X64; err: %u32", tgt_id, ret);

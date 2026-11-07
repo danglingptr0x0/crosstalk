@@ -209,6 +209,7 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
     uint32_t col = 0;
     uint32_t nonspace_total = 0;
     uint32_t rows_logged = 0;
+    uint32_t col_limit = ctx->col_cunt < (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX ? ctx->col_cunt : (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX;
 
     if (ldg_term_cursor_get(ctx->term, &cursor_col, &cursor_row) != LDG_ERR_AOK) { cursor_col = UINT32_MAX; cursor_row = UINT32_MAX; }
 
@@ -220,7 +221,7 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
 
         if (ldg_term_row_get(ctx->term, row, cell, (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX) != LDG_ERR_AOK) { break; }
 
-        for (col = 0; col < ctx->col_cunt; col = col + 0x1)
+        for (col = 0; col < col_limit; col = col + 0x1)
         {
             if (cell[col].ch > (uint8_t)LDG_ASCII_PRINTABLE_MIN && cell[col].ch <= (uint8_t)LDG_ASCII_PRINTABLE_MAX)
             {

@@ -736,7 +736,14 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         ret = net_libresteam_call_res_get(ctx, NET_LIBRESTEAM_CB_LOBBY_MATCH_LIST, res, &done);
         if (ret == LDG_ERR_AOK && done != LDG_TRUTH_TRUE) { return; }
 
-        if (ret == LDG_ERR_AOK) { net_libresteam_lobby_list_fill(ctx, net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD)); }
+        if (ret == LDG_ERR_AOK)
+        {
+            uint32_t match_cunt = net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD);
+
+            if (match_cunt > (uint32_t)CROSSTALK_NET_LOBBY_LIST_MAX) { match_cunt = (uint32_t)CROSSTALK_NET_LOBBY_LIST_MAX; }
+
+            net_libresteam_lobby_list_fill(ctx, match_cunt);
+        }
         else { ctx->lobby_list_cunt = 0; }
     }
 

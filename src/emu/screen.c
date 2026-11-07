@@ -19,6 +19,7 @@
 #define SCREEN_STEP 1
 #define SCREEN_CELL_BYTES 2
 #define SCREEN_WORD_BYTES 4
+#define SCREEN_TEXT_WORD_CUNT (CROSSTALK_EMU_SCREEN_TEXT_BYTE_CUNT / SCREEN_WORD_BYTES)
 #define SCREEN_CENTER_DIV 2
 #define SCREEN_ATTR_BG_SHIFT 4
 #define SCREEN_PAL_CUNT 16
@@ -247,7 +248,7 @@ static uint32_t screen_gfx_draw(const crosstalk_emu_screen_ctx_t *ctx, ldg_term_
 static uint32_t screen_text_scan(crosstalk_emu_screen_ctx_t *ctx, const crosstalk_hdl_abi_t *abi, uint32_t mem_sig)
 {
     uint64_t word_at = 0;
-    uint32_t at = 0;
+    uint32_t word_idx = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || abi == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -257,12 +258,13 @@ static uint32_t screen_text_scan(crosstalk_emu_screen_ctx_t *ctx, const crosstal
 
     word_at = ctx->text_base / (uint64_t)SCREEN_WORD_BYTES;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_EMU_SCREEN_TEXT_BYTE_CUNT; at = at + (uint32_t)SCREEN_WORD_BYTES)
+    for (word_idx = 0; word_idx < (uint32_t)SCREEN_TEXT_WORD_CUNT; word_idx++)
     {
-        uint64_t word = abi->mem_ld(mem_sig, word_at + (uint64_t)(at / (uint32_t)SCREEN_WORD_BYTES));
+        uint64_t word = abi->mem_ld(mem_sig, word_at + (uint64_t)word_idx);
+        uint32_t base = word_idx * (uint32_t)SCREEN_WORD_BYTES;
         uint32_t lane = 0;
 
-        for (lane = 0; lane < (uint32_t)SCREEN_WORD_BYTES; lane = lane + (uint32_t)SCREEN_STEP) { ctx->cell[at + lane] = (word >> (uint64_t)((uint32_t)LDG_BYTE_BITS * lane)) & (uint64_t)LDG_BYTE_MASK; }
+        for (lane = 0; lane < (uint32_t)SCREEN_WORD_BYTES; lane++) { ctx->cell[base + lane] = (word >> (uint64_t)((uint32_t)LDG_BYTE_BITS * lane)) & (uint64_t)LDG_BYTE_MASK; }
     }
 
     ctx->cell_cunt = (uint32_t)CROSSTALK_EMU_SCREEN_TEXT_BYTE_CUNT;

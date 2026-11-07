@@ -56,6 +56,8 @@ jobs:
           path: crosstalk
           fetch-depth: 0
           persist-credentials: false
+      - name: git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE/crosstalk"
       - name: discord sdk
         env:
           GH_TOKEN: ${{ github.token }}
@@ -121,6 +123,8 @@ jobs:
           cmake --build crosstalk/tools/dangem/build-win
       - name: codeql analyze
         uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066
+        with:
+          checkout_path: ${{ github.workspace }}/crosstalk
       - name: sonarqube
         if: github.event_name != 'pull_request' && env.SONAR_TOKEN != ''
         continue-on-error: true
@@ -177,7 +181,6 @@ jobs:
       - name: changelog
         if: github.ref_type == 'tag'
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE/crosstalk"
           git-cliff --config crosstalk/.github/cliff.toml --repository crosstalk --latest --output changelog.md
           cat changelog.md
       - name: release

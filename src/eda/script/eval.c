@@ -216,12 +216,14 @@ static void eval_rack_switches_drop(crosstalk_eda_script_eval_t *ctx, uint32_t r
 
 static uint32_t eval_switch_reg(crosstalk_eda_script_eval_t *ctx, const crosstalk_eda_script_node_t *stmt, uint32_t rack_idx)
 {
-    crosstalk_eda_script_switch_t *switch_ref = eval_switch_lookup(ctx, stmt->name, stmt->name_len);
+    crosstalk_eda_script_switch_t *switch_ref = 0x0;
     crosstalk_eda_script_slot_t *slot = 0x0;
     const crosstalk_eda_script_node_t *notch = 0x0;
     uint64_t init_val = stmt->val & eval_mask(stmt->width);
 
     if (LDG_UNLIKELY(stmt->name_len >= (uint32_t)CROSSTALK_EDA_SCRIPT_SLOT_NAME_CAP)) { return eval_diag_set(ctx, stmt, CROSSTALK_EDA_SCRIPT_ERR_FULL, "switch name exceeds the name cap", "trim the switch name"); }
+
+    switch_ref = eval_switch_lookup(ctx, stmt->name, stmt->name_len);
 
     if (LDG_UNLIKELY(eval_builtin_find(ctx, stmt->name, stmt->name_len) != 0x0)) { return eval_diag_set(ctx, stmt, CROSSTALK_EDA_SCRIPT_ERR_REDECL, "switch name is already a command", "rename the switch"); }
 
@@ -645,6 +647,12 @@ static uint32_t eval_shift_apply(uint32_t op, uint64_t lhs, uint64_t rhs, uint32
     uint64_t shift = width != 0 ? rhs % (uint64_t)width : 0x0;
     uint64_t sign = 0;
     uint64_t shifted = 0;
+
+    if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = 0x0;
+
+    if (LDG_UNLIKELY(width == 0 || width > (uint32_t)CROSSTALK_EDA_SCRIPT_WIDTH_MAX)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
     if (op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHL || op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHLA)
     {

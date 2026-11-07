@@ -153,7 +153,7 @@ uint32_t crosstalk_eda_sound_frames_pull(void *user, void *buff, uint32_t frame_
 
     if (LDG_UNLIKELY(ctx == 0x0 || buff == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out = 0;
+    *out = frame_cunt;
 
     avail = avail_claim(ctx);
 
@@ -179,8 +179,6 @@ uint32_t crosstalk_eda_sound_frames_pull(void *user, void *buff, uint32_t frame_
 
         ctx->underrun = ctx->underrun + (uint64_t)(frame_cunt - cunt);
     }
-
-    *out = frame_cunt;
 
     return LDG_ERR_AOK;
 }

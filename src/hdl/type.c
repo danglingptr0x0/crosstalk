@@ -40,7 +40,6 @@
 #define TYPE_SH_SIZE32_AT 20
 #define TYPE_SH_OFF64_AT 24
 #define TYPE_SH_SIZE64_AT 32
-#define TYPE_SHNUM_MAX 65535
 #define TYPE_SECT_BYTES_MAX (256 * LDG_MIB)
 #define TYPE_POOL_SLACK 64
 #define TYPE_POOL_ITEM_VAR 0
@@ -149,6 +148,9 @@
 #define TYPE_ULEB_MASK 0x7F
 #define TYPE_ULEB_MORE 0x80
 #define TYPE_LEB_MAX_BYTES 10
+#define TYPE_SLEB_SIGN_BIT 0x40
+#define TYPE_SLEB_VAL_BITS 64
+#define TYPE_SLEB_UNIT 0x1
 #define TYPE_IDX_TEXT_CAP 24
 #define TYPE_IDX_FMT "%c%" PRIu64 "%c"
 #define TYPE_PATH_SEP_LEN 1
@@ -304,7 +306,7 @@ static uint32_t type_sleb_rd(const uint8_t *buff, uint64_t len, uint64_t *at, ui
 
         if ((byte & (uint8_t)TYPE_ULEB_MORE) == 0)
         {
-            if (shift < (uint32_t)(LDG_BYTE_BITS * 8) && (byte & 0x40) != 0) { val = val | (UINT64_MAX << shift); }
+            if (shift < (uint32_t)TYPE_SLEB_VAL_BITS && (byte & (uint8_t)TYPE_SLEB_SIGN_BIT) != 0) { val = val | ((uint64_t)UINT64_MAX - (((uint64_t)TYPE_SLEB_UNIT << shift) - (uint64_t)TYPE_SLEB_UNIT)); }
 
             *out = val;
 
@@ -1483,18 +1485,15 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
             shstrndx = (uint32_t)type_u16_get(hdr + TYPE_SHSTRNDX32_AT);
         }
 
-        if (shoff == 0 || shnum == 0 || shnum > (uint32_t)TYPE_SHNUM_MAX || shstrndx >= shnum) { ret = LDG_ERR_NOT_FOUND; }
+        if (shoff == 0 || shnum == 0 || shstrndx >= shnum) { ret = LDG_ERR_NOT_FOUND; }
         else if ((uint64_t)shentsize != ent_len) { ret = LDG_ERR_IO_FMT; }
     }
 
     if (ret == LDG_ERR_AOK)
     {
         sect_bytes = (uint64_t)shnum * ent_len;
-
-        if (sect_bytes > (uint64_t)TYPE_SECT_BYTES_MAX) { ret = LDG_ERR_BOUNDS; }
+        ret = ldg_mem_alloc(sect_bytes, (void **)&sect);
     }
-
-    if (ret == LDG_ERR_AOK) { ret = ldg_mem_alloc(sect_bytes, (void **)&sect); }
 
     if (ret == LDG_ERR_AOK) { ret = type_rd_at(file, shoff, sect, sect_bytes); }
 

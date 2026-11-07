@@ -227,6 +227,7 @@ uint32_t crosstalk_ui_window_reg(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id
     slot->draw_cb = draw_cb;
     slot->key_cb = key_cb;
     slot->user = user;
+    slot->draw_fault = LDG_ERR_AOK;
 
     ret = ldg_term_focus_node_add(ctx->focus, idx, (uint32_t)CROSSTALK_UI_WINDOW_SLOT_CAP, window_node_key_cb, slot);
     if (ret != LDG_ERR_AOK)
@@ -644,6 +645,18 @@ uint32_t crosstalk_ui_window_flash_set(crosstalk_ui_window_ctx_t *ctx, uint64_t 
     return LDG_ERR_AOK;
 }
 
+static void window_draw_report(crosstalk_ui_window_ctx_t *ctx, uint32_t at, uint32_t ret)
+{
+    crosstalk_ui_window_slot_t *slot = &ctx->slot[at];
+
+    if (ret == slot->draw_fault) { return; }
+
+    if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "window: draw recovered; id: 0x%X64; err was: %u32", slot->id, slot->draw_fault); }
+    else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window: draw failed; id: 0x%X64; err: %u32", slot->id, ret); }
+
+    slot->draw_fault = ret;
+}
+
 uint32_t crosstalk_ui_window_all_draw(crosstalk_ui_window_ctx_t *ctx, ldg_term_render_t *render, const ldg_term_rect_t *desk)
 {
     uint32_t focus_idx = (uint32_t)UINT32_MAX;
@@ -661,17 +674,15 @@ uint32_t crosstalk_ui_window_all_draw(crosstalk_ui_window_ctx_t *ctx, ldg_term_r
 
         if (ctx->slot[at].id == ctx->focus_id) { focus_idx = at; continue; }
 
-        ret = window_one_draw(ctx, at, render, desk);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window: draw failed; id: 0x%X64; err: %u32", ctx->slot[at].id, ret); }
+        window_draw_report(ctx, at, window_one_draw(ctx, at, render, desk));
     }
 
-    if (focus_idx != (uint32_t)UINT32_MAX)
-    {
-        ret = window_one_draw(ctx, focus_idx, render, desk);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window: draw failed; id: 0x%X64; err: %u32", ctx->slot[focus_idx].id, ret); }
-    }
+    if (focus_idx != (uint32_t)UINT32_MAX) { window_draw_report(ctx, focus_idx, window_one_draw(ctx, focus_idx, render, desk)); }
 
     if (top_idx == (uint32_t)UINT32_MAX) { return LDG_ERR_AOK; }
 
-    return window_one_draw(ctx, top_idx, render, desk);
+    ret = window_one_draw(ctx, top_idx, render, desk);
+    window_draw_report(ctx, top_idx, ret);
+
+    return ret;
 }

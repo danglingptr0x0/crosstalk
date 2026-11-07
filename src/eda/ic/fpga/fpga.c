@@ -1320,7 +1320,6 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
     uint32_t ret = LDG_ERR_AOK;
     uint8_t probes_on = LDG_TRUTH_FALSE;
     uint8_t display_on = LDG_TRUTH_FALSE;
-    uint8_t recept_on = LDG_TRUTH_FALSE;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -1332,8 +1331,6 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
 
     probes_on = (ctx->prof_on == LDG_TRUTH_TRUE && ctx->probes != 0x0 && ctx->probes->live_cunt != 0x0) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     if (ctx->display != 0x0) { display_on = crosstalk_eda_io_display_live_is(ctx->display); }
-
-    if (ctx->receptacle != 0x0) { recept_on = crosstalk_eda_io_receptacle_live_is(ctx->receptacle); }
 
     dt_ns = (uint64_t)(dt_secs * (double)LDG_NS_PER_SEC);
     share = budget_cycles / (uint64_t)ctx->live_cunt;
@@ -1638,8 +1635,6 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
 
         for (step = 0; batched != LDG_TRUTH_TRUE && step < chunk; step = step + took)
         {
-            took = 0x1;
-
             if (emu_step == LDG_TRUTH_TRUE)
             {
                 uint64_t want = chunk - step;
@@ -1676,6 +1671,8 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
             }
             else
             {
+                took = 0x1;
+
                 if (packed == LDG_TRUTH_TRUE) { ret = abi_step_once(slot); }
                 else if (slot->clk_sig == UINT32_MAX) { ret = crosstalk_hdl_exec_step(&slot->exec); }
                 else { ret = crosstalk_hdl_exec_cycle(&slot->exec, slot->clk_sig); }
