@@ -400,7 +400,6 @@ uint32_t crosstalk_game_board_names_build(crosstalk_game_board_ctx_t *ctx)
 static uint32_t crosstalk_game_board_time_fmt(uint64_t epoch_sec, char *out, uint64_t out_size)
 {
     struct tm broken = LDG_STRUCT_ZERO_INIT;
-    const struct tm *local = 0x0;
     time_t stamp = 0;
     uint64_t written = 0;
 
@@ -410,11 +409,13 @@ static uint32_t crosstalk_game_board_time_fmt(uint64_t epoch_sec, char *out, uin
 
     out[0] = LDG_STR_TERM;
     stamp = (time_t)epoch_sec;
-    local = localtime(&stamp);
 
-    if (LDG_UNLIKELY(local == 0x0)) { return LDG_ERR_INVALID; }
+#ifdef _WIN32
+    if (LDG_UNLIKELY(localtime_s(&broken, &stamp) != 0)) { return LDG_ERR_INVALID; }
+#else
+    if (LDG_UNLIKELY(localtime_r(&stamp, &broken) == 0x0)) { return LDG_ERR_INVALID; }
+#endif
 
-    broken = *local;
     written = (uint64_t)strftime(out, out_size, CROSSTALK_GAME_BOARD_TIME_FMT, &broken);
 
     if (LDG_UNLIKELY(written == 0)) { return LDG_ERR_STR_TRUNC; }

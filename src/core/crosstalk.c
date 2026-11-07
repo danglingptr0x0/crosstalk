@@ -13378,7 +13378,7 @@ static uint32_t crosstalk_script_verb_cb(void *user, const char *name, uint32_t 
     {
         if (crosstalk_script_name_len_get(tbl[idx].name) != name_len) { continue; }
 
-        if (memcmp(tbl[idx].name, name, name_len) != 0) { continue; }
+        if (strncmp(tbl[idx].name, name, name_len) != 0) { continue; }
 
         tbl[idx].cb(ctx, joined);
 
@@ -14201,7 +14201,7 @@ static void crosstalk_board_preview_drop(crosstalk_ctx_t *ctx)
 
 static void crosstalk_board_preview_time_fmt(uint64_t epoch_ms, char *out, uint64_t out_size)
 {
-    const struct tm *broken = 0x0;
+    struct tm broken = LDG_STRUCT_ZERO_INIT;
     time_t secs = 0;
 
     if (LDG_UNLIKELY(out == 0x0 || out_size == 0)) { return; }
@@ -14210,10 +14210,14 @@ static void crosstalk_board_preview_time_fmt(uint64_t epoch_ms, char *out, uint6
     if (epoch_ms == 0) { return; }
 
     secs = (time_t)(epoch_ms / LDG_MS_PER_SEC);
-    broken = localtime(&secs);
-    if (LDG_UNLIKELY(broken == 0x0)) { return; }
 
-    if (strftime(out, out_size, CROSSTALK_BOARD_PREVIEW_TIME_FMT, broken) == 0) { out[0] = LDG_STR_TERM; }
+#ifdef _WIN32
+    if (LDG_UNLIKELY(localtime_s(&broken, &secs) != 0)) { return; }
+#else
+    if (LDG_UNLIKELY(localtime_r(&secs, &broken) == 0x0)) { return; }
+#endif
+
+    if (strftime(out, out_size, CROSSTALK_BOARD_PREVIEW_TIME_FMT, &broken) == 0) { out[0] = LDG_STR_TERM; }
 }
 
 static void crosstalk_board_preview_refresh(crosstalk_ctx_t *ctx, uint32_t row)
