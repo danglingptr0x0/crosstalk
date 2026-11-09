@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <inttypes.h>
 #include <string.h>
-#include <time.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
@@ -11,6 +10,7 @@
 #include <dangling/io/file.h>
 #include <dangling/io/path.h>
 #include <dangling/str/str.h>
+#include <dangling/time/cal.h>
 
 #include "core/log.h"
 #include "game/board.h"
@@ -399,26 +399,24 @@ uint32_t crosstalk_game_board_names_build(crosstalk_game_board_ctx_t *ctx)
 
 static uint32_t crosstalk_game_board_time_fmt(uint64_t epoch_sec, char *out, uint64_t out_size)
 {
-    struct tm broken = LDG_STRUCT_ZERO_INIT;
-    time_t stamp = 0;
-    uint64_t written = 0;
+    ldg_time_cal_t cal = LDG_STRUCT_ZERO_INIT;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(out_size == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
     out[0] = LDG_STR_TERM;
-    stamp = (time_t)epoch_sec;
 
-#ifdef _WIN32
-    if (LDG_UNLIKELY(localtime_s(&broken, &stamp) != 0)) { return LDG_ERR_INVALID; }
-#else
-    if (LDG_UNLIKELY(localtime_r(&stamp, &broken) == 0x0)) { return LDG_ERR_INVALID; }
-#endif
+    ret = ldg_time_cal_get(epoch_sec, &cal);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    written = (uint64_t)strftime(out, out_size, CROSSTALK_GAME_BOARD_TIME_FMT, &broken);
+    if (LDG_UNLIKELY(snprintf(out, out_size, CROSSTALK_GAME_BOARD_TIME_FMT, cal.year, (uint32_t)cal.month, (uint32_t)cal.day, (uint32_t)cal.hour, (uint32_t)cal.minute, (uint32_t)cal.second) < 0))
+    {
+        out[0] = LDG_STR_TERM;
 
-    if (LDG_UNLIKELY(written == 0)) { return LDG_ERR_STR_TRUNC; }
+        return LDG_ERR_STR_FMT;
+    }
 
     return LDG_ERR_AOK;
 }

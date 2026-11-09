@@ -20,6 +20,7 @@
 #include <dangling/mem/alloc.h>
 #include <dangling/mem/secure.h>
 #include <dangling/time/time.h>
+#include <dangling/time/cal.h>
 #include <dangling/audio/audio.h>
 #include <dangling/arch/amd64/atomic.h>
 #include <dangling/arch/amd64/syscall.h>
@@ -166,7 +167,7 @@
 #define CROSSTALK_FMT_SCALE_2DP 100
 #define CROSSTALK_FMT_SCALE_3DP 1000
 #define CROSSTALK_FMT_SCALE_4DP 10000
-#define CROSSTALK_BOARD_PREVIEW_TIME_FMT "%Y-%m-%d %H:%M"
+#define CROSSTALK_BOARD_PREVIEW_TIME_FMT "%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 " %02" PRIu32 ":%02" PRIu32
 #define CROSSTALK_BOARD_PREVIEW_SRC_LOCAL "local"
 #define CROSSTALK_BOARD_PREVIEW_SRC_WSHOP "workshop"
 #define CROSSTALK_BOARD_PREVIEW_EDITORS_UNREAD 0
@@ -1354,10 +1355,6 @@ uint8_t crosstalk_core_soundtrack_owned_is(const crosstalk_ctx_t *ctx)
 
     return ctx->soundtrack_owned;
 }
-
-#if 0
-
-#endif
 
 static uint8_t crosstalk_text_field_is(const crosstalk_ctx_t *ctx)
 {
@@ -3446,6 +3443,9 @@ static void crosstalk_serial_access_data_send(crosstalk_ctx_t *ctx, uint32_t dir
 
         data.dir = dir;
         data.len = part;
+
+        if (LDG_UNLIKELY((uint64_t)part > (uint64_t)sizeof(data.bytes))) { return; }
+
         memcpy(data.bytes, &bytes[at], (uint64_t)part);
 
         ret = crosstalk_net_wire_send(&ctx->libresteam_net, (uint8_t)CROSSTALK_NET_WIRE_KIND_SERIAL_DATA, &data, (uint32_t)CROSSTALK_NET_WIRE_SERIAL_DATA_HDR_SIZE + part, CROSSTALK_NET_WIRE_RELIABLE);
@@ -8564,11 +8564,7 @@ static uint32_t crosstalk_remote_pty_tee_cb(void *user, const uint8_t *bytes, ui
     return crosstalk_remote_term_tee_cb(ctx, sesh_idx, bytes, len);
 }
 
-#if CROSSTALK_NET_WIRE_REMOTE_SESH_CAP < CROSSTALK_EDA_UI_TERM_SESH_MAX
-#define CROSSTALK_CORE_REMOTE_SESH_CUNT CROSSTALK_NET_WIRE_REMOTE_SESH_CAP
-#else
-#define CROSSTALK_CORE_REMOTE_SESH_CUNT CROSSTALK_EDA_UI_TERM_SESH_MAX
-#endif
+#define CROSSTALK_CORE_REMOTE_SESH_CUNT (CROSSTALK_NET_WIRE_REMOTE_SESH_CAP < CROSSTALK_EDA_UI_TERM_SESH_MAX ? CROSSTALK_NET_WIRE_REMOTE_SESH_CAP : CROSSTALK_EDA_UI_TERM_SESH_MAX)
 
 static void crosstalk_remote_owner_send(crosstalk_ctx_t *ctx)
 {
@@ -14201,23 +14197,16 @@ static void crosstalk_board_preview_drop(crosstalk_ctx_t *ctx)
 
 static void crosstalk_board_preview_time_fmt(uint64_t epoch_ms, char *out, uint64_t out_size)
 {
-    struct tm broken = LDG_STRUCT_ZERO_INIT;
-    time_t secs = 0;
+    ldg_time_cal_t cal = LDG_STRUCT_ZERO_INIT;
 
     if (LDG_UNLIKELY(out == 0x0 || out_size == 0)) { return; }
 
     out[0] = LDG_STR_TERM;
     if (epoch_ms == 0) { return; }
 
-    secs = (time_t)(epoch_ms / LDG_MS_PER_SEC);
+    if (LDG_UNLIKELY(ldg_time_cal_get(epoch_ms / LDG_MS_PER_SEC, &cal) != LDG_ERR_AOK)) { return; }
 
-#ifdef _WIN32
-    if (LDG_UNLIKELY(localtime_s(&broken, &secs) != 0)) { return; }
-#else
-    if (LDG_UNLIKELY(localtime_r(&secs, &broken) == 0x0)) { return; }
-#endif
-
-    if (strftime(out, out_size, CROSSTALK_BOARD_PREVIEW_TIME_FMT, &broken) == 0) { out[0] = LDG_STR_TERM; }
+    if (snprintf(out, out_size, CROSSTALK_BOARD_PREVIEW_TIME_FMT, cal.year, (uint32_t)cal.month, (uint32_t)cal.day, (uint32_t)cal.hour, (uint32_t)cal.minute) < 0) { out[0] = LDG_STR_TERM; }
 }
 
 static void crosstalk_board_preview_refresh(crosstalk_ctx_t *ctx, uint32_t row)

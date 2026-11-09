@@ -196,7 +196,7 @@ uint32_t crosstalk_eda_ic_fpga_build_init(crosstalk_eda_ic_fpga_build_ctx_t *ctx
     ret = crosstalk_hdl_cc_init(&ctx->cc, cc_dir);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    ret = crosstalk_hdl_guard_init(&ctx->guard);
+    ret = ldg_sys_guard_init(&ctx->guard);
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard init failed; design faults will not be contained"); }
 
     ret = ldg_thread_pool_init(&ctx->thread_pool, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_WORKERS);
@@ -234,7 +234,7 @@ uint32_t crosstalk_eda_ic_fpga_build_shutdown(crosstalk_eda_ic_fpga_build_ctx_t 
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: guard");
 
-    if (crosstalk_hdl_guard_shutdown(&ctx->guard) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard shutdown failed"); }
+    if (ldg_sys_guard_shutdown(&ctx->guard) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard shutdown failed"); }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: cc");
 
@@ -281,7 +281,7 @@ uint32_t crosstalk_eda_ic_fpga_build_start(crosstalk_eda_ic_fpga_build_ctx_t *ct
 
     if (crosstalk_hdl_img_unld(&ctx->img) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build img unload failed"); }
 
-    if (crosstalk_hdl_guard_range_drop(&ctx->guard, slot) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard drop failed"); }
+    if (ldg_sys_guard_range_drop(&ctx->guard, slot) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard drop failed"); }
 
     memset(&ctx->abi, 0x0, sizeof(ctx->abi));
 
@@ -337,7 +337,7 @@ uint32_t crosstalk_eda_ic_fpga_build_tick(crosstalk_eda_ic_fpga_build_ctx_t *ctx
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_abi_bind(&ctx->img, 0x0, 0x0, &ctx->abi); }
         }
 
-        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_guard_range_add(&ctx->guard, (uint64_t)ctx->img.base, ctx->img.span, ctx->slot); }
+        if (ret == LDG_ERR_AOK) { ret = ldg_sys_guard_range_add(&ctx->guard, (uint64_t)ctx->img.base, ctx->img.span, ctx->slot); }
 
         if (ret == LDG_ERR_AOK) { ctx->abi.init(); }
 

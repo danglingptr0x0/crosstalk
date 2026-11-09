@@ -6,12 +6,7 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/logging/logging.h>
-
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <sys/mman.h>
-#endif
+#include <dangling/mem/exec.h>
 
 #include "core/log.h"
 #include "hdl/img.h"
@@ -40,67 +35,29 @@ static void img_qword_wr(ldg_byte_t *raw, uint64_t at, uint64_t val)
 
 static uint32_t img_pages_take(uint64_t span, ldg_byte_t **out)
 {
+    void *raw = 0x0;
+
     if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out = 0x0;
 
-#ifdef _WIN32
-    *out = (ldg_byte_t *)VirtualAlloc(0x0, span, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-#else
-    {
-        void *raw = mmap(0x0, span, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, CROSSTALK_HDL_IMG_MAP_FD_NONE, CROSSTALK_HDL_IMG_MAP_OFF_ORIG);
+    if (ldg_mem_exec_map(span, &raw) != LDG_ERR_AOK || raw == 0x0) { return CROSSTALK_HDL_ERR_IMG_MAP; }
 
-        if (raw != MAP_FAILED) { *out = (ldg_byte_t *)raw; }
-    }
-#endif
-
-    if (*out == 0x0) { return CROSSTALK_HDL_ERR_IMG_MAP; }
-
-    return LDG_ERR_AOK;
-}
-
-static uint32_t img_pages_drop(ldg_byte_t *base, uint64_t span)
-{
-    if (LDG_UNLIKELY(base == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
-
-#ifdef _WIN32
-    if (VirtualFree(base, 0x0, MEM_RELEASE) == 0) { return CROSSTALK_HDL_ERR_IMG_MAP; }
-
-#else
-    if (munmap(base, span) != 0) { return CROSSTALK_HDL_ERR_IMG_MAP; }
-
-#endif
+    *out = (ldg_byte_t *)raw;
 
     return LDG_ERR_AOK;
 }
 
 static uint32_t img_pages_protect(ldg_byte_t *at, uint64_t span, uint32_t flags)
 {
-    uint8_t exec = (flags & (uint32_t)CROSSTALK_HDL_IMG_PF_EXEC) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    uint8_t wr = (flags & (uint32_t)CROSSTALK_HDL_IMG_PF_WR) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    ldg_mem_prot_t prot = LDG_MEM_PROT_R;
 
     if (LDG_UNLIKELY(at == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-#ifdef _WIN32
-    {
-        DWORD mode = PAGE_READONLY;
-        DWORD prev = 0;
+    if ((flags & (uint32_t)CROSSTALK_HDL_IMG_PF_EXEC) != 0) { prot = LDG_MEM_PROT_RX; }
+    else if ((flags & (uint32_t)CROSSTALK_HDL_IMG_PF_WR) != 0) { prot = LDG_MEM_PROT_RW; }
 
-        if (exec == LDG_TRUTH_TRUE) { mode = PAGE_EXECUTE_READ; }
-        else if (wr == LDG_TRUTH_TRUE) { mode = PAGE_READWRITE; }
-
-        if (VirtualProtect(at, span, mode, &prev) == 0) { return CROSSTALK_HDL_ERR_IMG_PROTECT; }
-    }
-#else
-    {
-        int32_t mode = PROT_READ;
-
-        if (exec == LDG_TRUTH_TRUE) { mode = mode | PROT_EXEC; }
-        else if (wr == LDG_TRUTH_TRUE) { mode = mode | PROT_WRITE; }
-
-        if (mprotect(at, span, mode) != 0) { return CROSSTALK_HDL_ERR_IMG_PROTECT; }
-    }
-#endif
+    if (ldg_mem_exec_prot_set(at, span, prot) != LDG_ERR_AOK) { return CROSSTALK_HDL_ERR_IMG_PROTECT; }
 
     return LDG_ERR_AOK;
 }
@@ -333,7 +290,7 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
 
     if (ret != LDG_ERR_AOK)
     {
-        if (img_pages_drop(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
+        if (ldg_mem_exec_unmap(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
 
         return ret;
     }
@@ -376,7 +333,7 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
     {
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "img: load refused; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64; err: %u32", (void *)base, want, seg_cunt, out->sym_cunt, fixups, ret);
 
-        if (img_pages_drop(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
+        if (ldg_mem_exec_unmap(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
 
         memset(out, 0x0, sizeof(*out));
 
@@ -398,7 +355,8 @@ uint32_t crosstalk_hdl_img_unld(crosstalk_hdl_img_t *img)
 
     if (img->ok != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    ret = img_pages_drop(img->base, img->span);
+    ret = ldg_mem_exec_unmap(img->base, img->span);
+    if (ret != LDG_ERR_AOK) { ret = CROSSTALK_HDL_ERR_IMG_MAP; }
 
     memset(img, 0x0, sizeof(*img));
 

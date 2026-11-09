@@ -6,7 +6,7 @@
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
-#include <dangling/io/serial.h>
+#include <dangling/io/ipc.h>
 
 #include "core/log.h"
 #include "emu/net.h"
@@ -39,10 +39,10 @@ static uint32_t net_to_host_mov(crosstalk_emu_net_ctx_t *ctx, const crosstalk_hd
 
         sent = 0;
 
-        ret = ldg_io_serial_wr(&ctx->port, &ctx->to_host[ctx->to_host_off], ctx->to_host_len - ctx->to_host_off, &sent);
-        if (ret == LDG_ERR_WOULD_BLOCK || ret == LDG_ERR_AGAIN) { return LDG_ERR_AOK; }
-
+        ret = ldg_io_ipc_wr(&ctx->ipc, &ctx->to_host[ctx->to_host_off], ctx->to_host_len - ctx->to_host_off, &sent);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        if (sent == 0) { return LDG_ERR_AOK; }
 
         ctx->to_host_off = ctx->to_host_off + sent;
         ctx->sent_total = ctx->sent_total + sent;
@@ -69,9 +69,7 @@ static uint32_t net_to_guest_mov(crosstalk_emu_net_ctx_t *ctx, const crosstalk_h
         {
             got = 0;
 
-            ret = ldg_io_serial_rd(&ctx->port, ctx->to_guest, (uint64_t)sizeof(ctx->to_guest), &got);
-            if (ret == LDG_ERR_WOULD_BLOCK || ret == LDG_ERR_AGAIN) { return LDG_ERR_AOK; }
-
+            ret = ldg_io_ipc_rd(&ctx->ipc, ctx->to_guest, (uint64_t)sizeof(ctx->to_guest), &got);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             if (LDG_UNLIKELY(got > (uint64_t)sizeof(ctx->to_guest))) { return LDG_ERR_BOUNDS; }
@@ -99,33 +97,29 @@ static uint32_t net_to_guest_mov(crosstalk_emu_net_ctx_t *ctx, const crosstalk_h
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_emu_net_init(crosstalk_emu_net_ctx_t *ctx, const char *path)
+uint32_t crosstalk_emu_net_init(crosstalk_emu_net_ctx_t *ctx, const char *name)
 {
-    ldg_io_serial_conf_t conf = LDG_STRUCT_ZERO_INIT;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     memset(ctx, 0x0, sizeof(*ctx));
 
-    ctx->port.handle = (uint64_t)LDG_IO_SERIAL_HANDLE_NONE;
+    ctx->ipc.handle = (uint64_t)LDG_IO_IPC_HANDLE_NONE;
 
-    if (path == 0x0) { return LDG_ERR_AOK; }
+    if (name == 0x0) { return LDG_ERR_AOK; }
 
-    ret = ldg_io_serial_conf_default_get(&conf);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-
-    ret = ldg_io_serial_open(path, &conf, &ctx->port);
+    ret = ldg_io_ipc_connect(name, &ctx->ipc);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu net: endpoint open failed; path: %.127s; err: %u32", path, ret);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu net: endpoint open failed; name: %.95s; err: %u32", name, ret);
 
         return ret;
     }
 
     ctx->open = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu net: endpoint open; path: %.127s", path);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu net: endpoint open; name: %.95s", name);
 
     return LDG_ERR_AOK;
 }
@@ -138,7 +132,7 @@ uint32_t crosstalk_emu_net_shutdown(crosstalk_emu_net_ctx_t *ctx)
 
     if (ctx->open != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    ret = ldg_io_serial_close(&ctx->port);
+    ret = ldg_io_ipc_close(&ctx->ipc);
 
     ctx->open = LDG_TRUTH_FALSE;
 

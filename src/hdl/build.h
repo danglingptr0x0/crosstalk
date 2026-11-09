@@ -25,12 +25,6 @@
 #define CROSSTALK_HDL_BUILD_CC_MAIN "-DHDL_GEN_MAIN"
 #define CROSSTALK_HDL_BUILD_CC_OUT "-o"
 
-#ifdef _WIN32
-#define CROSSTALK_HDL_BUILD_BIN_NAME "design_gen.exe"
-#else
-#define CROSSTALK_HDL_BUILD_BIN_NAME "design_gen"
-#endif
-
 typedef enum crosstalk_hdl_build_stage
 {
     CROSSTALK_HDL_BUILD_STAGE_IDLE = 0,

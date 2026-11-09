@@ -24,7 +24,6 @@
 
 #define DANGEM_CORE_KEY_LAUNCH 'l'
 #define DANGEM_CORE_KEY_BUILD 'b'
-#define DANGEM_CORE_KEY_DEPS 'o'
 #define DANGEM_CORE_KEY_QUIT 'q'
 #define DANGEM_CORE_LAUNCH_CONFIRM_TEXT "The latest source is newer than the compiled binaries. Launch anyway (press again)?"
 #define DANGEM_CORE_LAUNCH_ARM_MS 3000
@@ -66,29 +65,7 @@ static uint32_t core_view_fill(dangem_core_t *core)
     else if (stale == LDG_TRUTH_TRUE) { ret = ldg_str_fmt(core->view.build, (uint64_t)sizeof(core->view.build), &len, "The available source is newer than your latest compiled binary"); }
     else { ret = ldg_str_fmt(core->view.build, (uint64_t)sizeof(core->view.build), &len, "up to date"); }
 
-    if (ret != LDG_ERR_AOK) { return ret; }
-
-    return ldg_str_fmt(core->view.deps, (uint64_t)sizeof(core->view.deps), &len, "%.40s", core->deps_ok == LDG_TRUTH_TRUE ? (dangem_run_ldg_bundled_is() == LDG_TRUTH_TRUE ? "LDG bundled" : "LDG installed") : "LDG missing");
-}
-
-static void core_deps_ck(dangem_core_t *core)
-{
-    char path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
-    const char *lib = 0x0;
-
-    core->deps_ok = LDG_TRUTH_FALSE;
-
-    if (dangem_run_ldg_bundled_is() != LDG_TRUTH_TRUE)
-    {
-        if (core->build.list_ok != LDG_TRUTH_TRUE || dangem_compile_list_key_get(&core->build.list, DANGEM_COMPILE_LIST_KEY_LDGLIB, &lib) != LDG_ERR_AOK) { return; }
-
-        core->deps_ok = ldg_io_path_exists_is(lib) == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-        return;
-    }
-
-    if (ldg_io_path_join(core->root, DANGEM_CORE_LDG_DIR, path, (uint64_t)sizeof(path)) != LDG_ERR_AOK) { return; }
-
-    core->deps_ok = ldg_io_path_exists_is(path) == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    return ret;
 }
 
 static void core_build_kick(dangem_core_t *core, uint8_t launch_after)
@@ -151,7 +128,6 @@ static void core_launch_menu_req(dangem_core_t *core)
 
 static void core_key_route(dangem_core_t *core, const ldg_term_key_event_t *event)
 {
-    uint64_t len = 0;
     uint32_t ch = event->codepoint;
 
     if (event->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { return; }
@@ -178,11 +154,6 @@ static void core_key_route(dangem_core_t *core, const ldg_term_key_event_t *even
 
     if (ch == DANGEM_CORE_KEY_LAUNCH) { core_launch_menu_req(core); }
     else if (ch == DANGEM_CORE_KEY_BUILD) { core_build_kick(core, LDG_TRUTH_FALSE); }
-    else if (ch == DANGEM_CORE_KEY_DEPS)
-    {
-        core_deps_ck(core);
-        if (ldg_str_fmt(core->view.notice, (uint64_t)sizeof(core->view.notice), &len, "%.60s", core->deps_ok == LDG_TRUTH_TRUE ? "dependencies are in place" : "LDG is missing from this install") != LDG_ERR_AOK) { core->view.notice[0] = LDG_STR_TERM; }
-    }
 }
 
 static uint32_t core_frame_draw(dangem_core_t *core)
@@ -256,8 +227,6 @@ uint32_t dangem_core_create(dangem_core_t **out)
 
         return ret;
     }
-
-    core_deps_ck(core);
 
     ret = ldg_term_input_conf_default_get(&input_conf);
     if (ret == LDG_ERR_AOK) { ret = ldg_term_input_create(&input_conf, &core->input); }

@@ -13,7 +13,7 @@ if(NOT CROSSTALK_STD_FILE)
     message(STATUS "std: not found; building with CMake defaults")
 endif()
 
-set(CROSSTALKRELEASE "0.2-rc1")
+set(CROSSTALKRELEASE "0.2-rc2")
 
 set(STEAM_SDK "$ENV{HOME}/git/libdangling/steamworks_sdk/sdk")
 set(CROSSTALK_LIBRESTEAM_PREFIX "" CACHE PATH "LibreSteam install prefix holding include/ and lib/")
@@ -34,122 +34,7 @@ set(DISCORD_KRISP_MODELS
     krisp-vad-o-v2.kef
 )
 
-set(CROSSTALK_SRC_LINUX
-    src/core/crosstalk.c
-    src/core/cmdline.c
-    src/core/svg.c
-    src/core/linux/scan.c
-    src/core/shot.c
-    src/core/watch.c
-    src/core/task.c
-    src/core/fetch.c
-    src/emu/linux/net.c
-    src/ui/window.c
-    src/ui/cell.c
-    src/ui/guide.c
-    src/ui/key.c
-    src/core/main.c
-    src/net/relay.c
-    src/game/chat.c
-    src/game/hub.c
-    src/game/music.c
-    src/game/totals.c
-    src/game/fx/sfx.c
-    src/eda/clk/clk.c
-    src/eda/ic/fpga/build.c
-    src/eda/ic/fpga/emu.c
-    src/eda/ic/fpga/fpga.c
-    src/eda/ic/fpga/remote.c
-    src/eda/ic/fpga/run.c
-    src/eda/io/cast.c
-    src/eda/io/display.c
-    src/eda/io/midi.c
-    src/eda/io/receptacle.c
-    src/eda/io/scancode.c
-    src/eda/io/pty.c
-    src/eda/io/serial.c
-    src/eda/logic/probe.c
-    src/eda/logic/stream.c
-    src/eda/script/ast.c
-    src/eda/script/eval.c
-    src/eda/script/lex.c
-    src/eda/script/parse.c
-    src/eda/script/script.c
-    src/eda/sound/sound.c
-    src/eda/ui/display/crt.c
-    src/eda/ui/analyzer.c
-    src/eda/ui/brainomatic.c
-    src/eda/ui/calc.c
-    src/eda/ui/feed.c
-    src/eda/ui/pipeview.c
-    src/eda/ui/progview.c
-    src/eda/ui/regview.c
-    src/eda/ui/stackview.c
-    src/eda/ui/indicator.c
-    src/eda/ui/scope.c
-    src/eda/ui/memview.c
-    src/eda/ui/profile.c
-    src/eda/ui/term.c
-    src/eda/ui/wshop_browser.c
-    src/eda/ui/wshop_publish.c
-    src/hdl/abi.c
-    src/hdl/aig.c
-    src/hdl/ast.c
-    src/hdl/bake.c
-    src/hdl/linux/cc.c
-    src/reng/reng.c
-    src/reng/progress.c
-    src/reng/tasks.c
-    src/re/re.c
-    src/re/img.c
-    src/re/db.c
-    src/re/diff.c
-    src/re/cc.c
-    src/re/linux/spawn.c
-    src/hdl/diag/diag.c
-    src/hdl/diag/sv.c
-    src/hdl/elab.c
-    src/hdl/elab_eval.c
-    src/hdl/elf.c
-    src/hdl/type.c
-    src/hdl/emit.c
-    src/hdl/exec.c
-    src/hdl/guard.c
-    src/hdl/img.c
-    src/hdl/ir.c
-    src/hdl/level.c
-    src/hdl/lex.c
-    src/hdl/logic_gate.c
-    src/hdl/lutmap.c
-    src/hdl/netarr.c
-    src/hdl/pack.c
-    src/hdl/parse.c
-    src/hdl/preproc.c
-    src/hdl/proc.c
-    src/hdl/systask.c
-    src/game/progression/progression.c
-    src/game/progression/queue.c
-    src/game/progression/stat.c
-    src/game/board.c
-    src/game/caption.c
-    src/game/credit.c
-    src/game/menu.c
-    src/game/save.c
-    src/game/settings.c
-    src/game/settings_menu.c
-    src/net/discord.c
-    src/net/inventory/inventory.c
-    src/net/presence.c
-    src/net/libresteam.c
-    src/net/wire.c
-    src/net/wshop/wshop.c
-    src/wshop/item.c
-    src/wshop/manifest.c
-    src/wshop/mount.c
-    src/wshop/publish.c
-)
-
-set(CROSSTALK_SRC_WIN
+set(CROSSTALK_SRC_ALL
     src/core/crosstalk.c
     src/core/cmdline.c
     src/core/svg.c
@@ -158,7 +43,7 @@ set(CROSSTALK_SRC_WIN
     src/core/watch.c
     src/core/task.c
     src/core/fetch.c
-    src/emu/windows/net.c
+    src/emu/net.c
     src/ui/window.c
     src/ui/cell.c
     src/ui/guide.c
@@ -229,7 +114,6 @@ set(CROSSTALK_SRC_WIN
     src/hdl/type.c
     src/hdl/emit.c
     src/hdl/exec.c
-    src/hdl/guard.c
     src/hdl/img.c
     src/hdl/ir.c
     src/hdl/level.c
@@ -270,9 +154,9 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 
     enable_language(RC)
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/crosstalk.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/crosstalk.rc" @ONLY)
-    set(CROSSTALK_SRC ${CROSSTALK_SRC_WIN} "${CMAKE_CURRENT_BINARY_DIR}/crosstalk.rc")
+    set(CROSSTALK_SRC ${CROSSTALK_SRC_ALL} "${CMAKE_CURRENT_BINARY_DIR}/crosstalk.rc")
 else()
-    set(CROSSTALK_SRC ${CROSSTALK_SRC_LINUX})
+    set(CROSSTALK_SRC ${CROSSTALK_SRC_ALL})
 endif()
 
 add_executable(crosstalk ${CROSSTALK_SRC})
@@ -465,13 +349,14 @@ set(CROSSTALK_EMU_SRC
     src/eda/io/scancode.c
     src/hdl/abi.c
     src/hdl/img.c
+    src/emu/net.c
 )
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     configure_file("${CMAKE_CURRENT_SOURCE_DIR}/dangcsaemu.rc.in" "${CMAKE_CURRENT_BINARY_DIR}/dangcsaemu.rc" @ONLY)
-    add_executable(emu ${CROSSTALK_EMU_SRC} src/emu/windows/net.c "${CMAKE_CURRENT_BINARY_DIR}/dangcsaemu.rc")
+    add_executable(emu ${CROSSTALK_EMU_SRC} "${CMAKE_CURRENT_BINARY_DIR}/dangcsaemu.rc")
 else()
-    add_executable(emu ${CROSSTALK_EMU_SRC} src/emu/linux/net.c)
+    add_executable(emu ${CROSSTALK_EMU_SRC})
 endif()
 
 set_target_properties(emu PROPERTIES OUTPUT_NAME "dangcsaemu")

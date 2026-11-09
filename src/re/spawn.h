@@ -10,7 +10,6 @@
 #define CROSSTALK_RE_SPAWN_LINE_CAP 2048
 #define CROSSTALK_RE_SPAWN_ARG_MAX 64
 #define CROSSTALK_RE_SPAWN_EXIT_OK 0
-#define CROSSTALK_RE_SPAWN_WAIT_FLAGS 0
 
 uint32_t crosstalk_re_spawn_run(const char *line, uint32_t *out_exit);
 

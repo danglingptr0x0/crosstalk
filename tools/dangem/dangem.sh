@@ -22,6 +22,7 @@ LINK_RSP="$BUILD_DIR/link.rsp"
 LOG_PATH="$ROOT/dangem.log"
 DL_DIR="$ROOT/.dl"
 
+UNAME="$(uname -a)"
 TITLE_MENU=" DANGLING Ecosystem Manager r0.1"
 TITLE_SUMMARY="DANGLING Ecosystem Manager r0.1"
 MENU_EXIT="(F10 = Exit)"
@@ -868,7 +869,8 @@ ui_summary_draw()
     printf -v cc_text '%*s' $((COL_CUNT - 1)) "$DATE"
     ui_text_put 0 0 "$cc_text" "$TONE_NORMAL"
     ui_text_put 1 0 "$TITLE_SUMMARY" "$TONE_BRIGHT"
-    ui_text_put 1 1 "Crosstalk $RELEASE" "$TONE_NORMAL"
+    ui_text_put 1 1 "$UNAME" "$TONE_DIM"
+    ui_text_put 1 2 "Crosstalk $RELEASE" "$TONE_NORMAL"
 
     if ((box_col == 36)); then
         cc_text="missing"

@@ -2,14 +2,12 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <stdio.h>
-#include <windows.h>
-
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/file.h>
 #include <dangling/io/path.h>
 #include <dangling/str/str.h>
+#include <dangling/sys/proc.h>
 #include <dangling/logging/logging.h>
 
 #include "core/log.h"
@@ -73,9 +71,24 @@ static uint32_t cc_argv_build(const crosstalk_hdl_cc_ctx_t *ctx, const char *src
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_hdl_cc_init(crosstalk_hdl_cc_ctx_t *ctx, const char *dir)
+static uint32_t cc_shipped_find(crosstalk_hdl_cc_ctx_t *ctx, const char *dir, const char *name)
 {
     char probe[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
+    uint32_t ret = 0;
+
+    ret = ldg_io_path_join(dir, name, probe, (uint64_t)sizeof(probe));
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (ldg_io_path_exists_is(probe) != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_FOUND; }
+
+    ret = ldg_str_rbrcpy(ctx->exe, probe, (uint64_t)sizeof(ctx->exe));
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_cc_init(crosstalk_hdl_cc_ctx_t *ctx, const char *dir)
+{
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -84,28 +97,30 @@ uint32_t crosstalk_hdl_cc_init(crosstalk_hdl_cc_ctx_t *ctx, const char *dir)
 
     if (dir != 0x0 && dir[0] != LDG_STR_TERM)
     {
-        ret = ldg_io_path_join(dir, CROSSTALK_HDL_CC_EXE_WIN, probe, (uint64_t)sizeof(probe));
-        if (ret != LDG_ERR_AOK) { return ret; }
+        ret = cc_shipped_find(ctx, dir, CROSSTALK_HDL_CC_EXE);
+        if (ret == LDG_ERR_NOT_FOUND) { ret = cc_shipped_find(ctx, dir, CROSSTALK_HDL_CC_EXE_WIN); }
 
-        if (ldg_io_path_exists_is(probe) == LDG_TRUTH_TRUE)
+        if (ret == LDG_ERR_AOK)
         {
-            ret = ldg_str_rbrcpy(ctx->exe, probe, (uint64_t)sizeof(ctx->exe));
-            if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
-
             ctx->ok = LDG_TRUTH_TRUE;
 
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: shipped compiler; path: %.255s", ctx->exe);
 
             return LDG_ERR_AOK;
         }
+
+        if (ret != LDG_ERR_NOT_FOUND) { return ret; }
     }
 
-    ret = ldg_str_rbrcpy(ctx->exe, CROSSTALK_HDL_CC_EXE_WIN, (uint64_t)sizeof(ctx->exe));
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
+    if (ldg_sys_proc_path_find(CROSSTALK_HDL_CC_EXE, ctx->exe, (uint64_t)sizeof(ctx->exe)) != LDG_ERR_AOK)
+    {
+        ret = ldg_str_rbrcpy(ctx->exe, CROSSTALK_HDL_CC_EXE, (uint64_t)sizeof(ctx->exe));
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
+    }
 
     ctx->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: no shipped compiler; falling back to PATH; exe: %.63s", ctx->exe);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: no shipped compiler; falling back to PATH; exe: %.255s", ctx->exe);
 
     return LDG_ERR_AOK;
 }
@@ -122,6 +137,7 @@ uint32_t crosstalk_hdl_cc_shutdown(crosstalk_hdl_cc_ctx_t *ctx)
 uint32_t crosstalk_hdl_cc_run(crosstalk_hdl_cc_ctx_t *ctx, const char *src_path, const char *out_path)
 {
     const char *argv[CROSSTALK_HDL_CC_ARG_MAX];
+    ldg_sys_proc_t proc = LDG_STRUCT_ZERO_INIT;
     uint32_t code = 0;
     uint32_t ret = 0;
 
@@ -136,43 +152,25 @@ uint32_t crosstalk_hdl_cc_run(crosstalk_hdl_cc_ctx_t *ctx, const char *src_path,
 
     ctx->runs = ctx->runs + (uint64_t)CROSSTALK_HDL_CC_STEP;
 
+    ret = ldg_sys_proc_spawn(ctx->exe, argv, 0x0, LDG_SYS_PROC_SPAWN_STDIO_INHERIT, &proc);
+    if (ret != LDG_ERR_AOK)
     {
-        char line[LDG_IO_PATH_MAX * CROSSTALK_HDL_CC_LINE_MUL] = LDG_ARR_ZERO_INIT;
-        STARTUPINFOA si = LDG_STRUCT_ZERO_INIT;
-        PROCESS_INFORMATION pi = LDG_STRUCT_ZERO_INIT;
-        DWORD status = 0;
-        uint32_t at = 0;
-        uint64_t off = 0;
+        ctx->fails = ctx->fails + (uint64_t)CROSSTALK_HDL_CC_STEP;
 
-        si.cb = (DWORD)sizeof(si);
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: spawn failed; exe: %.255s; err: %u32", ctx->exe, ret);
 
-        while (argv[at] != 0x0)
-        {
-            int32_t wrote = snprintf(line + off, sizeof(line) - off, at == 0 ? "\"%.1023s\"" : " \"%.1023s\"", argv[at]);
+        return CROSSTALK_HDL_ERR_CC_SPAWN;
+    }
 
-            if (wrote < 0 || (uint64_t)wrote >= sizeof(line) - off) { return CROSSTALK_HDL_ERR_CC_ARG; }
+    ret = ldg_sys_proc_wait(&proc, LDG_SYS_PROC_WAIT_INFINITE, &code);
 
-            off = off + (uint64_t)wrote;
-            at = at + (uint32_t)CROSSTALK_HDL_CC_STEP;
-        }
+    if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: process close failed"); }
 
-        if (CreateProcessA(0x0, line, 0x0, 0x0, FALSE, CREATE_NO_WINDOW, 0x0, 0x0, &si, &pi) == 0)
-        {
-            ctx->fails = ctx->fails + (uint64_t)CROSSTALK_HDL_CC_STEP;
+    if (ret != LDG_ERR_AOK)
+    {
+        ctx->fails = ctx->fails + (uint64_t)CROSSTALK_HDL_CC_STEP;
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: spawn failed; exe: %.255s; last: %u32", ctx->exe, (uint32_t)GetLastError());
-
-            return CROSSTALK_HDL_ERR_CC_SPAWN;
-        }
-
-        WaitForSingleObject(pi.hProcess, INFINITE);
-
-        if (GetExitCodeProcess(pi.hProcess, &status) == 0) { status = (DWORD)CROSSTALK_HDL_ERR_CC_EXIT; }
-
-        CloseHandle(pi.hProcess);
-        CloseHandle(pi.hThread);
-
-        code = (uint32_t)status;
+        return CROSSTALK_HDL_ERR_CC_SPAWN;
     }
 
     ctx->last_exit = code;

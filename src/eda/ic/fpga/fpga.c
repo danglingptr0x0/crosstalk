@@ -477,14 +477,6 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
         if (ret != LDG_ERR_AOK) { return ret; }
     }
 
-#if LDG_TRUTH_FALSE == LDG_TRUTH_TRUE
-    if (slot->verdict.fits != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_IC_FPGA_ERR_OVER_CAP; }
-
-#else
-    if (slot->verdict.fits != LDG_TRUTH_TRUE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: over cap, enforcement off; top: %.63s; cells: %u64/%u64; mem: %u64/%u64; io: %u64/%u64", slot->top, slot->verdict.cells_used, slot->verdict.cells_avail, slot->verdict.mem_bits, slot->verdict.mem_avail, slot->verdict.io_bits, slot->verdict.io_avail); }
-
-#endif
-
     ret = crosstalk_hdl_exec_sig_find(&slot->exec, slot->clk, &slot->clk_sig);
     if (ret != LDG_ERR_AOK)
     {
@@ -1049,7 +1041,7 @@ uint32_t crosstalk_eda_ic_fpga_midi_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, cross
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_eda_ic_fpga_guard_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_hdl_guard_ctx_t *guard)
+uint32_t crosstalk_eda_ic_fpga_guard_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, ldg_sys_guard_t *guard)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -1578,9 +1570,9 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
 
     if (packed == LDG_TRUTH_TRUE && ctx->guard != 0x0)
     {
-        if (CROSSTALK_HDL_GUARD_ENTER(ctx->guard) == 0)
+        if (LDG_SYS_GUARD_ENTER(ctx->guard) == 0)
         {
-            CROSSTALK_HDL_GUARD_LEAVE(ctx->guard);
+            LDG_SYS_GUARD_LEAVE(ctx->guard);
 
             ctx->slot[slot_idx].abi = 0x0;
             ctx->slot[slot_idx].abi_clk_sig = (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE;
@@ -1588,7 +1580,7 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
 
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "fpga: compiled component faulted; slot: %u32; addr: 0x%X64", slot_idx, ctx->guard->fault_addr);
 
-            return CROSSTALK_HDL_ERR_GUARD_FAULT;
+            return CROSSTALK_EDA_IC_FPGA_ERR_FAULT;
         }
     }
 
@@ -1724,7 +1716,7 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
         }
     }
 
-    if (packed == LDG_TRUTH_TRUE && ctx->guard != 0x0) { CROSSTALK_HDL_GUARD_LEAVE(ctx->guard); }
+    if (packed == LDG_TRUTH_TRUE && ctx->guard != 0x0) { LDG_SYS_GUARD_LEAVE(ctx->guard); }
 
     slot->cycles_run = slot->cycles_run + done;
     *out_done = done;

@@ -5,12 +5,12 @@
 
 #include <dangling/io/path.h>
 #include <dangling/mem/alloc.h>
+#include <dangling/sys/guard.h>
 #include <dangling/thread/pool.h>
 
 #include "hdl/abi.h"
 #include "hdl/cc.h"
 #include "hdl/emit.h"
-#include "hdl/guard.h"
 #include "hdl/img.h"
 
 #define CROSSTALK_EDA_IC_FPGA_BUILD_ERR_LIVE 935
@@ -46,7 +46,7 @@ typedef struct crosstalk_eda_ic_fpga_build_ctx
     crosstalk_hdl_cc_ctx_t cc;
     crosstalk_hdl_img_t img;
     crosstalk_hdl_abi_t abi;
-    crosstalk_hdl_guard_ctx_t guard;
+    ldg_sys_guard_t guard;
     ldg_mem_pool_t *mem_pool;
     ldg_byte_t *blob;
     const crosstalk_hdl_ir_t *emit_ir;

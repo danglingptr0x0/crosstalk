@@ -16,17 +16,21 @@ set(DANGEM_SRC
     src/ui/ui.c
     src/ui/menu.c
     src/ui/summary.c
+    src/run/run.c
 )
-
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    list(APPEND DANGEM_SRC src/run/windows/run.c)
-else()
-    list(APPEND DANGEM_SRC src/run/linux/run.c)
-endif()
 
 add_executable(dangem ${DANGEM_SRC})
 target_include_directories(dangem PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 target_compile_options(dangem PRIVATE -Werror=incompatible-pointer-types)
+
+string(TOLOWER "${CMAKE_SYSTEM_NAME}" DANGEM_PFORM)
+target_compile_definitions(dangem PRIVATE DANGEM_RUN_PFORM="${DANGEM_PFORM}" DANGEM_RUN_EXE_EXT="${CMAKE_EXECUTABLE_SUFFIX}")
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    target_compile_definitions(dangem PRIVATE DANGEM_RUN_BUILD_DIR="build-win" DANGEM_RUN_SHLIB_LOCAL=0 DANGEM_RUN_TERM_FORCE=1)
+else()
+    target_compile_definitions(dangem PRIVATE DANGEM_RUN_BUILD_DIR="build" DANGEM_RUN_SHLIB_LOCAL=1 DANGEM_RUN_TERM_FORCE=0)
+endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.dll.a")

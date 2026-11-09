@@ -5,7 +5,7 @@
 
 #include <dangling/core/macros.h>
 #include <dangling/core/types.h>
-#include <dangling/io/serial.h>
+#include <dangling/io/ipc.h>
 
 #include "hdl/abi.h"
 
@@ -13,8 +13,7 @@
 
 typedef struct crosstalk_emu_net_ctx
 {
-    ldg_io_serial_t port;
-    uint64_t pipe;
+    ldg_io_ipc_t ipc;
     ldg_byte_t to_host[CROSSTALK_EMU_NET_CHUNK];
     ldg_byte_t to_guest[CROSSTALK_EMU_NET_CHUNK];
     uint64_t to_host_len;
@@ -27,7 +26,7 @@ typedef struct crosstalk_emu_net_ctx
     uint8_t pudding[7];
 } crosstalk_emu_net_ctx_t;
 
-uint32_t crosstalk_emu_net_init(crosstalk_emu_net_ctx_t *ctx, const char *path);
+uint32_t crosstalk_emu_net_init(crosstalk_emu_net_ctx_t *ctx, const char *name);
 uint32_t crosstalk_emu_net_shutdown(crosstalk_emu_net_ctx_t *ctx);
 uint32_t crosstalk_emu_net_tick(crosstalk_emu_net_ctx_t *ctx, const crosstalk_hdl_abi_t *abi);
 

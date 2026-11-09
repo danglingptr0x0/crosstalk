@@ -25,10 +25,8 @@
 #define DANGEM_UI_MENU_ROW_MIN 14
 #define DANGEM_UI_MENU_NAME_LAUNCH "- Launch Crosstalk"
 #define DANGEM_UI_MENU_NAME_BUILD "- Build Crosstalk"
-#define DANGEM_UI_MENU_NAME_DEPS "- Obtain dependencies"
 #define DANGEM_UI_MENU_KEY_LAUNCH 'L'
 #define DANGEM_UI_MENU_KEY_BUILD 'B'
-#define DANGEM_UI_MENU_KEY_DEPS 'O'
 
 static uint32_t menu_item_draw(ldg_term_render_t *render, uint32_t col, uint32_t row, char key, const char *name, const char *status, uint32_t status_tone)
 {
@@ -82,8 +80,6 @@ uint32_t dangem_ui_menu_draw(ldg_term_render_t *render, const dangem_ui_menu_vie
     if (ret == LDG_ERR_AOK) { ret = menu_item_draw(render, inner_col + DANGEM_UI_MENU_ITEM_INDENT, DANGEM_UI_MENU_ITEM_ROW, DANGEM_UI_MENU_KEY_LAUNCH, DANGEM_UI_MENU_NAME_LAUNCH, view->launch, DANGEM_UI_TONE_DIM); }
 
     if (ret == LDG_ERR_AOK) { ret = menu_item_draw(render, inner_col + DANGEM_UI_MENU_ITEM_INDENT, DANGEM_UI_MENU_ITEM_ROW + DANGEM_UI_MENU_ITEM_GAP, DANGEM_UI_MENU_KEY_BUILD, DANGEM_UI_MENU_NAME_BUILD, view->build, view->build_alert == LDG_TRUTH_TRUE ? DANGEM_UI_TONE_ALERT : DANGEM_UI_TONE_DIM); }
-
-    if (ret == LDG_ERR_AOK) { ret = menu_item_draw(render, mid + DANGEM_UI_MENU_ITEM_INDENT, DANGEM_UI_MENU_ITEM_ROW, DANGEM_UI_MENU_KEY_DEPS, DANGEM_UI_MENU_NAME_DEPS, view->deps, DANGEM_UI_TONE_DIM); }
 
     if (ret == LDG_ERR_AOK) { ret = dangem_ui_text_put(render, inner_col, base + DANGEM_UI_STEP, view->notice, DANGEM_UI_TONE_NORMAL); }
 

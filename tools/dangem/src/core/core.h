@@ -17,7 +17,6 @@
 #define DANGEM_CORE_ROW_MAX 256
 #define DANGEM_CORE_SAMPLE_CUNT 1
 #define DANGEM_CORE_EXIT_MASK 0xFFU
-#define DANGEM_CORE_LDG_DIR "ldg/lib"
 #define DANGEM_CORE_TITLE "dangem"
 
 typedef enum dangem_core_screen
@@ -40,9 +39,8 @@ typedef struct dangem_core
     uint8_t quit;
     uint8_t launch;
     uint8_t launch_after;
-    uint8_t deps_ok;
     uint8_t launch_confirm;
-    uint8_t pudding[7];
+    uint8_t pudding[8];
 } dangem_core_t;
 
 uint32_t dangem_core_create(dangem_core_t **out);

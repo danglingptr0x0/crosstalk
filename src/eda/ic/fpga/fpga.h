@@ -5,9 +5,9 @@
 
 #include <dangling/core/macros.h>
 #include <dangling/mem/alloc.h>
+#include <dangling/sys/guard.h>
 
 #include "hdl/abi.h"
-#include "hdl/guard.h"
 #include "eda/ic/fpga/emu.h"
 #include "hdl/ast.h"
 #include "hdl/diag/diag.h"
@@ -31,6 +31,7 @@
 #define CROSSTALK_EDA_IC_FPGA_ERR_CLOCK 955
 #define CROSSTALK_EDA_IC_FPGA_ERR_BIND 956
 #define CROSSTALK_EDA_IC_FPGA_ERR_POOL 957
+#define CROSSTALK_EDA_IC_FPGA_ERR_FAULT 765
 
 #define CROSSTALK_EDA_IC_FPGA_SLOT_MAX 8
 #define CROSSTALK_EDA_IC_FPGA_SRC_POOL_CAP (CROSSTALK_EDA_IC_FPGA_SLOT_MAX + 1)
@@ -221,7 +222,7 @@ typedef struct crosstalk_eda_ic_fpga_ctx
     crosstalk_eda_io_display_ctx_t *display;
     crosstalk_eda_io_receptacle_ctx_t *receptacle;
     crosstalk_eda_io_midi_ctx_t *midi;
-    crosstalk_hdl_guard_ctx_t *guard;
+    ldg_sys_guard_t *guard;
     crosstalk_hdl_preproc_include_cb_t include_cb;
     void *include_user;
     crosstalk_eda_ic_fpga_step_cb_t step_cb;
@@ -258,7 +259,7 @@ uint32_t crosstalk_eda_ic_fpga_probes_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, cro
 uint32_t crosstalk_eda_ic_fpga_display_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_io_display_ctx_t *display);
 uint32_t crosstalk_eda_ic_fpga_receptacle_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_io_receptacle_ctx_t *receptacle);
 uint32_t crosstalk_eda_ic_fpga_midi_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_io_midi_ctx_t *midi);
-uint32_t crosstalk_eda_ic_fpga_guard_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_hdl_guard_ctx_t *guard);
+uint32_t crosstalk_eda_ic_fpga_guard_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, ldg_sys_guard_t *guard);
 uint32_t crosstalk_eda_ic_fpga_step_cb_set(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fpga_step_cb_t cb, void *user);
 uint32_t crosstalk_eda_ic_fpga_slot_exec_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_exec_ctx_t **out_exec);
 uint32_t crosstalk_eda_ic_fpga_slot_gate_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint8_t on);

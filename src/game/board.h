@@ -30,7 +30,7 @@
 #define CROSSTALK_GAME_BOARD_SHOT_EXT ".png"
 #define CROSSTALK_GAME_BOARD_SIZE_CAP 16
 #define CROSSTALK_GAME_BOARD_TIME_CAP 32
-#define CROSSTALK_GAME_BOARD_TIME_FMT "%Y-%m-%dT%H:%M:%S%z"
+#define CROSSTALK_GAME_BOARD_TIME_FMT "%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 "T%02" PRIu32 ":%02" PRIu32 ":%02" PRIu32 "+0000"
 
 typedef enum crosstalk_game_board_src
 {
