@@ -21,6 +21,7 @@ CFLAGS_RSP="$BUILD_DIR/cflags.rsp"
 LINK_RSP="$BUILD_DIR/link.rsp"
 LOG_PATH="$ROOT/dangem.log"
 DL_DIR="$ROOT/.dl"
+SRC_DIR="$ROOT/src"
 
 UNAME="$(uname -a)"
 TITLE_MENU=" DANGLING Ecosystem Manager r0.1"
@@ -137,23 +138,23 @@ run_tty_ensure()
 
     export DANGEM_TERM_SPAWNED=yes
 
-    if [[ -n "${TERMINAL:-}" ]] && sys_tool_has "$TERMINAL"; then exec "$TERMINAL" -e "$self"; fi
+    if [[ -n "${TERMINAL:-}" ]] && sys_tool_has "$TERMINAL"; then exec "$TERMINAL" -e "$self" "$@"; fi
 
-    if sys_tool_has wezterm; then exec wezterm start --always-new-process -- "$self"; fi
+    if sys_tool_has wezterm; then exec wezterm start --always-new-process -- "$self" "$@"; fi
 
     for name in x-terminal-emulator konsole; do
-        if sys_tool_has "$name"; then exec "$name" -e "$self"; fi
+        if sys_tool_has "$name"; then exec "$name" -e "$self" "$@"; fi
     done
 
-    if sys_tool_has gnome-terminal; then exec gnome-terminal -- "$self"; fi
+    if sys_tool_has gnome-terminal; then exec gnome-terminal -- "$self" "$@"; fi
 
-    if sys_tool_has xfce4-terminal; then exec xfce4-terminal -x "$self"; fi
+    if sys_tool_has xfce4-terminal; then exec xfce4-terminal -x "$self" "$@"; fi
 
-    if sys_tool_has alacritty; then exec alacritty -e "$self"; fi
+    if sys_tool_has alacritty; then exec alacritty -e "$self" "$@"; fi
 
-    if sys_tool_has kitty; then exec kitty -- "$self"; fi
+    if sys_tool_has kitty; then exec kitty -- "$self" "$@"; fi
 
-    if sys_tool_has xterm; then exec xterm -e "$self"; fi
+    if sys_tool_has xterm; then exec xterm -e "$self" "$@"; fi
 
     exit 1
 }
@@ -220,6 +221,9 @@ compile_list_map()
         pre="${src%%"$key_val"*}"
         post="${src/"$pre$key_val"/}"
         MAPPED="$pre$repl$post"
+
+        if [[ "$MAPPED" == "$ROOT/src" || "$MAPPED" == "$ROOT/src/"* ]]; then MAPPED="$SRC_DIR${MAPPED/"$ROOT/src"/}"; fi
+
         return 0
     done
 }
@@ -261,6 +265,8 @@ build_obj_path_get()
 {
     local src="$1"
 
+    if [[ "$src" == "$SRC_DIR"* ]]; then src="src${src/"$SRC_DIR"/}"; fi
+
     if [[ "$src" == "$ROOT"* ]]; then src="${src/"$ROOT"/}"; fi
 
     while [[ "$src" == /* || "$src" == \\* ]]; do src="${src:1}"; done
@@ -295,7 +301,7 @@ build_cflags_wr()
             build_rsp_arg "" "$MAPPED"
         elif [[ "$kind" == "def" ]]; then
             build_rsp_arg "-D" "$MAPPED"
-        elif [[ "$MAPPED" == "$ROOT/src"* ]]; then
+        elif [[ "$MAPPED" == "$SRC_DIR"* ]]; then
             build_rsp_arg "-I" "$MAPPED"
         else
             build_rsp_arg "" "-isystem"
@@ -385,7 +391,7 @@ build_src_newer_ck()
 
     if [[ -z "$OUT_PATH" || ! -e "$OUT_PATH" ]]; then return 0; fi
 
-    for dir in "$ROOT/src" "$ROOT/ldg" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"; do
+    for dir in "$SRC_DIR" "$ROOT/ldg" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"; do
         if [[ ! -d "$dir" ]]; then continue; fi
 
         hit="$(find "$dir" -maxdepth 16 -name '.*' -prune -o -type f -newer "$OUT_PATH" -print -quit)"
@@ -1127,9 +1133,26 @@ run_term_leave()
 
 main()
 {
+    local arg
+
     TTY_PATH=/dev/tty
 
-    run_tty_ensure
+    for arg in "$@"; do
+        case "$arg" in
+            --mine) SRC_DIR="$(realpath -- "$(dirname -- "${BASH_SOURCE[0]}")/../../src")" ;;
+            *)
+                printf 'dangem: unknown argument; arg: %s\n' "$arg"
+                exit 1
+                ;;
+        esac
+
+        if [[ ! -d "$SRC_DIR" ]]; then
+            printf 'dangem: no source tree next to this script; dir: %s\n' "$SRC_DIR"
+            exit 1
+        fi
+    done
+
+    run_tty_ensure "$@"
     mkdir -p "$ROOT" || exit 1
 
     compile_init
