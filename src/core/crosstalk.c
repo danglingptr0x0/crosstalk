@@ -8564,8 +8564,6 @@ static uint32_t crosstalk_remote_pty_tee_cb(void *user, const uint8_t *bytes, ui
     return crosstalk_remote_term_tee_cb(ctx, sesh_idx, bytes, len);
 }
 
-#define CROSSTALK_CORE_REMOTE_SESH_CUNT (CROSSTALK_NET_WIRE_REMOTE_SESH_CAP < CROSSTALK_EDA_UI_TERM_SESH_MAX ? CROSSTALK_NET_WIRE_REMOTE_SESH_CAP : CROSSTALK_EDA_UI_TERM_SESH_MAX)
-
 static void crosstalk_remote_owner_send(crosstalk_ctx_t *ctx)
 {
     crosstalk_net_wire_remote_owner_t owner = LDG_STRUCT_ZERO_INIT;
@@ -8576,7 +8574,7 @@ static void crosstalk_remote_owner_send(crosstalk_ctx_t *ctx)
     ctx->remote_owner_next = ctx->time + CROSSTALK_CORE_REMOTE_OWNER_SECS;
     owner.editor = ctx->game.screen == CROSSTALK_GAME_SCREEN_EDITOR ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_CORE_REMOTE_SESH_CUNT; idx++)
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_SESH_CAP && idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++)
     {
         const crosstalk_eda_ui_term_sesh_t *sesh = &ctx->eda.term.sesh[idx];
 
@@ -8600,7 +8598,7 @@ static void crosstalk_remote_owner_apply(crosstalk_ctx_t *ctx, const crosstalk_n
 
     if (crosstalk_eda_ic_fpga_remote_on_is(&ctx->remote) != LDG_TRUTH_TRUE) { return; }
 
-    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_CORE_REMOTE_SESH_CUNT; idx++)
+    for (uint32_t idx = 0; idx < (uint32_t)CROSSTALK_NET_WIRE_REMOTE_SESH_CAP && idx < (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; idx++)
     {
         const crosstalk_eda_ui_term_sesh_t *mine = &ctx->eda.term.sesh[idx];
         char title[CROSSTALK_NET_WIRE_REMOTE_TITLE_CAP] = LDG_ARR_ZERO_INIT;
