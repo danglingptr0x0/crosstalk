@@ -5,7 +5,7 @@ export TZ=UTC
 
 GH_REPO="danglingptr0x0/crosstalk"
 CC_REPO="danglingptr0x0/llvm-project-dangcsa_dangxa"
-CC_TAG="24.0.0git-r1-dangcsa_dangxa"
+CC_TAG="24.0.0git-r2-dangcsa_dangxa"
 CC_ASSET="llvm-$CC_TAG-linux-amd64.tar.xz"
 SELF_URL="https://raw.githubusercontent.com/$GH_REPO/main/tools/dangem/dangem.sh"
 SELF_DST="$HOME/.local/bin/dangem"

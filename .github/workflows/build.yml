@@ -20,7 +20,7 @@ env:
   WIN_PREFIX: /opt/x86_64-w64-mingw32
   MINGW_ROOT: /usr/x86_64-w64-mingw32
   LRS_LINUX: /opt/libresteam-linux
-  LRS_WIN: /opt/libresteam-windows
+  LRS_WIN: /opt/x86_64-w64-mingw32
   DISCORD_TAG: discordsdk
   DISCORD_ZIP: DiscordSocialSdk-1.10.18247.zip
   DISCORD_DIR: DiscordSocialSdk-1.10.18247
@@ -225,6 +225,26 @@ jobs:
           cat steam/changelog.bbcode
           tar -cf steam.tar steam
           du -sh steam.tar
+      - name: release windows build
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sdk="crosstalk/$DISCORD_DIR/discord_social_sdk"
+          w="out/crosstalk-$REL-build-windows-amd64"
+          mkdir -p "$w/build-win/dangem" "$w/ldg" "$w/res/utils/cc" "$w/$DISCORD_DIR/discord_social_sdk/lib/release"
+          cp crosstalk/build-win/dangem/build-windows.lst crosstalk/build-win/dangem/RELEASE "$w/build-win/dangem/"
+          if [ -d crosstalk/build-win/gen ]; then cp -r crosstalk/build-win/gen "$w/build-win/gen"; fi
+          cp -rL "$WIN_PREFIX/include" "$w/ldg/include"
+          cp -rL "$WIN_PREFIX/lib" "$w/ldg/lib"
+          cp -r "$sdk/include" "$w/$DISCORD_DIR/discord_social_sdk/include"
+          cp "$sdk/lib/release/discord_partner_sdk.lib" "$w/$DISCORD_DIR/discord_social_sdk/lib/release/"
+          cp -L crosstalk/build-win/libresteam.dll crosstalk/build-win/libdangling.dll "$sdk/bin/release/discord_partner_sdk.dll" "$sdk/bin/release/discord_krisp.dll" "$sdk"/bin/release/*.kef crosstalk/LICENSE crosstalk/CONTRIBUTING "$w/"
+          cp -r crosstalk/res/. "$w/res/"
+          cp -r "$RUNNER_TEMP/wincc/." "$w/res/utils/cc/"
+          bsdtar --format zip -cf "crosstalk-$REL-build-windows-amd64.zip" -C "$w" .
+          du -sh "crosstalk-$REL-build-windows-amd64.zip"
+          gh release upload "$REL" --repo "$GITHUB_REPOSITORY" "crosstalk-$REL-build-windows-amd64.zip"
       - name: steam upload artifact
         if: github.ref_type == 'tag' || inputs.steam
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
