@@ -22,6 +22,7 @@ LINK_RSP="$BUILD_DIR/link.rsp"
 LOG_PATH="$ROOT/dangem.log"
 DL_DIR="$ROOT/.dl"
 SRC_DIR="$ROOT/src"
+MINE=0
 
 UNAME="$(uname -a)"
 TITLE_MENU=" DANGLING Ecosystem Manager r0.1"
@@ -183,6 +184,8 @@ compile_list_ld()
         case "$key" in
             root | bin | tgt | steam | ldginc | ldglib | out | std | cflagset | ldflagset | libset) KEYV[$key]="$val" ;;
             src | def | inc | cflag | lib | ldflag)
+                if [[ "$MINE" == 1 && "$key" == "src" && "$val" == *.c ]]; then continue; fi
+
                 ITEM_KIND+=("$key")
                 ITEM_VAL+=("$val")
                 ITEM_CUNT=$((ITEM_CUNT + 1))
@@ -190,7 +193,41 @@ compile_list_ld()
         esac
     done <"$LIST_PATH"
 
+    if [[ "$MINE" == 1 ]]; then
+        compile_list_mine_ld
+        return $?
+    fi
+
     return 0
+}
+
+compile_list_mine_ld()
+{
+    local line in_set=0
+    local cmake_path="$SRC_DIR/../CMakeLists.txt"
+
+    if [[ ! -f "$cmake_path" ]]; then return 1; fi
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%$'\r'}"
+
+        if [[ "$line" =~ ^set\(CROSSTALK_SRC_ALL ]]; then
+            in_set=1
+            continue
+        fi
+
+        if [[ "$in_set" != 1 ]]; then continue; fi
+
+        if [[ "$line" =~ ^[[:space:]]*\) ]]; then return 0; fi
+
+        if [[ "$line" =~ ^[[:space:]]*(src/[^[:space:]]+\.c)[[:space:]]*$ ]]; then
+            ITEM_KIND+=(src)
+            ITEM_VAL+=("${BASH_REMATCH[1]}")
+            ITEM_CUNT=$((ITEM_CUNT + 1))
+        fi
+    done <"$cmake_path"
+
+    return 1
 }
 
 compile_list_map()
@@ -203,6 +240,11 @@ compile_list_map()
     if [[ -n "${KEYV[ldglib]:-}" && "$src" == "${KEYV[ldglib]}" ]]; then
         path_leaf_get "$src"
         MAPPED="$ROOT/ldg/lib/$LEAF"
+        return 0
+    fi
+
+    if [[ "$src" == "src" || "$src" == src/* ]]; then
+        MAPPED="$SRC_DIR${src/"src"/}"
         return 0
     fi
 
@@ -1015,8 +1057,13 @@ core_deps_obtain()
 
     tag="${BASH_REMATCH[1]}"
 
-    if ! core_asset_fetch "crosstalk-$tag-src.tar.gz" "https://github.com/$GH_REPO/archive/refs/tags/$tag.tar.gz" ||
-        ! core_asset_fetch "crosstalk-$tag-res.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-res.tar.xz" ||
+    if [[ "$MINE" != 1 ]] && ! core_asset_fetch "crosstalk-$tag-src.tar.gz" "https://github.com/$GH_REPO/archive/refs/tags/$tag.tar.gz"; then
+        NOTICE="download failed; $FETCH_NAME"
+        logging_line_wr ERR "dangem: $NOTICE"
+        return 0
+    fi
+
+    if ! core_asset_fetch "crosstalk-$tag-res.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-res.tar.xz" ||
         ! core_asset_fetch "crosstalk-$tag-sdk-linux-amd64.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-sdk-linux-amd64.tar.xz" ||
         ! core_asset_fetch "crosstalk-$tag-ldg-linux-amd64.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-ldg-linux-amd64.tar.xz" ||
         ! core_asset_fetch "crosstalk-$tag-build-linux-amd64.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-build-linux-amd64.tar.xz" ||
@@ -1029,10 +1076,19 @@ core_deps_obtain()
     NOTICE="unpacking"
     core_frame_draw
 
-    rm -rf "$ROOT/src" "$ROOT/ldg" "$ROOT/res/utils/cc/linux" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"
+    rm -rf "$ROOT/ldg" "$ROOT/res/utils/cc/linux" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"
 
-    if ! tar -xzf "$DL_DIR/crosstalk-$tag-src.tar.gz" -C "$ROOT" --strip-components=1 ||
-        ! tar -xJf "$DL_DIR/crosstalk-$tag-res.tar.xz" -C "$ROOT" ||
+    if [[ "$MINE" != 1 ]]; then
+        rm -rf "$ROOT/src"
+
+        if ! tar -xzf "$DL_DIR/crosstalk-$tag-src.tar.gz" -C "$ROOT" --strip-components=1; then
+            NOTICE="unpacking failed"
+            logging_line_wr ERR "dangem: unpacking failed; release: $tag"
+            return 0
+        fi
+    fi
+
+    if ! tar -xJf "$DL_DIR/crosstalk-$tag-res.tar.xz" -C "$ROOT" ||
         ! tar -xJf "$DL_DIR/crosstalk-$tag-sdk-linux-amd64.tar.xz" -C "$ROOT" ||
         ! tar -xJf "$DL_DIR/crosstalk-$tag-ldg-linux-amd64.tar.xz" -C "$ROOT" ||
         ! tar -xJf "$DL_DIR/crosstalk-$tag-build-linux-amd64.tar.xz" -C "$ROOT" ||
@@ -1133,13 +1189,16 @@ run_term_leave()
 
 main()
 {
-    local arg
+    local arg tree_dir
 
     TTY_PATH=/dev/tty
 
     for arg in "$@"; do
         case "$arg" in
-            --mine) SRC_DIR="$(realpath -- "$(dirname -- "${BASH_SOURCE[0]}")/../../src")" ;;
+            --mine)
+                MINE=1
+                SRC_DIR="$(realpath -- "$(dirname -- "${BASH_SOURCE[0]}")/../../src")"
+                ;;
             *)
                 printf 'dangem: unknown argument; arg: %s\n' "$arg"
                 exit 1
@@ -1148,6 +1207,13 @@ main()
 
         if [[ ! -d "$SRC_DIR" ]]; then
             printf 'dangem: no source tree next to this script; dir: %s\n' "$SRC_DIR"
+            exit 1
+        fi
+
+        tree_dir="$(realpath -- "$SRC_DIR/..")"
+
+        if [[ "$tree_dir" == "$(realpath -m -- "$ROOT")" ]]; then
+            printf 'dangem: --mine needs the checkout outside the dangem root; root: %s\n' "$ROOT"
             exit 1
         fi
     done

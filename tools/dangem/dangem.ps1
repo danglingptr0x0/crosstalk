@@ -18,6 +18,7 @@ $script:LINK_RSP = "$($script:BUILD_DIR)/link.rsp"
 $script:LOG_PATH = "$($script:ROOT)/dangem.log"
 $script:DL_DIR = "$($script:ROOT)/.dl"
 $script:SRC_DIR = "$($script:ROOT)/src"
+$script:MINE = 0
 
 $script:UNAME = "Windows $([Environment]::OSVersion.Version) $env:COMPUTERNAME $env:PROCESSOR_ARCHITECTURE"
 $script:TITLE_MENU = ' DANGLING Ecosystem Manager r0.1'
@@ -158,6 +159,8 @@ function compile_list_ld
             { $_ -in 'root', 'bin', 'tgt', 'steam', 'ldginc', 'ldglib', 'out', 'std', 'cflagset', 'ldflagset', 'libset' } { $script:KEYV[$key] = $val }
             { $_ -in 'src', 'def', 'inc', 'cflag', 'lib', 'ldflag' }
             {
+                if ($script:MINE -eq 1 -and $key -ceq 'src' -and $val.EndsWith('.c')) { continue }
+
                 $script:ITEM_KIND.Add($key)
                 $script:ITEM_VAL.Add($val)
                 $script:ITEM_CUNT++
@@ -165,7 +168,41 @@ function compile_list_ld
         }
     }
 
+    if ($script:MINE -eq 1) { return (compile_list_mine_ld) }
+
     return $true
+}
+
+function compile_list_mine_ld
+{
+    $cmake_path = "$($script:SRC_DIR)/../CMakeLists.txt"
+    $in_set = $false
+
+    if (-not (Test-Path -LiteralPath $cmake_path -PathType Leaf)) { return $false }
+
+    foreach ($line in [IO.File]::ReadAllLines($cmake_path))
+    {
+        $line = $line.TrimEnd("`r")
+
+        if ($line -match '^set\(CROSSTALK_SRC_ALL')
+        {
+            $in_set = $true
+            continue
+        }
+
+        if (-not $in_set) { continue }
+
+        if ($line -match '^\s*\)') { return $true }
+
+        if ($line -match '^\s*(src/\S+\.c)\s*$')
+        {
+            $script:ITEM_KIND.Add('src')
+            $script:ITEM_VAL.Add($Matches[1])
+            $script:ITEM_CUNT++
+        }
+    }
+
+    return $false
 }
 
 function path_leaf_get([string]$path)
@@ -179,6 +216,8 @@ function compile_list_map([string]$src)
     $ldglib = $script:KEYV['ldglib']
 
     if ($ldglib -and $src -eq $ldglib) { return "$($script:ROOT)/ldg/lib/$(path_leaf_get $src)" }
+
+    if ($src -ceq 'src' -or $src.StartsWith('src/')) { return $script:SRC_DIR + $src.Substring(3) }
 
     foreach ($key_name in 'bin', 'ldginc', 'steam', 'root')
     {
@@ -1016,7 +1055,7 @@ function core_deps_obtain
 
     $build_asset = "crosstalk-$tag-build-windows-amd64.zip"
 
-    if (-not (core_asset_fetch "crosstalk-$tag-src.tar.gz" "https://github.com/$($script:GH_REPO)/archive/refs/tags/$tag.tar.gz") -or
+    if (($script:MINE -ne 1 -and -not (core_asset_fetch "crosstalk-$tag-src.tar.gz" "https://github.com/$($script:GH_REPO)/archive/refs/tags/$tag.tar.gz")) -or
         -not (core_asset_fetch $build_asset "https://github.com/$($script:GH_REPO)/releases/download/$tag/$build_asset"))
     {
         $script:NOTICE = "download failed; $($script:FETCH_NAME)"
@@ -1027,11 +1066,16 @@ function core_deps_obtain
     $script:NOTICE = 'unpacking'
     core_frame_draw
 
-    Remove-Item -LiteralPath "$($script:ROOT)/src", "$($script:ROOT)/ldg", "$($script:ROOT)/res/utils/cc", "$($script:BUILD_DIR)/dangem", "$($script:BUILD_DIR)/gen" -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item -LiteralPath "$($script:ROOT)/ldg", "$($script:ROOT)/res/utils/cc", "$($script:BUILD_DIR)/dangem", "$($script:BUILD_DIR)/gen" -Recurse -Force -ErrorAction SilentlyContinue
 
     $unpacked = $true
-    & tar.exe -xzf "$($script:DL_DIR)/crosstalk-$tag-src.tar.gz" -C $script:ROOT --strip-components=1
-    if ($LASTEXITCODE -ne 0) { $unpacked = $false }
+
+    if ($script:MINE -ne 1)
+    {
+        Remove-Item -LiteralPath "$($script:ROOT)/src" -Recurse -Force -ErrorAction SilentlyContinue
+        & tar.exe -xzf "$($script:DL_DIR)/crosstalk-$tag-src.tar.gz" -C $script:ROOT --strip-components=1
+        if ($LASTEXITCODE -ne 0) { $unpacked = $false }
+    }
 
     if ($unpacked)
     {
@@ -1146,6 +1190,7 @@ function main([string[]]$argv)
                     [Console]::Out.WriteLine('dangem: --mine needs the script file in a checkout')
                     return
                 }
+                $script:MINE = 1
                 $script:SRC_DIR = ((Join-Path (Split-Path -Parent $PSCommandPath) '../../src') -replace '\\', '/')
             }
             default
@@ -1162,6 +1207,14 @@ function main([string[]]$argv)
         }
 
         $script:SRC_DIR = ((Resolve-Path -LiteralPath $script:SRC_DIR).Path -replace '\\', '/')
+        $tree_dir = ((Resolve-Path -LiteralPath "$($script:SRC_DIR)/..").Path -replace '\\', '/').TrimEnd('/')
+        $root_dir = ([IO.Path]::GetFullPath($script:ROOT) -replace '\\', '/').TrimEnd('/')
+
+        if ($tree_dir -ieq $root_dir)
+        {
+            [Console]::Out.WriteLine("dangem: --mine needs the checkout outside the dangem root; root: $($script:ROOT)")
+            return
+        }
     }
 
     if ([Console]::IsOutputRedirected -or [Console]::IsInputRedirected) { return }
