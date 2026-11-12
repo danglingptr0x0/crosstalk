@@ -337,6 +337,7 @@ static void crosstalk_net_discord_activity_join_cb(Discord_String join_secret, v
 
     crosstalk_net_discord_str_copy(&join_secret, ctx->join_secret_in, (uint32_t)sizeof(ctx->join_secret_in));
     ctx->join_pending = LDG_TRUTH_TRUE;
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: activity join recv; secret: %.63s", ctx->join_secret_in);
 }
 
 static void crosstalk_net_discord_tok_update_cb(Discord_ClientResult *res, void *user_data)
@@ -1342,7 +1343,7 @@ static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ct
         Discord_Activity_AddButton(&activity, &button);
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: presence push; kind: %u32; details: %.63s; state: %.63s; activity: %.95s; party: %u32/%u32", ctx->presence.kind, ctx->presence.details, ctx->presence.state, ctx->presence.activity, ctx->presence.party_cunt, ctx->presence.party_cunt_max);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: presence push; kind: %u32; details: %.63s; state: %.63s; activity: %.95s; party: %u32/%u32; party id: %.63s; joinable: %u32; join secret: %.63s", ctx->presence.kind, ctx->presence.details, ctx->presence.state, ctx->presence.activity, ctx->presence.party_cunt, ctx->presence.party_cunt_max, ctx->presence.party_id, (uint32_t)ctx->presence.joinable, secret_on == LDG_TRUTH_TRUE ? ctx->presence.join_secret : "-");
 
     Discord_Client_UpdateRichPresence(crosstalk_net_discord_client_get(ctx), &activity, crosstalk_net_discord_presence_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
@@ -2080,15 +2081,15 @@ uint32_t crosstalk_net_discord_join_secret_get(crosstalk_net_discord_ctx_t *ctx,
     ctx->join_pending = LDG_TRUTH_FALSE;
     prefix_len = (uint32_t)strlen(CROSSTALK_NET_DISCORD_SECRET_PREFIX);
 
-    if (LDG_UNLIKELY(strncmp(ctx->join_secret_in, CROSSTALK_NET_DISCORD_SECRET_PREFIX, prefix_len) != CROSSTALK_NET_DISCORD_MATCH)) { return LDG_ERR_INVALID; }
+    if (strncmp(ctx->join_secret_in, CROSSTALK_NET_DISCORD_SECRET_PREFIX, prefix_len) == CROSSTALK_NET_DISCORD_MATCH && sscanf(&ctx->join_secret_in[prefix_len], "%" SCNu64, &lobby_id) == CROSSTALK_NET_DISCORD_SCAN_CUNT && lobby_id != 0)
+    {
+        *out_lobby_id = lobby_id;
+        return LDG_ERR_AOK;
+    }
 
-    if (LDG_UNLIKELY(sscanf(&ctx->join_secret_in[prefix_len], "%" SCNu64, &lobby_id) != CROSSTALK_NET_DISCORD_SCAN_CUNT)) { return LDG_ERR_INVALID; }
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: join secret rejected; secret: %.63s", ctx->join_secret_in);
 
-    if (LDG_UNLIKELY(lobby_id == 0)) { return LDG_ERR_INVALID; }
-
-    *out_lobby_id = lobby_id;
-
-    return LDG_ERR_AOK;
+    return LDG_ERR_INVALID;
 }
 
 uint32_t crosstalk_net_discord_chat_send(crosstalk_net_discord_ctx_t *ctx, const char *text)

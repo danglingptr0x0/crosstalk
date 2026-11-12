@@ -15,6 +15,24 @@ endif()
 
 set(CROSSTALKRELEASE "0.2-rc2")
 
+set(GIT_SHA "" CACHE STRING "git commit hash shown in the main menu; detected from the source tree when empty")
+set(CROSSTALK_GIT_SHA "${GIT_SHA}")
+if(NOT CROSSTALK_GIT_SHA)
+    find_program(CROSSTALK_GIT NAMES git)
+    if(CROSSTALK_GIT)
+        execute_process(
+            COMMAND "${CROSSTALK_GIT}" -C "${CMAKE_CURRENT_SOURCE_DIR}" rev-parse --short HEAD
+            OUTPUT_VARIABLE CROSSTALK_GIT_SHA
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+    endif()
+endif()
+if(NOT CROSSTALK_GIT_SHA)
+    set(CROSSTALK_GIT_SHA "unknown")
+endif()
+message(STATUS "git sha: ${CROSSTALK_GIT_SHA}")
+
 set(STEAM_SDK "$ENV{HOME}/git/libdangling/steamworks_sdk/sdk")
 set(CROSSTALK_LIBRESTEAM_PREFIX "" CACHE PATH "LibreSteam install prefix holding include/ and lib/")
 
@@ -161,6 +179,7 @@ endif()
 
 add_executable(crosstalk ${CROSSTALK_SRC})
 target_include_directories(crosstalk PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
+target_compile_definitions(crosstalk PRIVATE CROSSTALK_GIT_SHA=${CROSSTALK_GIT_SHA})
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".a;.dll.a")

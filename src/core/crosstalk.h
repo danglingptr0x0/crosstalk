@@ -309,6 +309,22 @@
 #define CROSSTALK_CORE_MP_HOST_RETRY_SECS 1.0
 #define CROSSTALK_CORE_MP_HOST_FAIL_TEXT "hosting failed; Steam is still connecting; pressing host again retries"
 #define CROSSTALK_CORE_AUTO_HOST_RETRY_SECS 10.0
+#define CROSSTALK_CORE_AUTO_HOST_RETRY_MAX 5
+#define CROSSTALK_CORE_UNAME_CAP 256
+#define CROSSTALK_CORE_BIN_SHA_CUNT 4
+#define CROSSTALK_CORE_BIN_SHA_IDX_SELF 0
+#define CROSSTALK_CORE_BIN_SHA_IDX_LDG 1
+#define CROSSTALK_CORE_BIN_SHA_IDX_LIBRESTEAM 2
+#define CROSSTALK_CORE_BIN_SHA_IDX_LLVM 3
+#define CROSSTALK_CORE_BIN_SHA_TEXT_CAP 72
+#define CROSSTALK_CORE_BIN_SHA_HEX_PER_BYTE 2
+#define CROSSTALK_CORE_BIN_SHA_BUFF_SIZE LDG_MIB
+#define CROSSTALK_CORE_BIN_SHA_ALIGN 4096
+#define CROSSTALK_CORE_BIN_SHA_MOD_CAP 256
+#define CROSSTALK_CORE_BIN_SHA_LDG_NAME "dangling"
+#define CROSSTALK_CORE_BIN_SHA_LIBRESTEAM_NAME "libresteam"
+#define CROSSTALK_CORE_BIN_SHA_NONE_TEXT "-"
+#define CROSSTALK_CORE_BIN_SHA_ACCESS_NONE 0
 #define CROSSTALK_CORE_PROFILE_START_TOK "start"
 #define CROSSTALK_CORE_PROFILE_END_TOK "end"
 #define CROSSTALK_CORE_PROFILE_RST_TOK "reset"
@@ -953,12 +969,14 @@ typedef struct crosstalk_ctx
     uint8_t remote_owner_editor;
     uint8_t remote_entered;
     uint8_t auto_host;
-    uint8_t remote_pudding[4];
+    uint8_t auto_host_try_cunt;
+    uint8_t remote_pudding[3];
     uint64_t remote_cmdline_seq;
     uint32_t remote_cmd_hd;
     uint32_t remote_cmd_cunt;
     char remote_cmd[CROSSTALK_CORE_REMOTE_CMD_MAX][CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP];
     double auto_host_next;
+    char bin_sha[CROSSTALK_CORE_BIN_SHA_CUNT][CROSSTALK_CORE_BIN_SHA_TEXT_CAP];
     double credit_time_seen;
     uint64_t credit_peer_steam[CROSSTALK_NET_CLIENT_MAX];
     uint64_t credit_peer_seq[CROSSTALK_NET_CLIENT_MAX];

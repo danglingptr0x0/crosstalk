@@ -730,7 +730,12 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         lobby_off = ldg_io_path_sep_get() == NET_LIBRESTEAM_WIN_SEP ? NET_LIBRESTEAM_OFF_CREATED_LOBBY_PACK8 : NET_LIBRESTEAM_OFF_CREATED_LOBBY_PACK4;
 
         if (ret == LDG_ERR_AOK && net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD) == NET_LIBRESTEAM_ERES_OK) { net_libresteam_lobby_entered(ctx, net_libresteam_u64_rd(res + lobby_off), LDG_TRUTH_TRUE); }
-        else { ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE; }
+        else
+        {
+            ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
+
+            if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby create refused; steam res: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD)); }
+        }
     }
     else if (ctx->lobby_pending == CROSSTALK_NET_LOBBY_PENDING_JOIN)
     {
@@ -738,7 +743,12 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         if (ret == LDG_ERR_AOK && done != LDG_TRUTH_TRUE) { return; }
 
         if (ret == LDG_ERR_AOK && net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP) == NET_LIBRESTEAM_LOBBY_ENTER_OK) { net_libresteam_lobby_entered(ctx, net_libresteam_u64_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD), LDG_TRUTH_FALSE); }
-        else { ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE; }
+        else
+        {
+            ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
+
+            if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby join refused; enter resp: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP)); }
+        }
     }
     else if (ctx->lobby_pending == CROSSTALK_NET_LOBBY_PENDING_LIST)
     {

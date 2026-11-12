@@ -23,6 +23,7 @@
 #include <dangling/time/cal.h>
 #include <dangling/audio/audio.h>
 #include <dangling/arch/amd64/atomic.h>
+#include <dangling/arch/amd64/cpuid.h>
 #include <dangling/arch/amd64/syscall.h>
 #include <dangling/arch/dangcsa/dangcsa.h>
 
@@ -34,8 +35,10 @@
 #include "net/presence.h"
 #include "wshop/mount.h"
 #include "wshop/publish.h"
+#include <dangling/math/crypto/sha2.h>
 #include <dangling/sys/cpuset.h>
 #include <dangling/sys/info.h>
+#include <dangling/sys/mod.h>
 #include <dangling/sys/proc.h>
 #include <dangling/sys/tty.h>
 #include <dangling/term/render.h>
@@ -60,6 +63,10 @@
 #define CROSSTALK_MENU_SWITCH_ITEM_CUNT 11
 #define CROSSTALK_MENU_SOON_TEXT "[SOON]"
 #define CROSSTALK_MENU_SWITCH_CAPTION "MENU"
+#define CROSSTALK_CORE_STR_RAW(text) #text
+#define CROSSTALK_CORE_STR(text) CROSSTALK_CORE_STR_RAW(text)
+#define CROSSTALK_CORE_GIT_SHA_TEXT "git " CROSSTALK_CORE_STR(CROSSTALK_GIT_SHA)
+#define CROSSTALK_CORE_GIT_SHA_ROW_INSET 1
 #define CROSSTALK_PAUSE_SWITCH_CAPTION "PAUSED"
 #define CROSSTALK_MENU_SWITCH_HD_ROWS 2
 #define CROSSTALK_MENU_SWITCH_CENTER_DIV 2
@@ -8796,18 +8803,27 @@ static void crosstalk_auto_host_tick(crosstalk_ctx_t *ctx)
             return;
         }
 
+        if (crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_HOSTING) { ctx->auto_host_try_cunt = 0; }
+
         if (crosstalk_net_libresteam_lobby_state_get(&ctx->libresteam_net) == CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE && crosstalk_net_libresteam_lobby_id_get(&ctx->libresteam_net) == 0)
         {
             crosstalk_net_libresteam_sesh_stop(&ctx->libresteam_net);
             ctx->auto_host = LDG_TRUTH_FALSE;
             ctx->auto_host_next = ctx->time + CROSSTALK_CORE_AUTO_HOST_RETRY_SECS;
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: auto host lobby lost; retrying");
+            ctx->auto_host_try_cunt++;
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: auto host lobby lost; tries: %u32; max retries: %u32", (uint32_t)ctx->auto_host_try_cunt, (uint32_t)CROSSTALK_CORE_AUTO_HOST_RETRY_MAX);
         }
 
         return;
     }
 
-    if (keep != LDG_TRUTH_TRUE || ctx->game.ld_active != 0 || ctx->time < ctx->auto_host_next) { return; }
+    if (keep != LDG_TRUTH_TRUE)
+    {
+        ctx->auto_host_try_cunt = 0;
+        return;
+    }
+
+    if (ctx->auto_host_try_cunt > CROSSTALK_CORE_AUTO_HOST_RETRY_MAX || ctx->game.ld_active != 0 || ctx->time < ctx->auto_host_next) { return; }
 
     if (crosstalk_sesh_joined_is(ctx) != LDG_TRUTH_FALSE) { return; }
 
@@ -8826,7 +8842,11 @@ static void crosstalk_auto_host_tick(crosstalk_ctx_t *ctx)
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: auto host; err: %u32; players: %u32", ret, ctx->mp_players_max);
 
     if (ret == LDG_ERR_AOK) { ctx->auto_host = LDG_TRUTH_TRUE; }
-    else { ctx->auto_host_next = ctx->time + CROSSTALK_CORE_AUTO_HOST_RETRY_SECS; }
+    else
+    {
+        ctx->auto_host_next = ctx->time + CROSSTALK_CORE_AUTO_HOST_RETRY_SECS;
+        ctx->auto_host_try_cunt++;
+    }
 }
 
 static uint64_t crosstalk_credit_discord_get(const crosstalk_ctx_t *ctx, uint64_t steam_id)
@@ -13628,6 +13648,183 @@ static void crosstalk_cpuset_reserve(crosstalk_ctx_t *ctx)
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: cpuset reserved; core: %u32; cache: %u32; class: %u32; sets: %u64; siblings: %u32; rest: %u32", core_pick, cache_pick, best, cunt, ctx->cpuset_cunt, rest_cunt);
 }
 
+static void crosstalk_sys_info_log(void)
+{
+    char vendor[LDG_CPUID_VENDOR_LEN + LDG_STR_TERM_SIZE] = LDG_ARR_ZERO_INIT;
+    char brand[LDG_CPUID_BRAND_LEN + LDG_STR_TERM_SIZE] = LDG_ARR_ZERO_INIT;
+    char uname_line[CROSSTALK_CORE_UNAME_CAP] = LDG_ARR_ZERO_INIT;
+    ldg_cpuid_feat_t feat = LDG_STRUCT_ZERO_INIT;
+    ldg_cpuid_topology_t topology = LDG_STRUCT_ZERO_INIT;
+    ldg_cpuid_freq_t freq = LDG_STRUCT_ZERO_INIT;
+    uint64_t page_size = 0;
+    uint64_t mem_total = 0;
+    uint64_t mem_avail = 0;
+    uint32_t cpu_cunt = 0;
+    uint32_t smt_cunt = 0;
+    uint32_t pkg_cunt = 0;
+    uint32_t core_cunt = 0;
+    uint32_t idx = 0;
+    uint32_t ret = 0;
+
+    ret = ldg_sys_uname_get(uname_line, (uint64_t)sizeof(uname_line));
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: uname: %.255s; err: %u32", uname_line, ret);
+
+    ret = ldg_cpuid_vendor_get(vendor);
+    if (ret == LDG_ERR_AOK) { ret = ldg_cpuid_brand_get(brand); }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_cpuid_feat_get(&feat); }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_sys_cpu_cunt_get(&cpu_cunt); }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: cpu; vendor: %.12s; brand: %.48s; logical: %u32; err: %u32", vendor, brand, cpu_cunt, ret);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sys: cpu feat; sse42: %u32; avx: %u32; avx2: %u32; avx512f: %u32; fma: %u32; bmi1: %u32; bmi2: %u32; popcnt: %u32; aes: %u32; htt: %u32; invariant tsc: %u32", (uint32_t)feat.sse42, (uint32_t)feat.avx, (uint32_t)feat.avx2, (uint32_t)feat.avx512f, (uint32_t)feat.fma, (uint32_t)feat.bmi1, (uint32_t)feat.bmi2, (uint32_t)feat.popcnt, (uint32_t)feat.aes, (uint32_t)feat.htt, (uint32_t)feat.invariant_tsc);
+
+    ret = ldg_cpuid_topology_get(&topology);
+    for (idx = 0; ret == LDG_ERR_AOK && idx < topology.lvl_cunt && idx < (uint32_t)LDG_CPUID_TOPOLOGY_LVL_MAX; idx++)
+    {
+        if (topology.lvl[idx].kind == (uint32_t)LDG_CPUID_TOPOLOGY_KIND_SMT) { smt_cunt = topology.lvl[idx].logical_cunt; }
+
+        if (topology.lvl[idx].kind == (uint32_t)LDG_CPUID_TOPOLOGY_KIND_CORE) { pkg_cunt = topology.lvl[idx].logical_cunt; }
+    }
+
+    if (smt_cunt != 0) { core_cunt = pkg_cunt / smt_cunt; }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK || ret == LDG_ERR_UNSUPPORTED ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: cpu topology; leaf: 0x%x32; threads per core: %u32; cores per pkg: %u32; logical per pkg: %u32; err: %u32", topology.leaf, smt_cunt, core_cunt, pkg_cunt, ret);
+
+    ret = ldg_cpuid_freq_get(&freq);
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK || ret == LDG_ERR_UNSUPPORTED ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: cpu freq; base mhz: %u32; max mhz: %u32; bus mhz: %u32; tsc hz: %u64; err: %u32", freq.base_mhz, freq.max_mhz, freq.bus_mhz, freq.tsc_hz, ret);
+
+    ret = ldg_sys_mem_total_get(&mem_total);
+    if (ret == LDG_ERR_AOK) { ret = ldg_sys_mem_avail_get(&mem_avail); }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_sys_page_size_get(&page_size); }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: mem; total: %u64; avail: %u64; page: %u64; err: %u32", mem_total, mem_avail, page_size, ret);
+}
+
+static uint32_t crosstalk_bin_sha_file_compute(const char *path, uint8_t *buff, char *out, uint64_t out_cap)
+{
+    ldg_math_crypto_sha256_t sha = LDG_STRUCT_ZERO_INIT;
+    uint8_t digest[LDG_MATH_CRYPTO_SHA256_OUT_SIZE] = LDG_ARR_ZERO_INIT;
+    ldg_io_file_t *fh = 0x0;
+    uint64_t got = 0;
+    uint32_t idx = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(path == 0x0 || buff == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (LDG_UNLIKELY(out_cap < (uint64_t)LDG_MATH_CRYPTO_SHA256_OUT_SIZE * (uint64_t)CROSSTALK_CORE_BIN_SHA_HEX_PER_BYTE + LDG_STR_TERM_SIZE)) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    out[0] = LDG_STR_TERM;
+
+    ret = ldg_io_file_open(path, LDG_IO_RD_ONLY | LDG_IO_DIRECT, CROSSTALK_CORE_BIN_SHA_ACCESS_NONE, &fh);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    ret = ldg_math_crypto_sha256_init(&sha);
+    while (ret == LDG_ERR_AOK)
+    {
+        ret = ldg_io_file_rd(fh, buff, (uint64_t)CROSSTALK_CORE_BIN_SHA_BUFF_SIZE, &got);
+        if (ret == LDG_ERR_EOF) { ret = LDG_ERR_AOK; break; }
+
+        if (ret != LDG_ERR_AOK || got == 0) { break; }
+
+        ret = ldg_math_crypto_sha256_update(&sha, buff, got);
+    }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_math_crypto_sha256_finish(&sha, digest); }
+
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK && ret == LDG_ERR_AOK) { ret = LDG_ERR_IO_CLOSE; }
+
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    for (idx = 0; idx < (uint32_t)LDG_MATH_CRYPTO_SHA256_OUT_SIZE; idx++)
+    {
+        ret = ldg_byte_to_hex(digest[idx], out + (uint64_t)idx * (uint64_t)CROSSTALK_CORE_BIN_SHA_HEX_PER_BYTE);
+        if (ret != LDG_ERR_AOK) { out[0] = LDG_STR_TERM; return ret; }
+    }
+
+    return LDG_ERR_AOK;
+}
+
+static void crosstalk_bin_sha_slot_fill(crosstalk_ctx_t *ctx, uint32_t slot, const char *path, uint8_t *buff)
+{
+    uint32_t ret = crosstalk_bin_sha_file_compute(path, buff, ctx->bin_sha[slot], (uint64_t)sizeof(ctx->bin_sha[slot]));
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: bin sha256; slot: %u32; sha256: %.64s; err: %u32; path: %.255s", slot, ctx->bin_sha[slot], ret, path);
+}
+
+static void crosstalk_bin_sha_mods_fill(crosstalk_ctx_t *ctx, uint8_t *buff)
+{
+    ldg_sys_proc_t proc = LDG_STRUCT_ZERO_INIT;
+    ldg_sys_mod_t *mods = 0x0;
+    void *mods_mem = 0x0;
+    uint64_t pid = 0;
+    uint64_t mod_cunt = 0;
+    uint64_t hit = 0;
+    uint64_t idx = 0;
+    uint32_t ret = 0;
+
+    ret = ldg_mem_alloc((uint64_t)CROSSTALK_CORE_BIN_SHA_MOD_CAP * (uint64_t)sizeof(ldg_sys_mod_t), &mods_mem);
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mod alloc failed; err: %u32", ret); return; }
+
+    mods = (ldg_sys_mod_t *)mods_mem;
+
+    ret = ldg_sys_pid_get(&pid);
+    if (ret == LDG_ERR_AOK) { ret = ldg_sys_proc_open((uint32_t)pid, &proc); }
+
+    if (ret == LDG_ERR_AOK)
+    {
+        ret = ldg_sys_mod_list(&proc, mods, (uint64_t)CROSSTALK_CORE_BIN_SHA_MOD_CAP, &mod_cunt);
+
+        for (idx = 0; ret == LDG_ERR_AOK && idx < mod_cunt && idx < (uint64_t)CROSSTALK_CORE_BIN_SHA_MOD_CAP; idx++)
+        {
+            if (ctx->bin_sha[CROSSTALK_CORE_BIN_SHA_IDX_LDG][0] == LDG_STR_TERM && ldg_str_substring_find(mods[idx].name, CROSSTALK_CORE_BIN_SHA_LDG_NAME, (uint64_t)sizeof(mods[idx].name), &hit) == LDG_ERR_AOK) { crosstalk_bin_sha_slot_fill(ctx, (uint32_t)CROSSTALK_CORE_BIN_SHA_IDX_LDG, mods[idx].path, buff); }
+
+            if (ctx->bin_sha[CROSSTALK_CORE_BIN_SHA_IDX_LIBRESTEAM][0] == LDG_STR_TERM && ldg_str_substring_find(mods[idx].name, CROSSTALK_CORE_BIN_SHA_LIBRESTEAM_NAME, (uint64_t)sizeof(mods[idx].name), &hit) == LDG_ERR_AOK) { crosstalk_bin_sha_slot_fill(ctx, (uint32_t)CROSSTALK_CORE_BIN_SHA_IDX_LIBRESTEAM, mods[idx].path, buff); }
+        }
+
+        if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 proc close failed"); }
+    }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: bin sha256 mods; cunt: %u64; err: %u32", mod_cunt, ret);
+
+    if (ldg_mem_dealloc(mods_mem) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mod dealloc failed"); }
+}
+
+static void crosstalk_bin_sha_resolve(crosstalk_ctx_t *ctx)
+{
+    char self_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
+    char dir_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
+    char cc_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
+    const char *cc_rel = (ldg_io_path_sep_get() == '\\') ? CROSSTALK_CORE_PACK_CC_REL_WIN : CROSSTALK_CORE_PACK_CC_REL_UNIX;
+    const char *cc_exe = (ldg_io_path_sep_get() == '\\') ? CROSSTALK_HDL_CC_EXE_WIN : CROSSTALK_HDL_CC_EXE;
+    void *buff_mem = 0x0;
+    uint8_t *buff = 0x0;
+    uint32_t ret = 0;
+
+    ret = ldg_mem_alloc((uint64_t)CROSSTALK_CORE_BIN_SHA_BUFF_SIZE + (uint64_t)CROSSTALK_CORE_BIN_SHA_ALIGN, &buff_mem);
+    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 buff alloc failed; err: %u32", ret); return; }
+
+    buff = (uint8_t *)buff_mem + ((uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN - (uintptr_t)buff_mem % (uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN) % (uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN;
+
+    ret = ldg_io_path_prog_get(self_path, (uint64_t)sizeof(self_path));
+    if (ret == LDG_ERR_AOK) { crosstalk_bin_sha_slot_fill(ctx, (uint32_t)CROSSTALK_CORE_BIN_SHA_IDX_SELF, self_path, buff); }
+    else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 prog path failed; err: %u32", ret); }
+
+    crosstalk_bin_sha_mods_fill(ctx, buff);
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_io_path_parent_get(self_path, dir_path, (uint64_t)sizeof(dir_path)); }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_io_path_join(dir_path, cc_rel, cc_path, (uint64_t)sizeof(cc_path)); }
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_io_path_join(cc_path, cc_exe, dir_path, (uint64_t)sizeof(dir_path)); }
+
+    if (ret == LDG_ERR_AOK) { crosstalk_bin_sha_slot_fill(ctx, (uint32_t)CROSSTALK_CORE_BIN_SHA_IDX_LLVM, dir_path, buff); }
+    else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 llvm path failed; err: %u32", ret); }
+
+    if (ldg_mem_dealloc(buff_mem) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 buff dealloc failed"); }
+}
+
 uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 {
     ldg_sched_conf_t conf = LDG_STRUCT_ZERO_INIT;
@@ -13639,6 +13836,7 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     *out = 0x0;
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: create begin");
+    crosstalk_sys_info_log();
 
     ret = ldg_sys_proc_self_priority_set(LDG_SYS_PROC_PRIORITY_NORMAL);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: process priority; lvl: normal; err: %u32", ret);
@@ -13648,6 +13846,7 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     memset(ctx, 0x0, sizeof(crosstalk_ctx_t));
     settings_default_fill(&ctx->game.settings);
+    crosstalk_bin_sha_resolve(ctx);
 
     crosstalk_cpuset_reserve(ctx);
 
@@ -16500,6 +16699,18 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             {
                 ret = crosstalk_menu_switch_draw(render, &screen_rect, CROSSTALK_MENU_SWITCH_CAPTION, menu_item, menu_hide, ctx->menu_mnemonic_pos, (uint32_t)CROSSTALK_MENU_SWITCH_ITEM_CUNT, ctx->menu_sel, LDG_TRUTH_FALSE);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "menu switch draw failed"); }
+
+                if (screen_rect.row_cunt >= CROSSTALK_CORE_GIT_SHA_ROW_INSET)
+                {
+                    ret = crosstalk_ui_cell_rgba_put(render, screen_rect.col, screen_rect.row + screen_rect.row_cunt - CROSSTALK_CORE_GIT_SHA_ROW_INSET, CROSSTALK_CORE_GIT_SHA_TEXT, (uint64_t)sizeof(CROSSTALK_CORE_GIT_SHA_TEXT), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
+                    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "menu git sha draw failed; err: %u32", ret); }
+                }
+
+                for (uint32_t sha_idx = 0; sha_idx < (uint32_t)CROSSTALK_CORE_BIN_SHA_CUNT && sha_idx < screen_rect.row_cunt; sha_idx++)
+                {
+                    ret = crosstalk_ui_cell_rgba_put(render, screen_rect.col, screen_rect.row + sha_idx, ctx->bin_sha[sha_idx][0] != LDG_STR_TERM ? ctx->bin_sha[sha_idx] : CROSSTALK_CORE_BIN_SHA_NONE_TEXT, (uint64_t)CROSSTALK_CORE_BIN_SHA_TEXT_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
+                    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "menu bin sha draw failed; err: %u32", ret); }
+                }
             }
 
             if (crosstalk_menu_confirm_take(ctx, menu_hide, (uint32_t)CROSSTALK_MENU_SWITCH_ITEM_CUNT, &menu_idx) == LDG_ERR_AOK)
