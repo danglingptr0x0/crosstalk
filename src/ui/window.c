@@ -30,6 +30,8 @@
 #define WINDOW_FOCUS_BG_RED 0x19
 #define WINDOW_FOCUS_BG_GREEN 0x19
 #define WINDOW_FOCUS_BG_BLUE 0x32
+#define WINDOW_MODAL_CENTER_DIV 2
+#define WINDOW_MODAL_PAD_COLS 2
 
 static uint8_t window_dir_ahead_is(uint32_t dir, double from_x, double from_y, double to_x, double to_y)
 {
@@ -632,6 +634,85 @@ uint32_t crosstalk_ui_window_top_set(crosstalk_ui_window_ctx_t *ctx, uint64_t wi
     ctx->top_id = win_id;
 
     return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_ui_window_modal_draw(ldg_term_render_t *render, const ldg_term_rect_t *screen, const char *title, const char *const *line, uint32_t line_cunt)
+{
+    ldg_term_render_frame_style_t style = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t pane = LDG_STRUCT_ZERO_INIT;
+    ldg_term_rect_t rect = LDG_STRUCT_ZERO_INIT;
+    ldg_term_rect_t inner = LDG_STRUCT_ZERO_INIT;
+    uint32_t frame_span = (uint32_t)CROSSTALK_UI_WINDOW_FRAME_CELLS * (uint32_t)WINDOW_FRAME_SIDES;
+    uint32_t pad_span = (uint32_t)WINDOW_MODAL_PAD_COLS * (uint32_t)WINDOW_FRAME_SIDES;
+    uint32_t title_len = 0;
+    uint32_t text_w = 0;
+    uint32_t len = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(render == 0x0 || screen == 0x0 || title == 0x0 || line == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    title_len = (uint32_t)strnlen(title, (uint64_t)CROSSTALK_UI_WINDOW_TITLE_CAP);
+    text_w = title_len;
+
+    for (at = 0; at < line_cunt; at = at + (uint32_t)WINDOW_STEP)
+    {
+        if (line[at] == 0x0) { continue; }
+
+        len = (uint32_t)strnlen(line[at], (uint64_t)CROSSTALK_UI_CELL_LINE_CAP);
+        if (len > text_w) { text_w = len; }
+    }
+
+    rect.col_cunt = text_w + pad_span + frame_span;
+    rect.row_cunt = line_cunt + frame_span;
+
+    if (rect.col_cunt > screen->col_cunt) { rect.col_cunt = screen->col_cunt; }
+
+    if (rect.row_cunt > screen->row_cunt) { rect.row_cunt = screen->row_cunt; }
+
+    if (rect.col_cunt <= frame_span || rect.row_cunt <= frame_span) { return LDG_ERR_AOK; }
+
+    rect.col = screen->col + (screen->col_cunt - rect.col_cunt) / (uint32_t)WINDOW_MODAL_CENTER_DIV;
+    rect.row = screen->row + (screen->row_cunt - rect.row_cunt) / (uint32_t)WINDOW_MODAL_CENTER_DIV;
+
+    ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_FOCUS_RGBA, &style.border);
+    if (ret == LDG_ERR_AOK) { ret = window_level_set(&style.bg, (uint8_t)WINDOW_FOCUS_BG_RED, (uint8_t)WINDOW_FOCUS_BG_GREEN, (uint8_t)WINDOW_FOCUS_BG_BLUE); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_ACCENT_RGBA, &style.accent); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA, &style.title_fg); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_TITLE_BAR_RGBA, &style.title_bg); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &pane); }
+
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    style.accent_edge = (uint8_t)LDG_TERM_RENDER_FRAME_EDGE_TOP_LHS;
+
+    ret = ldg_term_render_clip_set(render, &rect, (uint32_t)WINDOW_SCROLL_COL_NONE, (uint32_t)WINDOW_SCROLL_TOP);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    ret = ldg_term_render_clear(render, &pane);
+    if (ret == LDG_ERR_AOK) { ret = ldg_term_render_frame_draw(render, title, (uint64_t)title_len, &style); }
+
+    inner.col = rect.col + (uint32_t)CROSSTALK_UI_WINDOW_FRAME_CELLS;
+    inner.row = rect.row + (uint32_t)CROSSTALK_UI_WINDOW_FRAME_CELLS;
+    inner.col_cunt = rect.col_cunt - frame_span;
+    inner.row_cunt = rect.row_cunt - frame_span;
+
+    if (ret == LDG_ERR_AOK) { ret = ldg_term_render_clip_set(render, &inner, (uint32_t)WINDOW_SCROLL_COL_NONE, (uint32_t)WINDOW_SCROLL_TOP); }
+
+    for (at = 0; at < line_cunt && ret == LDG_ERR_AOK; at = at + (uint32_t)WINDOW_STEP)
+    {
+        if (line[at] == 0x0 || line[at][0] == LDG_STR_TERM) { continue; }
+
+        ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)WINDOW_MODAL_PAD_COLS, at, line[at], (uint64_t)CROSSTALK_UI_CELL_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, 0x0);
+    }
+
+    if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
+
+    return ret;
 }
 
 uint32_t crosstalk_ui_window_flash_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, uint64_t until_ms)

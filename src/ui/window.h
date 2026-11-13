@@ -104,6 +104,7 @@ uint32_t crosstalk_ui_window_row_show(crosstalk_ui_window_state_t *state, uint32
 uint32_t crosstalk_ui_window_rect_get(const crosstalk_ui_window_state_t *state, const ldg_term_rect_t *desk, ldg_term_rect_t *out);
 uint32_t crosstalk_ui_window_focus_rect_get(const crosstalk_ui_window_ctx_t *ctx, const ldg_term_rect_t *desk, ldg_term_rect_t *out_rect, uint64_t *out_id);
 uint32_t crosstalk_ui_window_top_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id);
+uint32_t crosstalk_ui_window_modal_draw(ldg_term_render_t *render, const ldg_term_rect_t *screen, const char *title, const char *const *line, uint32_t line_cunt);
 uint32_t crosstalk_ui_window_flash_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, uint64_t until_ms);
 uint32_t crosstalk_ui_window_all_draw(crosstalk_ui_window_ctx_t *ctx, ldg_term_render_t *render, const ldg_term_rect_t *desk);
 

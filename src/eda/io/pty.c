@@ -17,7 +17,6 @@
 #define PTY_PASTE_CAP 4096
 #define PTY_PASTE_ENC_CAP 6144
 #define PTY_TERM_NAME "xterm-kitty"
-#define PTY_QUIET_TICK_REPORT 300
 #define PTY_DUMP_BYTES 32
 #define PTY_DUMP_STRIDE 3
 #define PTY_DUMP_CAP (PTY_DUMP_BYTES * PTY_DUMP_STRIDE + LDG_STR_TERM_SIZE)
@@ -409,7 +408,6 @@ uint32_t crosstalk_eda_io_pty_open(crosstalk_eda_io_pty_ctx_t *ctx, const char *
     ctx->clip_len = 0;
     ctx->clip_new = LDG_TRUTH_FALSE;
     ctx->rd_total = 0;
-    ctx->quiet_ticks = 0;
     ctx->utf_carry_len = 0;
     ctx->utf_need = 0;
     ctx->grid_dumped = LDG_TRUTH_FALSE;
@@ -464,13 +462,7 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
         got = 0;
         ret = ldg_io_pty_rd(&ctx->pty, buff, (uint64_t)sizeof(buff), &got);
 
-        if (ret == LDG_ERR_WOULD_BLOCK)
-        {
-            ctx->quiet_ticks = ctx->quiet_ticks + 0x1;
-            if (ctx->quiet_ticks == (uint32_t)PTY_QUIET_TICK_REPORT) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: output stalled; total: %u64; pid: %u32", ctx->rd_total, ctx->pty.pid); }
-
-            return LDG_ERR_AOK;
-        }
+        if (ret == LDG_ERR_WOULD_BLOCK) { return LDG_ERR_AOK; }
 
         if (ret == LDG_ERR_EOF)
         {
@@ -520,7 +512,6 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
         }
 
         ctx->rd_total = ctx->rd_total + got;
-        ctx->quiet_ticks = 0;
 
         {
             uint8_t fold[CROSSTALK_EDA_IO_PTY_RD_CAP + CROSSTALK_EDA_IO_PTY_UTF_SEQ_CAP];

@@ -311,6 +311,19 @@
 #define CROSSTALK_CORE_AUTO_HOST_RETRY_SECS 10.0
 #define CROSSTALK_CORE_AUTO_HOST_RETRY_MAX 5
 #define CROSSTALK_CORE_UNAME_CAP 256
+#define CROSSTALK_CORE_CHAT_NOGO_TEXT "chat hidden at a participant's request"
+#define CROSSTALK_CORE_CAPTURE_CK_PERIOD_MS 5000
+#define CROSSTALK_CORE_CAPTURE_ON_TEXT "screen capture seen; hub and chat hidden"
+#define CROSSTALK_CORE_CAPTURE_REFUSE_TEXT "the screen is being captured"
+#define CROSSTALK_CORE_JOIN_ASK_TITLE "Join request"
+#define CROSSTALK_CORE_JOIN_ASK_NAME_FMT "%.63s asks to join this session"
+#define CROSSTALK_CORE_JOIN_ASK_KEYS_TEXT "Y: allow; N or Esc: deny"
+#define CROSSTALK_CORE_JOIN_ASK_ALLOW_TEXT "join allowed"
+#define CROSSTALK_CORE_JOIN_ASK_DENY_TEXT "join denied"
+#define CROSSTALK_CORE_JOIN_ASK_LINE_CAP 96
+#define CROSSTALK_CORE_JOIN_ASK_LINE_CUNT 3
+#define CROSSTALK_CORE_JOIN_ASK_LINE_NAME 0
+#define CROSSTALK_CORE_JOIN_ASK_LINE_KEYS 2
 #define CROSSTALK_CORE_BIN_SHA_CUNT 4
 #define CROSSTALK_CORE_BIN_SHA_IDX_SELF 0
 #define CROSSTALK_CORE_BIN_SHA_IDX_LDG 1
@@ -855,8 +868,12 @@ typedef struct crosstalk_ctx
     uint64_t presence_cyc;
     uint64_t presence_num_next_ms;
     uint64_t hub_sync_next_ms;
+    uint64_t join_ask_seen_ms;
+    uint64_t capture_ck_next_ms;
     uint8_t privacy_on;
-    uint8_t privacy_pudding[7];
+    uint8_t capture_on;
+    uint8_t capture_raw;
+    uint8_t privacy_pudding[5];
     crosstalk_game_menu_nav_t menu_nav;
     crosstalk_game_settings_menu_ctx_t settings_menu;
     uint32_t menu_sel;

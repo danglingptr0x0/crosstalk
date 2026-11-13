@@ -13,7 +13,7 @@ if(NOT CROSSTALK_STD_FILE)
     message(STATUS "std: not found; building with CMake defaults")
 endif()
 
-set(CROSSTALKRELEASE "0.2-rc2")
+set(CROSSTALKRELEASE "0.2-rc3")
 
 set(GIT_SHA "" CACHE STRING "git commit hash shown in the main menu; detected from the source tree when empty")
 set(CROSSTALK_GIT_SHA "${GIT_SHA}")

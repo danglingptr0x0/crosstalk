@@ -37,6 +37,7 @@
 #define CROSSTALK_EDA_UI_TERM_CELL_CAP 16
 #define CROSSTALK_EDA_UI_TERM_KEY_CAP 64
 #define CROSSTALK_EDA_UI_TERM_BS 0x08
+#define CROSSTALK_EDA_UI_TERM_DEL 0x7F
 #define CROSSTALK_EDA_UI_TERM_CSI 0x5B
 #define CROSSTALK_EDA_UI_TERM_ARROW_UP 0x41
 #define CROSSTALK_EDA_UI_TERM_ARROW_DOWN 0x42
@@ -99,7 +100,8 @@ typedef struct crosstalk_eda_ui_term_sesh
     uint8_t sgr_bold;
     uint8_t live;
     uint8_t cooked;
-    uint8_t pudding[4];
+    uint8_t grid_view;
+    uint8_t pudding[3];
 } crosstalk_eda_ui_term_sesh_t;
 
 typedef uint32_t (*crosstalk_eda_ui_term_tee_cb_t)(void *user, uint32_t sesh_idx, const uint8_t *bytes, uint32_t len);
@@ -124,7 +126,8 @@ typedef struct crosstalk_eda_ui_term_ctx
     uint8_t ok;
     uint8_t focus;
     uint8_t pty_draw_logged;
-    uint8_t pudding[4];
+    uint8_t cursor_seen;
+    uint8_t pudding[3];
 } crosstalk_eda_ui_term_ctx_t;
 
 uint32_t crosstalk_eda_ui_term_init(crosstalk_eda_ui_term_ctx_t *ctx);
@@ -135,6 +138,7 @@ uint32_t crosstalk_eda_ui_term_open_set(crosstalk_eda_ui_term_ctx_t *ctx, uint8_
 uint8_t crosstalk_eda_ui_term_open_is(const crosstalk_eda_ui_term_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_term_sesh_bind(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, crosstalk_eda_ui_term_src_t src, uint32_t src_handle, const char *title);
 uint32_t crosstalk_eda_ui_term_sesh_clear(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx);
+uint32_t crosstalk_eda_ui_term_sesh_grid_view_set(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, uint8_t on);
 uint32_t crosstalk_eda_ui_term_sesh_next_get(const crosstalk_eda_ui_term_ctx_t *ctx, uint32_t *out);
 uint32_t crosstalk_eda_ui_term_sesh_src_find(const crosstalk_eda_ui_term_ctx_t *ctx, crosstalk_eda_ui_term_src_t src, uint32_t *out);
 uint32_t crosstalk_eda_ui_term_sesh_close(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx);

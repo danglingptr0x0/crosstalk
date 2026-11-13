@@ -11,6 +11,7 @@
 #define CROSSTALK_GAME_CHAT_CONV_CAP 12
 #define CROSSTALK_GAME_CHAT_HISTORY_CAP 48
 #define CROSSTALK_GAME_CHAT_PEER_NONE 0
+#define CROSSTALK_GAME_CHAT_NOGO_TOK "OGON"
 
 typedef enum crosstalk_game_chat_group
 {
@@ -58,11 +59,15 @@ typedef struct crosstalk_game_chat_ctx
     uint8_t sesh_live;
     uint8_t discord_live;
     uint8_t unseen;
-    uint8_t pudding[2];
+    uint8_t nogo;
+    uint8_t pudding[1];
 } crosstalk_game_chat_ctx_t;
 
 uint32_t crosstalk_game_chat_init(crosstalk_game_chat_ctx_t *ctx);
 uint32_t crosstalk_game_chat_open_set(crosstalk_game_chat_ctx_t *ctx, uint8_t open);
+uint32_t crosstalk_game_chat_nogo_set(crosstalk_game_chat_ctx_t *ctx);
+uint8_t crosstalk_game_chat_nogo_is(const crosstalk_game_chat_ctx_t *ctx);
+uint8_t crosstalk_game_chat_nogo_tok_is(const char *text);
 uint32_t crosstalk_game_chat_rst(crosstalk_game_chat_ctx_t *ctx);
 uint32_t crosstalk_game_chat_conv_get(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *name, uint32_t *out_idx);
 uint32_t crosstalk_game_chat_conv_sel(crosstalk_game_chat_ctx_t *ctx, uint8_t group, uint64_t peer_id, const char *name);

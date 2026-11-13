@@ -28,7 +28,6 @@ typedef struct crosstalk_eda_io_pty_ctx
     char title[CROSSTALK_EDA_IO_PTY_TITLE_CAP];
     char clip[CROSSTALK_EDA_IO_PTY_CLIP_CAP];
     uint64_t rd_total;
-    uint32_t quiet_ticks;
     uint32_t clip_len;
     uint32_t col_cunt;
     uint32_t row_cunt;
@@ -42,7 +41,7 @@ typedef struct crosstalk_eda_io_pty_ctx
     uint8_t live;
     uint8_t exited;
     uint8_t grid_dumped;
-    uint8_t pudding[4];
+    uint8_t pudding[8];
 } crosstalk_eda_io_pty_ctx_t;
 
 uint32_t crosstalk_eda_io_pty_init(crosstalk_eda_io_pty_ctx_t *ctx, ldg_mem_pool_t *pool);

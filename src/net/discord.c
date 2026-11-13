@@ -2278,16 +2278,17 @@ uint32_t crosstalk_net_discord_dm_send(crosstalk_net_discord_ctx_t *ctx, uint64_
 uint32_t crosstalk_net_discord_invite_send(crosstalk_net_discord_ctx_t *ctx, uint64_t user_id, const char *text)
 {
     Discord_String content = LDG_STRUCT_ZERO_INIT;
+    uint32_t ret = LDG_ERR_AOK;
 
     if (LDG_UNLIKELY(!ctx || !text)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
+    if (ctx->client_live == LDG_TRUTH_FALSE || ctx->state != CROSSTALK_NET_DISCORD_STATE_RDY) { ret = LDG_ERR_NOT_INIT; }
+    else if (user_id == 0) { ret = LDG_ERR_EMPTY; }
+    else if (ctx->presence.joinable != LDG_TRUTH_TRUE) { ret = LDG_ERR_INVALID; }
 
-    if (LDG_UNLIKELY(ctx->state != CROSSTALK_NET_DISCORD_STATE_RDY)) { return LDG_ERR_NOT_INIT; }
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: invite send; user: %u64; err: %u32; client live: %u32; state: %u32; joinable: %u32; party: %u32/%u32; party id: %.63s; text: %.63s", user_id, ret, (uint32_t)ctx->client_live, (uint32_t)ctx->state, (uint32_t)ctx->presence.joinable, ctx->presence.party_cunt, ctx->presence.party_cunt_max, ctx->presence.party_id, text);
 
-    if (LDG_UNLIKELY(user_id == 0)) { return LDG_ERR_EMPTY; }
-
-    if (LDG_UNLIKELY(ctx->presence.joinable != LDG_TRUTH_TRUE)) { return LDG_ERR_INVALID; }
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     crosstalk_net_discord_str_make(text, &content);
     Discord_Client_SendActivityInvite(crosstalk_net_discord_client_get(ctx), user_id, content, crosstalk_net_discord_invite_sent_cb, crosstalk_net_discord_user_data_free_cb, ctx);

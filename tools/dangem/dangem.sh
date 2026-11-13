@@ -32,6 +32,7 @@ MENU_EXIT_W=12
 SUMMARY_KEYS="F2=Launch - F5=Rebuild - Esc=Menu - F10=Quit"
 SMALL_TEXT="terminal too small"
 LAUNCH_CONFIRM_TEXT="The latest source is newer than the compiled binaries. Launch anyway (press again)?"
+DEPS_CONFIRM_TEXT="The dependencies are already in place. Obtain them again (press again)?"
 LAUNCH_ARM_SPAN=3000
 FRAME_WAIT=0.016
 ESC_WAIT=0.01
@@ -97,6 +98,8 @@ LAUNCH=0
 LAUNCH_AFTER=0
 LAUNCH_CONFIRM=0
 LAUNCH_CONFIRM_TIME=0
+DEPS_CONFIRM=0
+DEPS_CONFIRM_TIME=0
 NOTICE=""
 VIEW_LAUNCH=""
 VIEW_BUILD=""
@@ -1108,6 +1111,24 @@ core_deps_obtain()
     if [[ "$DEPS_OK" == 1 ]]; then NOTICE="dependencies are in place"; else NOTICE="LDG is missing from this install"; fi
 }
 
+core_deps_menu_req()
+{
+    local now
+
+    core_deps_ck
+    now="$(time_epoch_get)"
+
+    if [[ "$DEPS_OK" == 1 ]] && [[ "$DEPS_CONFIRM" != 1 || $((now - DEPS_CONFIRM_TIME)) -gt "$LAUNCH_ARM_SPAN" ]]; then
+        DEPS_CONFIRM=1
+        DEPS_CONFIRM_TIME="$now"
+        NOTICE="$DEPS_CONFIRM_TEXT"
+        return 0
+    fi
+
+    DEPS_CONFIRM=0
+    core_deps_obtain
+}
+
 core_key_route()
 {
     local key="$1"
@@ -1132,7 +1153,7 @@ core_key_route()
     case "$key" in
         l) core_launch_menu_req ;;
         b) core_build_kick 0 ;;
-        o) core_deps_obtain ;;
+        o) core_deps_menu_req ;;
     esac
 }
 

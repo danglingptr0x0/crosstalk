@@ -88,9 +88,41 @@ uint32_t crosstalk_game_chat_open_set(crosstalk_game_chat_ctx_t *ctx, uint8_t op
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (ctx->nogo == LDG_TRUTH_TRUE)
+    {
+        ctx->win.open = LDG_TRUTH_FALSE;
+
+        return open != LDG_TRUTH_FALSE ? LDG_ERR_DENIED : LDG_ERR_AOK;
+    }
+
     ctx->win.open = (open != LDG_TRUTH_FALSE) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_game_chat_nogo_set(crosstalk_game_chat_ctx_t *ctx)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->nogo = LDG_TRUTH_TRUE;
+    ctx->win.open = LDG_TRUTH_FALSE;
+    ctx->draft[0] = LDG_STR_TERM;
+
+    return LDG_ERR_AOK;
+}
+
+uint8_t crosstalk_game_chat_nogo_is(const crosstalk_game_chat_ctx_t *ctx)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return (uint8_t)LDG_ERR_FUNC_ARG_NULL; }
+
+    return ctx->nogo == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+uint8_t crosstalk_game_chat_nogo_tok_is(const char *text)
+{
+    if (LDG_UNLIKELY(text == 0x0)) { return (uint8_t)LDG_ERR_FUNC_ARG_NULL; }
+
+    return strcmp(text, CROSSTALK_GAME_CHAT_NOGO_TOK) == 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
 uint32_t crosstalk_game_chat_rst(crosstalk_game_chat_ctx_t *ctx)
@@ -230,6 +262,8 @@ uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group,
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
     conv->msg[slot].self = self == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    if (ctx->conv_sel[group] >= ctx->conv_cunt || ctx->conv[ctx->conv_sel[group]].group != group) { ctx->conv_sel[group] = conv_idx; }
 
     if (ctx->win.open == LDG_TRUTH_FALSE || ctx->group != group || ctx->conv_sel[group] != conv_idx)
     {
@@ -566,6 +600,8 @@ uint32_t crosstalk_game_chat_frame_set(crosstalk_game_chat_ctx_t *ctx, uint8_t s
     ctx->sesh_live = sesh_live;
     ctx->discord_live = discord_live;
     ctx->win.highlighted = crosstalk_game_chat_any_unseen_is(ctx);
+
+    if (ctx->nogo == LDG_TRUTH_TRUE) { ctx->win.open = LDG_TRUTH_FALSE; }
 
     group_prev = ctx->group;
 

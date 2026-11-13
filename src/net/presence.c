@@ -67,6 +67,7 @@ uint32_t crosstalk_net_presence_push(crosstalk_net_presence_ctx_t *ctx, const cr
 {
     uint64_t now_ms = 0;
     uint32_t ret = 0;
+    uint8_t changed = LDG_TRUTH_FALSE;
 
     if (LDG_UNLIKELY(ctx == 0x0 || desc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -74,8 +75,16 @@ uint32_t crosstalk_net_presence_push(crosstalk_net_presence_ctx_t *ctx, const cr
 
     now_ms = ldg_time_epoch_ms_get();
 
-    if (now_ms < ctx->next_ms) { return LDG_ERR_AOK; }
+    if (desc->lobby_id != ctx->lobby_id_prev || desc->connect_lobby_id != ctx->connect_lobby_id_prev || desc->screen != ctx->screen_prev || desc->members != ctx->members_prev || desc->members_max != ctx->members_max_prev || desc->transponder_off != ctx->transponder_off_prev) { changed = LDG_TRUTH_TRUE; }
 
+    if (changed != LDG_TRUTH_TRUE && now_ms < ctx->next_ms) { return LDG_ERR_AOK; }
+
+    ctx->lobby_id_prev = desc->lobby_id;
+    ctx->connect_lobby_id_prev = desc->connect_lobby_id;
+    ctx->screen_prev = desc->screen;
+    ctx->members_prev = desc->members;
+    ctx->members_max_prev = desc->members_max;
+    ctx->transponder_off_prev = desc->transponder_off;
     ctx->next_ms = now_ms + (uint64_t)CROSSTALK_NET_PRESENCE_PERIOD_MS;
 
     for (uint32_t idx = 0; idx < ctx->backend_cunt; idx++)

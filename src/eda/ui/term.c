@@ -31,6 +31,8 @@
 #define TERM_PTY_COL_CAP 128
 #define TERM_PTY_RUN_CAP 129
 #define TERM_PTY_CURSOR_W 1
+#define TERM_PTY_CURSOR_SEEN_BASE 4
+#define TERM_PTY_CURSOR_SEEN_VISIBLE 2
 #define TERM_PTY_EXIT_FMT "shell exited; code: %u"
 #define TERM_PTY_DEAD_TEXT "no shell; open one from the console"
 #define TERM_PTY_ALPHA_SHIFT 8
@@ -394,6 +396,7 @@ uint32_t crosstalk_eda_ui_term_sesh_bind(crosstalk_eda_ui_term_ctx_t *ctx, uint3
     sesh->sgr_idx = (uint8_t)CROSSTALK_EDA_UI_TERM_SGR_IDX_NONE;
     sesh->sgr_state = (uint32_t)TERM_SGR_STATE_IDLE;
     sesh->sgr_bold = LDG_TRUTH_FALSE;
+    sesh->grid_view = LDG_TRUTH_FALSE;
 
     if (src != CROSSTALK_EDA_UI_TERM_SRC_PTY && src != CROSSTALK_EDA_UI_TERM_SRC_NONE && sesh->term == 0x0 && ctx->pool != 0x0)
     {
@@ -418,6 +421,17 @@ uint32_t crosstalk_eda_ui_term_sesh_bind(crosstalk_eda_ui_term_ctx_t *ctx, uint3
             }
         }
     }
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_eda_ui_term_sesh_grid_view_set(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, uint8_t on)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (sesh_idx >= (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX) { return CROSSTALK_EDA_UI_TERM_ERR_SESH; }
+
+    ctx->sesh[sesh_idx].grid_view = on == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;
 }
@@ -621,7 +635,7 @@ static uint32_t term_raw_key_put(crosstalk_eda_ui_term_ctx_t *ctx, const ldg_ter
 
     if (key->key == (uint8_t)LDG_TERM_KEY_ENTER) { return term_byte_out_put(ctx, (uint8_t)LDG_ASCII_CR); }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_BACKSPACE) { return term_byte_out_put(ctx, (uint8_t)CROSSTALK_EDA_UI_TERM_BS); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_BACKSPACE) { return term_byte_out_put(ctx, ctx->sesh[ctx->sesh_active].grid_view == LDG_TRUTH_TRUE ? (uint8_t)CROSSTALK_EDA_UI_TERM_DEL : (uint8_t)CROSSTALK_EDA_UI_TERM_BS); }
 
     if (key->key == (uint8_t)LDG_TERM_KEY_TAB) { return term_byte_out_put(ctx, (uint8_t)LDG_ASCII_TAB); }
 
@@ -823,6 +837,9 @@ static uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_re
     uint32_t ret = 0;
     uint8_t screen_reverse = LDG_TRUTH_FALSE;
     uint8_t cursor_on = LDG_TRUTH_FALSE;
+    uint8_t cursor_visible = LDG_TRUTH_FALSE;
+    uint8_t cursor_got = LDG_TRUTH_FALSE;
+    uint8_t cursor_state = 0;
 
     if (grid == 0x0) { return crosstalk_ui_cell_rgba_put(render, (uint32_t)TERM_ORIG_COL, row_base, TERM_PTY_DEAD_TEXT, (uint64_t)CROSSTALK_EDA_UI_TERM_STATUS_CAP, (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA, 0x0); }
 
@@ -836,8 +853,11 @@ static uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_re
 
     if (rows > row_avail) { rows = row_avail; }
 
-    ctx->pty_cols_want = col_cunt < (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX ? col_cunt : (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX;
-    ctx->pty_rows_want = row_avail < (uint32_t)CROSSTALK_EDA_IO_PTY_ROW_MAX ? row_avail : (uint32_t)CROSSTALK_EDA_IO_PTY_ROW_MAX;
+    if (exit_pty != 0x0)
+    {
+        ctx->pty_cols_want = col_cunt < (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX ? col_cunt : (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX;
+        ctx->pty_rows_want = row_avail < (uint32_t)CROSSTALK_EDA_IO_PTY_ROW_MAX ? row_avail : (uint32_t)CROSSTALK_EDA_IO_PTY_ROW_MAX;
+    }
 
     if (cols == 0) { return LDG_ERR_AOK; }
 
@@ -849,7 +869,23 @@ static uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_re
 
     if (term_placement_draw(render, grid, row_base, LDG_TRUTH_FALSE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "term placement back draw failed"); }
 
-    if ((exit_pty == 0x0 || exit_pty->exited != LDG_TRUTH_TRUE) && ldg_term_cursor_visible_is(grid) == LDG_TRUTH_TRUE && ldg_term_cursor_get(grid, &cursor_col, &cursor_row) == LDG_ERR_AOK && cursor_row < rows && cursor_col < cols) { cursor_on = LDG_TRUTH_TRUE; }
+    cursor_visible = ldg_term_cursor_visible_is(grid);
+
+    if (ldg_term_cursor_get(grid, &cursor_col, &cursor_row) == LDG_ERR_AOK) { cursor_got = LDG_TRUTH_TRUE; }
+
+    if ((exit_pty == 0x0 || exit_pty->exited != LDG_TRUTH_TRUE) && cursor_visible == LDG_TRUTH_TRUE && cursor_got == LDG_TRUTH_TRUE && cursor_row < rows && cursor_col < cols) { cursor_on = LDG_TRUTH_TRUE; }
+
+    cursor_state = (uint8_t)TERM_PTY_CURSOR_SEEN_BASE;
+
+    if (cursor_visible == LDG_TRUTH_TRUE) { cursor_state = (uint8_t)(cursor_state + (uint8_t)TERM_PTY_CURSOR_SEEN_VISIBLE); }
+
+    if (cursor_on == LDG_TRUTH_TRUE) { cursor_state = (uint8_t)(cursor_state + (uint8_t)TERM_STEP); }
+
+    if (cursor_state != ctx->cursor_seen)
+    {
+        ctx->cursor_seen = cursor_state;
+        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "term: cursor; drawn: %u32; visible: %u32; got: %u32; col: %u32; row: %u32; cols: %u32; rows: %u32; grid: %u32x%u32", (uint32_t)cursor_on, (uint32_t)cursor_visible, (uint32_t)cursor_got, cursor_col, cursor_row, cols, rows, grid->col_cunt, grid->row_cunt);
+    }
 
     for (row = 0; row < rows; row++)
     {
@@ -1071,6 +1107,8 @@ static uint32_t term_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
     if (row_cunt <= row_base || ctx->sesh_active >= (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX) { return LDG_ERR_AOK; }
 
     if (ctx->sesh[ctx->sesh_active].src == (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_PTY) { return term_pty_grid_draw(ctx, render, pty->term, pty, row_base, col_cunt, row_cunt - row_base); }
+
+    if (ctx->sesh[ctx->sesh_active].grid_view == LDG_TRUTH_TRUE && ctx->sesh[ctx->sesh_active].term != 0x0) { return term_pty_grid_draw(ctx, render, ctx->sesh[ctx->sesh_active].term, 0x0, row_base, col_cunt, row_cunt - row_base); }
 
     return term_raw_draw(&ctx->sesh[ctx->sesh_active], render, row_base, col_cunt, row_cunt);
 }

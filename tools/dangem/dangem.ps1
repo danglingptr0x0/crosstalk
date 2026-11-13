@@ -28,6 +28,7 @@ $script:MENU_EXIT_W = 12
 $script:SUMMARY_KEYS = 'F2=Launch - F5=Rebuild - Esc=Menu - F10=Quit'
 $script:SMALL_TEXT = 'terminal too small'
 $script:LAUNCH_CONFIRM_TEXT = 'The latest source is newer than the compiled binaries. Launch anyway (press again)?'
+$script:DEPS_CONFIRM_TEXT = 'The dependencies are already in place. Obtain them again (press again)?'
 $script:LAUNCH_ARM_SPAN = 3000
 $script:FRAME_WAIT = 16
 $script:COL_MAX = 512
@@ -89,6 +90,8 @@ $script:LAUNCH = 0
 $script:LAUNCH_AFTER = 0
 $script:LAUNCH_CONFIRM = 0
 $script:LAUNCH_CONFIRM_TIME = 0
+$script:DEPS_CONFIRM = 0
+$script:DEPS_CONFIRM_TIME = 0
 $script:NOTICE = ''
 $script:VIEW_LAUNCH = ''
 $script:VIEW_BUILD = ''
@@ -1111,6 +1114,23 @@ function core_deps_obtain
     if ($script:DEPS_OK -eq 1) { $script:NOTICE = 'dependencies are in place' } else { $script:NOTICE = 'LDG is missing from this install' }
 }
 
+function core_deps_menu_req
+{
+    core_deps_ck
+    $now = time_epoch_get
+
+    if ($script:DEPS_OK -eq 1 -and ($script:DEPS_CONFIRM -ne 1 -or ($now - $script:DEPS_CONFIRM_TIME) -gt $script:LAUNCH_ARM_SPAN))
+    {
+        $script:DEPS_CONFIRM = 1
+        $script:DEPS_CONFIRM_TIME = $now
+        $script:NOTICE = $script:DEPS_CONFIRM_TEXT
+        return
+    }
+
+    $script:DEPS_CONFIRM = 0
+    core_deps_obtain
+}
+
 function core_key_route([string]$key)
 {
     if ($key -ceq 'F10' -or ($script:SCREEN -eq 'menu' -and ($key -ceq 'q' -or $key -ceq 'ESC')))
@@ -1137,7 +1157,7 @@ function core_key_route([string]$key)
     {
         'l' { core_launch_menu_req }
         'b' { core_build_kick 0 }
-        'o' { core_deps_obtain }
+        'o' { core_deps_menu_req }
     }
 }
 

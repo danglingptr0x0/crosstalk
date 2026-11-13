@@ -223,11 +223,13 @@ typedef struct crosstalk_net_libresteam_ctx
     crosstalk_net_libresteam_friend_msg_t friend_msg_ring[CROSSTALK_NET_FRIEND_MSG_RING];
     char friend_msg_text[CROSSTALK_NET_FRIEND_MSG_TEXT_CAP];
     char lobby_map[CROSSTALK_NET_LOBBY_MAP_MAX];
+    char join_ask_name[CROSSTALK_NET_CLIENT_NAME_MAX];
     uint64_t lobby_id;
     uint64_t lobby_host_id;
     uint64_t lobby_call;
     uint64_t join_lobby_id;
     uint64_t join_friend_id;
+    uint64_t join_ask_steam_id;
     uint32_t lobby_pending;
     uint32_t lobby_state;
     uint32_t lobby_list_cunt;
@@ -241,9 +243,11 @@ typedef struct crosstalk_net_libresteam_ctx
     uint32_t mode;
     uint32_t status;
     uint32_t client_cunt;
+    uint32_t join_ask_conn;
     uint8_t lobby_is_host;
     uint8_t join_pending;
-    uint8_t pudding0[6];
+    uint8_t join_ask_live;
+    uint8_t pudding0[5];
     crosstalk_net_libresteam_friend_t friend_list[CROSSTALK_NET_FRIEND_CAP];
     uint64_t friend_ours_prev[CROSSTALK_NET_FRIEND_CAP];
     uint32_t friend_ours_prev_cunt;
@@ -281,6 +285,8 @@ uint32_t crosstalk_net_libresteam_lan_host_start(crosstalk_net_libresteam_ctx_t 
 uint32_t crosstalk_net_libresteam_lan_client_join(crosstalk_net_libresteam_ctx_t *ctx, uint32_t ip, uint16_t port);
 uint8_t crosstalk_net_libresteam_lan_sesh_get(const crosstalk_net_libresteam_ctx_t *ctx);
 void crosstalk_net_libresteam_sesh_stop(crosstalk_net_libresteam_ctx_t *ctx);
+uint32_t crosstalk_net_libresteam_join_ask_get(const crosstalk_net_libresteam_ctx_t *ctx, uint64_t *out_steam_id, const char **out_name);
+uint32_t crosstalk_net_libresteam_join_ask_answer(crosstalk_net_libresteam_ctx_t *ctx, uint8_t allow);
 crosstalk_net_libresteam_conn_status_t crosstalk_net_libresteam_status_get(const crosstalk_net_libresteam_ctx_t *ctx);
 crosstalk_net_libresteam_mode_t crosstalk_net_libresteam_mode_get(const crosstalk_net_libresteam_ctx_t *ctx);
 uint32_t crosstalk_net_libresteam_client_cunt_get(const crosstalk_net_libresteam_ctx_t *ctx);
