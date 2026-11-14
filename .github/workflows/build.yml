@@ -26,7 +26,22 @@ env:
   DISCORD_DIR: DiscordSocialSdk-1.10.18247
   DISCORD_SHA512: f5269886f10855f445ce0bfc9a315013725955a1210684d33fe244823b482479a17766518280453accbd873e2097f836ddb7d742ee2245162f1729513d1a0dc3
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.ck.outputs.run }}
+    steps:
+      - name: release tag on this commit
+        id: ck
+        run: |
+          run=true
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_TYPE" = "branch" ]; then
+            if git ls-remote --tags "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" | grep -E "^${GITHUB_SHA}[[:space:]]+refs/tags/[0-9]"; then run=false; fi
+          fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
   build:
+    needs: gate
+    if: needs.gate.outputs.run == 'true'
     runs-on: ubuntu-latest
     container: archlinux:base-devel
     env:
@@ -183,14 +198,6 @@ jobs:
         run: |
           git-cliff --config crosstalk/.github/cliff.toml --repository crosstalk --latest --output changelog.md
           cat changelog.md
-      - name: release
-        if: github.ref_type == 'tag'
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          kind=--latest
-          case "$REL" in *-rc*) kind=--prerelease ;; esac
-          gh release create "$REL" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$REL" --notes-file changelog.md "$kind" "crosstalk-$REL-linux-amd64.tar.xz" "crosstalk-$REL-windows.zip"
       - name: steam stage
         if: github.ref_type == 'tag' || inputs.steam
         env:
@@ -227,8 +234,6 @@ jobs:
           du -sh steam.tar
       - name: release windows build
         if: github.ref_type == 'tag'
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           sdk="crosstalk/$DISCORD_DIR/discord_social_sdk"
           w="out/crosstalk-$REL-build-windows-amd64"
@@ -244,7 +249,14 @@ jobs:
           cp -r "$RUNNER_TEMP/wincc/." "$w/res/utils/cc/"
           bsdtar --format zip -cf "crosstalk-$REL-build-windows-amd64.zip" -C "$w" .
           du -sh "crosstalk-$REL-build-windows-amd64.zip"
-          gh release upload "$REL" --repo "$GITHUB_REPOSITORY" "crosstalk-$REL-build-windows-amd64.zip"
+      - name: release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          kind=--latest
+          case "$REL" in *-rc*) kind=--prerelease ;; esac
+          gh release create "$REL" --repo "$GITHUB_REPOSITORY" --verify-tag --title "$REL" --notes-file changelog.md "$kind" "crosstalk-$REL-linux-amd64.tar.xz" "crosstalk-$REL-windows.zip" "crosstalk-$REL-build-windows-amd64.zip"
       - name: steam upload artifact
         if: github.ref_type == 'tag' || inputs.steam
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
