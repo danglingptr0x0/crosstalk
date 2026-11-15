@@ -171,7 +171,7 @@ static uint32_t save_proj_name_get(const char *path, char *out, uint64_t cap)
     ret = ldg_io_path_leaf_get(path, base, (uint64_t)sizeof(base));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    dot = strrchr(base, '.');
+    dot = (strrchr)(base, '.');
     if (dot != 0x0) { *dot = LDG_STR_TERM; }
 
     ret = ldg_str_rbrcpy(out, base, cap);

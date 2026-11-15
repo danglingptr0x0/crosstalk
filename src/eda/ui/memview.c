@@ -476,15 +476,15 @@ static uint32_t memview_pattern_parse(const char *text, uint8_t ascii_is, uint8_
 
             at = at + LDG_STR_TERM_SIZE + LDG_STR_TERM_SIZE;
 
-            if (ldg_char_hex_is(text[at]) != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_PATTERN; }
+            if (ldg_char_hex_is((uint8_t)text[at]) != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_PATTERN; }
 
-            while (ldg_char_hex_is(text[at]) == LDG_TRUTH_TRUE && len < (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_PATTERN_CAP)
+            while (ldg_char_hex_is((uint8_t)text[at]) == LDG_TRUTH_TRUE && len < (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_PATTERN_CAP)
             {
                 if (ldg_hex_to_nipple(text[at], &hi) != LDG_ERR_AOK) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_PATTERN; }
 
                 at = at + (uint32_t)MEMVIEW_STEP;
 
-                if (ldg_char_hex_is(text[at]) != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_PATTERN; }
+                if (ldg_char_hex_is((uint8_t)text[at]) != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_PATTERN; }
 
                 if (ldg_hex_to_nipple(text[at], &lo) != LDG_ERR_AOK) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_PATTERN; }
 
@@ -704,14 +704,18 @@ static uint8_t memview_proc_span_has_is(const crosstalk_eda_ui_memview_ctx_t *ct
 static uint32_t memview_proc_rd(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t addr, uint64_t *out, uint32_t cunt, uint32_t *out_rd)
 {
     uint8_t bytes[MEMVIEW_PROC_CHUNK] = LDG_ARR_ZERO_INIT;
-    uint8_t *hole = out == ctx->page ? ctx->page_hole : 0x0;
+    uint8_t *hole = 0x0;
     uint64_t got = 0;
     uint64_t skip = 0;
     uint32_t at = 0;
     uint32_t want = 0;
     uint32_t idx = 0;
 
+    if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0 || out_rd == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
     *out_rd = 0;
+
+    if (out == ctx->page) { hole = ctx->page_hole; }
 
     if (hole == 0x0 && cunt <= (uint32_t)MEMVIEW_PROC_CHUNK)
     {
@@ -2511,7 +2515,7 @@ static uint32_t memview_path_off_get(const crosstalk_eda_ui_memview_ctx_t *ctx, 
 
             at = at + (uint32_t)MEMVIEW_STEP;
 
-            while (ldg_char_digit_is(text[at]) == LDG_TRUTH_TRUE && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(digits))
+            while (ldg_char_digit_is((uint8_t)text[at]) == LDG_TRUTH_TRUE && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(digits))
             {
                 digits[pos] = text[at];
                 pos = pos + (uint32_t)MEMVIEW_STEP;
@@ -2655,7 +2659,7 @@ static uint32_t memview_proc_addr_parse(const crosstalk_eda_ui_memview_ctx_t *ct
 
     *out = 0x0;
 
-    while (text[len] != LDG_STR_TERM && text[len] != ' ' && len + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok))
+    while (len + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok) && text[len] != LDG_STR_TERM && text[len] != ' ')
     {
         tok[len] = text[len];
         len = len + (uint32_t)MEMVIEW_STEP;

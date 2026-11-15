@@ -94,7 +94,7 @@ static void term_sgr_step(crosstalk_eda_ui_term_sesh_t *sesh, uint8_t val, uint8
         return;
     }
 
-    if (ldg_char_digit_is((char)val) == LDG_TRUTH_TRUE)
+    if (ldg_char_digit_is((uint8_t)val) == LDG_TRUTH_TRUE)
     {
         if (sesh->sgr_param_cunt == (uint32_t)TERM_SGR_PARAM_EMPTY) { sesh->sgr_param_cunt = (uint32_t)TERM_STEP; }
 

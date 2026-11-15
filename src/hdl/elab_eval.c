@@ -43,7 +43,7 @@ static uint32_t crosstalk_hdl_elab_digit_val_get(char ch, uint32_t base, uint64_
 
     if (ch == 'x' || ch == 'X' || ch == 'z' || ch == 'Z' || ch == '?') { return LDG_ERR_AOK; }
 
-    if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE) { *out_val = (uint64_t)(uint8_t)ch - 0x30; }
+    if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE) { *out_val = (uint64_t)(uint8_t)ch - 0x30; }
     else if (ch >= 'a' && ch <= 'f') { *out_val = (uint64_t)(uint8_t)ch - 0x61 + 10; }
     else if (ch >= 'A' && ch <= 'F') { *out_val = (uint64_t)(uint8_t)ch - 0x41 + 10; }
     else { return CROSSTALK_HDL_ERR_ELAB; }

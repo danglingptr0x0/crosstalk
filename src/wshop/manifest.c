@@ -77,8 +77,8 @@ static uint32_t manifest_u64_parse(const char *val, uint64_t val_len, uint64_t *
     {
         ch = val[idx];
 
-        if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE) { dig = (uint64_t)(ch - LDG_ASCII_DIGIT_ZERO); }
-        else if (base == LDG_BASE_HEX && ldg_char_hex_is(ch) == LDG_TRUTH_TRUE) { if (ch >= MANIFEST_ASCII_LOWER_A) { dig = (uint64_t)(ch - MANIFEST_ASCII_LOWER_A) + LDG_BASE_DEC; }
+        if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE) { dig = (uint64_t)(ch - LDG_ASCII_DIGIT_ZERO); }
+        else if (base == LDG_BASE_HEX && ldg_char_hex_is((uint8_t)ch) == LDG_TRUTH_TRUE) { if (ch >= MANIFEST_ASCII_LOWER_A) { dig = (uint64_t)(ch - MANIFEST_ASCII_LOWER_A) + LDG_BASE_DEC; }
             else { dig = (uint64_t)(ch - MANIFEST_ASCII_UPPER_A) + LDG_BASE_DEC; } }
         else { return CROSSTALK_WSHOP_MANIFEST_ERR_VAL; }
 
@@ -185,7 +185,7 @@ static uint32_t manifest_idx_key_split(const char *key, uint64_t key_len, const 
         pos = pos + MANIFEST_STEP;
     }
 
-    while (pos < key_len && ldg_char_digit_is(key[pos]) == LDG_TRUTH_TRUE && dig_cunt < MANIFEST_IDX_DIG_MAX)
+    while (pos < key_len && ldg_char_digit_is((uint8_t)key[pos]) == LDG_TRUTH_TRUE && dig_cunt < MANIFEST_IDX_DIG_MAX)
     {
         acc = acc * LDG_BASE_DEC + (uint64_t)(key[pos] - LDG_ASCII_DIGIT_ZERO);
         dig_cunt = dig_cunt + MANIFEST_STEP;

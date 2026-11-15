@@ -3081,7 +3081,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
 
                 if (chunk[at] == (ldg_byte_t)CROSSTALK_EDA_IC_FPGA_MEM_ADDR_MARK) { addr_mark = LDG_TRUTH_TRUE; continue; }
 
-                if (ldg_char_hex_is((char)chunk[at]) == LDG_TRUTH_TRUE)
+                if (ldg_char_hex_is((uint8_t)chunk[at]) == LDG_TRUTH_TRUE)
                 {
                     if (ldg_hex_to_nipple((char)chunk[at], &nib) != LDG_ERR_AOK) { continue; }
 

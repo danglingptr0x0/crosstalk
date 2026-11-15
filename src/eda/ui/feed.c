@@ -61,7 +61,7 @@ static const char* feed_cause_name_get(uint64_t val)
 
 static const char* feed_exc_note_get(const crosstalk_eda_ui_feed_lane_t *lane, uint64_t val)
 {
-    if (strstr(lane->name, FEED_EXC_MARK_A) == 0x0 && strstr(lane->name, FEED_EXC_MARK_B) == 0x0) { return FEED_EXC_NONE_TEXT; }
+    if ((strstr)(lane->name, FEED_EXC_MARK_A) == 0x0 && (strstr)(lane->name, FEED_EXC_MARK_B) == 0x0) { return FEED_EXC_NONE_TEXT; }
 
     return feed_cause_name_get(val);
 }

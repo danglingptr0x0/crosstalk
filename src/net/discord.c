@@ -196,7 +196,9 @@ static void crosstalk_net_discord_url_encode(const char *src, char *dst, uint32_
         if (out_idx + CROSSTALK_NET_DISCORD_PCT_LEN + LDG_STR_TERM_SIZE > cap) { break; }
 
         dst[out_idx] = '%';
-        ldg_byte_to_hex((ldg_byte_t)src[idx], &dst[out_idx + CROSSTALK_NET_DISCORD_HEX_OFF]);
+
+        if (ldg_byte_to_hex((ldg_byte_t)src[idx], &dst[out_idx + CROSSTALK_NET_DISCORD_HEX_OFF]) != LDG_ERR_AOK) { break; }
+
         out_idx = out_idx + CROSSTALK_NET_DISCORD_PCT_LEN;
     }
 

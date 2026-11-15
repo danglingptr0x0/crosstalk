@@ -319,6 +319,7 @@ static uint32_t sesh_hist_st(crosstalk_re_repl_sesh_t *sesh)
 static uint32_t sesh_file_line_ld(crosstalk_re_repl_sesh_t *sesh, crosstalk_re_repl_ctx_t *repl, crosstalk_re_repl_subst_t *subst, const uint8_t *text, uint32_t len)
 {
     uint32_t at = 0;
+    uint32_t ret = 0;
     uint8_t handled = LDG_TRUTH_FALSE;
 
     if (len <= (uint32_t)SESH_FILE_LEAD_LEN || len - (uint32_t)SESH_FILE_LEAD_LEN >= (uint32_t)sizeof(sesh->line) || text[SESH_FILE_SEP_AT] != (uint8_t)LDG_ASCII_TAB) { return LDG_ERR_AOK; }
@@ -336,7 +337,8 @@ static uint32_t sesh_file_line_ld(crosstalk_re_repl_sesh_t *sesh, crosstalk_re_r
 
     if (text[SESH_FILE_KIND_AT] != (uint8_t)SESH_FILE_KIND_ALIAS) { return LDG_ERR_AOK; }
 
-    if (crosstalk_re_repl_subst_apply(subst, repl, sesh->line, (uint32_t)sizeof(sesh->line), &handled) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
+    ret = crosstalk_re_repl_subst_apply(subst, repl, sesh->line, (uint32_t)sizeof(sesh->line), &handled);
+    if (ret != LDG_ERR_AOK) { sesh->line[0] = LDG_STR_TERM; }
 
     return LDG_ERR_AOK;
 }

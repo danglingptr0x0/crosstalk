@@ -1164,7 +1164,7 @@ static uint32_t parse_rack(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
 static uint8_t parse_cmd_arg_char_is(char ch)
 {
-    if (ldg_char_alnum_is(ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
+    if (ldg_char_alnum_is((uint8_t)ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
 
     if (ch == ';') { return LDG_TRUTH_TRUE; }
 

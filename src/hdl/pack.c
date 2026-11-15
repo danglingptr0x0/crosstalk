@@ -126,7 +126,7 @@ static uint32_t crosstalk_hdl_pack_name_emit(crosstalk_hdl_pack_ctx_t *ctx, uint
     {
         char name_ch = ctx->src[tok->off + idx];
 
-        if (ldg_char_alnum_is(name_ch) != LDG_TRUTH_TRUE && name_ch != '_') { ok = 0; }
+        if (ldg_char_alnum_is((uint8_t)name_ch) != LDG_TRUTH_TRUE && name_ch != '_') { ok = 0; }
     }
 
     if (ok == 0) { return LDG_ERR_AOK; }

@@ -18,7 +18,7 @@
 
 static uint8_t crosstalk_hdl_lex_ident_start_is(char ch)
 {
-    if (ldg_char_alpha_is(ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
+    if (ldg_char_alpha_is((uint8_t)ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
 
     if (ch == '_') { return LDG_TRUTH_TRUE; }
 
@@ -27,7 +27,7 @@ static uint8_t crosstalk_hdl_lex_ident_start_is(char ch)
 
 static uint8_t crosstalk_hdl_lex_ident_char_is(char ch)
 {
-    if (ldg_char_alnum_is(ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
+    if (ldg_char_alnum_is((uint8_t)ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
 
     if (ch == '_' || ch == '$') { return LDG_TRUTH_TRUE; }
 
@@ -45,14 +45,14 @@ static uint8_t crosstalk_hdl_lex_unbased_char_is(char ch)
 {
     if (ch == 'x' || ch == 'X' || ch == 'z' || ch == 'Z') { return LDG_TRUTH_TRUE; }
 
-    if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE && ch < '2') { return LDG_TRUTH_TRUE; }
+    if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE && ch < '2') { return LDG_TRUTH_TRUE; }
 
     return LDG_TRUTH_FALSE;
 }
 
 static uint8_t crosstalk_hdl_lex_val_char_is(char ch)
 {
-    if (ldg_char_hex_is(ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
+    if (ldg_char_hex_is((uint8_t)ch) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
 
     if (ch == 'x' || ch == 'X' || ch == 'z' || ch == 'Z' || ch == '?' || ch == '_') { return LDG_TRUTH_TRUE; }
 
@@ -94,7 +94,7 @@ static uint32_t crosstalk_hdl_lex_space_skip(crosstalk_hdl_lex_ctx_t *ctx)
     {
         ch = ctx->src[ctx->pos];
 
-        if (ldg_char_space_is(ch) == LDG_TRUTH_TRUE)
+        if (ldg_char_space_is((uint8_t)ch) == LDG_TRUTH_TRUE)
         {
             crosstalk_hdl_lex_advance(ctx);
             continue;
@@ -331,7 +331,7 @@ static uint32_t crosstalk_hdl_lex_num_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_
     while (LDG_TRUTH_TRUE)
     {
         ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
-        if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE || ch == '_')
+        if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE || ch == '_')
         {
             crosstalk_hdl_lex_advance(ctx);
             continue;
@@ -342,14 +342,14 @@ static uint32_t crosstalk_hdl_lex_num_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_
 
     ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
 
-    if (ch == '.' && ldg_char_digit_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT)) == LDG_TRUTH_TRUE)
+    if (ch == '.' && ldg_char_digit_is((uint8_t)crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT)) == LDG_TRUTH_TRUE)
     {
         crosstalk_hdl_lex_advance(ctx);
 
         while (LDG_TRUTH_TRUE)
         {
             ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
-            if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE || ch == '_')
+            if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE || ch == '_')
             {
                 crosstalk_hdl_lex_advance(ctx);
                 continue;
@@ -369,9 +369,9 @@ static uint32_t crosstalk_hdl_lex_num_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_
                 ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
             }
 
-            if (ldg_char_digit_is(ch) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_LITERAL; }
+            if (ldg_char_digit_is((uint8_t)ch) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_LITERAL; }
 
-            while (ldg_char_digit_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_advance(ctx); }
+            while (ldg_char_digit_is((uint8_t)crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_advance(ctx); }
         }
 
         *out_kind = CROSSTALK_HDL_TOK_LIT_REAL;
@@ -536,7 +536,7 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
             val = kw;
         }
     }
-    else if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE)
+    else if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE)
     {
         ret = crosstalk_hdl_lex_num_scan(ctx, &kind);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -601,7 +601,7 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
     {
         crosstalk_hdl_lex_advance(ctx);
 
-        while (ctx->pos < ctx->len && ldg_char_space_is(ctx->src[ctx->pos]) != LDG_TRUTH_TRUE)
+        while (ctx->pos < ctx->len && ldg_char_space_is((uint8_t)ctx->src[ctx->pos]) != LDG_TRUTH_TRUE)
         {
             crosstalk_hdl_lex_advance(ctx);
             cunt++;

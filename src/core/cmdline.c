@@ -314,7 +314,7 @@ static uint8_t isearch_match_is(const char *entry, const char *needle)
 {
     if (LDG_UNLIKELY(entry == 0x0 || needle == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    return strstr(entry, needle) != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    return (strstr)(entry, needle) != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
 static uint32_t isearch_seek(crosstalk_core_cmdline_ctx_t *ctx, uint32_t from)

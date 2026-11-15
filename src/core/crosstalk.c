@@ -943,11 +943,11 @@ static uint32_t crosstalk_extras_title_get(const char *dir, const char *name, ch
 
     if (title == 0x0) { return LDG_ERR_NOT_FOUND; }
 
-    while (ldg_char_space_is(title[0]) == LDG_TRUTH_TRUE) { title = title + LDG_STR_TERM_SIZE; }
+    while (ldg_char_space_is((uint8_t)title[0]) == LDG_TRUTH_TRUE) { title = title + LDG_STR_TERM_SIZE; }
 
     while (title[title_len] != LDG_STR_TERM && title[title_len] != '\n' && title[title_len] != '\r') { title_len = title_len + LDG_STR_TERM_SIZE; }
 
-    while (title_len > 0 && ldg_char_space_is(title[title_len - LDG_STR_TERM_SIZE]) == LDG_TRUTH_TRUE) { title_len = title_len - LDG_STR_TERM_SIZE; }
+    while (title_len > 0 && ldg_char_space_is((uint8_t)title[title_len - LDG_STR_TERM_SIZE]) == LDG_TRUTH_TRUE) { title_len = title_len - LDG_STR_TERM_SIZE; }
 
     if (title_len == 0) { return LDG_ERR_EMPTY; }
 
@@ -1877,6 +1877,7 @@ static uint32_t crosstalk_card_side_draw(ldg_term_render_t *render, double card_
     double rect_bot_y = card_y + cell * ((double)CROSSTALK_CORE_CARD_ROW_CUNT - CROSSTALK_CORE_CARD_SIDE_RECT_TOP_CELLS - CROSSTALK_CORE_CARD_SIDE_RECT_H_CELLS);
     double line_y = 0.0;
     double sign = 1.0;
+    uint32_t step = 0;
     uint32_t ret = 0;
 
     if (mirror == LDG_TRUTH_TRUE)
@@ -1886,8 +1887,10 @@ static uint32_t crosstalk_card_side_draw(ldg_term_render_t *render, double card_
         rect_x = card_x + card_w - (rect_x - card_x) - side_w;
     }
 
-    for (line_y = top_y; line_y < top_y + side_h; line_y = line_y + 1.0)
+    for (step = 0; top_y + (double)step < top_y + side_h; step = step + 0x1)
     {
+        line_y = top_y + (double)step;
+
         ret = crosstalk_card_yuv_fill(render, alt_x, line_y, side_w, 1.0, CROSSTALK_CORE_CARD_FIELD_GRAY, diff_r * sign, diff_b * sign);
         if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -1954,6 +1957,7 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     uint32_t text_row = 0;
     uint32_t text_w = 0;
     uint32_t idx = 0;
+    uint32_t step = 0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(render == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -2021,8 +2025,10 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
             continue;
         }
 
-        for (run_x = card_y + (double)idx * cell; run_x < card_y + (double)(idx + 0x1) * cell; run_x = run_x + 1.0)
+        for (step = 0; card_y + (double)idx * cell + (double)step < card_y + (double)(idx + 0x1) * cell; step = step + 0x1)
         {
+            run_x = card_y + (double)idx * cell + (double)step;
+
             ret = crosstalk_card_yuv_fill(render, card_x, run_x, cast_side, 1.0, CROSSTALK_CORE_CARD_FIELD_GRAY, CROSSTALK_CORE_CARD_DIFF_AMPLITUDE * sign, 0.0);
             if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -2062,8 +2068,9 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     run_w = us_px * (double)LDG_MS_PER_SEC / CROSSTALK_CORE_CARD_SQUARE_KHZ * 0.5;
     level = CROSSTALK_CORE_CARD_BLACK;
 
-    for (run_x = card_x; run_x < circ_x + half; run_x = run_x + run_w)
+    for (step = 0; card_x + run_w * (double)step < circ_x + half; step = step + 0x1)
     {
+        run_x = card_x + run_w * (double)step;
         seg_x0 = run_x > circ_x - half ? run_x : circ_x - half;
         seg_x1 = run_x + run_w < circ_x + half ? run_x + run_w : circ_x + half;
 
@@ -2116,8 +2123,9 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     half = crosstalk_card_half_chord_get(circ_r, band_y + band_h * 0.5 - circ_y);
     run_w = (half + half) / (double)CROSSTALK_CORE_CARD_GRATING_CUNT;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_GRATING_CUNT; idx = idx + 0x1) { for (run_x = circ_x - half + run_w * (double)idx; run_x < circ_x - half + run_w * (double)(idx + 0x1); run_x = run_x + 1.0)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_GRATING_CUNT; idx = idx + 0x1) { for (step = 0; circ_x - half + run_w * (double)idx + (double)step < circ_x - half + run_w * (double)(idx + 0x1); step = step + 0x1)
         {
+            run_x = circ_x - half + run_w * (double)idx + (double)step;
             level = CROSSTALK_CORE_CARD_GRATING_MID + CROSSTALK_CORE_CARD_GRATING_AMP * sin(2.0 * LDG_MATH_PI * grating_mhz[idx] * (run_x - card_x) / us_px);
             ret = crosstalk_card_gray_fill(render, run_x, band_y, 1.0, band_h, crosstalk_card_level_clamp(level));
             if (ret != LDG_ERR_AOK) { return ret; }
@@ -4464,7 +4472,7 @@ static uint32_t crosstalk_snap_ready_get(crosstalk_ctx_t *ctx, const char *arg, 
 
     if (arg != 0x0 && arg[0] != LDG_STR_TERM)
     {
-        if (strchr(arg, '\\') != 0x0 || strchr(arg, '/') != 0x0) { return ldg_str_rbrcpy(out, arg, cap); }
+        if ((strchr)(arg, '\\') != 0x0 || (strchr)(arg, '/') != 0x0) { return ldg_str_rbrcpy(out, arg, cap); }
 
         if (snprintf(named, sizeof(named), CROSSTALK_CORE_SNAP_NAMED_FMT, arg) < 0) { return LDG_ERR_STR_FMT; }
 
@@ -5168,7 +5176,7 @@ static uint32_t crosstalk_addr_tok_parse(const crosstalk_ctx_t *ctx, const char 
 
     if (text[0] == CROSSTALK_CORE_HEX_LEAD && (text[LDG_STR_TERM_SIZE] == 'x' || text[LDG_STR_TERM_SIZE] == 'X')) { return crosstalk_addr_parse(ctx, text, out_val); }
 
-    if (ldg_char_digit_is(text[0]) == LDG_TRUTH_TRUE) { return LDG_ERR_NOT_FOUND; }
+    if (ldg_char_digit_is((uint8_t)text[0]) == LDG_TRUTH_TRUE) { return LDG_ERR_NOT_FOUND; }
 
     return crosstalk_addr_parse(ctx, text, out_val);
 }
@@ -8078,11 +8086,11 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
 
         at = at + LDG_STR_TERM_SIZE + LDG_STR_TERM_SIZE;
 
-        if (ldg_char_hex_is(arg[at]) != LDG_TRUTH_TRUE || ldg_hex_to_nipple(arg[at], &hi) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
+        if (ldg_char_hex_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE || ldg_hex_to_nipple(arg[at], &hi) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
 
         at = at + 0x1;
 
-        if (ldg_char_hex_is(arg[at]) != LDG_TRUTH_TRUE || ldg_hex_to_nipple(arg[at], &lo) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
+        if (ldg_char_hex_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE || ldg_hex_to_nipple(arg[at], &lo) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
 
         at = at + 0x1;
 
@@ -8844,7 +8852,7 @@ static void crosstalk_verb_water(crosstalk_ctx_t *ctx, const char *arg)
 
     while (arg[at] != LDG_STR_TERM)
     {
-        if (ldg_char_digit_is(arg[at]) != LDG_TRUTH_TRUE || mins > (uint64_t)CROSSTALK_CORE_WATER_MINS_MAX) { toast_push(ctx, CROSSTALK_CORE_WATER_USAGE_TEXT); return; }
+        if (ldg_char_digit_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE || mins > (uint64_t)CROSSTALK_CORE_WATER_MINS_MAX) { toast_push(ctx, CROSSTALK_CORE_WATER_USAGE_TEXT); return; }
 
         mins = mins * (uint64_t)LDG_BASE_DEC + ((uint64_t)arg[at] - 0x30);
         at = at + 0x1;
@@ -9757,7 +9765,7 @@ static uint8_t crosstalk_term_idx_parse(const char *arg, uint32_t *out)
 
     while (arg[at] != LDG_STR_TERM)
     {
-        if (ldg_char_digit_is(arg[at]) != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
+        if (ldg_char_digit_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
 
         val = val * (uint32_t)LDG_BASE_DEC + ((uint32_t)arg[at] - 0x30);
         at = at + 0x1;
@@ -11147,7 +11155,11 @@ static uint32_t crosstalk_watch_worker(uint32_t worker_id, void *arg)
 
 static void crosstalk_watch_entry_put(crosstalk_ctx_t *ctx, uint32_t *cunt, uint32_t kind, uint32_t slot_idx, const char *path)
 {
-    uint32_t at = *cunt;
+    uint32_t at = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || cunt == 0x0)) { return; }
+
+    at = *cunt;
 
     if (at >= (uint32_t)CROSSTALK_CORE_WATCH_CAP || path == 0x0 || path[0] == LDG_STR_TERM) { return; }
 
@@ -12207,7 +12219,7 @@ static void crosstalk_verb_serial(crosstalk_ctx_t *ctx, const char *arg)
 
     if (arg[at] == LDG_STR_TERM) { crosstalk_serial_list_log(ctx); return; }
 
-    if (strchr(&arg[at], '@') != 0x0) { crosstalk_serial_conf_attach(ctx, &arg[at]); return; }
+    if ((strchr)(&arg[at], '@') != 0x0) { crosstalk_serial_conf_attach(ctx, &arg[at]); return; }
 
     if (arg[at] == '"')
     {
@@ -12218,7 +12230,7 @@ static void crosstalk_verb_serial(crosstalk_ctx_t *ctx, const char *arg)
         return;
     }
 
-    colon = strchr(&arg[at], ':');
+    colon = (strchr)(&arg[at], ':');
 
     if (colon == 0x0)
     {
@@ -13639,7 +13651,7 @@ static uint32_t crosstalk_complete_path_put(crosstalk_ctx_t *ctx, const char *ba
 
     if (LDG_UNLIKELY(ctx == 0x0 || word == 0x0 || out == 0x0 || out_cunt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    leaf = strrchr(word, CROSSTALK_CORE_COMPLETE_PATH_SEP);
+    leaf = (strrchr)(word, CROSSTALK_CORE_COMPLETE_PATH_SEP);
     lead_len = leaf != 0x0 ? (uint64_t)(leaf - word) + (uint64_t)LDG_STR_TERM_SIZE : (uint64_t)CROSSTALK_CORE_COMPLETE_LEAD_NONE;
     if (lead_len + (uint64_t)LDG_STR_TERM_SIZE > (uint64_t)sizeof(lead)) { return LDG_ERR_AOK; }
 

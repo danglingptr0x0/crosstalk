@@ -437,7 +437,7 @@ static uint8_t main_ch_fits_is(uint32_t kind, uint32_t ch)
 
     if (kind == (uint32_t)MAIN_KIND_TEXT) { return LDG_TRUTH_TRUE; }
 
-    if (ldg_char_digit_is((char)ch) == LDG_TRUTH_TRUE) { return kind == (uint32_t)MAIN_KIND_NUM || kind == (uint32_t)MAIN_KIND_REAL ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
+    if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE) { return kind == (uint32_t)MAIN_KIND_NUM || kind == (uint32_t)MAIN_KIND_REAL ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
 
     if (ch == (uint32_t)MAIN_KEY_POINT && kind == (uint32_t)MAIN_KIND_REAL) { return LDG_TRUTH_TRUE; }
 

@@ -101,7 +101,7 @@ static uint32_t emu_prog_st(const crosstalk_hdl_abi_t *abi, uint32_t mem_sig, co
         {
             ldg_byte_t nib = 0;
 
-            if (ldg_char_hex_is((char)raw[at]) == LDG_TRUTH_TRUE)
+            if (ldg_char_hex_is((uint8_t)raw[at]) == LDG_TRUTH_TRUE)
             {
                 if (ldg_hex_to_nipple((char)raw[at], &nib) != LDG_ERR_AOK) { continue; }
 

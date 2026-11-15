@@ -440,6 +440,7 @@ static uint32_t native_peek(crosstalk_re_repl_ctx_t *ctx, uint64_t addr, uint64_
     native_ctx_t *native = (native_ctx_t *)ctx->native;
     uint32_t at = 0;
     uint32_t row = 0;
+    uint32_t col = 0;
     uint32_t pos = 0;
     uint32_t ret = 0;
 
@@ -451,28 +452,24 @@ static uint32_t native_peek(crosstalk_re_repl_ctx_t *ctx, uint64_t addr, uint64_
     while (at < (uint32_t)len)
     {
         row = at;
-        pos = 0;
 
-        while (at < (uint32_t)len && at - row < (uint32_t)NATIVE_HEX_ROW)
+        for (col = 0; col < (uint32_t)NATIVE_HEX_ROW && row + col < (uint32_t)len; col = col + (uint32_t)NATIVE_STEP)
         {
-            ret = ldg_byte_to_hex(native->bytes[at], native->hex + pos);
+            pos = col * (uint32_t)NATIVE_HEX_CELL;
+
+            ret = ldg_byte_to_hex(native->bytes[row + col], native->hex + pos);
             if (ret != LDG_ERR_AOK) { return ret; }
 
             native->hex[pos + (uint32_t)NATIVE_HEX_PAIR] = LDG_ASCII_SPACE;
-            native->ascii[at - row] = native->bytes[at] >= (uint8_t)LDG_ASCII_PRINTABLE_MIN && native->bytes[at] <= (uint8_t)LDG_ASCII_PRINTABLE_MAX ? (char)native->bytes[at] : LDG_ASCII_NONPRINTABLE_CHAR;
-            pos = pos + (uint32_t)NATIVE_HEX_CELL;
-            at = at + (uint32_t)NATIVE_STEP;
+            native->ascii[col] = native->bytes[row + col] >= (uint8_t)LDG_ASCII_PRINTABLE_MIN && native->bytes[row + col] <= (uint8_t)LDG_ASCII_PRINTABLE_MAX ? (char)native->bytes[row + col] : LDG_ASCII_NONPRINTABLE_CHAR;
         }
 
-        native->ascii[at - row] = LDG_STR_TERM;
+        native->ascii[col] = LDG_STR_TERM;
+        at = row + col;
 
-        while (pos < (uint32_t)(NATIVE_HEX_ROW * NATIVE_HEX_CELL))
-        {
-            native->hex[pos] = LDG_ASCII_SPACE;
-            pos = pos + (uint32_t)NATIVE_STEP;
-        }
+        for (pos = col * (uint32_t)NATIVE_HEX_CELL; pos < (uint32_t)(NATIVE_HEX_ROW * NATIVE_HEX_CELL); pos = pos + (uint32_t)NATIVE_STEP) { native->hex[pos] = LDG_ASCII_SPACE; }
 
-        native->hex[pos] = LDG_STR_TERM;
+        native->hex[NATIVE_HEX_ROW * NATIVE_HEX_CELL] = LDG_STR_TERM;
 
         ret = crosstalk_re_repl_emit(ctx, "0x%x64: %.48s| %.16s", addr + row, native->hex, native->ascii);
         if (ret != LDG_ERR_AOK) { return ret; }

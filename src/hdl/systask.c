@@ -415,7 +415,7 @@ static void systask_fmt_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hd
 
         ch = ctx->src[pos];
 
-        if (ldg_char_alpha_is(ch) == LDG_TRUTH_TRUE) { ch = (char)(ch | SYSTASK_LOWER_BIT); }
+        if (ldg_char_alpha_is((uint8_t)ch) == LDG_TRUTH_TRUE) { ch = (char)(ch | SYSTASK_LOWER_BIT); }
 
         systask_spec_put(ctx, exec, task, ch, fill, fill_set, io_at);
     }

@@ -65,7 +65,7 @@ uint32_t crosstalk_eda_logic_probe_sel_parse(const char *port, char *out_base, u
 
     out_base[0] = LDG_STR_TERM;
 
-    open = strchr(port, PROBE_SEL_OPEN);
+    open = (strchr)(port, PROBE_SEL_OPEN);
     base_len = open != 0x0 ? (uint64_t)(open - port) : (uint64_t)strlen(port);
 
     if (base_len == 0 || base_len + LDG_STR_TERM_SIZE > (uint64_t)cap) { return LDG_ERR_FUNC_ARG_INVALID; }
@@ -75,10 +75,10 @@ uint32_t crosstalk_eda_logic_probe_sel_parse(const char *port, char *out_base, u
 
     if (open == 0x0) { return LDG_ERR_AOK; }
 
-    close = strchr(open, PROBE_SEL_CLOSE);
+    close = (strchr)(open, PROBE_SEL_CLOSE);
     if (close == 0x0 || close[PROBE_SEL_TOK_LEN] != LDG_STR_TERM) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    span = strchr(open, PROBE_SEL_SPAN);
+    span = (strchr)(open, PROBE_SEL_SPAN);
 
     if (span == 0x0)
     {

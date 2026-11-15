@@ -208,6 +208,8 @@ static void thread_stack_ld(crosstalk_re_repl_ctx_t *ctx, crosstalk_re_repl_thre
 
     thread->stack_cunt = (uint32_t)(got / (uint64_t)CROSSTALK_RE_REPL_THREAD_STACK_WORD_BYTES);
 
+    if (thread->stack_cunt > (uint32_t)CROSSTALK_RE_REPL_THREAD_STACK_WORDS) { thread->stack_cunt = (uint32_t)CROSSTALK_RE_REPL_THREAD_STACK_WORDS; }
+
     for (at = 0; at < thread->stack_cunt; at = at + (uint32_t)THREAD_STEP)
     {
         thread->stack_tag[at] = thread_tag_get(ctx, thread, thread->stack[at]);
@@ -285,7 +287,7 @@ static uint32_t thread_list(crosstalk_re_repl_ctx_t *ctx, crosstalk_re_repl_thre
     ret = thread_ids_ld(ctx, thread);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (at = start; at < thread->id_cunt && rows < (uint32_t)THREAD_PAGE_CAP; at = at + (uint32_t)THREAD_STEP)
+    for (at = start; at < thread->id_cunt && at < (uint32_t)CROSSTALK_RE_REPL_THREAD_ID_CAP && rows < (uint32_t)THREAD_PAGE_CAP; at = at + (uint32_t)THREAD_STEP)
     {
         ret = crosstalk_re_repl_emit(ctx, "thread: %u32; id: %u64%.1s", at, thread->id[at], at == thread->sel ? THREAD_MARK_SEL : THREAD_MARK_NONE);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -310,7 +312,9 @@ uint32_t crosstalk_re_repl_thread_cmd(crosstalk_re_repl_ctx_t *ctx, uint32_t arg
 
     if (argc == (uint32_t)THREAD_ARGC_X) { ret = crosstalk_re_repl_num_get(args[THREAD_ARG_X], &val); }
 
-    if (ret != LDG_ERR_AOK || val > (uint64_t)UINT32_MAX) { return LDG_ERR_FUNC_ARG_INVALID; }
+    if (ret != LDG_ERR_AOK) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    if (val >= (uint64_t)CROSSTALK_RE_REPL_THREAD_ID_CAP) { return LDG_ERR_RANGE; }
 
     if (crosstalk_re_repl_cmd_eq_is(args[THREAD_ARG_VERB], THREAD_WORD_LIST) == LDG_TRUTH_TRUE) { return thread_list(ctx, thread, (uint32_t)val); }
 

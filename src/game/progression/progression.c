@@ -72,7 +72,7 @@ uint32_t crosstalk_game_progression_achievement_once_req(crosstalk_game_progress
 
     if (LDG_UNLIKELY(state == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    digits = strrchr(name, '_');
+    digits = (strrchr)(name, '_');
     if (LDG_UNLIKELY(digits == 0x0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
     ret = ldg_str_to_dec(&digits[1], &idx);

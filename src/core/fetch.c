@@ -88,7 +88,7 @@ uint8_t crosstalk_core_fetch_name_valid_is(const char *name)
     {
         if (at + LDG_STR_TERM_SIZE >= (uint64_t)CROSSTALK_CORE_FETCH_NAME_CAP) { return LDG_TRUTH_FALSE; }
 
-        if (ldg_char_alnum_is(name[at]) == LDG_TRUTH_TRUE || name[at] == '.' || name[at] == '-' || name[at] == '_') { continue; }
+        if (ldg_char_alnum_is((uint8_t)name[at]) == LDG_TRUTH_TRUE || name[at] == '.' || name[at] == '-' || name[at] == '_') { continue; }
 
         return LDG_TRUTH_FALSE;
     }
@@ -428,14 +428,14 @@ static uint32_t fetch_hash_get(const char *text, uint64_t len)
 
 static uint8_t fetch_ident_start_is(char ch)
 {
-    if (ldg_char_alpha_is(ch) == LDG_TRUTH_TRUE || ch == '_') { return LDG_TRUTH_TRUE; }
+    if (ldg_char_alpha_is((uint8_t)ch) == LDG_TRUTH_TRUE || ch == '_') { return LDG_TRUTH_TRUE; }
 
     return LDG_TRUTH_FALSE;
 }
 
 static uint8_t fetch_ident_cont_is(char ch)
 {
-    if (ldg_char_alnum_is(ch) == LDG_TRUTH_TRUE || ch == '_' || ch == '$') { return LDG_TRUTH_TRUE; }
+    if (ldg_char_alnum_is((uint8_t)ch) == LDG_TRUTH_TRUE || ch == '_' || ch == '$') { return LDG_TRUTH_TRUE; }
 
     return LDG_TRUTH_FALSE;
 }
@@ -498,7 +498,7 @@ static uint32_t fetch_tok_next(const char *src, uint64_t len, uint64_t *io_pos, 
             return LDG_ERR_AOK;
         }
 
-        if (ldg_char_digit_is(ch) == LDG_TRUTH_TRUE)
+        if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE)
         {
             while (pos < len && (fetch_ident_cont_is(src[pos]) == LDG_TRUTH_TRUE || src[pos] == FETCH_TICK)) { pos = pos + FETCH_STEP; }
 

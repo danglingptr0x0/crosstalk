@@ -31,7 +31,7 @@ static uint32_t key_us_shifted_get(uint32_t ch)
 
     if (ch == (uint32_t)LDG_ASCII_SPACE || ch > (uint32_t)LDG_ASCII_MAX) { return ch; }
 
-    hit = strchr(table, (char)ch);
+    hit = (strchr)(table, (char)ch);
     if (hit == 0x0 || *hit == LDG_STR_TERM) { return ch; }
 
     return (uint32_t)(uint8_t)KEY_US_SHIFTED[hit - table];

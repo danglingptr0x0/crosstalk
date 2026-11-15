@@ -26,7 +26,7 @@ static uint32_t cmdline_drive_parse(const char *val, uint32_t *out_drive, const 
 
     if (val[0] == LDG_STR_TERM) { return CROSSTALK_EMU_CMDLINE_ERR_ARG; }
 
-    if (ldg_char_digit_is(val[0]) != LDG_TRUTH_TRUE || val[CMDLINE_DRIVE_DIGIT_LEN] != (char)CROSSTALK_EMU_CMDLINE_DRIVE_SEP) { return LDG_ERR_AOK; }
+    if (ldg_char_digit_is((uint8_t)val[0]) != LDG_TRUTH_TRUE || val[CMDLINE_DRIVE_DIGIT_LEN] != (char)CROSSTALK_EMU_CMDLINE_DRIVE_SEP) { return LDG_ERR_AOK; }
 
     drive = (uint32_t)(val[0] - (char)LDG_ASCII_DIGIT_ZERO);
 

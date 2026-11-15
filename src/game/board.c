@@ -281,7 +281,7 @@ uint32_t crosstalk_game_board_name_sanitize(const char *name, char *out, uint32_
 
         if ((uint8_t)name[idx] < LDG_ASCII_PRINTABLE_MIN || (uint8_t)name[idx] > LDG_ASCII_PRINTABLE_MAX) { continue; }
 
-        if (strchr(CROSSTALK_GAME_BOARD_NAME_ILLEGAL, name[idx]) != 0x0)
+        if ((strchr)(CROSSTALK_GAME_BOARD_NAME_ILLEGAL, name[idx]) != 0x0)
         {
             out[kept] = CROSSTALK_GAME_BOARD_NAME_SUB;
             kept++;
