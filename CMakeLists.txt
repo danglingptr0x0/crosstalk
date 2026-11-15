@@ -124,6 +124,15 @@ set(CROSSTALK_SRC_ALL
     src/re/diff.c
     src/re/cc.c
     src/re/spawn.c
+    src/re/repl/repl.c
+    src/re/repl/native.c
+    src/re/repl/scan.c
+    src/re/repl/expr.c
+    src/re/repl/sesh.c
+    src/re/repl/subst.c
+    src/re/repl/complete.c
+    src/re/repl/thread.c
+    src/re/repl/snitch.c
     src/hdl/diag/diag.c
     src/hdl/diag/sv.c
     src/hdl/elab.c
@@ -249,7 +258,7 @@ else()
     find_path(CROSSTALK_LIBRESTEAM_INC libresteam/backend/backend.h HINTS ${CROSSTALK_LIBRESTEAM_HINT_INC} REQUIRED)
     find_library(CROSSTALK_LIBRESTEAM_LIB NAMES libresteam.so HINTS ${CROSSTALK_LIBRESTEAM_HINT_LIB} REQUIRED)
     get_filename_component(CROSSTALK_LIBRESTEAM_LIB_DIR "${CROSSTALK_LIBRESTEAM_LIB}" DIRECTORY)
-    set(CROSSTALK_LIBRESTEAM_RT "${CROSSTALK_LIBRESTEAM_LIB_DIR}/libresteam.so.0")
+    set(CROSSTALK_LIBRESTEAM_RT "${CROSSTALK_LIBRESTEAM_LIB_DIR}/libresteam.so")
     if(NOT EXISTS "${CROSSTALK_LIBRESTEAM_RT}")
         message(FATAL_ERROR "missing ${CROSSTALK_LIBRESTEAM_RT}")
     endif()
@@ -347,8 +356,8 @@ else()
     add_custom_command(TARGET crosstalk POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${CROSSTALK_LIBRESTEAM_RT}"
-            "$<TARGET_FILE_DIR:crosstalk>/libresteam.so.0"
-        COMMENT "Staging libresteam.so.0 next to binary"
+            "$<TARGET_FILE_DIR:crosstalk>/libresteam.so"
+        COMMENT "Staging libresteam.so next to binary"
     )
     set(DISCORD_MODEL_DIR "${DISCORD_LIB}")
 endif()

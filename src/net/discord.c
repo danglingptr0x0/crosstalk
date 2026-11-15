@@ -58,6 +58,8 @@
 #define CROSSTALK_NET_DISCORD_ASCII_DIGIT_MIN 0x30
 #define CROSSTALK_NET_DISCORD_ASCII_DIGIT_MAX 0x39
 #define CROSSTALK_NET_DISCORD_TEXT_MENU "In the menus"
+#define CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF "Transponder off"
+#define CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF_STATE "0x0"
 #define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO "At the keyboard"
 #define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED "Paused at the keyboard"
 #define CROSSTALK_NET_DISCORD_TEXT_LOBBY_PAUSED "Paused in a lobby"
@@ -2021,6 +2023,19 @@ uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_
 
     if (LDG_UNLIKELY(ctx == 0x0 || desc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (desc->transponder_off == LDG_TRUTH_TRUE)
+    {
+        if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
+
+        crosstalk_net_discord_presence_solo_stage(ctx, CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF);
+        snprintf(ctx->presence.state, sizeof(ctx->presence.state), "%.63s", CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF_STATE);
+        ctx->presence.activity[0] = LDG_STR_TERM;
+        ctx->presence.music[0] = LDG_STR_TERM;
+        ctx->presence.paused = LDG_TRUTH_FALSE;
+
+        return LDG_ERR_AOK;
+    }
+
     ret = crosstalk_net_discord_presence_activity_set(ctx, desc->state);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -2292,6 +2307,33 @@ uint32_t crosstalk_net_discord_invite_send(crosstalk_net_discord_ctx_t *ctx, uin
 
     crosstalk_net_discord_str_make(text, &content);
     Discord_Client_SendActivityInvite(crosstalk_net_discord_client_get(ctx), user_id, content, crosstalk_net_discord_invite_sent_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+
+    return LDG_ERR_AOK;
+}
+
+static void crosstalk_net_discord_dnd_set_cb(Discord_ClientResult *res, void *user_data)
+{
+    crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)user_data;
+
+    if (!ctx) { return; }
+
+    if (!CROSSTALK_NET_DISCORD_SDK_OK(res))
+    {
+        crosstalk_net_discord_err_capture(ctx, res, "discord status set failed");
+        return;
+    }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: status set accepted");
+}
+
+uint32_t crosstalk_net_discord_dnd_set(crosstalk_net_discord_ctx_t *ctx, uint8_t on)
+{
+    if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->client_live == LDG_TRUTH_FALSE || ctx->state != CROSSTALK_NET_DISCORD_STATE_RDY) { return LDG_ERR_NOT_INIT; }
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: status set; dnd: %u32", (uint32_t)on);
+    Discord_Client_SetOnlineStatus(crosstalk_net_discord_client_get(ctx), on == LDG_TRUTH_TRUE ? Discord_StatusType_Dnd : Discord_StatusType_Online, crosstalk_net_discord_dnd_set_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     return LDG_ERR_AOK;
 }

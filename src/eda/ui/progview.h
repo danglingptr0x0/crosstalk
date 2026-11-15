@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "eda/ic/fpga/fpga.h"
+#include "re/repl/thread.h"
 #include "ui/window.h"
 
 #define CROSSTALK_EDA_UI_PROGVIEW_WINDOW_ID 0x50524F47ULL
@@ -17,6 +18,7 @@ typedef struct crosstalk_eda_ui_progview_ctx
 {
     crosstalk_ui_window_state_t win;
     const crosstalk_eda_ic_fpga_ctx_t *fpga;
+    const crosstalk_re_repl_thread_t *thread;
     char sig[CROSSTALK_EDA_UI_PROGVIEW_SIG_CAP];
     char loc_sig[CROSSTALK_EDA_UI_PROGVIEW_SIG_CAP];
     uint32_t slot;
@@ -28,6 +30,7 @@ typedef struct crosstalk_eda_ui_progview_ctx
 uint32_t crosstalk_eda_ui_progview_init(crosstalk_eda_ui_progview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_progview_shutdown(crosstalk_eda_ui_progview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_progview_bind(crosstalk_eda_ui_progview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot);
+uint32_t crosstalk_eda_ui_progview_thread_bind(crosstalk_eda_ui_progview_ctx_t *ctx, const crosstalk_re_repl_thread_t *thread);
 uint32_t crosstalk_eda_ui_progview_sig_set(crosstalk_eda_ui_progview_ctx_t *ctx, const char *sig_name);
 uint32_t crosstalk_eda_ui_progview_open_set(crosstalk_eda_ui_progview_ctx_t *ctx, uint8_t open);
 uint8_t crosstalk_eda_ui_progview_open_is(const crosstalk_eda_ui_progview_ctx_t *ctx);

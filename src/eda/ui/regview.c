@@ -32,6 +32,10 @@
 #define REGVIEW_NOTE_LOC_TEXT " loc"
 #define REGVIEW_NOTE_CAP 8
 #define REGVIEW_DEAD_TEXT "no running design"
+#define REGVIEW_THREAD_WAIT_FMT "thread %u; registers unread; err: %u"
+#define REGVIEW_THREAD_LABEL_FMT "%.6s; "
+#define REGVIEW_THREAD_VAL_FMT "0x%016" PRIX64
+#define REGVIEW_NOTE_CODE_TEXT " code"
 
 static uint8_t regview_reg_val_get(crosstalk_eda_ui_regview_ctx_t *ctx, uint32_t idx, uint64_t *out)
 {
@@ -101,6 +105,80 @@ uint8_t crosstalk_eda_ui_regview_open_is(const crosstalk_eda_ui_regview_ctx_t *c
     return ctx->win.open != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
+uint32_t crosstalk_eda_ui_regview_thread_bind(crosstalk_eda_ui_regview_ctx_t *ctx, const crosstalk_re_repl_thread_t *thread)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->thread = thread;
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t regview_thread_draw(crosstalk_eda_ui_regview_ctx_t *ctx, ldg_term_render_t *render)
+{
+    const crosstalk_re_repl_thread_t *thread = ctx->thread;
+    const char *name = 0x0;
+    const char *note = 0x0;
+    uint64_t val = 0;
+    uint32_t note_col = 0;
+    uint32_t text_col = 0;
+    uint32_t label_w = 0;
+    uint32_t val_w = 0;
+    uint32_t idx = 0;
+    uint32_t ret = 0;
+
+    if (thread->regs_ok != LDG_TRUTH_TRUE)
+    {
+        ctx->win.content_row_cunt = (uint32_t)REGVIEW_STEP;
+
+        return crosstalk_ui_cell_rgba_fmt_put(render, (uint32_t)REGVIEW_ORIG_COL, (uint32_t)REGVIEW_DEAD_ROW, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, &label_w, REGVIEW_THREAD_WAIT_FMT, thread->sel, thread->last_err);
+    }
+
+    for (idx = 0; idx < (uint32_t)CROSSTALK_RE_REPL_THREAD_REG_CUNT && idx < (uint32_t)CROSSTALK_EDA_UI_REGVIEW_ROW_CAP; idx = idx + (uint32_t)REGVIEW_STEP)
+    {
+        if (crosstalk_re_repl_thread_reg_name_get(idx, &name) != LDG_ERR_AOK) { continue; }
+
+        val = thread->reg[idx];
+        note = 0x0;
+        note_col = (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA;
+
+        if (val != ctx->prev[idx])
+        {
+            ctx->prev[idx] = val;
+            ctx->flash[idx] = REGVIEW_FLASH_FRAMES;
+        }
+
+        text_col = ctx->flash[idx] != 0 ? (uint32_t)CROSSTALK_UI_THEME_LIVE_RGBA : (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA;
+
+        ret = crosstalk_ui_cell_rgba_fmt_put(render, (uint32_t)REGVIEW_ORIG_COL, idx, text_col, &label_w, REGVIEW_THREAD_LABEL_FMT, name);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        ret = crosstalk_ui_cell_rgba_fmt_put(render, label_w, idx, text_col, &val_w, REGVIEW_THREAD_VAL_FMT, val);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        if (idx == (uint32_t)CROSSTALK_RE_REPL_THREAD_REG_LOC)
+        {
+            note = REGVIEW_NOTE_LOC_TEXT;
+            note_col = (uint32_t)CROSSTALK_UI_THEME_ACCENT_RGBA;
+        }
+        else if (thread->reg_tag[idx] == (uint8_t)CROSSTALK_RE_REPL_THREAD_TAG_STACK) { note = REGVIEW_NOTE_STACK_TEXT; }
+        else if (thread->reg_tag[idx] == (uint8_t)CROSSTALK_RE_REPL_THREAD_TAG_PTR) { note = REGVIEW_NOTE_PTR_TEXT; }
+        else if (thread->reg_tag[idx] == (uint8_t)CROSSTALK_RE_REPL_THREAD_TAG_CODE) { note = REGVIEW_NOTE_CODE_TEXT; }
+
+        if (note != 0x0)
+        {
+            ret = crosstalk_ui_cell_rgba_put(render, label_w + val_w, idx, note, (uint64_t)REGVIEW_NOTE_CAP, note_col, 0x0);
+            if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+        }
+
+        if (ctx->flash[idx] != 0) { ctx->flash[idx] = ctx->flash[idx] - (uint32_t)REGVIEW_STEP; }
+    }
+
+    ctx->win.content_row_cunt = idx;
+
+    return LDG_ERR_AOK;
+}
+
 static uint32_t regview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
     crosstalk_eda_ui_regview_ctx_t *ctx = (crosstalk_eda_ui_regview_ctx_t *)user;
@@ -117,6 +195,8 @@ static uint32_t regview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (win_id != (uint64_t)CROSSTALK_EDA_UI_REGVIEW_WINDOW_ID || col_cunt == 0 || row_cunt == 0) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    if (ctx->thread != 0x0 && ctx->thread->live == LDG_TRUTH_TRUE) { return regview_thread_draw(ctx, render); }
 
     if (regview_reg_val_get(ctx, (uint32_t)REGVIEW_SP_IDX, &sp_val) != LDG_TRUTH_TRUE) { sp_val = 0; }
 

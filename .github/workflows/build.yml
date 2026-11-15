@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       steam:
-        description: build the latest Crosstalk release and force its Steam upload, live set and post
+        description: build the latest Crosstalk release and force its Steam upload and live set
         type: boolean
         default: false
 permissions:
@@ -161,7 +161,7 @@ jobs:
           lin="out/crosstalk-$rel-linux-amd64"
           win="out/crosstalk-$rel-windows"
           mkdir -p "$lin" "$win"
-          cp -L crosstalk/build/crosstalk crosstalk/build/libresteam.so.0 /usr/local/lib/libdangling.so* "$sdk/lib/release/libdiscord_partner_sdk.so" "$sdk"/lib/release/*.kef crosstalk/LICENSE "$lin/"
+          cp -L crosstalk/build/crosstalk crosstalk/build/libresteam.so /usr/local/lib/libdangling.so* "$sdk/lib/release/libdiscord_partner_sdk.so" "$sdk"/lib/release/*.kef crosstalk/LICENSE "$lin/"
           cp -L crosstalk/build-win/crosstalk.exe crosstalk/build-win/libresteam.dll crosstalk/build-win/libdangling.dll "$sdk/bin/release/discord_partner_sdk.dll" "$sdk/bin/release/discord_krisp.dll" "$sdk"/bin/release/*.kef crosstalk/LICENSE "$win/"
           cp -r crosstalk/res "$lin/res"
           cp -r crosstalk/res "$win/res"
@@ -196,7 +196,9 @@ jobs:
       - name: changelog
         if: github.ref_type == 'tag'
         run: |
-          git-cliff --config crosstalk/.github/cliff.toml --repository crosstalk --latest --output changelog.md
+          tags='^[0-9]+\.[0-9]+(-rc[0-9]+)?$'
+          case "$REL" in *-rc*) ;; *) tags='^[0-9]+\.[0-9]+$' ;; esac
+          git-cliff --config crosstalk/.github/cliff.toml --repository crosstalk --tag-pattern "$tags" --latest --output changelog.md
           cat changelog.md
       - name: steam stage
         if: github.ref_type == 'tag' || inputs.steam
@@ -216,7 +218,7 @@ jobs:
           cp -r "out/crosstalk-$REL-windows/." "$c/bloat_win/"
           cp -r "out/crosstalk-$REL-linux-amd64/." "$c/bloat_linux/"
           cp -L crosstalk/tools/dangem/build-win/dangem.exe crosstalk/build-win/libresteam.dll crosstalk/build-win/libdangling.dll "$sdk/bin/release/discord_partner_sdk.dll" "$sdk/bin/release/discord_krisp.dll" "$sdk"/bin/release/*.kef crosstalk/LICENSE crosstalk/CONTRIBUTING "$c/win/"
-          cp -L crosstalk/tools/dangem/build/dangem crosstalk/build/libresteam.so.0 "$sdk/lib/release/libdiscord_partner_sdk.so" "$sdk"/lib/release/*.kef crosstalk/LICENSE crosstalk/CONTRIBUTING "$c/linux/"
+          cp -L crosstalk/tools/dangem/build/dangem crosstalk/build/libresteam.so "$sdk/lib/release/libdiscord_partner_sdk.so" "$sdk"/lib/release/*.kef crosstalk/LICENSE crosstalk/CONTRIBUTING "$c/linux/"
           mkdir -p "$c/linux/ldg/lib"
           cp -L /usr/local/lib/libdangling.so* "$c/linux/ldg/lib/"
           for t in win linux; do cp -r crosstalk/res "$c/$t/res"; cp -r crosstalk/src "$c/$t/src"; mkdir -p "$c/$t/$DISCORD_DIR/discord_social_sdk"; cp -r "$sdk/include" "$c/$t/$DISCORD_DIR/discord_social_sdk/include"; done
@@ -228,7 +230,9 @@ jobs:
           script="$(cat crosstalk/.github/steam/installscript_win.vdf)"
           printf '%s\n' "$script" | tee "$c/win/installscript_win.vdf"
           printf '%s\n' "${script//4898790/5466650}" | tee "$c/bloat_win/installscript_win.vdf"
-          git-cliff --config crosstalk/.github/steam/cliff_bbcode.toml --repository crosstalk --latest --output steam/changelog.bbcode
+          tags='^[0-9]+\.[0-9]+(-rc[0-9]+)?$'
+          case "$REL" in *-rc*) ;; *) tags='^[0-9]+\.[0-9]+$' ;; esac
+          git-cliff --config crosstalk/.github/steam/cliff_bbcode.toml --repository crosstalk --tag-pattern "$tags" --latest --output steam/changelog.bbcode
           cat steam/changelog.bbcode
           tar -cf steam.tar steam
           du -sh steam.tar
@@ -274,7 +278,7 @@ jobs:
       actions: read
     steps:
       - name: packages
-        run: sudo apt-get update && sudo apt-get install -y lib32gcc-s1 qrencode
+        run: sudo apt-get update && sudo apt-get install -y lib32gcc-s1
       - name: checkout crosstalk
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -292,4 +296,4 @@ jobs:
           STEAM_USER: ${{ secrets.STEAMWORKS_USER }}
           STEAM_PASS: ${{ secrets.STEAMWORKS_PASS }}
           STEAM_PUBLISHER_KEY: ${{ secrets.STEAMWORKS_PUBLISHER_KEY }}
-        run: CONTENT="$RUNNER_TEMP/steam/content" WORK="$RUNNER_TEMP/work" CHANGELOG="$RUNNER_TEMP/steam/changelog.bbcode" bash crosstalk/.github/steam/deploy.sh
+        run: CONTENT="$RUNNER_TEMP/steam/content" WORK="$RUNNER_TEMP/work" bash crosstalk/.github/steam/deploy.sh

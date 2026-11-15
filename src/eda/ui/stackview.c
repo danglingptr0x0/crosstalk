@@ -29,6 +29,13 @@
 #define STACKVIEW_RET_TEXT " ret from call"
 #define STACKVIEW_EMPTY_TEXT "stack empty; sp is at the base"
 #define STACKVIEW_DEAD_TEXT "no running design"
+#define STACKVIEW_THREAD_HDR_FMT "thread %u; sp: 0x%016" PRIX64 "; words: %u"
+#define STACKVIEW_THREAD_WAIT_FMT "thread %u; registers unread; err: %u"
+#define STACKVIEW_THREAD_ADDR_FMT "0x%016" PRIX64
+#define STACKVIEW_THREAD_WORD_FMT " 0x%016" PRIX64
+#define STACKVIEW_THREAD_MOD_FMT " %.31s+0x%" PRIX64
+#define STACKVIEW_THREAD_CODE_TEXT " code"
+#define STACKVIEW_THREAD_PTR_TEXT " ptr"
 #define STACKVIEW_HINT_TEXT "type a signal name to record its history; type it again to release"
 #define STACKVIEW_LANE_HDR_FMT "history %.31s; events: %u"
 #define STACKVIEW_LANE_ROW_CYCLE_FMT "%12" PRIu64 " "
@@ -723,6 +730,82 @@ static uint32_t stackview_hdr_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_te
     return stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
 }
 
+uint32_t crosstalk_eda_ui_stackview_thread_bind(crosstalk_eda_ui_stackview_ctx_t *ctx, const crosstalk_re_repl_thread_t *thread)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->thread = thread;
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t stackview_thread_note_put(const crosstalk_re_repl_thread_t *thread, ldg_term_render_t *render, uint32_t *pos_col, uint32_t row, uint32_t at)
+{
+    char line[STACKVIEW_LINE_CAP] = LDG_ARR_ZERO_INIT;
+
+    if (thread->stack_tag[at] == (uint8_t)CROSSTALK_RE_REPL_THREAD_TAG_STACK) { return stackview_seg_put(render, pos_col, row, STACKVIEW_NOTE_STACK_TEXT, (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA); }
+
+    if (thread->stack_tag[at] == (uint8_t)CROSSTALK_RE_REPL_THREAD_TAG_PTR) { return stackview_seg_put(render, pos_col, row, STACKVIEW_THREAD_PTR_TEXT, (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA); }
+
+    if (thread->stack_tag[at] != (uint8_t)CROSSTALK_RE_REPL_THREAD_TAG_CODE) { return LDG_ERR_AOK; }
+
+    if (thread->stack_mod[at][0] == LDG_STR_TERM) { return stackview_seg_put(render, pos_col, row, STACKVIEW_THREAD_CODE_TEXT, (uint32_t)CROSSTALK_UI_THEME_ACCENT_RGBA); }
+
+    if (snprintf(line, sizeof(line), STACKVIEW_THREAD_MOD_FMT, thread->stack_mod[at], thread->stack_mod_off[at]) < 0) { return LDG_ERR_STR_FMT; }
+
+    return stackview_seg_put(render, pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_ACCENT_RGBA);
+}
+
+static uint32_t stackview_thread_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_term_render_t *render)
+{
+    const crosstalk_re_repl_thread_t *thread = ctx->thread;
+    char line[STACKVIEW_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint32_t pos_col = STACKVIEW_ORIG_COL;
+    uint32_t row = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
+
+    if (thread->regs_ok != LDG_TRUTH_TRUE)
+    {
+        if (snprintf(line, sizeof(line), STACKVIEW_THREAD_WAIT_FMT, thread->sel, thread->last_err) < 0) { return LDG_ERR_STR_FMT; }
+
+        ctx->win.content_row_cunt = (uint32_t)STACKVIEW_STEP;
+
+        return stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA);
+    }
+
+    if (snprintf(line, sizeof(line), STACKVIEW_THREAD_HDR_FMT, thread->sel, thread->stack_addr, thread->stack_cunt) < 0) { return LDG_ERR_STR_FMT; }
+
+    ret = stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    row = row + (uint32_t)STACKVIEW_STEP;
+
+    for (at = 0; at < thread->stack_cunt; at = at + (uint32_t)STACKVIEW_STEP)
+    {
+        pos_col = STACKVIEW_ORIG_COL;
+
+        if (snprintf(line, sizeof(line), STACKVIEW_THREAD_ADDR_FMT, thread->stack_addr + (uint64_t)at * (uint64_t)STACKVIEW_WORD_BYTES) < 0) { return LDG_ERR_STR_FMT; }
+
+        ret = stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        if (snprintf(line, sizeof(line), STACKVIEW_THREAD_WORD_FMT, thread->stack[at]) < 0) { return LDG_ERR_STR_FMT; }
+
+        ret = stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        ret = stackview_thread_note_put(thread, render, &pos_col, row, at);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        row = row + (uint32_t)STACKVIEW_STEP;
+    }
+
+    ctx->win.content_row_cunt = row;
+
+    return LDG_ERR_AOK;
+}
+
 static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
     crosstalk_eda_ui_stackview_ctx_t *ctx = (crosstalk_eda_ui_stackview_ctx_t *)user;
@@ -737,6 +820,8 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (win_id != (uint64_t)CROSSTALK_EDA_UI_STACKVIEW_WINDOW_ID || col_cunt == 0 || row_cunt == 0) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    if (ctx->thread != 0x0 && ctx->thread->live == LDG_TRUTH_TRUE) { return stackview_thread_draw(ctx, render); }
 
     stackview_pump(ctx);
 

@@ -5,6 +5,7 @@
 
 #include "eda/ic/fpga/fpga.h"
 #include "eda/logic/probe.h"
+#include "re/repl/thread.h"
 #include "ui/window.h"
 
 #define CROSSTALK_EDA_UI_STACKVIEW_WINDOW_ID 0x53544B56ULL
@@ -54,6 +55,7 @@ typedef struct crosstalk_eda_ui_stackview_ctx
     crosstalk_ui_window_state_t win;
     const crosstalk_eda_ic_fpga_ctx_t *fpga;
     crosstalk_eda_logic_probe_ctx_t *probes;
+    const crosstalk_re_repl_thread_t *thread;
     crosstalk_eda_ui_stackview_lane_t lane[CROSSTALK_EDA_UI_STACKVIEW_LANE_CAP];
     uint64_t word[CROSSTALK_EDA_UI_STACKVIEW_ROW_CAP];
     uint8_t call_mark[CROSSTALK_EDA_UI_STACKVIEW_ROW_CAP];
@@ -82,6 +84,7 @@ typedef struct crosstalk_eda_ui_stackview_ctx
 
 uint32_t crosstalk_eda_ui_stackview_init(crosstalk_eda_ui_stackview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_stackview_bind(crosstalk_eda_ui_stackview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, crosstalk_eda_logic_probe_ctx_t *probes, uint32_t slot);
+uint32_t crosstalk_eda_ui_stackview_thread_bind(crosstalk_eda_ui_stackview_ctx_t *ctx, const crosstalk_re_repl_thread_t *thread);
 uint32_t crosstalk_eda_ui_stackview_open_set(crosstalk_eda_ui_stackview_ctx_t *ctx, uint8_t open);
 uint32_t crosstalk_eda_ui_stackview_mem_set(crosstalk_eda_ui_stackview_ctx_t *ctx, const char *sig);
 uint8_t crosstalk_eda_ui_stackview_open_is(const crosstalk_eda_ui_stackview_ctx_t *ctx);

@@ -286,6 +286,7 @@ uint8_t crosstalk_net_discord_auth_fail_take(crosstalk_net_discord_ctx_t *ctx);
 uint32_t crosstalk_net_discord_auth_link_local(crosstalk_net_discord_ctx_t *ctx);
 
 uint32_t crosstalk_net_discord_invite_send(crosstalk_net_discord_ctx_t *ctx, uint64_t user_id, const char *text);
+uint32_t crosstalk_net_discord_dnd_set(crosstalk_net_discord_ctx_t *ctx, uint8_t on);
 uint32_t crosstalk_net_discord_invite_pending_get(const crosstalk_net_discord_ctx_t *ctx, const char **out_name, uint64_t *out_sender_id);
 uint32_t crosstalk_net_discord_invite_accept(crosstalk_net_discord_ctx_t *ctx);
 uint32_t crosstalk_net_discord_invite_drop(crosstalk_net_discord_ctx_t *ctx);

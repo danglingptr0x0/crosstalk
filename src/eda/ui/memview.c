@@ -9,13 +9,27 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/core/bits.h>
+#include <dangling/mem/region.h>
+#include <dangling/mem/vmem.h>
 #include <dangling/str/str.h>
+#include <dangling/sys/mod.h>
 
 #include "core/log.h"
 #include "eda/ui/memview.h"
 #include "ui/cell.h"
 #include "ui/theme.h"
 
+#define MEMVIEW_PROC_CHUNK 256
+#define MEMVIEW_PROC_BLK 4096
+#define MEMVIEW_PROC_PTR_BYTES 8
+#define MEMVIEW_PROC_SIG "proc"
+#define MEMVIEW_PROC_SPAN_STEPS 32
+#define MEMVIEW_PROC_FIND_BUDGET (256 * LDG_KIB)
+#define MEMVIEW_PROC_EXE "exe"
+#define MEMVIEW_PROC_TOK_CAP 128
+#define MEMVIEW_PROC_PATH_CAP 512
+#define MEMVIEW_PROC_PATH_SEP '/'
+#define MEMVIEW_HOLE_TEXT "??"
 #define MEMVIEW_ORIG_COL 0
 #define MEMVIEW_ROW_TAB 0
 #define MEMVIEW_ROW_HDR 1
@@ -235,6 +249,7 @@ uint32_t crosstalk_eda_ui_memview_bind(crosstalk_eda_ui_memview_ctx_t *ctx, cons
 
     if (crosstalk_eda_ui_memview_diff_clear(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview diff clear failed"); }
 
+    ctx->proc = 0x0;
     ctx->elem_bytes = elem_width / (uint32_t)LDG_BYTE_BITS;
     if (ctx->elem_bytes == 0) { ctx->elem_bytes = (uint32_t)MEMVIEW_STEP; }
 
@@ -300,6 +315,87 @@ uint32_t crosstalk_eda_ui_memview_bind(crosstalk_eda_ui_memview_ctx_t *ctx, cons
     }
 
     return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_eda_ui_memview_proc_bind(crosstalk_eda_ui_memview_ctx_t *ctx, const ldg_sys_proc_t *proc)
+{
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || proc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ret = ldg_str_rbrcpy(ctx->sig, MEMVIEW_PROC_SIG, (uint64_t)sizeof(ctx->sig));
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    if (crosstalk_eda_ui_memview_snap_clear(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview snap clear failed"); }
+
+    if (crosstalk_eda_ui_memview_diff_clear(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview diff clear failed"); }
+
+    memset(ctx->page_hole, 0x0, sizeof(ctx->page_hole));
+
+    ctx->proc = proc;
+    ctx->proc_span_lo = 0;
+    ctx->proc_span_end = 0;
+    ctx->proc_blk_addr = 0;
+    ctx->proc_blk_len = 0;
+    ctx->elem_bytes = (uint32_t)MEMVIEW_STEP;
+    ctx->ptr_bytes = (uint32_t)MEMVIEW_PROC_PTR_BYTES;
+    ctx->extent_cap = UINT64_MAX;
+    ctx->extent_at = 0;
+    ctx->width = UINT64_MAX;
+    ctx->io_cunt = 0;
+    ctx->io_on = LDG_TRUTH_FALSE;
+    ctx->follow = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_FOLLOW_FIXED;
+    ctx->follow_sig[0] = LDG_STR_TERM;
+    ctx->heat_sig[0] = LDG_STR_TERM;
+    ctx->base = 0x0;
+    ctx->bound = LDG_TRUTH_TRUE;
+    ctx->overview_ok = LDG_TRUTH_FALSE;
+    ctx->finding = LDG_TRUTH_FALSE;
+    ctx->stringing = LDG_TRUTH_FALSE;
+    ctx->motion_kind = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_MOTION_OFF;
+    ctx->watch_mode = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_WATCH_OFF;
+    ctx->watch_hit = LDG_TRUTH_FALSE;
+    ctx->hit_cunt = 0;
+    ctx->page_cunt = 0;
+    ctx->heap_cunt = 0;
+    ctx->refresh_next = 0.0;
+    ctx->mut_addr = UINT64_MAX;
+    ctx->mut_base = 0x0;
+    ctx->mut_page_cunt = 0x0;
+    ctx->mut_supported = LDG_TRUTH_FALSE;
+    ctx->mut_visible = LDG_TRUTH_FALSE;
+    ctx->mut_pane_col = UINT32_MAX;
+
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "memview: bound to process; pid: %u32", proc->pid);
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_eda_ui_memview_proc_unbind(crosstalk_eda_ui_memview_ctx_t *ctx)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->proc == 0x0) { return LDG_ERR_AOK; }
+
+    ctx->proc = 0x0;
+    ctx->sig[0] = LDG_STR_TERM;
+    ctx->bound = LDG_TRUTH_FALSE;
+    ctx->finding = LDG_TRUTH_FALSE;
+    ctx->stringing = LDG_TRUTH_FALSE;
+    ctx->motion_kind = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_MOTION_OFF;
+    ctx->watch_mode = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_WATCH_OFF;
+    ctx->watch_hit = LDG_TRUTH_FALSE;
+    ctx->hit_cunt = 0;
+    ctx->page_cunt = 0;
+
+    return LDG_ERR_AOK;
+}
+
+uint8_t crosstalk_eda_ui_memview_proc_bound_is(const crosstalk_eda_ui_memview_ctx_t *ctx)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    return ctx->proc != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
 uint32_t crosstalk_eda_ui_memview_addr_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t addr)
@@ -555,6 +651,137 @@ uint32_t crosstalk_eda_ui_memview_watch_start(crosstalk_eda_ui_memview_ctx_t *ct
     return LDG_ERR_AOK;
 }
 
+static uint64_t memview_proc_hole_span_get(const crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t addr)
+{
+    ldg_mem_region_t region = LDG_STRUCT_ZERO_INIT;
+    uint64_t end = 0;
+
+    if (ldg_mem_region_get(ctx->proc, addr, &region) != LDG_ERR_AOK) { return (uint64_t)MEMVIEW_PROC_BLK - addr % (uint64_t)MEMVIEW_PROC_BLK; }
+
+    if (region.size > UINT64_MAX - region.base) { return (uint64_t)MEMVIEW_STEP; }
+
+    end = region.base + region.size;
+
+    if (end <= addr || (region.committed == LDG_TRUTH_TRUE && region.readable == LDG_TRUTH_TRUE && region.guard != LDG_TRUTH_TRUE)) { return (uint64_t)MEMVIEW_STEP; }
+
+    return end - addr;
+}
+
+static uint32_t memview_proc_span_next(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t *at)
+{
+    ldg_mem_region_t region = LDG_STRUCT_ZERO_INIT;
+    uint64_t end = 0;
+    uint32_t step = 0;
+
+    for (step = 0; step < (uint32_t)MEMVIEW_PROC_SPAN_STEPS; step = step + (uint32_t)MEMVIEW_STEP)
+    {
+        if (ldg_mem_region_get(ctx->proc, *at, &region) != LDG_ERR_AOK) { return LDG_ERR_EOF; }
+
+        if (region.size > UINT64_MAX - region.base) { return LDG_ERR_EOF; }
+
+        end = region.base + region.size;
+        if (end <= *at) { return LDG_ERR_EOF; }
+
+        if (region.committed == LDG_TRUTH_TRUE && region.readable == LDG_TRUTH_TRUE && region.guard != LDG_TRUTH_TRUE)
+        {
+            ctx->proc_span_lo = *at;
+            ctx->proc_span_end = end;
+
+            return LDG_ERR_AOK;
+        }
+
+        *at = end;
+    }
+
+    return LDG_ERR_AOK;
+}
+
+static uint8_t memview_proc_span_has_is(const crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t at)
+{
+    return at >= ctx->proc_span_lo && at < ctx->proc_span_end ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+static uint32_t memview_proc_rd(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t addr, uint64_t *out, uint32_t cunt, uint32_t *out_rd)
+{
+    uint8_t bytes[MEMVIEW_PROC_CHUNK] = LDG_ARR_ZERO_INIT;
+    uint8_t *hole = out == ctx->page ? ctx->page_hole : 0x0;
+    uint64_t got = 0;
+    uint64_t skip = 0;
+    uint32_t at = 0;
+    uint32_t want = 0;
+    uint32_t idx = 0;
+
+    *out_rd = 0;
+
+    if (hole == 0x0 && cunt <= (uint32_t)MEMVIEW_PROC_CHUNK)
+    {
+        if (addr < ctx->proc_blk_addr || addr - ctx->proc_blk_addr >= (uint64_t)ctx->proc_blk_len || (uint64_t)cunt > (uint64_t)ctx->proc_blk_len - (addr - ctx->proc_blk_addr))
+        {
+            ctx->proc_blk_addr = addr;
+            ctx->proc_blk_len = 0;
+
+            if (ldg_mem_vmem_rd(ctx->proc, addr, ctx->proc_blk, (uint64_t)sizeof(ctx->proc_blk), &got) != LDG_ERR_AOK && got > (uint64_t)sizeof(ctx->proc_blk)) { got = 0; }
+
+            if (got <= (uint64_t)sizeof(ctx->proc_blk)) { ctx->proc_blk_len = (uint32_t)got; }
+        }
+
+        if ((uint64_t)cunt <= (uint64_t)ctx->proc_blk_len && addr == ctx->proc_blk_addr + (addr - ctx->proc_blk_addr) && (uint64_t)cunt <= (uint64_t)ctx->proc_blk_len - (addr - ctx->proc_blk_addr))
+        {
+            for (idx = 0; idx < cunt; idx = idx + (uint32_t)MEMVIEW_STEP) { out[idx] = (uint64_t)ctx->proc_blk[(addr - ctx->proc_blk_addr) + (uint64_t)idx]; }
+
+            *out_rd = cunt;
+
+            return LDG_ERR_AOK;
+        }
+
+        got = 0;
+    }
+
+    while (at < cunt && (uint64_t)at <= UINT64_MAX - addr)
+    {
+        want = cunt - at < (uint32_t)MEMVIEW_PROC_CHUNK ? cunt - at : (uint32_t)MEMVIEW_PROC_CHUNK;
+        got = 0;
+
+        if (ldg_mem_vmem_rd(ctx->proc, addr + (uint64_t)at, bytes, (uint64_t)want, &got) != LDG_ERR_AOK && got > (uint64_t)want) { got = 0; }
+
+        if (got > (uint64_t)want) { got = (uint64_t)want; }
+
+        for (idx = 0; idx < (uint32_t)got; idx = idx + (uint32_t)MEMVIEW_STEP)
+        {
+            out[at + idx] = (uint64_t)bytes[idx];
+
+            if (hole != 0x0) { hole[at + idx] = LDG_TRUTH_FALSE; }
+        }
+
+        at = at + (uint32_t)got;
+
+        if (got == (uint64_t)want) { continue; }
+
+        skip = memview_proc_hole_span_get(ctx, addr + (uint64_t)at);
+        if (skip > (uint64_t)(cunt - at)) { skip = (uint64_t)(cunt - at); }
+
+        for (idx = 0; idx < (uint32_t)skip; idx = idx + (uint32_t)MEMVIEW_STEP)
+        {
+            out[at + idx] = 0;
+
+            if (hole != 0x0) { hole[at + idx] = LDG_TRUTH_TRUE; }
+        }
+
+        at = at + (uint32_t)skip;
+    }
+
+    *out_rd = at;
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t memview_live_rd(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t elem_at, uint64_t *out, uint32_t cunt, uint32_t *out_rd)
+{
+    if (ctx->proc != 0x0) { return memview_proc_rd(ctx, elem_at, out, cunt, out_rd); }
+
+    return crosstalk_eda_ic_fpga_mem_rd(fpga, slot_idx, ctx->sig, elem_at, out, cunt, out_rd);
+}
+
 static uint32_t memview_elem_rd(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t elem_at, uint64_t *out, uint32_t cunt, uint32_t *out_rd)
 {
     uint64_t elem_width = 0;
@@ -563,6 +790,8 @@ static uint32_t memview_elem_rd(crosstalk_eda_ui_memview_ctx_t *ctx, const cross
     uint32_t ret = 0;
 
     *out_rd = 0;
+
+    if (ctx->proc != 0x0 && ctx->snap_mode != LDG_TRUTH_TRUE) { return memview_proc_rd(ctx, elem_at, out, cunt, out_rd); }
 
     if (ctx->snap_mode != LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_mem_rd(fpga, slot_idx, ctx->sig, elem_at, out, cunt, out_rd); }
 
@@ -898,7 +1127,7 @@ static uint32_t memview_motion_step(crosstalk_eda_ui_memview_ctx_t *ctx, const c
             uint32_t got = 0;
             uint32_t idx = 0;
 
-            if (crosstalk_eda_ic_fpga_mem_rd(fpga, slot_idx, ctx->sig, ctx->motion_at + (uint64_t)at, ctx->lane, want, &got) != LDG_ERR_AOK) { break; }
+            if (memview_live_rd(ctx, fpga, slot_idx, ctx->motion_at + (uint64_t)at, ctx->lane, want, &got) != LDG_ERR_AOK) { break; }
 
             for (idx = 0; idx < got; idx = idx + (uint32_t)MEMVIEW_STEP) { ctx->motion_prev[at + idx] = (uint32_t)ctx->lane[idx]; }
         }
@@ -914,7 +1143,7 @@ static uint32_t memview_motion_step(crosstalk_eda_ui_memview_ctx_t *ctx, const c
         uint32_t got = 0;
         uint32_t idx = 0;
 
-        if (crosstalk_eda_ic_fpga_mem_rd(fpga, slot_idx, ctx->sig, ctx->motion_at + (uint64_t)at, ctx->lane, want, &got) != LDG_ERR_AOK) { break; }
+        if (memview_live_rd(ctx, fpga, slot_idx, ctx->motion_at + (uint64_t)at, ctx->lane, want, &got) != LDG_ERR_AOK) { break; }
 
         for (idx = 0; idx < got && ctx->hit_cunt < (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_HIT_CAP; idx = idx + (uint32_t)MEMVIEW_STEP)
         {
@@ -1049,6 +1278,9 @@ static uint32_t memview_find_step(crosstalk_eda_ui_memview_ctx_t *ctx, const cro
     uint64_t done = 0;
     uint64_t budget = ctx->snap_mode == LDG_TRUTH_TRUE ? (uint64_t)MEMVIEW_SNAP_FIND_BUDGET : (uint64_t)CROSSTALK_EDA_UI_MEMVIEW_FIND_BUDGET;
     uint32_t rd = 0;
+    uint8_t proc_on = ctx->proc != 0x0 && ctx->snap_mode != LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    if (proc_on == LDG_TRUTH_TRUE) { budget = (uint64_t)MEMVIEW_PROC_FIND_BUDGET; }
 
     if (ctx->find_mode == (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_FIND_MODE_REF)
     {
@@ -1056,6 +1288,15 @@ static uint32_t memview_find_step(crosstalk_eda_ui_memview_ctx_t *ctx, const cro
         {
             uint64_t val = 0;
             uint32_t byte = 0;
+
+            if (proc_on == LDG_TRUTH_TRUE && memview_proc_span_has_is(ctx, ctx->find_at) != LDG_TRUTH_TRUE)
+            {
+                if (memview_proc_span_next(ctx, &ctx->find_at) != LDG_ERR_AOK) { ctx->finding = LDG_TRUTH_FALSE; break; }
+
+                done = done + (uint64_t)MEMVIEW_PROC_BLK;
+
+                continue;
+            }
 
             if (ctx->find_at >= ctx->find_hi || (uint64_t)ctx->ptr_bytes > ctx->find_hi - ctx->find_at) { ctx->finding = LDG_TRUTH_FALSE; break; }
 
@@ -1079,7 +1320,16 @@ static uint32_t memview_find_step(crosstalk_eda_ui_memview_ctx_t *ctx, const cro
         uint32_t at = 0;
         uint8_t match = LDG_TRUTH_TRUE;
 
-        if (ctx->find_at + (uint64_t)ctx->pattern_len > ctx->find_hi) { ctx->finding = LDG_TRUTH_FALSE; break; }
+        if (proc_on == LDG_TRUTH_TRUE && memview_proc_span_has_is(ctx, ctx->find_at) != LDG_TRUTH_TRUE)
+        {
+            if (memview_proc_span_next(ctx, &ctx->find_at) != LDG_ERR_AOK) { ctx->finding = LDG_TRUTH_FALSE; break; }
+
+            done = done + (uint64_t)MEMVIEW_PROC_BLK;
+
+            continue;
+        }
+
+        if (ctx->find_at > UINT64_MAX - (uint64_t)ctx->pattern_len || ctx->find_at + (uint64_t)ctx->pattern_len > ctx->find_hi) { ctx->finding = LDG_TRUTH_FALSE; break; }
 
         if (memview_src_rd(ctx, fpga, slot_idx, ctx->find_at, chunk, ctx->pattern_len, &rd) != LDG_ERR_AOK || rd < ctx->pattern_len) { ctx->finding = LDG_TRUTH_FALSE; break; }
 
@@ -1949,7 +2199,7 @@ static uint32_t memview_mut_step(crosstalk_eda_ui_memview_ctx_t *ctx, const cros
     uint64_t state[CROSSTALK_HDL_ABI_MEM_MUT_CUNT] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0x0;
 
-    if (ctx->mut_visible != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
+    if (ctx->mut_visible != LDG_TRUTH_TRUE || ctx->proc != 0x0) { return LDG_ERR_AOK; }
 
     ctx->mut_page_cunt = 0x0;
     ctx->mut_addr = UINT64_MAX;
@@ -1971,9 +2221,13 @@ uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, cons
 
     if (ctx->open != LDG_TRUTH_TRUE || ctx->bound != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
+    ctx->proc_blk_len = 0;
+
     if (memview_mut_step(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview latest RAM change read failed"); }
 
     ctx->hlt_is = crosstalk_eda_ic_fpga_slot_hlt_is(fpga, slot_idx);
+    if (ctx->proc != 0x0) { ctx->hlt_is = LDG_TRUTH_FALSE; }
+
     ctx->hlt_now = now;
 
     if (ctx->hlt_mark == LDG_TRUTH_TRUE && ctx->hlt_is == LDG_TRUTH_TRUE)
@@ -1989,7 +2243,7 @@ uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, cons
         ctx->hlt_mark_seen = LDG_TRUTH_FALSE;
     }
 
-    if (ctx->snap_mode != LDG_TRUTH_TRUE) { memview_heat_sample(ctx, fpga, slot_idx); }
+    if (ctx->snap_mode != LDG_TRUTH_TRUE && ctx->proc == 0x0) { memview_heat_sample(ctx, fpga, slot_idx); }
 
     if (ctx->finding == LDG_TRUTH_TRUE)
     {
@@ -2012,6 +2266,8 @@ uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, cons
 
     if (ctx->stringing == LDG_TRUTH_TRUE) { if (memview_strings_step(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview strings step failed"); } }
 
+    if (ctx->proc != 0x0) { ctx->dis_req = LDG_TRUTH_FALSE; }
+
     if (ctx->dis_req == LDG_TRUTH_TRUE) { if (memview_dis_step(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview dis failed"); } }
 
     if (ctx->watch_mode != (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_WATCH_OFF) { if (memview_watch_step(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview watch step failed"); } }
@@ -2028,7 +2284,7 @@ uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, cons
         if (crosstalk_eda_ic_fpga_sig_peek(fpga, slot_idx, ctx->follow_sig, &val, &width) == LDG_ERR_AOK && (ctx->io_on == LDG_TRUTH_TRUE || val < ctx->width)) { ctx->base = val; }
     }
 
-    if (ctx->overview_ok != LDG_TRUTH_TRUE || now >= ctx->overview_next)
+    if (ctx->proc == 0x0 && (ctx->overview_ok != LDG_TRUTH_TRUE || now >= ctx->overview_next))
     {
         memview_overview_build(ctx, fpga, slot_idx);
 
@@ -2043,7 +2299,7 @@ uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, cons
 
     if (now >= ctx->heap_next)
     {
-        if (memview_heap_scan(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ctx->heap_cunt = 0; }
+        if (ctx->proc != 0x0 || memview_heap_scan(ctx, fpga, slot_idx) != LDG_ERR_AOK) { ctx->heap_cunt = 0; }
 
         ctx->heap_next = now + CROSSTALK_EDA_UI_MEMVIEW_HEAP_SECS;
     }
@@ -2356,6 +2612,87 @@ static uint32_t memview_sym_parse(const crosstalk_eda_ui_memview_ctx_t *ctx, con
     return LDG_ERR_AOK;
 }
 
+static uint32_t memview_proc_base_parse(const crosstalk_eda_ui_memview_ctx_t *ctx, const char *name, uint64_t *out)
+{
+    ldg_sys_mod_t mod = LDG_STRUCT_ZERO_INIT;
+    char path[MEMVIEW_PROC_PATH_CAP] = LDG_ARR_ZERO_INIT;
+    const char *leaf = path;
+    uint32_t at = 0;
+
+    if (memview_num_parse(name, out) == LDG_ERR_AOK) { return LDG_ERR_AOK; }
+
+    *out = 0x0;
+
+    if (strncmp(name, MEMVIEW_PROC_EXE, sizeof(MEMVIEW_PROC_EXE)) == 0)
+    {
+        if (ldg_sys_proc_img_path_get(ctx->proc, path, (uint64_t)sizeof(path)) != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
+
+        for (at = 0; path[at] != LDG_STR_TERM; at = at + (uint32_t)MEMVIEW_STEP) { if (path[at] == MEMVIEW_PROC_PATH_SEP || path[at] == LDG_ASCII_BSLASH) { leaf = &path[at + (uint32_t)MEMVIEW_STEP]; } }
+
+        name = leaf;
+    }
+
+    if (ldg_sys_mod_find(ctx->proc, name, &mod) == LDG_ERR_AOK)
+    {
+        *out = mod.base;
+        return LDG_ERR_AOK;
+    }
+
+    if (ctx->calc != 0x0 && crosstalk_eda_ui_calc_var_get(ctx->calc, name, out) == LDG_ERR_AOK) { return LDG_ERR_AOK; }
+
+    return LDG_ERR_NOT_FOUND;
+}
+
+static uint32_t memview_proc_addr_parse(const crosstalk_eda_ui_memview_ctx_t *ctx, const char *text, uint64_t *out)
+{
+    char tok[MEMVIEW_PROC_TOK_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t addr = 0;
+    uint64_t off = 0;
+    uint32_t len = 0;
+    uint32_t split = 0;
+    uint32_t at = 0;
+    uint8_t neg = LDG_TRUTH_FALSE;
+
+    *out = 0x0;
+
+    while (text[len] != LDG_STR_TERM && text[len] != ' ' && len + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok))
+    {
+        tok[len] = text[len];
+        len = len + (uint32_t)MEMVIEW_STEP;
+    }
+
+    tok[len] = LDG_STR_TERM;
+
+    if (len == 0) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    for (at = len - (uint32_t)MEMVIEW_STEP; at > 0; at = at - (uint32_t)MEMVIEW_STEP) { if ((tok[at] == MEMVIEW_SYM_PLUS || tok[at] == MEMVIEW_SYM_MINUS) && memview_num_parse(&tok[at + (uint32_t)MEMVIEW_STEP], &off) == LDG_ERR_AOK)
+        {
+            split = at;
+            break;
+        }
+    }
+
+    if (split == 0) { return memview_proc_base_parse(ctx, tok, out); }
+
+    neg = tok[split] == MEMVIEW_SYM_MINUS ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    tok[split] = LDG_STR_TERM;
+
+    if (memview_proc_base_parse(ctx, tok, &addr) != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
+
+    if (neg == LDG_TRUTH_TRUE)
+    {
+        if (off > addr) { return CROSSTALK_EDA_UI_MEMVIEW_ERR_RANGE; }
+
+        *out = addr - off;
+
+        return LDG_ERR_AOK;
+    }
+
+    *out = addr + off;
+
+    return LDG_ERR_AOK;
+}
+
 static uint32_t memview_addr_parse(const crosstalk_eda_ui_memview_ctx_t *ctx, const char *text, uint64_t *out)
 {
     char base[CROSSTALK_HDL_ELF_NAME_CAP] = LDG_ARR_ZERO_INIT;
@@ -2367,6 +2704,8 @@ static uint32_t memview_addr_parse(const crosstalk_eda_ui_memview_ctx_t *ctx, co
     if (LDG_UNLIKELY(ctx == 0x0 || text == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out = 0x0;
+
+    if (ctx->proc != 0x0) { return memview_proc_addr_parse(ctx, text, out); }
 
     for (at = (uint32_t)MEMVIEW_STEP; text[at] != LDG_STR_TERM && text[at] != ' '; at = at + (uint32_t)MEMVIEW_STEP) { if (text[at] == MEMVIEW_SYM_PLUS || text[at] == MEMVIEW_SYM_MINUS) { split = at; break; } }
 
@@ -2719,6 +3058,31 @@ static uint32_t memview_repl_exec(crosstalk_eda_ui_memview_ctx_t *ctx)
 
     if (strcmp(verb, MEMVIEW_REPL_TOK_SNAP) == 0) { return memview_repl_action_put(ctx, (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_ACTION_SNAP, rest); }
 
+    if (ctx->proc != 0x0 && ctx->snap_mode != LDG_TRUTH_TRUE)
+    {
+        uint64_t addr = 0;
+        uint32_t lead = 0;
+        uint32_t tail = 0;
+
+        while (ctx->query[lead] == ' ') { lead = lead + (uint32_t)MEMVIEW_STEP; }
+
+        tail = lead;
+
+        while (ctx->query[tail] != LDG_STR_TERM && ctx->query[tail] != ' ') { tail = tail + (uint32_t)MEMVIEW_STEP; }
+
+        while (ctx->query[tail] == ' ') { tail = tail + (uint32_t)MEMVIEW_STEP; }
+
+        if (ctx->query[tail] == LDG_STR_TERM && memview_addr_parse(ctx, &ctx->query[lead], &addr) == LDG_ERR_AOK && crosstalk_eda_ui_memview_addr_set(ctx, addr) == LDG_ERR_AOK)
+        {
+            ctx->go_addr = addr;
+            ctx->go_has = LDG_TRUTH_TRUE;
+
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "memview: go; arg: %.63s; addr: 0x%X64", &ctx->query[lead], addr);
+
+            return LDG_ERR_AOK;
+        }
+    }
+
     if (ctx->query[0] == CROSSTALK_EDA_UI_MEMVIEW_HEX_LEAD[0] && ctx->query[LDG_STR_TERM_SIZE] == CROSSTALK_EDA_UI_MEMVIEW_HEX_LEAD[LDG_STR_TERM_SIZE]) { return crosstalk_eda_ui_memview_find_start(ctx, ctx->query, LDG_TRUTH_FALSE, 0x0, ctx->width); }
 
     return crosstalk_eda_ui_memview_find_start(ctx, ctx->query, LDG_TRUTH_TRUE, 0x0, ctx->width);
@@ -2885,6 +3249,8 @@ static uint32_t memview_cell_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg
     uint64_t addr = ctx->base + (uint64_t)idx;
     uint64_t val = ctx->page[idx] & (uint64_t)LDG_BYTE_MASK;
     uint32_t col = pane_col + memview_hex_col_get(idx % (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_COL_CUNT);
+
+    if (ctx->proc != 0x0 && ctx->snap_mode != LDG_TRUTH_TRUE && ctx->page_hole[idx] == LDG_TRUTH_TRUE) { return memview_span_put(render, col, row, MEMVIEW_HOLE_TEXT, (uint64_t)MEMVIEW_HEX_CHARS, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, bg_rgba); }
 
     if (snprintf(cell, sizeof(cell), MEMVIEW_CELL_FMT, val) < 0) { return LDG_ERR_STR_FMT; }
 

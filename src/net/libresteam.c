@@ -1583,6 +1583,17 @@ uint32_t crosstalk_net_libresteam_presence_push(void *backend_ctx, const crossta
 
     if (LDG_UNLIKELY(set == 0x0 || desc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (desc->transponder_off == LDG_TRUTH_TRUE)
+    {
+        net_libresteam_presence_connect_set(set, NET_LIBRESTEAM_ID_NONE);
+        net_libresteam_presence_group_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_GROUP_CLEAR, desc->members);
+        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_OP, CROSSTALK_NET_LIBRESTEAM_PRESENCE_VAL_CLEAR);
+        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_ACTIVITY, CROSSTALK_NET_LIBRESTEAM_PRESENCE_VAL_CLEAR);
+        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_TRANSPONDER_OFF);
+
+        return LDG_ERR_AOK;
+    }
+
     in_lobby = desc->screen == (uint32_t)CROSSTALK_NET_PRESENCE_SCREEN_LOBBY ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     lines_on = ((desc->op != 0x0 && desc->op[0] != LDG_STR_TERM) || (desc->att != 0x0 && desc->att[0] != LDG_STR_TERM)) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 

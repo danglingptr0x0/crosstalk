@@ -42,6 +42,8 @@
 #include "hdl/emit.h"
 #include "hdl/bake.h"
 #include "re/re.h"
+#include "re/repl/repl.h"
+#include "re/repl/sesh.h"
 #include "reng/reng.h"
 #include "reng/progress.h"
 #include "reng/tasks.h"
@@ -311,6 +313,11 @@
 #define CROSSTALK_CORE_AUTO_HOST_RETRY_SECS 10.0
 #define CROSSTALK_CORE_AUTO_HOST_RETRY_MAX 5
 #define CROSSTALK_CORE_UNAME_CAP 256
+#define CROSSTALK_CORE_TRANSPONDER_OFF_WORD "off"
+#define CROSSTALK_CORE_TRANSPONDER_USAGE_TEXT "transponder [off]"
+#define CROSSTALK_CORE_ATTACH_USAGE_TEXT "attach <pid>"
+#define CROSSTALK_CORE_FOCUS_STEAM_AWAY_URL "steam://friends/status/away"
+#define CROSSTALK_CORE_FOCUS_STEAM_ONLINE_URL "steam://friends/status/online"
 #define CROSSTALK_CORE_CHAT_NOGO_TEXT "chat hidden at a participant's request"
 #define CROSSTALK_CORE_CAPTURE_CK_PERIOD_MS 5000
 #define CROSSTALK_CORE_CAPTURE_ON_TEXT "screen capture seen; hub and chat hidden"
@@ -324,6 +331,13 @@
 #define CROSSTALK_CORE_JOIN_ASK_LINE_CUNT 3
 #define CROSSTALK_CORE_JOIN_ASK_LINE_NAME 0
 #define CROSSTALK_CORE_JOIN_ASK_LINE_KEYS 2
+#define CROSSTALK_CORE_TERM_ASK_TITLE "Terminal request"
+#define CROSSTALK_CORE_TERM_ASK_BODY_TEXT "the remote asks to control the terminal this session"
+#define CROSSTALK_CORE_TERM_ASK_ALLOW_TEXT "terminal allowed"
+#define CROSSTALK_CORE_TERM_ASK_DENY_TEXT "terminal denied"
+#define CROSSTALK_CORE_TERM_ASK_STATE_NONE 0
+#define CROSSTALK_CORE_TERM_ASK_STATE_ALLOW 1
+#define CROSSTALK_CORE_TERM_ASK_STATE_DENY 2
 #define CROSSTALK_CORE_BIN_SHA_CUNT 4
 #define CROSSTALK_CORE_BIN_SHA_IDX_SELF 0
 #define CROSSTALK_CORE_BIN_SHA_IDX_LDG 1
@@ -629,6 +643,13 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_TERM_HOST_LS_WIN "dir\r"
 #define CROSSTALK_CORE_TERM_HOST_LS_UNIX "ls\r"
 #define CROSSTALK_CORE_TERM_HOST_KEYS_CAP 1032
+#define CROSSTALK_CORE_WATER_MINS_MAX 1440
+#define CROSSTALK_CORE_WATER_LINE_CAP 64
+#define CROSSTALK_CORE_WATER_TEXT "Time for a glass of water"
+#define CROSSTALK_CORE_WATER_OFF_TEXT "water reminders off"
+#define CROSSTALK_CORE_WATER_USAGE_TEXT "water [1 to 1440|off]; bare water reports"
+#define CROSSTALK_CORE_WATER_ON_FMT "water reminder every %u min"
+#define CROSSTALK_CORE_TERM_RST_SEQ "\x0F\x1B(B\x1B[0" "m\x1B[r\x1B[?6" "l\x1B[?25" "l\x1B[2J\x1B[H"
 #define CROSSTALK_CORE_TERM_HOST_EDIT_WIN_FMT "if (Get-Command edit -ErrorAction SilentlyContinue) { edit \"%.200s\" }\r"
 #define CROSSTALK_CORE_TERM_HOST_EDIT_UNIX_FMT "e=$(command -v vim || command -v nvim || command -v nano) && \"$e\" \"%.200s\"\r"
 #define CROSSTALK_CORE_DEMO_SV_NAME "demo.sv"
@@ -868,12 +889,16 @@ typedef struct crosstalk_ctx
     uint64_t presence_cyc;
     uint64_t presence_num_next_ms;
     uint64_t hub_sync_next_ms;
+    uint64_t water_period_ms;
+    uint64_t water_next_ms;
     uint64_t join_ask_seen_ms;
     uint64_t capture_ck_next_ms;
+    uint64_t term_ask_lobby;
     uint8_t privacy_on;
     uint8_t capture_on;
     uint8_t capture_raw;
-    uint8_t privacy_pudding[5];
+    uint8_t term_ask_state;
+    uint8_t privacy_pudding[4];
     crosstalk_game_menu_nav_t menu_nav;
     crosstalk_game_settings_menu_ctx_t settings_menu;
     uint32_t menu_sel;
@@ -987,7 +1012,9 @@ typedef struct crosstalk_ctx
     uint8_t remote_entered;
     uint8_t auto_host;
     uint8_t auto_host_try_cunt;
-    uint8_t remote_pudding[3];
+    uint8_t focus_on;
+    uint8_t transponder_off;
+    uint8_t remote_pudding[1];
     uint64_t remote_cmdline_seq;
     uint32_t remote_cmd_hd;
     uint32_t remote_cmd_cunt;
@@ -1013,6 +1040,11 @@ typedef struct crosstalk_ctx
     uint32_t freeze_len[CROSSTALK_CORE_FREEZE_MAX];
     uint32_t freeze_cunt;
     crosstalk_re_ctx_t re;
+    crosstalk_re_repl_ctx_t repl;
+    crosstalk_re_repl_sesh_t repl_sesh;
+    crosstalk_re_repl_subst_t repl_subst;
+    uint8_t repl_attached_seen;
+    uint8_t repl_pudding[7];
     crosstalk_reng_ctx_t reng;
     crosstalk_reng_progress_ctx_t reng_progress;
     crosstalk_reng_tasks_ctx_t reng_tasks;

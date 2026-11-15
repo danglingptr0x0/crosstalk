@@ -5,6 +5,7 @@
 
 #include <dangling/core/macros.h>
 #include <dangling/io/file.h>
+#include <dangling/sys/proc.h>
 
 #include "eda/ic/fpga/fpga.h"
 #include "eda/ui/calc.h"
@@ -65,6 +66,7 @@
 #define CROSSTALK_EDA_UI_MEMVIEW_SEQ_SPAN 64
 #define CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_CAP 32
 #define CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_TEXT_CAP 96
+#define CROSSTALK_EDA_UI_MEMVIEW_PROC_BLK_CAP 4096
 
 typedef enum crosstalk_eda_ui_memview_res
 {
@@ -138,6 +140,14 @@ typedef struct crosstalk_eda_ui_memview_ctx
     const crosstalk_hdl_elf_ctx_t *elf;
     const crosstalk_hdl_type_ctx_t *types;
     const crosstalk_eda_ui_calc_ctx_t *calc;
+    const ldg_sys_proc_t *proc;
+    uint64_t proc_span_lo;
+    uint64_t proc_span_end;
+    uint64_t proc_blk_addr;
+    uint32_t proc_blk_len;
+    uint32_t proc_pudding;
+    uint8_t proc_blk[CROSSTALK_EDA_UI_MEMVIEW_PROC_BLK_CAP];
+    uint8_t page_hole[CROSSTALK_EDA_UI_MEMVIEW_PAGE_CAP];
     uint64_t page[CROSSTALK_EDA_UI_MEMVIEW_PAGE_CAP];
     uint64_t mut_page[CROSSTALK_EDA_UI_MEMVIEW_PAGE_CAP];
     uint64_t mut_addr;
@@ -293,6 +303,9 @@ uint32_t crosstalk_eda_ui_memview_init(crosstalk_eda_ui_memview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_memview_open_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint8_t open);
 uint8_t crosstalk_eda_ui_memview_open_is(const crosstalk_eda_ui_memview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_memview_bind(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, const char *sig_name);
+uint32_t crosstalk_eda_ui_memview_proc_bind(crosstalk_eda_ui_memview_ctx_t *ctx, const ldg_sys_proc_t *proc);
+uint32_t crosstalk_eda_ui_memview_proc_unbind(crosstalk_eda_ui_memview_ctx_t *ctx);
+uint8_t crosstalk_eda_ui_memview_proc_bound_is(const crosstalk_eda_ui_memview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_memview_addr_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t addr);
 uint32_t crosstalk_eda_ui_memview_follow_set(crosstalk_eda_ui_memview_ctx_t *ctx, const char *sig_name);
 uint32_t crosstalk_eda_ui_memview_heat_sig_set(crosstalk_eda_ui_memview_ctx_t *ctx, const char *sig_name);

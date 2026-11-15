@@ -76,7 +76,8 @@ typedef enum crosstalk_eda_ui_term_src
     CROSSTALK_EDA_UI_TERM_SRC_NONE = 0,
     CROSSTALK_EDA_UI_TERM_SRC_STREAM,
     CROSSTALK_EDA_UI_TERM_SRC_SERIAL,
-    CROSSTALK_EDA_UI_TERM_SRC_PTY
+    CROSSTALK_EDA_UI_TERM_SRC_PTY,
+    CROSSTALK_EDA_UI_TERM_SRC_REPL
 } crosstalk_eda_ui_term_src_t;
 
 typedef struct crosstalk_eda_ui_term_sesh
