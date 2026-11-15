@@ -988,7 +988,7 @@ static uint32_t remote_ir_build(crosstalk_eda_ic_fpga_remote_t *remote)
     sig_bytes = (uint64_t)hdr.sig_cunt * (uint64_t)sizeof(crosstalk_hdl_ir_sig_t);
     if ((uint64_t)sizeof(hdr) + sig_bytes + (uint64_t)hdr.text_len != (uint64_t)remote->ir_len) { return LDG_ERR_BOUNDS; }
 
-    sigs = (crosstalk_hdl_ir_sig_t *)(remote->ir_blob + sizeof(hdr));
+    sigs = (crosstalk_hdl_ir_sig_t *)(void *)(remote->ir_blob + sizeof(hdr));
 
     for (uint32_t idx = 0; idx < hdr.sig_cunt; idx++)
     {
@@ -1198,7 +1198,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_run_pin_set(const crosstalk_eda_ic_fpga_ct
 static uint32_t remote_serve_words(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t func, uint32_t slot_idx, const remote_key_t *key, uint8_t *val, uint32_t val_cap, uint32_t *out_len)
 {
     remote_words_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
-    uint64_t *words = (uint64_t *)(val + sizeof(hdr));
+    uint64_t *words = (uint64_t *)(void *)(val + sizeof(hdr));
     uint32_t cap = key->arg2;
     uint32_t rd = 0;
     uint32_t ret = 0;
@@ -1381,9 +1381,12 @@ uint32_t crosstalk_eda_ic_fpga_remote_serve(const crosstalk_eda_ic_fpga_ctx_t *c
 {
     crosstalk_eda_ic_fpga_remote_req_hdr_t req = LDG_STRUCT_ZERO_INIT;
     remote_key_t key = LDG_STRUCT_ZERO_INIT;
+    crosstalk_eda_ic_fpga_verdict_t verdict = LDG_STRUCT_ZERO_INIT;
     const uint8_t *key_raw = 0x0;
     uint8_t *val = 0x0;
     uint8_t *frame_out = 0x0;
+    uint64_t qword = 0;
+    uint32_t dword = 0;
     uint32_t val_len = 0;
     uint32_t res = 0;
     uint32_t ret = 0;
@@ -1409,23 +1412,28 @@ uint32_t crosstalk_eda_ic_fpga_remote_serve(const crosstalk_eda_ic_fpga_ctx_t *c
     switch (req.func)
     {
         case REMOTE_FUNC_SLOT_FREQ_GET:
-            res = crosstalk_eda_ic_fpga_slot_freq_get(ctx, req.slot, (uint64_t *)val);
+            res = crosstalk_eda_ic_fpga_slot_freq_get(ctx, req.slot, &qword);
+            memcpy(val, &qword, sizeof(qword));
             val_len = (uint32_t)sizeof(uint64_t);
             break;
         case REMOTE_FUNC_CYCLES_TOTAL_GET:
-            res = crosstalk_eda_ic_fpga_cycles_total_get(ctx, req.slot, (uint64_t *)val);
+            res = crosstalk_eda_ic_fpga_cycles_total_get(ctx, req.slot, &qword);
+            memcpy(val, &qword, sizeof(qword));
             val_len = (uint32_t)sizeof(uint64_t);
             break;
         case REMOTE_FUNC_PIN_RD:
-            res = crosstalk_eda_ic_fpga_pin_rd(ctx, req.slot, key.name, (uint64_t *)val);
+            res = crosstalk_eda_ic_fpga_pin_rd(ctx, req.slot, key.name, &qword);
+            memcpy(val, &qword, sizeof(qword));
             val_len = (uint32_t)sizeof(uint64_t);
             break;
         case REMOTE_FUNC_MEM_OFFSET_GET:
-            res = crosstalk_eda_ic_fpga_mem_offset_get(ctx, req.slot, key.name, (uint64_t *)val);
+            res = crosstalk_eda_ic_fpga_mem_offset_get(ctx, req.slot, key.name, &qword);
+            memcpy(val, &qword, sizeof(qword));
             val_len = (uint32_t)sizeof(uint64_t);
             break;
         case REMOTE_FUNC_IO_RD:
-            res = crosstalk_eda_ic_fpga_io_rd(ctx, req.slot, key.arg0, (uint64_t *)val);
+            res = crosstalk_eda_ic_fpga_io_rd(ctx, req.slot, key.arg0, &qword);
+            memcpy(val, &qword, sizeof(qword));
             val_len = (uint32_t)sizeof(uint64_t);
             break;
         case REMOTE_FUNC_SLOT_HLT_IS:
@@ -1459,7 +1467,8 @@ uint32_t crosstalk_eda_ic_fpga_remote_serve(const crosstalk_eda_ic_fpga_ctx_t *c
         }
         break;
         case REMOTE_FUNC_VERDICT_GET:
-            res = crosstalk_eda_ic_fpga_verdict_get(ctx, req.slot, (crosstalk_eda_ic_fpga_verdict_t *)val);
+            res = crosstalk_eda_ic_fpga_verdict_get(ctx, req.slot, &verdict);
+            memcpy(val, &verdict, sizeof(verdict));
             val_len = (uint32_t)sizeof(crosstalk_eda_ic_fpga_verdict_t);
             break;
         case REMOTE_FUNC_SIG_PEEK:
@@ -1475,7 +1484,8 @@ uint32_t crosstalk_eda_ic_fpga_remote_serve(const crosstalk_eda_ic_fpga_ctx_t *c
         }
         break;
         case REMOTE_FUNC_AUDIO_RATE_GET:
-            res = crosstalk_eda_ic_fpga_audio_rate_get(ctx, req.slot, (uint32_t *)val);
+            res = crosstalk_eda_ic_fpga_audio_rate_get(ctx, req.slot, &dword);
+            memcpy(val, &dword, sizeof(dword));
             val_len = (uint32_t)sizeof(uint32_t);
             break;
         case REMOTE_FUNC_MEM_WATCH_GET:
@@ -1518,10 +1528,11 @@ uint32_t crosstalk_eda_ic_fpga_remote_serve(const crosstalk_eda_ic_fpga_ctx_t *c
         case REMOTE_FUNC_RUN_PIN_GET:
         case REMOTE_FUNC_RUN_CYCLES_GET:
             if (srv->run == 0x0) { res = LDG_ERR_NOT_INIT; }
-            else if (req.func == (uint32_t)REMOTE_FUNC_RUN_RATE_GET) { res = crosstalk_eda_ic_fpga_run_rate_get(srv->run, (uint64_t *)val); }
-            else if (req.func == (uint32_t)REMOTE_FUNC_RUN_PIN_GET) { res = crosstalk_eda_ic_fpga_run_pin_get(srv->run, (uint64_t *)val); }
-            else { res = crosstalk_eda_ic_fpga_run_cycles_get(srv->run, (uint64_t *)val); }
+            else if (req.func == (uint32_t)REMOTE_FUNC_RUN_RATE_GET) { res = crosstalk_eda_ic_fpga_run_rate_get(srv->run, &qword); }
+            else if (req.func == (uint32_t)REMOTE_FUNC_RUN_PIN_GET) { res = crosstalk_eda_ic_fpga_run_pin_get(srv->run, &qword); }
+            else { res = crosstalk_eda_ic_fpga_run_cycles_get(srv->run, &qword); }
 
+            memcpy(val, &qword, sizeof(qword));
             val_len = (uint32_t)sizeof(uint64_t);
             break;
         case REMOTE_FUNC_RUN_LIVE_IS:

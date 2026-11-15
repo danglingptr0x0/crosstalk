@@ -16,7 +16,6 @@
 
 #define MNGR_CONF_STEP 1
 #define MNGR_CONF_MACHINE_WORDS 10
-#define MNGR_CONF_JOIN_FMT "%s%s"
 #define MNGR_CONF_DOT '.'
 #define MNGR_CONF_SLASH '/'
 #define MNGR_CONF_WIN_W_DEFAULT 1280
@@ -89,14 +88,17 @@ uint8_t crosstalk_mngr_conf_name_ok_is(const char *name)
 uint32_t crosstalk_mngr_conf_path_get(const char *dir, const char *name, char *out, uint64_t cap)
 {
     char leaf[CROSSTALK_MNGR_CONF_NAME_CAP + sizeof(CROSSTALK_MNGR_CONF_EXT)] = LDG_ARR_ZERO_INIT;
-    int32_t written = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(dir == 0x0 || name == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (crosstalk_mngr_conf_name_ok_is(name) != LDG_TRUTH_TRUE) { return CROSSTALK_MNGR_ERR_NAME; }
 
-    written = snprintf(leaf, sizeof(leaf), MNGR_CONF_JOIN_FMT, name, CROSSTALK_MNGR_CONF_EXT);
-    if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(leaf)) { return LDG_ERR_STR_TRUNC; }
+    ret = ldg_str_rbrcpy(leaf, name, (uint64_t)sizeof(leaf));
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    ret = ldg_str_concatenate(leaf, CROSSTALK_MNGR_CONF_EXT, (uint64_t)sizeof(leaf));
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     return ldg_io_path_join(dir, leaf, out, cap);
 }
@@ -256,16 +258,16 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
             if (span < want) { return CROSSTALK_MNGR_ERR_BLK; }
 
-            memcpy(out->name, buff + body, sizeof(out->name));
+            memcpy(&out->name[0], buff + body, sizeof(out->name));
             body = body + (uint32_t)sizeof(out->name);
 
-            memcpy(out->note, buff + body, sizeof(out->note));
+            memcpy(&out->note[0], buff + body, sizeof(out->note));
             body = body + (uint32_t)sizeof(out->note);
 
-            memcpy(out->core_path, buff + body, sizeof(out->core_path));
+            memcpy(&out->core_path[0], buff + body, sizeof(out->core_path));
             body = body + (uint32_t)sizeof(out->core_path);
 
-            memcpy(out->font_path, buff + body, sizeof(out->font_path));
+            memcpy(&out->font_path[0], buff + body, sizeof(out->font_path));
             body = body + (uint32_t)sizeof(out->font_path);
 
             out->ram_bytes = mngr_conf_u64_get(buff + body);
@@ -308,7 +310,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
             for (idx = 0; idx < (uint32_t)CROSSTALK_EMU_LD_MAX; idx = idx + MNGR_CONF_STEP)
             {
-                memcpy(out->ld_path[idx], buff + body, sizeof(out->ld_path[idx]));
+                memcpy(&out->ld_path[idx][0], buff + body, sizeof(out->ld_path[idx]));
                 out->ld_path[idx][sizeof(out->ld_path[idx]) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
                 body = body + (uint32_t)sizeof(out->ld_path[idx]);
 
@@ -322,7 +324,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
             for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MNGR_CONF_STEP)
             {
-                memcpy(out->disk_path[drive], buff + body, sizeof(out->disk_path[drive]));
+                memcpy(&out->disk_path[drive][0], buff + body, sizeof(out->disk_path[drive]));
                 out->disk_path[drive][sizeof(out->disk_path[drive]) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
                 body = body + (uint32_t)sizeof(out->disk_path[drive]);
             }
@@ -331,7 +333,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
         {
             if (span < (uint32_t)sizeof(out->net_path)) { return CROSSTALK_MNGR_ERR_BLK; }
 
-            memcpy(out->net_path, buff + body, sizeof(out->net_path));
+            memcpy(&out->net_path[0], buff + body, sizeof(out->net_path));
             out->net_path[sizeof(out->net_path) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
         }
 

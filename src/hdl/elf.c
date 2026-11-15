@@ -6,6 +6,7 @@
 #include <dangling/core/macros.h>
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/mem/alloc.h>
 #include <dangling/io/file.h>
 
@@ -61,10 +62,9 @@
 #define ELF_HDR_AT 0
 #define ELF_HEAP_ROOT_AT 0
 #define ELF_LABEL_PLAIN_FMT "%s"
-#define ELF_LABEL_OFF_FMT "%s+0x%" PRIX64
+#define ELF_LABEL_OFF_FMT "%s+0x%X64"
 #define ELF_OSABI_AT 7
 #define ELF_MACHINE32_AT 18
-#define ELF_MACHINE64_AT 18
 #define ELF_EM_386 3
 #define ELF_EM_MIPS 8
 #define ELF_EM_PPC 20
@@ -82,7 +82,7 @@
 #define ELF_ARCH_PPC_TEXT "ppc"
 #define ELF_ARCH_RISCV_TEXT "riscv"
 #define ELF_ARCH_DANGCSA_TEXT "DANGCSA"
-#define ELF_ARCH_UNKNOWN_FMT "em%u"
+#define ELF_ARCH_UNKNOWN_FMT "em%u32"
 #define ELF_ARCH_CLASS32_TEXT "elf32"
 #define ELF_ARCH_CLASS64_TEXT "elf64"
 #define ELF_ARCH_PLAIN_FMT "%s %s"
@@ -139,6 +139,7 @@ static void elf_name_cpy(char *dst, const char *src, uint32_t cap)
 
 static void elf_arch_fmt(char *out, uint32_t cap, uint32_t machine, uint8_t class_is64, uint8_t osabi)
 {
+    uint64_t fmt_len = 0;
     char machine_text[CROSSTALK_HDL_ELF_ARCH_CAP] = LDG_ARR_ZERO_INIT;
     const char *class_text = class_is64 == LDG_TRUTH_TRUE ? ELF_ARCH_CLASS64_TEXT : ELF_ARCH_CLASS32_TEXT;
 
@@ -150,10 +151,10 @@ static void elf_arch_fmt(char *out, uint32_t cap, uint32_t machine, uint8_t clas
     else if (machine == (uint32_t)ELF_EM_MIPS) { elf_name_cpy(machine_text, ELF_ARCH_MIPS_TEXT, (uint32_t)sizeof(machine_text)); }
     else if (machine == (uint32_t)ELF_EM_PPC) { elf_name_cpy(machine_text, ELF_ARCH_PPC_TEXT, (uint32_t)sizeof(machine_text)); }
     else if (machine == (uint32_t)ELF_EM_RISCV) { elf_name_cpy(machine_text, ELF_ARCH_RISCV_TEXT, (uint32_t)sizeof(machine_text)); }
-    else { snprintf(machine_text, sizeof(machine_text), ELF_ARCH_UNKNOWN_FMT, machine); }
+    else { if (ldg_str_fmt(machine_text, (uint64_t)sizeof(machine_text), &fmt_len, ELF_ARCH_UNKNOWN_FMT, machine) != LDG_ERR_AOK) { *(machine_text) = LDG_STR_TERM; } }
 
-    if (osabi == (uint8_t)ELF_OSABI_DANGLING) { snprintf(out, cap, ELF_ARCH_ABI_FMT, machine_text, class_text, ELF_ABI_DANGLING_TEXT); }
-    else { snprintf(out, cap, ELF_ARCH_PLAIN_FMT, machine_text, class_text); }
+    if (osabi == (uint8_t)ELF_OSABI_DANGLING) { if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, ELF_ARCH_ABI_FMT, machine_text, class_text, ELF_ABI_DANGLING_TEXT) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; } }
+    else { if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, ELF_ARCH_PLAIN_FMT, machine_text, class_text) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; } }
 }
 
 static void elf_sym_swap(crosstalk_hdl_elf_sym_t *lhs, crosstalk_hdl_elf_sym_t *rhs)
@@ -554,6 +555,7 @@ uint32_t crosstalk_hdl_elf_sym_get(const crosstalk_hdl_elf_ctx_t *ctx, uint64_t 
 
 uint32_t crosstalk_hdl_elf_label_get(const crosstalk_hdl_elf_ctx_t *ctx, uint64_t addr, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     const crosstalk_hdl_elf_sym_t *sym = 0x0;
     uint64_t off = 0;
     uint32_t ret = 0;
@@ -567,8 +569,8 @@ uint32_t crosstalk_hdl_elf_label_get(const crosstalk_hdl_elf_ctx_t *ctx, uint64_
     ret = crosstalk_hdl_elf_sym_get(ctx, addr, &sym, &off);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (off == 0) { snprintf(out, cap, ELF_LABEL_PLAIN_FMT, sym->name); }
-    else { snprintf(out, cap, ELF_LABEL_OFF_FMT, sym->name, off); }
+    if (off == 0) { if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, ELF_LABEL_PLAIN_FMT, sym->name) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; } }
+    else { if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, ELF_LABEL_OFF_FMT, sym->name, off) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; } }
 
     return LDG_ERR_AOK;
 }

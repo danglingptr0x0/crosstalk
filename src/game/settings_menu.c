@@ -5,6 +5,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 #include <dangling/time/time.h>
@@ -134,6 +135,7 @@ static const char* settings_menu_tip_get(uint32_t item)
 
 static void settings_menu_val_fmt(const crosstalk_game_settings_t *settings, uint8_t discord_linked, uint32_t item, char *out, uint64_t cap)
 {
+    uint64_t fmt_len = 0;
     const char *off_on[SETTINGS_MENU_TOGGLE_STEP_CUNT] = { "Off", "On" };
     const char *safety[SETTINGS_MENU_TOGGLE_STEP_CUNT] = { "On", "Off" };
     const char *interlock[SETTINGS_MENU_TOGGLE_STEP_CUNT] = { "Shut", "Open" };
@@ -141,9 +143,19 @@ static void settings_menu_val_fmt(const crosstalk_game_settings_t *settings, uin
     const char *music[SETTINGS_MENU_MUSIC_STEP_CUNT] = { "Steam", "Native", "System" };
     const char *text = 0x0;
 
-    if (item == (uint32_t)SETTINGS_MENU_ITEM_MIC_VOL) { snprintf(out, cap, SETTINGS_MENU_VOL_FMT, settings->discord_vol_in); return; }
+    if (item == (uint32_t)SETTINGS_MENU_ITEM_MIC_VOL)
+    {
+        if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, SETTINGS_MENU_VOL_FMT, settings->discord_vol_in) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; }
 
-    if (item == (uint32_t)SETTINGS_MENU_ITEM_VOICE_VOL) { snprintf(out, cap, SETTINGS_MENU_VOL_FMT, settings->discord_vol_out); return; }
+        return;
+    }
+
+    if (item == (uint32_t)SETTINGS_MENU_ITEM_VOICE_VOL)
+    {
+        if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, SETTINGS_MENU_VOL_FMT, settings->discord_vol_out) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; }
+
+        return;
+    }
 
     if (item == (uint32_t)SETTINGS_MENU_ITEM_FAB_SAFETY) { text = safety[settings->fab_safety_off != LDG_TRUTH_FALSE ? SETTINGS_MENU_STEP : SETTINGS_MENU_ROW_FIRST]; }
     else if (item == (uint32_t)SETTINGS_MENU_ITEM_FAB_INTERLOCK) { text = interlock[settings->fab_interlock_off != LDG_TRUTH_FALSE ? SETTINGS_MENU_STEP : SETTINGS_MENU_ROW_FIRST]; }
@@ -156,7 +168,7 @@ static void settings_menu_val_fmt(const crosstalk_game_settings_t *settings, uin
     else if (item == (uint32_t)SETTINGS_MENU_ITEM_KEYBIND) { text = "Open"; }
     else { text = off_on[settings->focus_pause_on != LDG_TRUTH_FALSE ? SETTINGS_MENU_STEP : SETTINGS_MENU_ROW_FIRST]; }
 
-    snprintf(out, cap, "%.31s", text);
+    if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.31s", text) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; }
 }
 
 static const char* settings_menu_kb_label_get(uint32_t action)
@@ -216,7 +228,7 @@ static uint32_t settings_menu_kb_mnemonic_get(uint32_t *out_pos, uint8_t *out_ch
 
 static void settings_menu_kb_open(crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings)
 {
-    memcpy(ctx->kb_pending, settings->keybind, sizeof(ctx->kb_pending));
+    memcpy(&ctx->kb_pending[0], settings->keybind, sizeof(ctx->kb_pending));
     ctx->kb_sel = (uint32_t)SETTINGS_MENU_ROW_FIRST;
     ctx->kb_open = LDG_TRUTH_TRUE;
     ctx->kb_armed = LDG_TRUTH_FALSE;
@@ -296,7 +308,7 @@ static uint32_t settings_menu_kb_key_isr(crosstalk_game_settings_menu_ctx_t *ctx
 
         if (settings_menu_kb_esc_live_is(ctx, now_ms) == LDG_TRUTH_TRUE)
         {
-            memcpy(ctx->kb_pending, settings->keybind, sizeof(ctx->kb_pending));
+            memcpy(&ctx->kb_pending[0], settings->keybind, sizeof(ctx->kb_pending));
             ctx->kb_esc_armed = LDG_TRUTH_FALSE;
             return LDG_ERR_AOK;
         }
@@ -311,7 +323,7 @@ static uint32_t settings_menu_kb_key_isr(crosstalk_game_settings_menu_ctx_t *ctx
     {
         if (settings_menu_kb_esc_live_is(ctx, now_ms) == LDG_TRUTH_TRUE || (key->mods & (uint32_t)LDG_TERM_MOD_ALT) != 0)
         {
-            memcpy(settings->keybind, ctx->kb_pending, sizeof(settings->keybind));
+            memcpy(&settings->keybind[0], ctx->kb_pending, sizeof(settings->keybind));
             ctx->changed = LDG_TRUTH_TRUE;
             ctx->kb_open = LDG_TRUTH_FALSE;
             ctx->kb_esc_armed = LDG_TRUTH_FALSE;
@@ -368,6 +380,7 @@ uint32_t crosstalk_game_settings_menu_init(crosstalk_game_settings_menu_ctx_t *c
 
 static uint32_t settings_menu_row_draw(const crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings, uint8_t discord_linked, ldg_term_render_t *render, uint32_t item, uint32_t mnemonic_pos, uint32_t col, uint32_t row, uint32_t width)
 {
+    uint64_t fmt_len = 0;
     char val[SETTINGS_MENU_VAL_CAP] = LDG_ARR_ZERO_INIT;
     char line[SETTINGS_MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
@@ -377,7 +390,7 @@ static uint32_t settings_menu_row_draw(const crosstalk_game_settings_menu_ctx_t 
 
     settings_menu_val_fmt(settings, discord_linked, item, val, (uint64_t)sizeof(val));
 
-    if (snprintf(line, sizeof(line), SETTINGS_MENU_LABEL_FMT, settings_menu_label_get(item), val) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, SETTINGS_MENU_LABEL_FMT, settings_menu_label_get(item), val) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     if (sel_is != LDG_TRUTH_TRUE)
     {
@@ -443,6 +456,7 @@ static uint32_t settings_menu_tip_draw(ldg_term_render_t *render, const char *ti
 
 static uint32_t settings_menu_kb_row_draw(const crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings, ldg_term_render_t *render, uint32_t action, uint32_t mnemonic_pos, uint64_t now_ms, uint32_t col, uint32_t row, uint32_t width)
 {
+    uint64_t fmt_len = 0;
     char vim[CROSSTALK_GAME_KEYBIND_FMT_CAP] = LDG_ARR_ZERO_INIT;
     char unix_cell[CROSSTALK_GAME_KEYBIND_FMT_CAP] = LDG_ARR_ZERO_INIT;
     char line[SETTINGS_MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
@@ -452,8 +466,8 @@ static uint32_t settings_menu_kb_row_draw(const crosstalk_game_settings_menu_ctx
     uint8_t note_live = (ctx->kb_note != (uint8_t)CROSSTALK_GAME_SETTINGS_KEYBIND_NOTE_NONE && ctx->kb_note_row == action && now_ms - ctx->kb_note_ms < (uint64_t)SETTINGS_MENU_KB_NOTE_MS) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     uint32_t ret = 0;
 
-    if (ctx->kb_armed == LDG_TRUTH_TRUE && ctx->kb_sel == action) { ret = snprintf(vim, sizeof(vim), "%.47s", SETTINGS_MENU_KB_ARMED_TEXT) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
-    else if (note_live == LDG_TRUTH_TRUE) { ret = snprintf(vim, sizeof(vim), "%.47s", ctx->kb_note == (uint8_t)CROSSTALK_GAME_SETTINGS_KEYBIND_NOTE_TAKEN ? SETTINGS_MENU_KB_TAKEN_TEXT : SETTINGS_MENU_KB_MOD_TEXT) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (ctx->kb_armed == LDG_TRUTH_TRUE && ctx->kb_sel == action) { ret = ldg_str_fmt(vim, (uint64_t)sizeof(vim), &fmt_len, "%.47s", SETTINGS_MENU_KB_ARMED_TEXT) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    else if (note_live == LDG_TRUTH_TRUE) { ret = ldg_str_fmt(vim, (uint64_t)sizeof(vim), &fmt_len, "%.47s", ctx->kb_note == (uint8_t)CROSSTALK_GAME_SETTINGS_KEYBIND_NOTE_TAKEN ? SETTINGS_MENU_KB_TAKEN_TEXT : SETTINGS_MENU_KB_MOD_TEXT) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
     else
     {
         ret = crosstalk_game_settings_keybind_vim_fmt(action, ctx->kb_pending[action], vim, (uint32_t)sizeof(vim));
@@ -462,7 +476,7 @@ static uint32_t settings_menu_kb_row_draw(const crosstalk_game_settings_menu_ctx
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (snprintf(line, sizeof(line), SETTINGS_MENU_KB_LINE_FMT, settings_menu_kb_label_get(action), vim, unix_cell, mark) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, SETTINGS_MENU_KB_LINE_FMT, settings_menu_kb_label_get(action), vim, unix_cell, mark) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     if (ctx->kb_sel != action)
     {

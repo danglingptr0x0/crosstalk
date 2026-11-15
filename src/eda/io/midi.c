@@ -8,6 +8,7 @@
 #include <dangling/core/bits.h>
 #include <dangling/io/file.h>
 #include <dangling/logging/logging.h>
+#include <dangling/str/str.h>
 
 #include "core/log.h"
 #include "eda/io/midi.h"
@@ -17,10 +18,6 @@
 #define MIDI_DATA_CUNT_VOICE 2
 #define MIDI_DATA_CUNT_PROG 1
 #define MIDI_REALTIME_LEN 1
-#define MIDI_DATA_NONE 0
-#define MIDI_PORT_FMT "%.63s"
-#define MIDI_NAME_FMT "%.63s"
-#define MIDI_PATH_FMT "%.511s"
 #define MIDI_TAG_LEN 4
 #define MIDI_LEN_BYTES 4
 #define MIDI_WORD_BYTES 2
@@ -199,7 +196,8 @@ uint32_t crosstalk_eda_io_midi_dev_open(crosstalk_eda_io_midi_ctx_t *ctx, uint32
         return CROSSTALK_EDA_IO_MIDI_ERR_DEV;
     }
 
-    if (snprintf(ctx->dev_name, sizeof(ctx->dev_name), MIDI_NAME_FMT, ctx->port[idx].name) < 0) { return LDG_ERR_IO_FMT; }
+    ret = ldg_str_rbrcpy(ctx->dev_name, ctx->port[idx].name, (uint64_t)sizeof(ctx->dev_name));
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return LDG_ERR_IO_FMT; }
 
     ctx->dev_idx = (uint64_t)idx;
     ctx->dev_open = LDG_TRUTH_TRUE;
@@ -269,7 +267,8 @@ uint32_t crosstalk_eda_io_midi_attach(crosstalk_eda_io_midi_ctx_t *ctx, uint32_t
     ctx->pin.abi_sig = (uint32_t)UINT32_MAX;
     ctx->pin.bound = LDG_TRUTH_FALSE;
 
-    if (snprintf(ctx->pin.port, sizeof(ctx->pin.port), MIDI_PORT_FMT, pin) < 0) { return LDG_ERR_IO_FMT; }
+    ret = ldg_str_rbrcpy(ctx->pin.port, pin, (uint64_t)sizeof(ctx->pin.port));
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return LDG_ERR_IO_FMT; }
 
     if (exec != 0x0)
     {
@@ -645,7 +644,8 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
 
     if (ctx->track_cunt == 0) { return LDG_ERR_EMPTY; }
 
-    if (snprintf(ctx->file_path, sizeof(ctx->file_path), MIDI_PATH_FMT, path) < 0) { return LDG_ERR_IO_FMT; }
+    ret = ldg_str_rbrcpy(ctx->file_path, path, (uint64_t)sizeof(ctx->file_path));
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return LDG_ERR_IO_FMT; }
 
     ctx->tempo = (uint64_t)CROSSTALK_EDA_IO_MIDI_TEMPO_DEFAULT;
     ctx->tick_rate = (uint64_t)ctx->tick_div * (uint64_t)CROSSTALK_EDA_IO_MIDI_USEC_PER_SEC;

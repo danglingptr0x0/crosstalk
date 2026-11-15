@@ -1,11 +1,11 @@
 #include <inttypes.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/logging/logging.h>
+#include <dangling/str/fmt.h>
 #include <dangling/time/time.h>
 
 #include "core/log.h"
@@ -208,6 +208,7 @@ uint32_t crosstalk_ui_window_shutdown(crosstalk_ui_window_ctx_t *ctx)
 uint32_t crosstalk_ui_window_reg(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, const char *title, crosstalk_ui_window_state_t *state, crosstalk_ui_window_draw_cb_t draw_cb, crosstalk_ui_window_key_cb_t key_cb, void *user, uint32_t *out_slot)
 {
     crosstalk_ui_window_slot_t *slot = 0x0;
+    uint64_t len = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
@@ -222,7 +223,8 @@ uint32_t crosstalk_ui_window_reg(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id
     idx = ctx->slot_cunt;
     slot = &ctx->slot[idx];
 
-    if (snprintf(slot->title, sizeof(slot->title), WINDOW_NAME_FMT, title) < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(slot->title, (uint64_t)sizeof(slot->title), &len, WINDOW_NAME_FMT, title);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     slot->id = win_id;
     slot->state = state;
@@ -282,6 +284,7 @@ uint32_t crosstalk_ui_window_id_get(const crosstalk_ui_window_ctx_t *ctx, uint32
 
 uint32_t crosstalk_ui_window_title_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, const char *title)
 {
+    uint64_t len = 0;
     uint32_t slot = 0;
     uint32_t ret = 0;
 
@@ -290,9 +293,7 @@ uint32_t crosstalk_ui_window_title_set(crosstalk_ui_window_ctx_t *ctx, uint64_t 
     ret = crosstalk_ui_window_slot_get(ctx, win_id, &slot);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (snprintf(ctx->slot[slot - (uint32_t)CROSSTALK_UI_WINDOW_SLOT_FIRST].title, sizeof(ctx->slot[0].title), WINDOW_NAME_FMT, title) < 0) { return LDG_ERR_STR_FMT; }
-
-    return LDG_ERR_AOK;
+    return ldg_str_fmt(ctx->slot[slot - (uint32_t)CROSSTALK_UI_WINDOW_SLOT_FIRST].title, (uint64_t)sizeof(ctx->slot[0].title), &len, WINDOW_NAME_FMT, title);
 }
 
 uint32_t crosstalk_ui_window_all_close(crosstalk_ui_window_ctx_t *ctx)
@@ -421,7 +422,7 @@ uint32_t crosstalk_ui_window_focus_dir(crosstalk_ui_window_ctx_t *ctx, uint32_t 
 
         cost = window_dir_cost_get(dir, from_x, from_y, to_x, to_y);
 
-        if (best_cost != WINDOW_DIST_NONE && cost >= best_cost) { continue; }
+        if (best_cost > WINDOW_DIST_NONE && cost >= best_cost) { continue; }
 
         best_cost = cost;
         best_id = ctx->slot[at].id;
@@ -513,7 +514,7 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
     ldg_term_rect_t inner = LDG_STRUCT_ZERO_INIT;
     uint32_t frame_span = (uint32_t)CROSSTALK_UI_WINDOW_FRAME_CELLS * (uint32_t)WINDOW_FRAME_SIDES;
     uint32_t bottom = WINDOW_SCROLL_TOP;
-    int32_t title_len = 0;
+    uint64_t title_len = 0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || render == 0x0 || desk == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -565,10 +566,10 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
         }
     }
 
-    title_len = (int32_t)snprintf(title, sizeof(title), CROSSTALK_UI_WINDOW_TITLE_FMT, idx + (uint32_t)CROSSTALK_UI_WINDOW_SLOT_FIRST, slot->title);
-    if (title_len < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(title, (uint64_t)sizeof(title), &title_len, CROSSTALK_UI_WINDOW_TITLE_FMT, idx + (uint32_t)CROSSTALK_UI_WINDOW_SLOT_FIRST, slot->title);
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
 
-    if ((uint32_t)title_len >= (uint32_t)sizeof(title)) { title_len = (int32_t)(sizeof(title) - LDG_STR_TERM_SIZE); }
+    if (title_len >= (uint64_t)sizeof(title)) { title_len = (uint64_t)sizeof(title) - LDG_STR_TERM_SIZE; }
 
     ret = ldg_term_render_clip_set(render, &rect, (uint32_t)WINDOW_SCROLL_COL_NONE, (uint32_t)WINDOW_SCROLL_TOP);
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -576,7 +577,7 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
     ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &pane);
     if (ret == LDG_ERR_AOK) { ret = ldg_term_render_clear(render, &pane); }
 
-    if (ret == LDG_ERR_AOK) { ret = ldg_term_render_frame_draw(render, title, (uint64_t)title_len, &style); }
+    if (ret == LDG_ERR_AOK) { ret = ldg_term_render_frame_draw(render, title, title_len, &style); }
 
     if (ret != LDG_ERR_AOK)
     {

@@ -1,9 +1,9 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 
 #include "game/hub.h"
@@ -17,7 +17,7 @@
 #define CROSSTALK_GAME_HUB_INVITE_TEXT "Invite"
 #define CROSSTALK_GAME_HUB_JOIN_TEXT "Join"
 #define CROSSTALK_GAME_HUB_EMPTY_TEXT "nobody yet"
-#define CROSSTALK_GAME_HUB_ROW_FMT "%c%u %-24.24s %.31s"
+#define CROSSTALK_GAME_HUB_ROW_FMT "%c%u32 %-24.24s %.31s"
 #define CROSSTALK_GAME_HUB_ACTION_FMT "[%.7s] [%.7s]"
 #define CROSSTALK_GAME_HUB_ACTION_DM_FMT "[%.7s]"
 #define CROSSTALK_GAME_HUB_LINE_CAP 160
@@ -226,9 +226,10 @@ static uint32_t crosstalk_game_hub_row_draw(const crosstalk_game_hub_row_t *row_
     ldg_term_render_color_t fg_col = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t bg_col = LDG_STRUCT_ZERO_INIT;
     uint64_t act_len = 0;
+    uint64_t len = 0;
     uint32_t ret = 0;
 
-    snprintf(line, sizeof(line), CROSSTALK_GAME_HUB_ROW_FMT, tag, pick, row_data->name, row_data->status);
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, CROSSTALK_GAME_HUB_ROW_FMT, tag, pick, row_data->name, row_data->status) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
 
     ret = crosstalk_ui_cell_color_get(crosstalk_game_hub_reach_col_get(row_data->reach), &fg_col);
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get(bg, &bg_col); }
@@ -239,8 +240,10 @@ static uint32_t crosstalk_game_hub_row_draw(const crosstalk_game_hub_row_t *row_
 
     if (ret != LDG_ERR_AOK || sel_is != LDG_TRUTH_TRUE) { return ret; }
 
-    if (row_data->reach == (uint8_t)CROSSTALK_GAME_HUB_REACH_OFFLINE) { snprintf(act, sizeof(act), CROSSTALK_GAME_HUB_ACTION_DM_FMT, CROSSTALK_GAME_HUB_DM_TEXT); }
-    else { snprintf(act, sizeof(act), CROSSTALK_GAME_HUB_ACTION_FMT, CROSSTALK_GAME_HUB_DM_TEXT, row_data->reach == (uint8_t)CROSSTALK_GAME_HUB_REACH_JOINABLE ? CROSSTALK_GAME_HUB_JOIN_TEXT : CROSSTALK_GAME_HUB_INVITE_TEXT); }
+    if (row_data->reach == (uint8_t)CROSSTALK_GAME_HUB_REACH_OFFLINE) { ret = ldg_str_fmt(act, (uint64_t)sizeof(act), &len, CROSSTALK_GAME_HUB_ACTION_DM_FMT, CROSSTALK_GAME_HUB_DM_TEXT); }
+    else { ret = ldg_str_fmt(act, (uint64_t)sizeof(act), &len, CROSSTALK_GAME_HUB_ACTION_FMT, CROSSTALK_GAME_HUB_DM_TEXT, row_data->reach == (uint8_t)CROSSTALK_GAME_HUB_REACH_JOINABLE ? CROSSTALK_GAME_HUB_JOIN_TEXT : CROSSTALK_GAME_HUB_INVITE_TEXT); }
+
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_str_len_get(act, (uint64_t)sizeof(act), &act_len);
     if (ret != LDG_ERR_AOK || act_len >= (uint64_t)col_cunt) { return ret; }

@@ -12,7 +12,6 @@
 #include "game/fx/sfx.h"
 
 #define CROSSTALK_GAME_FX_SFX_RATE 44100
-#define CROSSTALK_GAME_FX_SFX_CHANNELS 1
 #define CROSSTALK_GAME_FX_SFX_MIX_RATE 48000
 #define CROSSTALK_GAME_FX_SFX_MIX_CHANNELS 2
 #define CROSSTALK_GAME_FX_SFX_ROTARY_FRAMES 560
@@ -197,9 +196,7 @@ static void crosstalk_game_fx_sfx_rotary_render(int16_t *out, uint32_t frame_cun
         sample = noise * tick_env * CROSSTALK_GAME_FX_SFX_ROTARY_TICK_MIX;
         sample = sample + sin(LDG_MATH_TAU * body_hz * time_s) * body_env * CROSSTALK_GAME_FX_SFX_ROTARY_BODY_MIX;
         sample = sample * CROSSTALK_GAME_FX_SFX_ROTARY_GAIN;
-        if (sample > 1.0) { sample = 1.0; }
-
-        if (sample < -1.0) { sample = -1.0; }
+        if (fabs(sample) > 1.0) { sample = sample / fabs(sample); }
 
         out[idx] = (int16_t)(sample * CROSSTALK_GAME_FX_SFX_PEAK);
     }
@@ -239,9 +236,7 @@ static void crosstalk_game_fx_sfx_chirp_render(int16_t *out, uint32_t frame_cunt
         if (time_s < CROSSTALK_GAME_FX_SFX_CHIRP_ATTACK_S) { env = env * (time_s / CROSSTALK_GAME_FX_SFX_CHIRP_ATTACK_S); }
 
         sample = saw * env * CROSSTALK_GAME_FX_SFX_CHIRP_GAIN;
-        if (sample > 1.0) { sample = 1.0; }
-
-        if (sample < -1.0) { sample = -1.0; }
+        if (fabs(sample) > 1.0) { sample = sample / fabs(sample); }
 
         out[idx] = (int16_t)(sample * CROSSTALK_GAME_FX_SFX_PEAK);
     }
@@ -270,9 +265,7 @@ static void crosstalk_game_fx_sfx_ping_render(int16_t *out, uint32_t frame_cunt)
         sample = sin(LDG_MATH_TAU * phase) * env;
         sample = sample + sin(LDG_MATH_TAU * phase * CROSSTALK_GAME_FX_SFX_PING_SHIMMER_RATIO) * shimmer_env * CROSSTALK_GAME_FX_SFX_PING_SHIMMER_MIX;
         sample = sample * CROSSTALK_GAME_FX_SFX_PING_GAIN;
-        if (sample > 1.0) { sample = 1.0; }
-
-        if (sample < -1.0) { sample = -1.0; }
+        if (fabs(sample) > 1.0) { sample = sample / fabs(sample); }
 
         out[idx] = (int16_t)(sample * CROSSTALK_GAME_FX_SFX_PEAK);
     }

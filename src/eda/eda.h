@@ -40,12 +40,14 @@
 typedef struct crosstalk_eda_ctx
 {
     crosstalk_eda_ic_fpga_ctx_t fpga;
+    uint8_t fpga_pudding[56];
     crosstalk_eda_ic_fpga_run_ctx_t fpga_run;
     crosstalk_eda_ic_fpga_build_ctx_t fpga_build;
     crosstalk_eda_ic_fpga_emu_ctx_t fpga_emu;
     crosstalk_eda_logic_probe_ctx_t logic_probe;
     crosstalk_eda_io_display_ctx_t display;
     crosstalk_eda_io_receptacle_ctx_t receptacle;
+    uint8_t midi_pudding[32];
     crosstalk_eda_io_midi_ctx_t midi;
     crosstalk_eda_script_ctx_t script;
     ldg_mem_pool_t *script_pool;
@@ -73,6 +75,7 @@ typedef struct crosstalk_eda_ctx
     ldg_mem_pool_t *term_pool;
     crosstalk_eda_sound_ctx_t sound;
     crosstalk_eda_clk_ctx_t clk;
+    uint8_t pudding[16];
 } crosstalk_eda_ctx_t;
 
 #endif

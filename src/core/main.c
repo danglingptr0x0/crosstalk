@@ -18,8 +18,6 @@
 #define CROSSTALK_CONNECT_SCAN_CUNT 1
 #define CROSSTALK_CONNECT_LOBBY_NONE 0
 #define CROSSTALK_CONNECT_STR_MATCH 0
-#define CROSSTALK_ARGV_SELF 0
-#define CROSSTALK_SCHEME_APP_NAME "Crosstalk"
 
 static uint64_t crosstalk_connect_lobby_parse(uint32_t argc, char **argv)
 {
@@ -50,7 +48,7 @@ int main(int argc, char **argv)
     err = ldg_mem_init();
     if (LDG_UNLIKELY(err != LDG_ERR_AOK))
     {
-        fprintf(stdout, "crosstalk: mem init failed; err: %u\n", err);
+        ldg_logging_line_wr(LDG_LOGGING_CON, LDG_LOGGING_LVL_ERR, "crosstalk: mem init failed; err: %u32", err);
         return (int32_t)(err & 0xFFu);
     }
 

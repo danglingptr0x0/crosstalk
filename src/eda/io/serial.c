@@ -101,7 +101,7 @@ uint32_t crosstalk_eda_io_serial_poll(crosstalk_eda_io_serial_ctx_t *ctx, double
 
     if (ctx->seeded != LDG_TRUTH_TRUE)
     {
-        memcpy(ctx->prev, ctx->port, sizeof(ctx->prev));
+        memcpy(&ctx->prev[0], ctx->port, sizeof(ctx->prev));
         ctx->prev_cunt = ctx->port_cunt;
         ctx->seeded = LDG_TRUTH_TRUE;
 
@@ -133,7 +133,7 @@ uint32_t crosstalk_eda_io_serial_poll(crosstalk_eda_io_serial_ctx_t *ctx, double
         }
     }
 
-    memcpy(ctx->prev, ctx->port, sizeof(ctx->prev));
+    memcpy(&ctx->prev[0], ctx->port, sizeof(ctx->prev));
     ctx->prev_cunt = ctx->port_cunt;
 
     return LDG_ERR_AOK;

@@ -7,7 +7,7 @@
 #define CROSSTALK_HDL_DIAG_TEXT_CAP 256
 #define CROSSTALK_HDL_DIAG_LINE_MAX 120
 #define CROSSTALK_HDL_DIAG_ENTRY_FMT " <-- %.127s (%.63s)"
-#define CROSSTALK_HDL_DIAG_ERR_FMT " <-- err: %" PRIu32
+#define CROSSTALK_HDL_DIAG_ERR_FMT " <-- err: %u32"
 
 typedef struct crosstalk_hdl_diag_entry
 {

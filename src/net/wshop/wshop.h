@@ -60,6 +60,7 @@ typedef struct crosstalk_net_wshop_upload
     char desc[CROSSTALK_NET_WSHOP_DESC_CAP];
     char content_path[CROSSTALK_NET_WSHOP_PATH_MAX];
     char preview_path[CROSSTALK_NET_WSHOP_PATH_MAX];
+    uint8_t path_pudding[7];
     uint64_t call;
     uint64_t file_id;
     uint32_t state;
@@ -71,6 +72,7 @@ typedef struct crosstalk_net_wshop_ctx
     crosstalk_net_wshop_item_t item[CROSSTALK_NET_WSHOP_ITEM_MAX];
     uint32_t type_idx[CROSSTALK_NET_WSHOP_TYPE_CUNT][CROSSTALK_NET_WSHOP_ITEM_MAX];
     uint32_t type_cunt[CROSSTALK_NET_WSHOP_TYPE_CUNT];
+    uint8_t type_pudding[4];
     const libresteam_backend_set_t *set;
     uint32_t item_cunt;
     uint8_t init_ok;

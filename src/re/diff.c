@@ -135,7 +135,7 @@ uint32_t crosstalk_re_diff_func_clear(crosstalk_re_diff_ctx_t *ctx)
 
     for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side = side + 0x1) { ctx->entry[side] = (uint64_t)UINT64_MAX; }
 
-    memset(ctx->arg, 0x0, sizeof(ctx->arg));
+    memset(&ctx->arg[0], 0x0, sizeof(ctx->arg));
 
     ctx->arg_cunt = 0;
     ctx->func_mode = LDG_TRUTH_FALSE;

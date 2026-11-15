@@ -9,6 +9,7 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/mem/alloc.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/sys/tty.h>
 #include <dangling/term/input.h>
@@ -56,7 +57,6 @@
 #define MAIN_CAT_INPUT 2
 #define MAIN_CAT_STORAGE 3
 #define MAIN_CAT_BOOT 4
-#define MAIN_CAT_NET 5
 #define MAIN_CAT_CUNT 6
 
 #define MAIN_KIND_TEXT 0
@@ -104,7 +104,7 @@
 #define MAIN_LBL_PERSIST "Write disks back on exit"
 #define MAIN_LBL_NET "Network endpoint:"
 
-#define MAIN_TRACE_FMT "dangcsaemumngr: %s; err: %u\n"
+#define MAIN_TRACE_FMT "dangcsaemumngr: %.31s; err: %u32\n"
 #define MAIN_TRACE_NO_BUFF 0
 #define MAIN_TRACE_ENTER "entered main; argc"
 #define MAIN_TRACE_MEM_OK "memory up"
@@ -114,16 +114,16 @@
 #define MAIN_TRACE_MNGR "manager init failed"
 #define MAIN_TRACE_TERM "terminal init failed"
 #define MAIN_TRACE_ALLOC "context allocation failed"
-#define MAIN_NEW_NAME_FMT "machine%u"
+#define MAIN_NEW_NAME_FMT "machine%u32"
 #define MAIN_SUM_FMT "%.13s %.191s"
-#define MAIN_SUM_HZ_FMT "Clock: %" PRIu64 " MHz"
-#define MAIN_SUM_RAM_FMT "Memory: %" PRIu64 " MiB"
-#define MAIN_SUM_DRIVE_FMT "Drive %u: %.191s"
-#define MAIN_SUM_IMGS_FMT "Images: %u"
+#define MAIN_SUM_HZ_FMT "Clock: %u64 MHz"
+#define MAIN_SUM_RAM_FMT "Memory: %u64 MiB"
+#define MAIN_SUM_DRIVE_FMT "Drive %u32: %.191s"
+#define MAIN_SUM_IMGS_FMT "Images: %u32"
 #define MAIN_SUM_NET_FMT "Network: %.191s"
-#define MAIN_DRIVE_FMT "Drive %u:"
-#define MAIN_IMG_FMT "Image %u:"
-#define MAIN_UINT_FMT "%" PRIu64
+#define MAIN_DRIVE_FMT "Drive %u32:"
+#define MAIN_IMG_FMT "Image %u32:"
+#define MAIN_UINT_FMT "%u64"
 #define MAIN_GAMMA_FMT "%.2f"
 #define MAIN_HZ_PER_MHZ 1000000
 #define MAIN_GAMMA_MIN 0.5
@@ -274,6 +274,9 @@ static uint32_t main_cat_name_get(uint32_t cat, const char **out)
 
 static uint32_t main_edit_begin(main_edit_t *edit, const crosstalk_mngr_ctx_t *mngr, uint32_t idx)
 {
+    uint64_t len = 0;
+    uint32_t ret = 0;
+
     if (LDG_UNLIKELY(edit == 0x0 || mngr == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (idx >= mngr->cunt) { return LDG_ERR_BOUNDS; }
@@ -286,11 +289,14 @@ static uint32_t main_edit_begin(main_edit_t *edit, const crosstalk_mngr_ctx_t *m
     edit->cat = (uint32_t)MAIN_CAT_MACHINE;
     edit->keys_raw = edit->machine.key_mode == (uint32_t)CROSSTALK_EMU_INPUT_MODE_SCAN ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
 
-    if (snprintf(edit->ram_text, sizeof(edit->ram_text), MAIN_UINT_FMT, edit->machine.ram_bytes / (uint64_t)LDG_MIB) < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(edit->ram_text, (uint64_t)sizeof(edit->ram_text), &len, MAIN_UINT_FMT, edit->machine.ram_bytes / (uint64_t)LDG_MIB);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (snprintf(edit->hz_text, sizeof(edit->hz_text), MAIN_UINT_FMT, edit->machine.f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ) < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(edit->hz_text, (uint64_t)sizeof(edit->hz_text), &len, MAIN_UINT_FMT, edit->machine.f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (snprintf(edit->gamma_text, sizeof(edit->gamma_text), MAIN_GAMMA_FMT, edit->machine.gamma) < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(edit->gamma_text, (uint64_t)sizeof(edit->gamma_text), &len, MAIN_GAMMA_FMT, edit->machine.gamma);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     edit->live = LDG_TRUTH_TRUE;
 
@@ -358,11 +364,15 @@ static uint32_t main_edit_commit(main_edit_t *edit, crosstalk_mngr_ctx_t *mngr)
 
 static uint32_t main_field_set(main_field_t *out, const char *label, uint32_t kind, char *text, uint32_t cap, uint8_t *flag)
 {
+    uint64_t len = 0;
+    uint32_t ret = 0;
+
     if (LDG_UNLIKELY(out == 0x0 || label == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     memset(out, 0x0, sizeof(*out));
 
-    if (snprintf(out->label, sizeof(out->label), MAIN_LABEL_FMT, label) < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(out->label, (uint64_t)sizeof(out->label), &len, MAIN_LABEL_FMT, label);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     out->kind = kind;
     out->text = text;
@@ -376,6 +386,7 @@ static uint32_t main_fields_build(main_edit_t *edit, main_field_t *out, uint32_t
 {
     char label[MAIN_LABEL_CAP] = LDG_ARR_ZERO_INIT;
     crosstalk_mngr_machine_t *machine = 0x0;
+    uint64_t len = 0;
     uint32_t cunt = 0;
     uint32_t at = 0;
     uint32_t ret = LDG_ERR_AOK;
@@ -408,7 +419,8 @@ static uint32_t main_fields_build(main_edit_t *edit, main_field_t *out, uint32_t
     {
         for (at = 0; at < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX && ret == LDG_ERR_AOK; at = at + MAIN_STEP)
         {
-            if (snprintf(label, sizeof(label), MAIN_DRIVE_FMT, at) < 0) { return LDG_ERR_STR_FMT; }
+            ret = ldg_str_fmt(label, (uint64_t)sizeof(label), &len, MAIN_DRIVE_FMT, at);
+            if (ret != LDG_ERR_AOK) { return ret; }
 
             ret = main_field_set(&out[cunt++], label, (uint32_t)MAIN_KIND_TEXT, machine->disk_path[at], (uint32_t)sizeof(machine->disk_path[at]), 0x0);
         }
@@ -417,7 +429,8 @@ static uint32_t main_fields_build(main_edit_t *edit, main_field_t *out, uint32_t
     }
     else if (edit->cat == (uint32_t)MAIN_CAT_BOOT) { for (at = 0; at < (uint32_t)CROSSTALK_EMU_LD_MAX && ret == LDG_ERR_AOK; at = at + MAIN_STEP)
         {
-            if (snprintf(label, sizeof(label), MAIN_IMG_FMT, at) < 0) { return LDG_ERR_STR_FMT; }
+            ret = ldg_str_fmt(label, (uint64_t)sizeof(label), &len, MAIN_IMG_FMT, at);
+            if (ret != LDG_ERR_AOK) { return ret; }
 
             ret = main_field_set(&out[cunt++], label, (uint32_t)MAIN_KIND_TEXT, machine->ld_path[at], (uint32_t)sizeof(machine->ld_path[at]), 0x0);
         }
@@ -491,6 +504,8 @@ static uint32_t main_list_key_isr(main_state_t *state, const ldg_term_key_event_
 {
     crosstalk_mngr_ctx_t *mngr = 0x0;
     char new_name[MAIN_NAME_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(state == 0x0 || key == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -520,7 +535,8 @@ static uint32_t main_list_key_isr(main_state_t *state, const ldg_term_key_event_
 
     if (key->codepoint == (uint32_t)MAIN_KEY_NEW)
     {
-        if (snprintf(new_name, sizeof(new_name), MAIN_NEW_NAME_FMT, mngr->cunt) < 0) { return LDG_ERR_STR_FMT; }
+        ret = ldg_str_fmt(new_name, (uint64_t)sizeof(new_name), &len, MAIN_NEW_NAME_FMT, mngr->cunt);
+        if (ret != LDG_ERR_AOK) { return ret; }
 
         return crosstalk_mngr_machine_add(mngr, new_name);
     }
@@ -615,6 +631,7 @@ static uint32_t main_key_isr(main_state_t *state, const ldg_term_key_event_t *ke
 static uint32_t main_summary_draw(ldg_term_render_t *render, const crosstalk_mngr_machine_t *machine, const main_palette_t *pal, uint32_t col)
 {
     char line[MAIN_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
     uint32_t row = (uint32_t)MAIN_BODY_ROW;
     uint32_t drive = 0;
 
@@ -624,19 +641,19 @@ static uint32_t main_summary_draw(ldg_term_render_t *render, const crosstalk_mng
 
     row = row + MAIN_STEP + (uint32_t)MAIN_GAP;
 
-    if (snprintf(line, sizeof(line), MAIN_SUM_FMT, MAIN_LBL_CORE, machine->core_path[0] != LDG_STR_TERM ? machine->core_path : MAIN_EMPTY) > 0) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_FMT, MAIN_LBL_CORE, machine->core_path[0] != LDG_STR_TERM ? machine->core_path : MAIN_EMPTY) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
     row = row + MAIN_STEP;
 
-    if (snprintf(line, sizeof(line), MAIN_SUM_HZ_FMT, machine->f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ) > 0) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_HZ_FMT, machine->f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
     row = row + MAIN_STEP;
 
-    if (snprintf(line, sizeof(line), MAIN_SUM_RAM_FMT, machine->ram_bytes / (uint64_t)LDG_MIB) > 0) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_RAM_FMT, machine->ram_bytes / (uint64_t)LDG_MIB) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
     row = row + MAIN_STEP;
 
-    if (snprintf(line, sizeof(line), MAIN_SUM_IMGS_FMT, machine->ld_cunt) > 0) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_IMGS_FMT, machine->ld_cunt) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
     row = row + MAIN_STEP;
 
@@ -644,12 +661,12 @@ static uint32_t main_summary_draw(ldg_term_render_t *render, const crosstalk_mng
     {
         if (machine->disk_path[drive][0] == LDG_STR_TERM) { continue; }
 
-        if (snprintf(line, sizeof(line), MAIN_SUM_DRIVE_FMT, drive, machine->disk_path[drive]) > 0) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_DRIVE_FMT, drive, machine->disk_path[drive]) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
         row = row + MAIN_STEP;
     }
 
-    if (machine->net_path[0] != LDG_STR_TERM) { if (snprintf(line, sizeof(line), MAIN_SUM_NET_FMT, machine->net_path) > 0) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } } }
+    if (machine->net_path[0] != LDG_STR_TERM) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_NET_FMT, machine->net_path) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } } }
 
     return LDG_ERR_AOK;
 }
@@ -922,6 +939,16 @@ static uint32_t main_frame_wait(uint64_t frame_beg_ms)
     return ldg_time_ns_delay(((uint64_t)MAIN_FRAME_MS - (now_ms - frame_beg_ms)) * (uint64_t)LDG_NS_PER_MS);
 }
 
+static void main_trace(const char *text, uint32_t val)
+{
+    char line[MAIN_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
+
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_TRACE_FMT, text, val) != LDG_ERR_AOK) { return; }
+
+    if (fputs(line, stdout) == EOF) { return; }
+}
+
 int main(int argc, char **argv)
 {
     crosstalk_mngr_ctx_t *mngr = 0x0;
@@ -932,27 +959,27 @@ int main(int argc, char **argv)
 
     if (setvbuf(stdout, 0x0, _IONBF, (uint64_t)MAIN_TRACE_NO_BUFF) != 0) { return MAIN_EXIT_FAIL; }
 
-    printf(MAIN_TRACE_FMT, MAIN_TRACE_ENTER, (uint32_t)argc);
+    main_trace(MAIN_TRACE_ENTER, (uint32_t)argc);
 
     if (argc < 0 || argv == 0x0) { return MAIN_EXIT_FAIL; }
 
     ret = ldg_mem_init();
     if (ret != LDG_ERR_AOK)
     {
-        printf(MAIN_TRACE_FMT, MAIN_TRACE_MEM, ret);
+        main_trace(MAIN_TRACE_MEM, ret);
 
         return MAIN_EXIT_FAIL;
     }
 
     ret = ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, MAIN_LOG_START);
-    if (ret != LDG_ERR_AOK) { printf(MAIN_TRACE_FMT, MAIN_TRACE_LOGS, ret); }
+    if (ret != LDG_ERR_AOK) { main_trace(MAIN_TRACE_LOGS, ret); }
 
-    printf(MAIN_TRACE_FMT, MAIN_TRACE_MEM_OK, ret);
+    main_trace(MAIN_TRACE_MEM_OK, ret);
 
     ret = ldg_mem_alloc(sizeof(*mngr), (void **)&mngr);
     if (ret != LDG_ERR_AOK)
     {
-        printf(MAIN_TRACE_FMT, MAIN_TRACE_ALLOC, ret);
+        main_trace(MAIN_TRACE_ALLOC, ret);
 
         return MAIN_EXIT_FAIL;
     }
@@ -960,7 +987,7 @@ int main(int argc, char **argv)
     ret = ldg_mem_alloc(sizeof(*edit), (void **)&edit);
     if (ret != LDG_ERR_AOK)
     {
-        printf(MAIN_TRACE_FMT, MAIN_TRACE_ALLOC, ret);
+        main_trace(MAIN_TRACE_ALLOC, ret);
 
         return MAIN_EXIT_FAIL;
     }
@@ -971,19 +998,19 @@ int main(int argc, char **argv)
     ret = crosstalk_mngr_init(mngr);
     if (ret != LDG_ERR_AOK)
     {
-        printf(MAIN_TRACE_FMT, MAIN_TRACE_MNGR, ret);
+        main_trace(MAIN_TRACE_MNGR, ret);
 
         return MAIN_EXIT_FAIL;
     }
 
-    printf(MAIN_TRACE_FMT, MAIN_TRACE_MNGR_OK, mngr->cunt);
+    main_trace(MAIN_TRACE_MNGR_OK, mngr->cunt);
 
     if (crosstalk_mngr_scan(mngr) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr scan failed"); }
 
     ret = main_term_open(&term);
     if (ret != LDG_ERR_AOK)
     {
-        printf(MAIN_TRACE_FMT, MAIN_TRACE_TERM, ret);
+        main_trace(MAIN_TRACE_TERM, ret);
 
         return MAIN_EXIT_FAIL;
     }

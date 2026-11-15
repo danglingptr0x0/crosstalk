@@ -653,7 +653,7 @@ static void hlt_log(const crosstalk_eda_ic_fpga_slot_t *slot, uint32_t slot_idx,
         return;
     }
 
-    if (slot->abi != 0x0 && slot->abi->ok == LDG_TRUTH_TRUE && slot->abi->state_get((uint32_t)CROSSTALK_HDL_ABI_STATE_EMU_FAULT, &base, &cunt) == LDG_ERR_AOK && base != 0x0 && cunt >= (uint32_t)CROSSTALK_HDL_ABI_FAULT_CUNT) { memcpy(rec, base, sizeof(rec)); }
+    if (slot->abi != 0x0 && slot->abi->ok == LDG_TRUTH_TRUE && slot->abi->state_get((uint32_t)CROSSTALK_HDL_ABI_STATE_EMU_FAULT, &base, &cunt) == LDG_ERR_AOK && base != 0x0 && cunt >= (uint32_t)CROSSTALK_HDL_ABI_FAULT_CUNT) { memcpy(&rec[0], base, sizeof(rec)); }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: fault halt; slot: %u32; cycle: %u64; cause: %u64; loc: 0x%X64; instr: 0x%08X64; addr: 0x%X64; size: %u64; sp: 0x%X64; step: %u64", slot_idx, cycle, rec[CROSSTALK_HDL_ABI_FAULT_CAUSE_AT], rec[CROSSTALK_HDL_ABI_FAULT_LOC_AT], rec[CROSSTALK_HDL_ABI_FAULT_INSTR_AT], rec[CROSSTALK_HDL_ABI_FAULT_ADDR_AT], rec[CROSSTALK_HDL_ABI_FAULT_SIZE_AT], rec[CROSSTALK_HDL_ABI_FAULT_SP_AT], rec[CROSSTALK_HDL_ABI_FAULT_STEP_AT]);
 }

@@ -122,6 +122,7 @@ typedef struct crosstalk_eda_script_node
     uint8_t has_args;
     uint8_t alt_has_args;
     uint8_t quoted;
+    uint8_t pudding[4];
 } crosstalk_eda_script_node_t;
 
 typedef struct crosstalk_eda_script_ast

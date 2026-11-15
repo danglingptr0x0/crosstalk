@@ -7,6 +7,7 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/logging/logging.h>
+#include <dangling/str/str.h>
 
 #include "core/log.h"
 #include "eda/io/display.h"
@@ -27,7 +28,8 @@ static uint32_t display_pin_bind(crosstalk_eda_io_display_ctx_t *ctx, uint32_t p
 
     pin = &ctx->pin[pin_idx];
 
-    if (snprintf(pin->port, sizeof(pin->port), "%.63s", port) < 0) { return LDG_ERR_IO_FMT; }
+    ret = ldg_str_rbrcpy(pin->port, port, (uint64_t)sizeof(pin->port));
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return LDG_ERR_IO_FMT; }
 
     pin->sig_idx = UINT32_MAX;
     pin->abi_sig = UINT32_MAX;

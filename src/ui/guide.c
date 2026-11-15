@@ -8,6 +8,7 @@
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/time/time.h>
 
@@ -27,7 +28,7 @@
 #define GUIDE_SHOW_LABEL "Highlight"
 #define GUIDE_NEXT_LABEL "Forward"
 #define GUIDE_IDLE_TEXT "no guide running; guide <name> to start"
-#define GUIDE_STEP_FMT "%u of %u"
+#define GUIDE_STEP_FMT "%u32 of %u32"
 #define GUIDE_STEP_TEXT_CAP 32
 #define GUIDE_KEY_NEXT 'l'
 #define GUIDE_KEY_BACK 'h'
@@ -173,10 +174,10 @@ static uint32_t guide_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *re
     char step_text[GUIDE_STEP_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     const crosstalk_ui_guide_step_t *step = 0x0;
     uint64_t title_len = 0;
+    uint64_t wrote = 0;
     uint32_t meta_w = 0;
     uint32_t row = GUIDE_ROW_TITLE;
     uint32_t ret = 0;
-    int32_t wrote = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || render == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -193,8 +194,8 @@ static uint32_t guide_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *re
 
     step = &ctx->live->step[ctx->step_idx];
 
-    wrote = snprintf(step_text, sizeof(step_text), GUIDE_STEP_FMT, ctx->step_idx + (uint32_t)GUIDE_STEP, ctx->live->step_cunt);
-    if (wrote < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(step_text, (uint64_t)sizeof(step_text), &wrote, GUIDE_STEP_FMT, ctx->step_idx + (uint32_t)GUIDE_STEP, ctx->live->step_cunt);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     meta_w = (uint32_t)wrote;
 

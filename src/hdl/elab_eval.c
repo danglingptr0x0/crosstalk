@@ -963,7 +963,7 @@ uint32_t crosstalk_hdl_elab_expr(crosstalk_hdl_elab_ctx_t *ctx, uint32_t node_id
 
         if (crosstalk_hdl_elab_tok_lit_eq_is(ctx->src, &child->tok, "$clog2") == LDG_TRUTH_TRUE || crosstalk_hdl_elab_tok_lit_eq_is(ctx->src, &child->tok, "$bits") == LDG_TRUTH_TRUE)
         {
-            uint64_t const_val = 0;
+            const_val = 0;
 
             ret = crosstalk_hdl_elab_const_eval(ctx, node_idx, &const_val);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ctx->depth--; return ret; }

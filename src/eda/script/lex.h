@@ -116,6 +116,7 @@ typedef struct crosstalk_eda_script_tok
     uint32_t line;
     uint32_t col;
     uint32_t kind;
+    uint8_t pudding[4];
 } crosstalk_eda_script_tok_t;
 
 typedef struct crosstalk_eda_script_lex
@@ -125,7 +126,7 @@ typedef struct crosstalk_eda_script_lex
     uint32_t at;
     uint32_t line;
     uint32_t col;
-    uint8_t pudding[4];
+    uint8_t pudding[8];
 } crosstalk_eda_script_lex_t;
 
 uint32_t crosstalk_eda_script_lex_init(crosstalk_eda_script_lex_t *ctx, const char *src, uint32_t src_len);

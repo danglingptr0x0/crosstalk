@@ -6,6 +6,7 @@
 #include <dangling/core/macros.h>
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/mem/alloc.h>
 #include <dangling/io/file.h>
 
@@ -57,7 +58,6 @@
 #define TYPE_TAG_ENUM 0x04
 #define TYPE_TAG_MEMBER 0x0D
 #define TYPE_TAG_PTR 0x0F
-#define TYPE_TAG_CU 0x11
 #define TYPE_TAG_STRUCT 0x13
 #define TYPE_TAG_SUBROUTINE 0x15
 #define TYPE_TAG_TYPEDEF 0x16
@@ -152,7 +152,7 @@
 #define TYPE_SLEB_VAL_BITS 64
 #define TYPE_SLEB_UNIT 0x1
 #define TYPE_IDX_TEXT_CAP 24
-#define TYPE_IDX_FMT "%c%" PRIu64 "%c"
+#define TYPE_IDX_FMT "%c%u64%c"
 #define TYPE_PATH_SEP_LEN 1
 #define TYPE_DIE_REF_ABSENT 0
 #define TYPE_SIZE_PENDING 0
@@ -204,6 +204,7 @@ typedef struct type_build
     uint32_t var_cunt;
     uint32_t die_cunt;
     uint32_t cv_cunt;
+    uint8_t pudding[4];
 } type_build_t;
 
 static uint16_t type_u16_get(const uint8_t *at)
@@ -1937,6 +1938,7 @@ uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint
 
 uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32_t type_idx, uint64_t off, crosstalk_hdl_type_field_t *out)
 {
+    uint64_t fmt_len = 0;
     uint64_t rest = off;
     uint32_t cur = type_idx;
     uint32_t depth = 0;
@@ -2018,7 +2020,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
 
             slot = rest / elem->size;
 
-            if (snprintf(idx_text, sizeof(idx_text), TYPE_IDX_FMT, (char)CROSSTALK_HDL_TYPE_IDX_OPEN, slot, (char)CROSSTALK_HDL_TYPE_IDX_CLOSE) < 0) { break; }
+            if (ldg_str_fmt(idx_text, (uint64_t)sizeof(idx_text), &fmt_len, TYPE_IDX_FMT, (char)CROSSTALK_HDL_TYPE_IDX_OPEN, slot, (char)CROSSTALK_HDL_TYPE_IDX_CLOSE) != LDG_ERR_AOK) { break; }
 
             type_name_cpy(out->path + path_len, idx_text, (uint32_t)CROSSTALK_HDL_TYPE_PATH_CAP - path_len);
             path_len = (uint32_t)strlen(out->path);

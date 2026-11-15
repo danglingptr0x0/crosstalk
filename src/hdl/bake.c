@@ -101,8 +101,6 @@ uint32_t crosstalk_hdl_bake_wr(const crosstalk_hdl_abi_t *abi, const crosstalk_h
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: comp copy failed; err: %u32", ret); return ret; }
     }
 
-    ret = LDG_ERR_AOK;
-
     ret = bake_state_get(abi, (uint32_t)CROSSTALK_HDL_ABI_STATE_NODE, &base, &hdr.node_cunt);
     if (ret != LDG_ERR_AOK) { return ret; }
 

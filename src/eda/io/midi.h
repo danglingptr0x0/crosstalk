@@ -109,7 +109,7 @@ typedef struct crosstalk_eda_io_midi_ctx
     uint8_t live;
     uint8_t playing;
     uint8_t ok;
-    uint8_t pudding[1];
+    uint8_t pudding[37];
 } crosstalk_eda_io_midi_ctx_t;
 
 uint32_t crosstalk_eda_io_midi_init(crosstalk_eda_io_midi_ctx_t *ctx);

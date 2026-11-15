@@ -26,7 +26,7 @@
 #define CROSSTALK_EDA_UI_TERM_HEX_PER_BYTE 3
 #define CROSSTALK_EDA_UI_TERM_BIN_PER_BYTE 9
 #define CROSSTALK_EDA_UI_TERM_PANE_CUNT 3
-#define CROSSTALK_EDA_UI_TERM_OFF_FMT "%08" PRIX64
+#define CROSSTALK_EDA_UI_TERM_OFF_FMT "%08X64"
 #define CROSSTALK_EDA_UI_TERM_SEP_COLS 2
 #define CROSSTALK_EDA_UI_TERM_DOT '.'
 #define CROSSTALK_EDA_UI_TERM_LOW_DASH '_'
@@ -102,7 +102,7 @@ typedef struct crosstalk_eda_ui_term_sesh
     uint8_t live;
     uint8_t cooked;
     uint8_t grid_view;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_eda_ui_term_sesh_t;
 
 typedef uint32_t (*crosstalk_eda_ui_term_tee_cb_t)(void *user, uint32_t sesh_idx, const uint8_t *bytes, uint32_t len);
@@ -128,7 +128,7 @@ typedef struct crosstalk_eda_ui_term_ctx
     uint8_t focus;
     uint8_t pty_draw_logged;
     uint8_t cursor_seen;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_eda_ui_term_ctx_t;
 
 uint32_t crosstalk_eda_ui_term_init(crosstalk_eda_ui_term_ctx_t *ctx);

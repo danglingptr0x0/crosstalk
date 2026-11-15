@@ -50,7 +50,7 @@ typedef struct crosstalk_ui_guide_ctx
     uint32_t done_mask;
     uint32_t pick;
     uint8_t ok;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_ui_guide_ctx_t;
 
 uint32_t crosstalk_ui_guide_init(crosstalk_ui_guide_ctx_t *ctx);

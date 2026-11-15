@@ -20,7 +20,7 @@ typedef struct crosstalk_wshop_item
 {
     crosstalk_wshop_manifest_t manifest;
     char dir[CROSSTALK_NET_WSHOP_PATH_MAX];
-    uint8_t pudding0[4];
+    uint8_t pudding0[8];
     uint64_t file_id;
     uint32_t type;
     uint8_t ok;

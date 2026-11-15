@@ -7,6 +7,7 @@
 #include <dangling/logging/logging.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/dir.h>
 #include <dangling/io/file.h>
@@ -19,9 +20,9 @@
 #define MNGR_STEP 1
 #define MNGR_WIN_SEP '\\'
 #define MNGR_DIR_MODE 0755
-#define MNGR_ARG_DISK_FMT "%u:%s"
-#define MNGR_ARG_LD_FMT "%s@%" PRIu64
-#define MNGR_ARG_HZ_FMT "%" PRIu64
+#define MNGR_ARG_DISK_FMT "%u32:%s"
+#define MNGR_ARG_LD_FMT "%s@%u64"
+#define MNGR_ARG_HZ_FMT "%u64"
 #define MNGR_ARG_GAMMA_FMT "%.2f"
 #define MNGR_ARG_CORE "--core"
 #define MNGR_ARG_MEMLD "--memld"
@@ -62,7 +63,8 @@ static uint32_t mngr_argv_fmt_push(mngr_argv_t *argv, const char *fmt, ...)
     va_list args;
     char *at = 0x0;
     uint64_t room = 0;
-    int32_t written = 0;
+    uint64_t written = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(argv == 0x0 || fmt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -72,14 +74,12 @@ static uint32_t mngr_argv_fmt_push(mngr_argv_t *argv, const char *fmt, ...)
     room = (uint64_t)sizeof(argv->st) - argv->st_off;
 
     va_start(args, fmt);
-    written = vsnprintf(at, room, fmt, args);
+    ret = ldg_str_variable_fmt(at, room, &written, fmt, args);
     va_end(args);
 
-    if (written < 0) { return LDG_ERR_STR_FMT; }
+    if (ret != LDG_ERR_AOK) { return ret; }
 
-    if ((uint64_t)written >= room) { return LDG_ERR_STR_TRUNC; }
-
-    argv->st_off = argv->st_off + (uint64_t)written + (uint64_t)LDG_STR_TERM_SIZE;
+    argv->st_off = argv->st_off + written + (uint64_t)LDG_STR_TERM_SIZE;
 
     return mngr_argv_push(argv, at);
 }
@@ -272,7 +272,7 @@ uint32_t crosstalk_mngr_machine_drop(crosstalk_mngr_ctx_t *ctx, uint32_t idx)
     for (at = idx; at + MNGR_STEP < ctx->cunt; at = at + MNGR_STEP)
     {
         memcpy(&ctx->machine[at], &ctx->machine[at + MNGR_STEP], sizeof(ctx->machine[at]));
-        memcpy(ctx->path[at], ctx->path[at + MNGR_STEP], sizeof(ctx->path[at]));
+        memcpy(&ctx->path[at][0], ctx->path[at + MNGR_STEP], sizeof(ctx->path[at]));
     }
 
     ctx->cunt = ctx->cunt - MNGR_STEP;

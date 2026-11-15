@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -14,7 +15,7 @@
 #define FEED_STEP 1
 #define FEED_ORIG_COL 0
 #define FEED_HINT_TEXT "feed <sigs>; cycle-stamped change events; feed off releases"
-#define FEED_ROW_FMT "%12" PRIu64 " %-12.12s 0x%" PRIX64 "%.24s"
+#define FEED_ROW_FMT "%12u64 %-12.12s 0x%X64%.24s"
 #define FEED_LINE_CAP 128
 #define FEED_DRAIN_CAP 128
 #define FEED_EXC_MARK_A "exc"
@@ -35,11 +36,11 @@
 #define FEED_FAULT_HDR_FMT "fault halt; cause:%.16s; loc: "
 #define FEED_FAULT_INSTR_TEXT "; instr: "
 #define FEED_FAULT_ADDR_TEXT "addr: "
-#define FEED_FAULT_MID_FMT "; size: %" PRIu64 "; sp: "
+#define FEED_FAULT_MID_FMT "; size: %u64; sp: "
 #define FEED_FAULT_SP_TEXT "sp: "
-#define FEED_FAULT_STEP_FMT "; step: %" PRIu64
-#define FEED_HEX_FMT "0x%" PRIX64
-#define FEED_WORD_FMT "0x%08" PRIX64
+#define FEED_FAULT_STEP_FMT "; step: %u64"
+#define FEED_HEX_FMT "0x%X64"
+#define FEED_WORD_FMT "0x%08X64"
 #define FEED_FAULT_UNKNOWN_TEXT " unknown"
 
 static const char* feed_cause_name_get(uint64_t val)
@@ -198,7 +199,7 @@ uint32_t crosstalk_eda_ui_feed_fault_set(crosstalk_eda_ui_feed_ctx_t *ctx, const
 
     if (rec[CROSSTALK_HDL_ABI_FAULT_VALID_AT] == 0) { ctx->fault_has = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    memcpy(ctx->fault, rec, sizeof(ctx->fault));
+    memcpy(&ctx->fault[0], rec, sizeof(ctx->fault));
     ctx->fault_has = LDG_TRUTH_TRUE;
 
     return LDG_ERR_AOK;
@@ -208,9 +209,9 @@ uint32_t crosstalk_eda_ui_feed_rst(crosstalk_eda_ui_feed_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    memset(ctx->lane, 0x0, sizeof(ctx->lane));
-    memset(ctx->event, 0x0, sizeof(ctx->event));
-    memset(ctx->fault, 0x0, sizeof(ctx->fault));
+    memset(&ctx->lane[0], 0x0, sizeof(ctx->lane));
+    memset(&ctx->event[0], 0x0, sizeof(ctx->event));
+    memset(&ctx->fault[0], 0x0, sizeof(ctx->fault));
     ctx->lane_cunt = 0;
     ctx->event_hd = 0;
     ctx->event_cunt = 0;
@@ -238,6 +239,7 @@ uint8_t crosstalk_eda_ui_feed_open_is(const crosstalk_eda_ui_feed_ctx_t *ctx)
 
 static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row)
 {
+    uint64_t fmt_len = 0;
     char line[FEED_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t cause = 0;
     const char *name = 0x0;
@@ -251,19 +253,19 @@ static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_rende
 
     if (name[0] == LDG_STR_TERM) { name = FEED_FAULT_UNKNOWN_TEXT; }
 
-    if (snprintf(line, sizeof(line), FEED_FAULT_HDR_FMT, name) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_FAULT_HDR_FMT, name) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (snprintf(line, sizeof(line), FEED_HEX_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_LOC_AT]) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_HEX_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_LOC_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA);
     if (ret == LDG_ERR_AOK) { ret = feed_seg_draw(render, FEED_FAULT_INSTR_TEXT, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA); }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (snprintf(line, sizeof(line), FEED_WORD_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_INSTR_AT]) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_WORD_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_INSTR_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -276,12 +278,12 @@ static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_rende
         ret = feed_seg_draw(render, FEED_FAULT_ADDR_TEXT, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (snprintf(line, sizeof(line), FEED_HEX_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_ADDR_AT]) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_HEX_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_ADDR_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (snprintf(line, sizeof(line), FEED_FAULT_MID_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_SIZE_AT]) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_FAULT_MID_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_SIZE_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -292,12 +294,12 @@ static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_rende
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    if (snprintf(line, sizeof(line), FEED_HEX_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_SP_AT]) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_HEX_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_SP_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (snprintf(line, sizeof(line), FEED_FAULT_STEP_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_STEP_AT]) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_FAULT_STEP_FMT, ctx->fault[CROSSTALK_HDL_ABI_FAULT_STEP_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -309,6 +311,7 @@ static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_rende
 
 static uint32_t feed_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_feed_ctx_t *ctx = (crosstalk_eda_ui_feed_ctx_t *)user;
     char line[FEED_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t row = 0;
@@ -345,7 +348,7 @@ static uint32_t feed_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         const crosstalk_eda_ui_feed_lane_t *lane = &ctx->lane[ctx->event[at].lane_idx];
         const char *note = feed_exc_note_get(lane, ctx->event[at].val);
 
-        if (snprintf(line, sizeof(line), FEED_ROW_FMT, ctx->event[at].cycle, lane->name, ctx->event[at].val, note) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, FEED_ROW_FMT, ctx->event[at].cycle, lane->name, ctx->event[at].val, note) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)FEED_ORIG_COL, row, line, (uint64_t)sizeof(line), note[0] != LDG_STR_TERM ? (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA : (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

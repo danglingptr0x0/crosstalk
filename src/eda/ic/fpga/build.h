@@ -70,7 +70,7 @@ typedef struct crosstalk_eda_ic_fpga_build_ctx
     uint8_t live;
     uint8_t ok;
     uint8_t pf_is;
-    uint8_t pudding[5];
+    uint8_t pudding[17];
 } crosstalk_eda_ic_fpga_build_ctx_t;
 
 uint32_t crosstalk_eda_ic_fpga_build_init(crosstalk_eda_ic_fpga_build_ctx_t *ctx, const char *cc_dir);

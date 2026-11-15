@@ -42,7 +42,7 @@
 #define CROSSTALK_RE_DB_VERB "re"
 #define CROSSTALK_RE_DB_EXT ".xts"
 #define CROSSTALK_RE_DB_EOL "\n"
-#define CROSSTALK_RE_DB_IMG_LINE_FMT "re img 0x%08X %.63s;\n"
+#define CROSSTALK_RE_DB_IMG_LINE_FMT "re img 0x%08X32 %.63s;\n"
 #define CROSSTALK_RE_DB_STEP_MIN 1
 
 typedef struct crosstalk_re_db_rec

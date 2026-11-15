@@ -59,6 +59,7 @@ typedef struct crosstalk_net_relay_ctx
     uint8_t reply[CROSSTALK_NET_RELAY_PAYLOAD_CAP];
     uint8_t post_req[CROSSTALK_NET_RELAY_PAYLOAD_CAP];
     uint8_t body[CROSSTALK_NET_RELAY_BODY_CAP];
+    uint8_t body_pudding[4];
     uint64_t serviced;
     uint32_t body_len;
     uint32_t payload_cap;

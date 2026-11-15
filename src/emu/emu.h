@@ -70,7 +70,7 @@ typedef struct crosstalk_emu_conf
     uint8_t audio_on;
     uint8_t disk_persist;
     uint8_t serial_on;
-    uint8_t pudding[5];
+    uint8_t pudding[9];
 } crosstalk_emu_conf_t;
 
 typedef struct crosstalk_emu_ctx
@@ -80,6 +80,7 @@ typedef struct crosstalk_emu_ctx
     crosstalk_emu_input_ctx_t input;
     crosstalk_emu_audio_ctx_t audio;
     crosstalk_emu_net_ctx_t net;
+    uint8_t pool_pudding[24];
     ldg_thread_pool_t pool;
     char ld_path[CROSSTALK_EMU_LD_MAX][LDG_IO_PATH_MAX];
     uint64_t ld_off[CROSSTALK_EMU_LD_MAX];
@@ -107,7 +108,7 @@ typedef struct crosstalk_emu_ctx
     uint8_t hlt;
     uint8_t ok;
     uint8_t live;
-    uint8_t pudding[3];
+    uint8_t pudding[15];
 } crosstalk_emu_ctx_t;
 
 uint32_t crosstalk_emu_conf_default_get(crosstalk_emu_conf_t *out);

@@ -5,6 +5,7 @@
 
 #include <dangling/arch/amd64/atomic.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/path.h>
 #include <dangling/str/str.h>
@@ -233,6 +234,7 @@ uint32_t crosstalk_re_cc_step_clear(crosstalk_re_cc_ctx_t *ctx)
 
 uint32_t crosstalk_re_cc_start(crosstalk_re_cc_ctx_t *ctx, const char *src, const char *out)
 {
+    uint64_t fmt_len = 0;
     char stem[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t dot_at = UINT32_MAX;
     uint32_t sep_at = UINT32_MAX;
@@ -264,14 +266,14 @@ uint32_t crosstalk_re_cc_start(crosstalk_re_cc_ctx_t *ctx, const char *src, cons
 
     if (dot_at != UINT32_MAX && (sep_at == UINT32_MAX || dot_at > sep_at)) { stem[dot_at] = LDG_STR_TERM; }
 
-    if (snprintf(ctx->obj, sizeof(ctx->obj), "%.500s%.8s", stem, CROSSTALK_RE_CC_OBJ_EXT) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(ctx->obj, (uint64_t)sizeof(ctx->obj), &fmt_len, "%.500s%.8s", stem, CROSSTALK_RE_CC_OBJ_EXT) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     if (out != 0x0 && out[0] != LDG_STR_TERM)
     {
         ret = ldg_str_rbrcpy(ctx->out, out, (uint64_t)sizeof(ctx->out));
         if (ret != LDG_ERR_AOK) { return ret; }
     }
-    else if (snprintf(ctx->out, sizeof(ctx->out), "%.500s%.8s", stem, CROSSTALK_RE_CC_OUT_EXT) < 0) { return LDG_ERR_STR_FMT; }
+    else if (ldg_str_fmt(ctx->out, (uint64_t)sizeof(ctx->out), &fmt_len, "%.500s%.8s", stem, CROSSTALK_RE_CC_OUT_EXT) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ctx->err = LDG_ERR_AOK;
     ctx->exit_code = (uint32_t)CROSSTALK_RE_SPAWN_EXIT_OK;
@@ -312,6 +314,7 @@ uint32_t crosstalk_re_cc_tick(crosstalk_re_cc_ctx_t *ctx, uint8_t *out_done)
 
 uint32_t crosstalk_re_cc_status_get(crosstalk_re_cc_ctx_t *ctx, const char **out)
 {
+    uint64_t fmt_len = 0;
     uint64_t secs = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -322,7 +325,7 @@ uint32_t crosstalk_re_cc_status_get(crosstalk_re_cc_ctx_t *ctx, const char **out
 
     secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_RE_CC_MS_PER_SEC;
 
-    if (snprintf(ctx->status, sizeof(ctx->status), "re build: step %u of %u; %" PRIu64 "s", ctx->step_at + 0x1, ctx->step_cunt, secs) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(ctx->status, (uint64_t)sizeof(ctx->status), &fmt_len, "re build: step %u32 of %u32; %u64s", ctx->step_at + 0x1, ctx->step_cunt, secs) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     *out = ctx->status;
 

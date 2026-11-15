@@ -413,7 +413,7 @@ uint32_t crosstalk_hdl_exec_init(crosstalk_hdl_exec_ctx_t *ctx, const crosstalk_
     ctx->mem_words = 0;
     ctx->busy_sig = UINT32_MAX;
     ctx->busy_op = UINT32_MAX;
-    memset(ctx->pudding, 0x0, sizeof(ctx->pudding));
+    memset(&ctx->pudding[0], 0x0, sizeof(ctx->pudding));
 
     ret = crosstalk_hdl_exec_arr_alloc(pool, (uint64_t)ir_ctx->sig_cunt + 0x2, (uint64_t)sizeof(uint64_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

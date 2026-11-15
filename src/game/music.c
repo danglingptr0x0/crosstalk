@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/arch/amd64/atomic.h>
@@ -9,6 +8,7 @@
 #include <dangling/core/macros.h>
 #include <dangling/io/path.h>
 #include <dangling/sys/info.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 
 #include <dangling/logging/logging.h>
@@ -34,7 +34,7 @@
 #define CROSSTALK_GAME_MUSIC_NONE_TEXT "---"
 #define CROSSTALK_GAME_MUSIC_LINE_CAP 128
 #define CROSSTALK_GAME_MUSIC_ELLIPSIS_TEXT "..."
-#define CROSSTALK_GAME_MUSIC_FIT_FMT "%.*s%.3s"
+#define CROSSTALK_GAME_MUSIC_FIT_FMT "%.124s%.3s"
 
 uint32_t crosstalk_game_music_init(crosstalk_game_music_ctx_t *ctx, const libresteam_backend_set_t *set)
 {
@@ -335,8 +335,8 @@ uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, double dt)
     ctx->avail = ctx->back.avail;
     ctx->track_idx = ctx->back.track_idx;
     ctx->track_cunt = ctx->back.track_cunt;
-    memcpy(ctx->title, ctx->back.title, sizeof(ctx->title));
-    memcpy(ctx->artist, ctx->back.artist, sizeof(ctx->artist));
+    memcpy(&ctx->title[0], ctx->back.title, sizeof(ctx->title));
+    memcpy(&ctx->artist[0], ctx->back.artist, sizeof(ctx->artist));
 
     ctx->inflight = LDG_TRUTH_FALSE;
     ctx->poll_next = CROSSTALK_GAME_MUSIC_POLL_INTERVAL;
@@ -346,6 +346,9 @@ uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, double dt)
 
 uint32_t crosstalk_game_music_now_playing_get(const crosstalk_game_music_ctx_t *ctx, char *out, uint32_t out_cap)
 {
+    uint64_t len = 0;
+    uint32_t ret = 0;
+
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(out_cap == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
@@ -356,8 +359,14 @@ uint32_t crosstalk_game_music_now_playing_get(const crosstalk_game_music_ctx_t *
 
     if (ctx->title[0] == LDG_STR_TERM) { return LDG_ERR_NOT_FOUND; }
 
-    if (ctx->artist[0] != LDG_STR_TERM) { snprintf(out, (uint64_t)out_cap, "%.47s: %.47s", ctx->artist, ctx->title); }
-    else { snprintf(out, (uint64_t)out_cap, "%.95s", ctx->title); }
+    if (ctx->artist[0] != LDG_STR_TERM) { ret = ldg_str_fmt(out, (uint64_t)out_cap, &len, "%.47s: %.47s", ctx->artist, ctx->title); }
+    else { ret = ldg_str_fmt(out, (uint64_t)out_cap, &len, "%.95s", ctx->title); }
+
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)
+    {
+        out[0] = LDG_STR_TERM;
+        return ret;
+    }
 
     return LDG_ERR_AOK;
 }
@@ -404,6 +413,7 @@ uint32_t crosstalk_game_music_transport(crosstalk_game_music_ctx_t *ctx, uint32_
 static void music_line_fit(char *line, uint64_t cap, uint32_t max_w)
 {
     char full[CROSSTALK_GAME_MUSIC_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t fit_len = 0;
     uint32_t len = (uint32_t)strnlen(line, cap);
 
     if (len <= max_w) { return; }
@@ -414,7 +424,9 @@ static void music_line_fit(char *line, uint64_t cap, uint32_t max_w)
         return;
     }
 
-    snprintf(line, cap, CROSSTALK_GAME_MUSIC_FIT_FMT, (int32_t)(max_w - (uint32_t)CROSSTALK_GAME_MUSIC_ELLIPSIS_LEN), full, CROSSTALK_GAME_MUSIC_ELLIPSIS_TEXT);
+    full[max_w - (uint32_t)CROSSTALK_GAME_MUSIC_ELLIPSIS_LEN] = LDG_STR_TERM;
+
+    if (ldg_str_fmt(line, cap, &fit_len, CROSSTALK_GAME_MUSIC_FIT_FMT, full, CROSSTALK_GAME_MUSIC_ELLIPSIS_TEXT) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
 }
 
 uint32_t crosstalk_game_music_draw(const crosstalk_game_music_ctx_t *ctx, ldg_term_render_t *render, uint32_t col, uint32_t row, uint32_t col_cap)
@@ -423,6 +435,7 @@ uint32_t crosstalk_game_music_draw(const crosstalk_game_music_ctx_t *ctx, ldg_te
     const char *ctrl[] = { CROSSTALK_GAME_MUSIC_PREV_TEXT, CROSSTALK_GAME_MUSIC_PLAY_TEXT, CROSSTALK_GAME_MUSIC_NEXT_TEXT };
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t bg = LDG_STRUCT_ZERO_INIT;
+    uint64_t len = 0;
     uint32_t pos = col;
     uint32_t seg_w = 0;
     uint32_t at = 0;
@@ -432,10 +445,12 @@ uint32_t crosstalk_game_music_draw(const crosstalk_game_music_ctx_t *ctx, ldg_te
 
     if (LDG_UNLIKELY(col_cap == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (ctx->title[0] == LDG_STR_TERM) { snprintf(line, sizeof(line), "%.15s", CROSSTALK_GAME_MUSIC_NONE_TEXT); }
-    else if (ctx->artist[0] != LDG_STR_TERM) { snprintf(line, sizeof(line), "%.47s: %.47s", ctx->artist, ctx->title); }
-    else if (ctx->track_cunt != 0) { snprintf(line, sizeof(line), "%.95s (%u/%u)", ctx->title, ctx->track_idx + CROSSTALK_GAME_MUSIC_TRACK_BASE, ctx->track_cunt); }
-    else { snprintf(line, sizeof(line), "%.95s", ctx->title); }
+    if (ctx->title[0] == LDG_STR_TERM) { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "%.15s", CROSSTALK_GAME_MUSIC_NONE_TEXT); }
+    else if (ctx->artist[0] != LDG_STR_TERM) { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "%.47s: %.47s", ctx->artist, ctx->title); }
+    else if (ctx->track_cunt != 0) { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "%.95s (%u32/%u32)", ctx->title, ctx->track_idx + CROSSTALK_GAME_MUSIC_TRACK_BASE, ctx->track_cunt); }
+    else { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "%.95s", ctx->title); }
+
+    if (ret != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
 
     if (ctx->state == (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING) { ctrl[CROSSTALK_GAME_MUSIC_ACTION_TOGGLE] = CROSSTALK_GAME_MUSIC_PAUSE_TEXT; }
 

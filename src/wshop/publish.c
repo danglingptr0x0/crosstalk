@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/dir.h>
 #include <dangling/io/file.h>
@@ -111,6 +112,7 @@ uint32_t crosstalk_wshop_publish_fileset_scan(const char *dir, char *out_files, 
 
 uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_wshop_manifest_t *manifest)
 {
+    uint64_t fmt_len = 0;
     char path[CROSSTALK_WSHOP_ITEM_PATH_CAP] = LDG_ARR_ZERO_INIT;
     char line[CROSSTALK_WSHOP_PUBLISH_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_io_file_t *fh = 0x0;
@@ -140,26 +142,26 @@ uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_ws
     ret = ldg_io_file_open(path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, PUBLISH_WR_MODE, &fh);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    len = snprintf(line, sizeof(line), "rev: %u\nkind: %.15s\nname: %.127s\nauthor: %.127s\nauthor_id: %" PRIu64 "\nlicense: %.63s\nentitlement: free\n", manifest->rev, kind_text, manifest->name, manifest->author, manifest->author_id, manifest->license);
+    len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "rev: %u32\nkind: %.15s\nname: %.127s\nauthor: %.127s\nauthor_id: %u64\nlicense: %.63s\nentitlement: free\n", manifest->rev, kind_text, manifest->name, manifest->author, manifest->author_id, manifest->license) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
     else { ret = LDG_ERR_IO_FMT; }
 
     if (ret == LDG_ERR_AOK && manifest->kind == CROSSTALK_WSHOP_MANIFEST_KIND_CORE)
     {
-        len = snprintf(line, sizeof(line), "top: %.63s\nclk: %.63s\npart: %.63s\nisa: %.31s\nisa_rev: %u\nfingerprint: %" PRIu64 "\ntoolchain_rev: %u\n", manifest->top, manifest->clk, manifest->part, manifest->isa, manifest->isa_rev, manifest->fingerprint, manifest->toolchain_rev);
+        len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "top: %.63s\nclk: %.63s\npart: %.63s\nisa: %.31s\nisa_rev: %u32\nfingerprint: %u64\ntoolchain_rev: %u32\n", manifest->top, manifest->clk, manifest->part, manifest->isa, manifest->isa_rev, manifest->fingerprint, manifest->toolchain_rev) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
         if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
         else { ret = LDG_ERR_IO_FMT; }
 
         if (ret == LDG_ERR_AOK)
         {
-            len = snprintf(line, sizeof(line), "files: %.4095s\n", manifest->files);
+            len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "files: %.4095s\n", manifest->files) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
             if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
             else { ret = LDG_ERR_IO_FMT; }
         }
 
         for (idx = 0; idx < manifest->mem_cunt && ret == LDG_ERR_AOK; idx = idx + PUBLISH_STEP)
         {
-            len = snprintf(line, sizeof(line), "mem.%u.sig: %.63s\nmem.%u.words: %" PRIu64 "\nmem.%u.base: %" PRIu64 "\n", idx, manifest->mem[idx].sig, idx, manifest->mem[idx].words, idx, manifest->mem[idx].base);
+            len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "mem.%u32.sig: %.63s\nmem.%u32.words: %u64\nmem.%u32.base: %u64\n", idx, manifest->mem[idx].sig, idx, manifest->mem[idx].words, idx, manifest->mem[idx].base) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
             if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
             else { ret = LDG_ERR_IO_FMT; }
         }
@@ -167,13 +169,13 @@ uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_ws
 
     if (ret == LDG_ERR_AOK && manifest->kind == CROSSTALK_WSHOP_MANIFEST_KIND_SOFTWARE)
     {
-        len = snprintf(line, sizeof(line), "role: %u\ntgt.isa: %.31s\ntgt.isa_rev: %u\ntgt.core: %" PRIu64 "\n", manifest->role, manifest->tgt_isa, manifest->tgt_isa_rev, manifest->tgt_core);
+        len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "role: %u32\ntgt.isa: %.31s\ntgt.isa_rev: %u32\ntgt.core: %u64\n", manifest->role, manifest->tgt_isa, manifest->tgt_isa_rev, manifest->tgt_core) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
         if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
         else { ret = LDG_ERR_IO_FMT; }
 
         for (idx = 0; idx < manifest->img_cunt && ret == LDG_ERR_AOK; idx = idx + PUBLISH_STEP)
         {
-            len = snprintf(line, sizeof(line), "img.%u.path: %.255s\nimg.%u.mem: %.63s\nimg.%u.word_off: %" PRIu64 "\n", idx, manifest->img[idx].path, idx, manifest->img[idx].mem, idx, manifest->img[idx].word_off);
+            len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "img.%u32.path: %.255s\nimg.%u32.mem: %.63s\nimg.%u32.word_off: %u64\n", idx, manifest->img[idx].path, idx, manifest->img[idx].mem, idx, manifest->img[idx].word_off) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
             if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
             else { ret = LDG_ERR_IO_FMT; }
         }
@@ -188,6 +190,7 @@ uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_ws
 
 uint32_t crosstalk_wshop_publish_stage(const char *stage_root, const char *top, const char *src, uint32_t src_len, crosstalk_wshop_manifest_t *manifest, char *out_dir, uint64_t out_cap)
 {
+    uint64_t fmt_len = 0;
     char name[CROSSTALK_EDA_IC_FPGA_FILESET_NAME_CAP] = LDG_ARR_ZERO_INIT;
     char path[CROSSTALK_WSHOP_ITEM_PATH_CAP] = LDG_ARR_ZERO_INIT;
     ldg_io_file_t *fh = 0x0;
@@ -210,7 +213,7 @@ uint32_t crosstalk_wshop_publish_stage(const char *stage_root, const char *top, 
     ret = ldg_io_dir_create(out_dir, (uint32_t)CROSSTALK_WSHOP_PUBLISH_DIR_MODE);
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_EXISTS) { return CROSSTALK_WSHOP_PUBLISH_ERR_STAGE; }
 
-    len = snprintf(name, sizeof(name), "%.100s%.7s", top, CROSSTALK_WSHOP_PUBLISH_SRC_EXT);
+    len = ldg_str_fmt(name, (uint64_t)sizeof(name), &fmt_len, "%.100s%.7s", top, CROSSTALK_WSHOP_PUBLISH_SRC_EXT) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (len < 0) { return LDG_ERR_IO_FMT; }
 
     ret = ldg_io_path_join(out_dir, name, path, (uint64_t)sizeof(path));
@@ -227,7 +230,7 @@ uint32_t crosstalk_wshop_publish_stage(const char *stage_root, const char *top, 
 
     if (put != (uint64_t)src_len) { return CROSSTALK_WSHOP_PUBLISH_ERR_WR; }
 
-    len = snprintf(manifest->files, sizeof(manifest->files), "%.127s", name);
+    len = ldg_str_fmt(manifest->files, (uint64_t)sizeof(manifest->files), &fmt_len, "%.127s", name) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (len < 0) { return LDG_ERR_IO_FMT; }
 
     manifest->fingerprint = (uint64_t)ldg_emiemi_fnv1a_compute((const ldg_byte_t *)src, (ldg_dword_t)src_len);

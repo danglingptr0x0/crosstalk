@@ -97,7 +97,7 @@ typedef struct crosstalk_eda_ui_profile_ctx
     uint8_t pending_rst;
     uint8_t tab;
     uint8_t emu_bound;
-    uint8_t pudding[4];
+    uint8_t pudding[6];
 } crosstalk_eda_ui_profile_ctx_t;
 
 uint32_t crosstalk_eda_ui_profile_init(crosstalk_eda_ui_profile_ctx_t *ctx);

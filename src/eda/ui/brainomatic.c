@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 
 #include "eda/ui/brainomatic.h"
@@ -27,6 +28,7 @@ typedef struct brainomatic_row
 
 static uint32_t brainomatic_rows_draw(crosstalk_eda_ui_brainomatic_ctx_t *ctx, ldg_term_render_t *render, const brainomatic_row_t *rows, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     char line[BRAINOMATIC_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t row = 0;
     uint32_t idx = 0;
@@ -55,7 +57,7 @@ static uint32_t brainomatic_rows_draw(crosstalk_eda_ui_brainomatic_ctx_t *ctx, l
             {
                 if (field[field_idx] == 0x0 || field[field_idx][0] == LDG_STR_TERM) { continue; }
 
-                wrote = snprintf(&line[pos], sizeof(line) - pos, pos == 0 ? BRAINOMATIC_FIELD_FIRST_FMT : BRAINOMATIC_FIELD_NEXT_FMT, field[field_idx]);
+                wrote = ldg_str_fmt(&line[pos], (uint64_t)(sizeof(line) - pos), &fmt_len, pos == 0 ? BRAINOMATIC_FIELD_FIRST_FMT : BRAINOMATIC_FIELD_NEXT_FMT, field[field_idx]) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
                 if (wrote < 0) { return LDG_ERR_STR_FMT; }
 
                 pos = pos + (uint32_t)wrote;

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/core/types.h>
 #include <dangling/io/file.h>
@@ -12,7 +13,6 @@
 #include "core/log.h"
 #include "eda/script/script.h"
 
-#define SCRIPT_STEP 1
 #define SCRIPT_PATH_FMT "%.511s"
 #define SCRIPT_PROMPT_NAME "console"
 #define SCRIPT_SWITCH_NAME "switch"
@@ -126,6 +126,7 @@ uint8_t crosstalk_eda_script_path_is(const char *text, uint32_t len)
 
 uint32_t crosstalk_eda_script_exec(crosstalk_eda_script_ctx_t *ctx, const char *path, const char *src, uint32_t src_len)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_script_lex_t lex = LDG_STRUCT_ZERO_INIT;
     crosstalk_eda_script_node_t *program = 0x0;
     uint32_t ret = 0;
@@ -136,7 +137,7 @@ uint32_t crosstalk_eda_script_exec(crosstalk_eda_script_ctx_t *ctx, const char *
 
     memset(&ctx->diag, 0x0, sizeof(ctx->diag));
 
-    if (snprintf(ctx->path, sizeof(ctx->path), SCRIPT_PATH_FMT, path != 0x0 ? path : SCRIPT_PROMPT_NAME) < 0) { return LDG_ERR_IO_FMT; }
+    if (ldg_str_fmt(ctx->path, (uint64_t)sizeof(ctx->path), &fmt_len, SCRIPT_PATH_FMT, path != 0x0 ? path : SCRIPT_PROMPT_NAME) != LDG_ERR_AOK) { return LDG_ERR_IO_FMT; }
 
     ret = crosstalk_eda_script_ast_rst(&ctx->ast);
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -167,6 +168,7 @@ uint32_t crosstalk_eda_script_exec(crosstalk_eda_script_ctx_t *ctx, const char *
 
 uint32_t crosstalk_eda_script_file_exec(crosstalk_eda_script_ctx_t *ctx, const char *path)
 {
+    uint64_t fmt_len = 0;
     ldg_io_file_t *fh = 0x0;
     uint64_t got = 0;
     uint32_t ret = 0;
@@ -187,7 +189,7 @@ uint32_t crosstalk_eda_script_file_exec(crosstalk_eda_script_ctx_t *ctx, const c
     ctx->src_len = (uint32_t)got;
     ctx->src[ctx->src_len] = LDG_STR_TERM;
 
-    if (snprintf(ctx->run_path, sizeof(ctx->run_path), SCRIPT_PATH_FMT, path) < 0) { return LDG_ERR_IO_FMT; }
+    if (ldg_str_fmt(ctx->run_path, (uint64_t)sizeof(ctx->run_path), &fmt_len, SCRIPT_PATH_FMT, path) != LDG_ERR_AOK) { return LDG_ERR_IO_FMT; }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "script: run; bytes: %u32; path: %.255s", ctx->src_len, path);
 

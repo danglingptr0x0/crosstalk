@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -67,6 +68,7 @@ static const char* browser_img_mark_get(const crosstalk_wshop_item_t *item, cons
 
 static uint32_t items_refresh(crosstalk_eda_ui_wshop_browser_ctx_t *ctx, const crosstalk_wshop_list_t *list, const crosstalk_wshop_item_t *mounted)
 {
+    uint64_t fmt_len = 0;
     const crosstalk_wshop_item_t *item = 0x0;
     uint32_t idx = 0;
     int32_t written = 0;
@@ -81,8 +83,8 @@ static uint32_t items_refresh(crosstalk_eda_ui_wshop_browser_ctx_t *ctx, const c
 
         if (item->manifest.kind != ctx->kind) { continue; }
 
-        if (ctx->kind == CROSSTALK_WSHOP_MANIFEST_KIND_CORE) { written = snprintf(label, (uint64_t)CROSSTALK_EDA_UI_WSHOP_BROWSER_LABEL_CAP, WSHOP_BROWSER_CORE_ROW_FMT, browser_core_mark_get(item, mounted), item->manifest.name, item->manifest.isa, item->manifest.author); }
-        else { written = snprintf(label, (uint64_t)CROSSTALK_EDA_UI_WSHOP_BROWSER_LABEL_CAP, WSHOP_BROWSER_SOFT_ROW_FMT, browser_img_mark_get(item, mounted), item->manifest.name, item->manifest.tgt_isa, browser_role_text_get(item->manifest.role), item->manifest.author); }
+        if (ctx->kind == CROSSTALK_WSHOP_MANIFEST_KIND_CORE) { written = ldg_str_fmt(label, (uint64_t)CROSSTALK_EDA_UI_WSHOP_BROWSER_LABEL_CAP, &fmt_len, WSHOP_BROWSER_CORE_ROW_FMT, browser_core_mark_get(item, mounted), item->manifest.name, item->manifest.isa, item->manifest.author) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+        else { written = ldg_str_fmt(label, (uint64_t)CROSSTALK_EDA_UI_WSHOP_BROWSER_LABEL_CAP, &fmt_len, WSHOP_BROWSER_SOFT_ROW_FMT, browser_img_mark_get(item, mounted), item->manifest.name, item->manifest.tgt_isa, browser_role_text_get(item->manifest.role), item->manifest.author) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
 
         if (written < 0) { break; }
 
@@ -123,14 +125,15 @@ uint32_t crosstalk_eda_ui_wshop_browser_open_set(crosstalk_eda_ui_wshop_browser_
 
 static uint32_t wshop_browser_status_draw(const crosstalk_eda_ui_wshop_browser_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
 {
+    uint64_t fmt_len = 0;
     char status[WSHOP_BROWSER_STATUS_CAP] = LDG_ARR_ZERO_INIT;
     char tally[WSHOP_BROWSER_STATUS_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t status_w = 0;
     uint32_t ret = 0;
 
-    if (snprintf(status, sizeof(status), "cores: %u | software: %u", crosstalk_wshop_list_cunt_get(ctx->list, CROSSTALK_WSHOP_MANIFEST_KIND_CORE), crosstalk_wshop_list_cunt_get(ctx->list, CROSSTALK_WSHOP_MANIFEST_KIND_SOFTWARE)) < 0) { return LDG_ERR_IO_FMT; }
+    if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, "cores: %u32 | software: %u32", crosstalk_wshop_list_cunt_get(ctx->list, CROSSTALK_WSHOP_MANIFEST_KIND_CORE), crosstalk_wshop_list_cunt_get(ctx->list, CROSSTALK_WSHOP_MANIFEST_KIND_SOFTWARE)) != LDG_ERR_AOK) { return LDG_ERR_IO_FMT; }
 
-    if (snprintf(tally, sizeof(tally), "shown: %u", ctx->rows_cunt) < 0) { return LDG_ERR_IO_FMT; }
+    if (ldg_str_fmt(tally, (uint64_t)sizeof(tally), &fmt_len, "shown: %u32", ctx->rows_cunt) != LDG_ERR_AOK) { return LDG_ERR_IO_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)WSHOP_BROWSER_ORIG_COL, row, status, (uint64_t)sizeof(status), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, &status_w);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

@@ -4,14 +4,15 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
 #include "eda/ui/indicator.h"
 #include "ui/cell.h"
 
-#define INDICATOR_STATUS_FMT "%.31s 0x%" PRIX64 " cycle %" PRIu64
-#define INDICATOR_BIT_FMT "%u"
+#define INDICATOR_STATUS_FMT "%.31s 0x%X64 cycle %u64"
+#define INDICATOR_BIT_FMT "%u32"
 #define INDICATOR_STEP 1
 #define INDICATOR_ORIG_COL 0
 #define INDICATOR_LAMP_ROW 0
@@ -105,8 +106,8 @@ uint32_t crosstalk_eda_ui_indicator_acc_clear(crosstalk_eda_ui_indicator_ctx_t *
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    memset(ctx->acc_prev, 0x0, sizeof(ctx->acc_prev));
-    memset(ctx->acc_lit, 0x0, sizeof(ctx->acc_lit));
+    memset(&ctx->acc_prev[0], 0x0, sizeof(ctx->acc_prev));
+    memset(&ctx->acc_lit[0], 0x0, sizeof(ctx->acc_lit));
     ctx->acc_on = LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;
@@ -160,6 +161,7 @@ static uint32_t indicator_idle_draw(ldg_term_render_t *render)
 
 static uint32_t indicator_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_indicator_ctx_t *ctx = (crosstalk_eda_ui_indicator_ctx_t *)user;
     char status[CROSSTALK_EDA_UI_INDICATOR_STATUS_CAP] = LDG_ARR_ZERO_INIT;
     char bit_text[CROSSTALK_EDA_UI_INDICATOR_BIT_CAP] = LDG_ARR_ZERO_INIT;
@@ -201,13 +203,13 @@ static uint32_t indicator_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
         ret = indicator_lamp_draw(render, lamp_col, (uint32_t)INDICATOR_LAMP_ROW, lamp_w, on != 0 ? (uint32_t)CROSSTALK_UI_THEME_LIVE_RGBA : (uint32_t)CROSSTALK_EDA_UI_INDICATOR_LAMP_OFF_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (snprintf(bit_text, sizeof(bit_text), INDICATOR_BIT_FMT, bit) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(bit_text, (uint64_t)sizeof(bit_text), &fmt_len, INDICATOR_BIT_FMT, bit) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = crosstalk_ui_cell_rgba_put(render, lamp_col, (uint32_t)INDICATOR_BIT_ROW, bit_text, (uint64_t)sizeof(bit_text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    if (snprintf(status, sizeof(status), INDICATOR_STATUS_FMT, ctx->port, val, cycle) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, INDICATOR_STATUS_FMT, ctx->port, val, cycle) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)INDICATOR_ORIG_COL, (uint32_t)INDICATOR_STATUS_ROW, status, (uint64_t)sizeof(status), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

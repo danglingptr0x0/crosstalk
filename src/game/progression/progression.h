@@ -121,7 +121,7 @@ typedef struct crosstalk_game_progression_state
     uint8_t chat_sent;
     uint8_t chat_ever;
     uint8_t coop_prev;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_game_progression_state_t;
 
 uint32_t crosstalk_game_progression_achievement_unlock_req(const char *name, uint32_t appid, crosstalk_game_progression_queue_ctx_t *ctx);

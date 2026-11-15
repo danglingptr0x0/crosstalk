@@ -127,6 +127,7 @@ typedef struct native_ctx
     char hex[NATIVE_HEX_ROW * NATIVE_HEX_CELL + LDG_STR_TERM_SIZE];
     char ascii[NATIVE_HEX_ROW + LDG_STR_TERM_SIZE];
     char path[NATIVE_PATH_CAP];
+    uint8_t tail_pudding[6];
 } native_ctx_t;
 
 uint32_t crosstalk_re_repl_native_init(crosstalk_re_repl_ctx_t *ctx)

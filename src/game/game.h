@@ -98,6 +98,7 @@ typedef struct crosstalk_game_ld
 typedef struct crosstalk_game_ctx
 {
     crosstalk_game_ld_t ld;
+    uint8_t ld_pudding[56];
     ldg_thread_pool_t ld_pool;
     ldg_thread_pool_t music_pool;
     crosstalk_game_totals_ctx_t totals;
@@ -118,7 +119,7 @@ typedef struct crosstalk_game_ctx
     uint8_t ld_finalized;
     uint8_t paused;
     uint8_t net_join_phase;
-    uint8_t pudding[7];
+    uint8_t pudding[55];
 } crosstalk_game_ctx_t;
 
 #endif

@@ -4,6 +4,7 @@
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -23,13 +24,12 @@
 #define MENU_LD_PCT_SCALE 100.0
 #define MENU_LD_FRAC_MIN 0.0
 #define MENU_LD_FRAC_MAX 1.0
-#define MENU_LD_PCT_FMT "%u%%"
+#define MENU_LD_PCT_FMT "%u32%%"
 #define MENU_BTN_FMT "[%.47s]"
 #define MENU_CHOICE_FMT "%-20.20s < %.47s >"
 #define MENU_TEXT_FMT "%-20.20s %.127s"
 #define MENU_TOGGLE_ON_FMT "[x] %.63s"
 #define MENU_TOGGLE_OFF_FMT "[ ] %.63s"
-#define MENU_LABEL_W 21
 #define MENU_CURSOR_W 1
 #define MENU_COL_LOCKED 0x6E6E6EFFU
 #define MENU_DIFFICULTY_EASY 0
@@ -305,10 +305,11 @@ static uint32_t menu_lit_put(ldg_term_render_t *render, uint32_t col, uint32_t r
 
 static uint32_t menu_btn_put(ldg_term_render_t *render, uint32_t col, uint32_t *row, const char *label, uint8_t lit)
 {
+    uint64_t fmt_len = 0;
     char line[MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0;
 
-    if (snprintf(line, sizeof(line), MENU_BTN_FMT, label) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, MENU_BTN_FMT, label) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
     *row = *row + MENU_STEP;
@@ -318,13 +319,14 @@ static uint32_t menu_btn_put(ldg_term_render_t *render, uint32_t col, uint32_t *
 
 static uint32_t menu_choice_put(ldg_term_render_t *render, uint32_t col, uint32_t *row, const char *label, const char *items, uint32_t idx, uint8_t lit)
 {
+    uint64_t fmt_len = 0;
     char seg[MENU_SEG_CAP] = LDG_ARR_ZERO_INIT;
     char line[MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0;
 
     menu_seg_get(items, idx, seg, (uint32_t)sizeof(seg));
 
-    if (snprintf(line, sizeof(line), MENU_CHOICE_FMT, label, seg) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, MENU_CHOICE_FMT, label, seg) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
     *row = *row + MENU_STEP;
@@ -334,12 +336,13 @@ static uint32_t menu_choice_put(ldg_term_render_t *render, uint32_t col, uint32_
 
 static uint32_t menu_text_put(ldg_term_render_t *render, uint32_t col, uint32_t *row, const char *label, const char *text, uint8_t lit)
 {
+    uint64_t fmt_len = 0;
     char line[MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t cursor = LDG_STRUCT_ZERO_INIT;
     uint32_t ret = 0;
     int32_t wrote = 0;
 
-    wrote = snprintf(line, sizeof(line), MENU_TEXT_FMT, label, text);
+    wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, MENU_TEXT_FMT, label, text) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (wrote < 0) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
@@ -355,10 +358,11 @@ static uint32_t menu_text_put(ldg_term_render_t *render, uint32_t col, uint32_t 
 
 static uint32_t menu_toggle_put(ldg_term_render_t *render, uint32_t col, uint32_t *row, const char *label, uint8_t on, uint8_t lit)
 {
+    uint64_t fmt_len = 0;
     char line[MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0;
 
-    if (snprintf(line, sizeof(line), on == LDG_TRUTH_TRUE ? MENU_TOGGLE_ON_FMT : MENU_TOGGLE_OFF_FMT, label) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, on == LDG_TRUTH_TRUE ? MENU_TOGGLE_ON_FMT : MENU_TOGGLE_OFF_FMT, label) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
     *row = *row + MENU_STEP;
@@ -1043,6 +1047,7 @@ uint32_t crosstalk_game_menu_board_sel_key_isr(const ldg_term_key_event_t *key, 
 
 uint32_t crosstalk_game_menu_ld_draw(ldg_term_render_t *render, const ldg_term_rect_t *rect, const char *status, double frac)
 {
+    uint64_t fmt_len = 0;
     char pct_text[MENU_SEG_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t fill = LDG_STRUCT_ZERO_INIT;
@@ -1063,7 +1068,7 @@ uint32_t crosstalk_game_menu_ld_draw(ldg_term_render_t *render, const ldg_term_r
     pct = (uint32_t)(frac * MENU_LD_PCT_SCALE);
     fill_w = (uint32_t)(frac * (double)bar_w);
 
-    if (snprintf(pct_text, sizeof(pct_text), MENU_LD_PCT_FMT, pct) < 0) { pct_text[0] = LDG_STR_TERM; }
+    if (ldg_str_fmt(pct_text, (uint64_t)sizeof(pct_text), &fmt_len, MENU_LD_PCT_FMT, pct) != LDG_ERR_AOK) { pct_text[0] = LDG_STR_TERM; }
 
     ret = menu_line_put(render, rect->col, rect->row, status, (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA);
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, &fg); }

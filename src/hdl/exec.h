@@ -65,7 +65,7 @@ typedef struct crosstalk_hdl_exec_ctx
     uint8_t fast_ok;
     uint8_t poke_dirty;
     uint8_t gate_on;
-    uint8_t pudding[5];
+    uint8_t pudding[9];
 } crosstalk_hdl_exec_ctx_t;
 
 uint32_t crosstalk_hdl_exec_init(crosstalk_hdl_exec_ctx_t *ctx, const crosstalk_hdl_ir_t *ir_ctx, const char *src, void *pool);

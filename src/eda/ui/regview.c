@@ -6,6 +6,7 @@
 #include <dangling/logging/logging.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 
 #include "core/log.h"
@@ -17,11 +18,11 @@
 #define REGVIEW_ORIG_COL 0
 #define REGVIEW_DEAD_ROW 0
 #define REGVIEW_FLASH_FRAMES 20
-#define REGVIEW_REG_PATH_FMT "dr%u"
-#define REGVIEW_LABEL_FMT "dr%u; "
+#define REGVIEW_REG_PATH_FMT "dr%u32"
+#define REGVIEW_LABEL_FMT "dr%u32; "
 #define REGVIEW_LOC_IDX 14
 #define REGVIEW_PATH_CAP 32
-#define REGVIEW_VAL_FMT "0x%08" PRIX64
+#define REGVIEW_VAL_FMT "0x%08X64"
 #define REGVIEW_MMIO_BASE 0x90000000ULL
 #define REGVIEW_MMIO_END 0xA0000000ULL
 #define REGVIEW_WORD_ALIGN 4
@@ -32,13 +33,14 @@
 #define REGVIEW_NOTE_LOC_TEXT " loc"
 #define REGVIEW_NOTE_CAP 8
 #define REGVIEW_DEAD_TEXT "no running design"
-#define REGVIEW_THREAD_WAIT_FMT "thread %u; registers unread; err: %u"
+#define REGVIEW_THREAD_WAIT_FMT "thread %u32; registers unread; err: %u32"
 #define REGVIEW_THREAD_LABEL_FMT "%.6s; "
-#define REGVIEW_THREAD_VAL_FMT "0x%016" PRIX64
+#define REGVIEW_THREAD_VAL_FMT "0x%016X64"
 #define REGVIEW_NOTE_CODE_TEXT " code"
 
 static uint8_t regview_reg_val_get(crosstalk_eda_ui_regview_ctx_t *ctx, uint32_t idx, uint64_t *out)
 {
+    uint64_t fmt_len = 0;
     char path[REGVIEW_PATH_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t width = 0;
     uint32_t ret = 0;
@@ -49,7 +51,7 @@ static uint8_t regview_reg_val_get(crosstalk_eda_ui_regview_ctx_t *ctx, uint32_t
 
     if (idx == (uint32_t)REGVIEW_LOC_IDX) { return crosstalk_eda_ic_fpga_sig_peek(ctx->fpga, ctx->slot, CROSSTALK_EDA_IC_FPGA_PROG_SIG, out, &width) == LDG_ERR_AOK ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
 
-    if (snprintf(path, sizeof(path), REGVIEW_REG_PATH_FMT, idx) < 0) { return LDG_TRUTH_FALSE; }
+    if (ldg_str_fmt(path, (uint64_t)sizeof(path), &fmt_len, REGVIEW_REG_PATH_FMT, idx) != LDG_ERR_AOK) { return LDG_TRUTH_FALSE; }
 
     ret = crosstalk_eda_ic_fpga_sig_peek(ctx->fpga, ctx->slot, path, out, &width);
     if (ret == LDG_ERR_AOK) { return LDG_TRUTH_TRUE; }

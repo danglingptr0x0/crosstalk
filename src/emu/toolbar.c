@@ -1,10 +1,10 @@
 #include <inttypes.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 
 #include "emu/toolbar.h"
@@ -61,21 +61,21 @@ static uint32_t toolbar_row_fill(ldg_term_render_t *render, uint32_t row, uint32
 
 static uint32_t toolbar_hz_text_set(crosstalk_emu_toolbar_ctx_t *ctx)
 {
+    uint64_t len = 0;
+
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (snprintf(ctx->hz_text, sizeof(ctx->hz_text), TOOLBAR_HZ_FMT, ctx->hz_mhz) < 0) { return LDG_ERR_STR_FMT; }
-
-    return LDG_ERR_AOK;
+    return ldg_str_fmt(ctx->hz_text, (uint64_t)sizeof(ctx->hz_text), &len, TOOLBAR_HZ_FMT, ctx->hz_mhz);
 }
 
-static uint32_t toolbar_hz_step(crosstalk_emu_toolbar_ctx_t *ctx, crosstalk_emu_ctx_t *emu, double delta)
+static uint32_t toolbar_hz_step(crosstalk_emu_toolbar_ctx_t *ctx, crosstalk_emu_ctx_t *emu, double step, uint8_t down)
 {
     double want = 0.0;
     uint64_t now_hz = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || emu == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    want = ctx->hz_mhz + delta;
+    want = down == LDG_TRUTH_TRUE ? ctx->hz_mhz - step : ctx->hz_mhz + step;
 
     if (want < TOOLBAR_MHZ_MIN) { want = TOOLBAR_MHZ_MIN; }
 
@@ -139,13 +139,13 @@ uint32_t crosstalk_emu_toolbar_key_isr(crosstalk_emu_toolbar_ctx_t *ctx, crossta
 
     if (key->key == (uint8_t)LDG_TERM_KEY_ESCAPE) { ctx->open = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_UP || key->key == (uint8_t)LDG_TERM_KEY_RHS) { return toolbar_hz_step(ctx, emu, TOOLBAR_MHZ_STEP_FINE); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_UP || key->key == (uint8_t)LDG_TERM_KEY_RHS) { return toolbar_hz_step(ctx, emu, TOOLBAR_MHZ_STEP_FINE, LDG_TRUTH_FALSE); }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_DOWN || key->key == (uint8_t)LDG_TERM_KEY_LHS) { return toolbar_hz_step(ctx, emu, -TOOLBAR_MHZ_STEP_FINE); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_DOWN || key->key == (uint8_t)LDG_TERM_KEY_LHS) { return toolbar_hz_step(ctx, emu, TOOLBAR_MHZ_STEP_FINE, LDG_TRUTH_TRUE); }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_UP) { return toolbar_hz_step(ctx, emu, TOOLBAR_MHZ_STEP_COARSE); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_UP) { return toolbar_hz_step(ctx, emu, TOOLBAR_MHZ_STEP_COARSE, LDG_TRUTH_FALSE); }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_DOWN) { return toolbar_hz_step(ctx, emu, -TOOLBAR_MHZ_STEP_COARSE); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_DOWN) { return toolbar_hz_step(ctx, emu, TOOLBAR_MHZ_STEP_COARSE, LDG_TRUTH_TRUE); }
 
     return LDG_ERR_AOK;
 }

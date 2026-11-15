@@ -9,6 +9,7 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/mem/alloc.h>
+#include <dangling/str/fmt.h>
 #include <dangling/sys/tty.h>
 #include <dangling/term/input.h>
 #include <dangling/term/render.h>
@@ -25,7 +26,7 @@
 #define MAIN_EXIT_FAIL 1
 #define MAIN_TITLE_CAP 128
 #define MAIN_TITLE_SECS 1.0
-#define MAIN_TITLE_FMT "%s; %.2f MHz; %.2f ms"
+#define MAIN_TITLE_FMT "%.63s; %.2f MHz; %.2f ms"
 #define MAIN_HZ_PER_MHZ 1000000.0
 #define MAIN_MS_PER_SEC 1000.0
 #define MAIN_FRAME_MS 16
@@ -116,18 +117,19 @@ static uint32_t main_title_put(ldg_term_sesh_t *sesh, const crosstalk_emu_ctx_t 
 {
     char title[MAIN_TITLE_CAP] = LDG_ARR_ZERO_INIT;
     double rate_hz = MAIN_RATE_NONE;
-    int32_t len = 0;
+    uint64_t len = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(sesh == 0x0 || emu == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (crosstalk_emu_rate_get(emu, &rate_hz) != LDG_ERR_AOK) { rate_hz = MAIN_RATE_NONE; }
 
-    len = (int32_t)snprintf(title, sizeof(title), MAIN_TITLE_FMT, CROSSTALK_EMU_TITLE, rate_hz / MAIN_HZ_PER_MHZ, frame_ms);
-    if (len < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(title, (uint64_t)sizeof(title), &len, MAIN_TITLE_FMT, CROSSTALK_EMU_TITLE, rate_hz / MAIN_HZ_PER_MHZ, frame_ms);
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
 
-    if ((uint32_t)len >= (uint32_t)sizeof(title)) { len = (int32_t)(sizeof(title) - LDG_STR_TERM_SIZE); }
+    if (len >= (uint64_t)sizeof(title)) { len = (uint64_t)sizeof(title) - LDG_STR_TERM_SIZE; }
 
-    return ldg_term_sesh_title_set(sesh, title, (uint64_t)len);
+    return ldg_term_sesh_title_set(sesh, title, len);
 }
 
 static uint32_t main_frame_draw(const crosstalk_emu_ctx_t *emu, const crosstalk_emu_toolbar_ctx_t *toolbar, ldg_term_render_t *render)

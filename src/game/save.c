@@ -5,6 +5,7 @@
 #include "core/log.h"
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 #include <dangling/mem/alloc.h>
@@ -182,6 +183,7 @@ static uint32_t save_proj_name_get(const char *path, char *out, uint64_t cap)
 
 static uint32_t bkp_wr(const char *path)
 {
+    uint64_t fmt_len = 0;
     ldg_io_file_t *src = 0x0;
     ldg_io_file_t *dst = 0x0;
     ldg_byte_t chunk[GAME_SAVE_BKP_CHUNK] = LDG_ARR_ZERO_INIT;
@@ -197,7 +199,7 @@ static uint32_t bkp_wr(const char *path)
 
     if (LDG_UNLIKELY(strlen(path) + sizeof(GAME_SAVE_BKP_SUFFIX) > sizeof(bkp_path))) { return LDG_ERR_STR_TRUNC; }
 
-    written = snprintf(bkp_path, sizeof(bkp_path), "%.*s" GAME_SAVE_BKP_SUFFIX, (int32_t)(sizeof(bkp_path) - sizeof(GAME_SAVE_BKP_SUFFIX)), path);
+    written = ldg_str_fmt(bkp_path, (uint64_t)sizeof(bkp_path), &fmt_len, "%.*s" GAME_SAVE_BKP_SUFFIX, (int32_t)(sizeof(bkp_path) - sizeof(GAME_SAVE_BKP_SUFFIX)), path) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (LDG_UNLIKELY(written <= 0)) { return LDG_ERR_STR_FMT; }
 
     ret = ldg_io_file_open(path, LDG_IO_RD_ONLY, GAME_SAVE_FILE_MODE, &src);
@@ -246,6 +248,7 @@ static uint32_t bkp_wr(const char *path)
 
 uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const crosstalk_game_last_state_t *state, const crosstalk_game_credit_ctx_t *credit, uint64_t author_steam_id, const char *author_name, uint64_t created_epoch_ms, uint64_t bench_ms_total, uint64_t sim_ms_total, const crosstalk_game_save_editor_sect_t *editor_sects, uint32_t editor_sect_cunt, const char *path)
 {
+    uint64_t fmt_len = 0;
     game_save_hdr_t hdr = LDG_STRUCT_ZERO_INIT;
     game_save_sect_t sects[GAME_SAVE_SECT_MAX] = LDG_ARR_ZERO_INIT;
     ldg_byte_t *payload = 0x0;
@@ -359,7 +362,8 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
         hdr.revision = GAME_SAVE_REVISION;
         hdr.sect_cunt = sect_cunt;
         hdr.difficulty = GAME_SAVE_DIFFICULTY_NONE;
-        snprintf(hdr.author, sizeof(hdr.author), "%.63s", author_name != 0x0 ? author_name : "");
+        if (ldg_str_fmt(hdr.author, (uint64_t)sizeof(hdr.author), &fmt_len, "%.63s", author_name != 0x0 ? author_name : "") != LDG_ERR_AOK) { *(hdr.author) = LDG_STR_TERM; }
+
         if (save_proj_name_get(path, hdr.proj_name, (uint64_t)sizeof(hdr.proj_name)) != LDG_ERR_AOK) { hdr.proj_name[0] = LDG_STR_TERM; }
 
         hdr.author_steam_id = author_steam_id;

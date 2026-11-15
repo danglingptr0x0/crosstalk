@@ -47,6 +47,7 @@ typedef struct crosstalk_eda_io_serial_ctx
     ldg_byte_t tx[CROSSTALK_EDA_IO_SERIAL_TX_CAP];
     char open_path[LDG_IO_SERIAL_PATH_MAX];
     char open_id[LDG_IO_SERIAL_ID_MAX];
+    uint8_t open_pudding[4];
     uint64_t port_cunt;
     uint64_t prev_cunt;
     uint64_t rx_total;

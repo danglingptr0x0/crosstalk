@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -27,6 +28,7 @@
 
 static uint32_t progress_bar_draw(ldg_term_render_t *render, uint32_t row, uint32_t col_cunt, const char *label, uint32_t part, uint32_t total)
 {
+    uint64_t fmt_len = 0;
     char text[PROGRESS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     char rhs[PROGRESS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
@@ -37,9 +39,9 @@ static uint32_t progress_bar_draw(ldg_term_render_t *render, uint32_t row, uint3
     uint32_t fill_w = 0;
     uint32_t ret = 0;
 
-    if (snprintf(text, sizeof(text), PROGRESS_LABEL_FMT, label) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROGRESS_LABEL_FMT, label) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
-    if (snprintf(rhs, sizeof(rhs), "%u/%u", part, total) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(rhs, (uint64_t)sizeof(rhs), &fmt_len, "%u32/%u32", part, total) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = ldg_str_len_get(rhs, (uint64_t)sizeof(rhs), &rhs_len);
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGRESS_ORIG_COL, row, text, (uint64_t)sizeof(text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0); }
@@ -156,6 +158,7 @@ static uint32_t progress_curve_draw(crosstalk_reng_progress_ctx_t *ctx, ldg_term
 
 static uint32_t progress_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_reng_progress_ctx_t *ctx = (crosstalk_reng_progress_ctx_t *)user;
     const crosstalk_reng_proj_t *proj = 0x0;
     const char *kind = 0x0;
@@ -181,7 +184,7 @@ static uint32_t progress_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
 
     if (crosstalk_reng_kind_name_get(proj->kind, &kind) != LDG_ERR_AOK) { kind = PROGRESS_KIND_NONE; }
 
-    if (snprintf(line, sizeof(line), "%.63s; %.7s", proj->name, kind) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%.63s; %.7s", proj->name, kind) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGRESS_ORIG_COL, row, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_LIVE_RGBA, 0x0);
     if (ret != LDG_ERR_AOK) { return ret; }

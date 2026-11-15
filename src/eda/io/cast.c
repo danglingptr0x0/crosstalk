@@ -53,7 +53,7 @@ static uint32_t cast_payload_build(const crosstalk_eda_io_cast_ctx_t *ctx, const
 
     for (cy = 0; cy < (uint32_t)CROSSTALK_EDA_IO_CAST_ROWS; cy++)
     {
-        memset(sum, 0x0, sizeof(sum));
+        memset(&sum[0], 0x0, sizeof(sum));
 
         for (ry = 0; ry < cell_h; ry++)
         {

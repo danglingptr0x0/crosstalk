@@ -14,7 +14,7 @@
 #define CROSSTALK_RE_REPL_THREAD_STACK_WORD_BYTES 8
 #define CROSSTALK_RE_REPL_THREAD_CODE_BYTES 256
 #define CROSSTALK_RE_REPL_THREAD_MOD_NAME_CAP 32
-#define CROSSTALK_RE_REPL_THREAD_PUDDING_SIZE 5
+#define CROSSTALK_RE_REPL_THREAD_PUDDING_SIZE 9
 
 typedef enum crosstalk_re_repl_thread_tag
 {
@@ -34,6 +34,7 @@ typedef struct crosstalk_re_repl_thread
     uint8_t code[CROSSTALK_RE_REPL_THREAD_CODE_BYTES];
     uint8_t reg_tag[CROSSTALK_RE_REPL_THREAD_REG_CUNT];
     uint8_t stack_tag[CROSSTALK_RE_REPL_THREAD_STACK_WORDS];
+    uint8_t tag_pudding[6];
     uint64_t sel_id;
     uint64_t stack_addr;
     uint64_t code_addr;

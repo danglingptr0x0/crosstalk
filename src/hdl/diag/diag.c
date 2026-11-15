@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -11,6 +12,7 @@
 
 uint32_t crosstalk_hdl_diag_text_fmt(const crosstalk_hdl_diag_t *diag, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     uint32_t at = 0;
     uint32_t end = 0;
     uint32_t take = 0;
@@ -39,12 +41,12 @@ uint32_t crosstalk_hdl_diag_text_fmt(const crosstalk_hdl_diag_t *diag, char *out
 
     if (diag->entry != 0x0)
     {
-        if (snprintf(&out[take], (uint64_t)(cap - take), CROSSTALK_HDL_DIAG_ENTRY_FMT, diag->entry->msg, diag->entry->cite) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(&out[take], (uint64_t)(cap - take), &fmt_len, CROSSTALK_HDL_DIAG_ENTRY_FMT, diag->entry->msg, diag->entry->cite) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         return LDG_ERR_AOK;
     }
 
-    if (snprintf(&out[take], (uint64_t)(cap - take), CROSSTALK_HDL_DIAG_ERR_FMT, diag->err) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(&out[take], (uint64_t)(cap - take), &fmt_len, CROSSTALK_HDL_DIAG_ERR_FMT, diag->err) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     return LDG_ERR_AOK;
 }

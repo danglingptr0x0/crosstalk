@@ -161,6 +161,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint8_t churn[CROSSTALK_EDA_UI_MEMVIEW_PAGE_CAP];
     uint32_t motion_run;
     uint32_t motion_run_pudding;
+    uint8_t io_base_pudding[4];
     uint64_t io_base[CROSSTALK_EDA_UI_MEMVIEW_IO_RANGE_CAP];
     uint64_t io_span[CROSSTALK_EDA_UI_MEMVIEW_IO_RANGE_CAP];
     char io_name[CROSSTALK_EDA_UI_MEMVIEW_IO_RANGE_CAP][CROSSTALK_EDA_UI_MEMVIEW_IO_NAME_CAP];
@@ -178,6 +179,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint64_t heap_rec[CROSSTALK_EDA_UI_MEMVIEW_HEAP_REC_MAX];
     uint32_t heap_type[CROSSTALK_EDA_UI_MEMVIEW_HEAP_CAP];
     uint32_t heap_cunt;
+    uint8_t heap_pudding[4];
     double heap_next;
     uint32_t annot_pan;
     uint32_t annot_span;
@@ -226,6 +228,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint32_t motion_kind;
     uint32_t motion_phase;
     uint32_t motion_span;
+    uint8_t motion_pudding[4];
     uint64_t find_at;
     double refresh_next;
     double overview_next;
@@ -253,6 +256,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint32_t diff_cunt;
     char repl_arg[CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP];
     uint32_t repl_action;
+    uint8_t repl_pudding[4];
     uint64_t strings_at;
     uint64_t str_run_start;
     char str_buff[CROSSTALK_EDA_UI_MEMVIEW_STRING_CAP];
@@ -261,6 +265,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint32_t hit_at;
     uint8_t stringing;
     char dis_sig[CROSSTALK_EDA_UI_MEMVIEW_SIG_CAP];
+    uint8_t dis_sig_pudding[3];
     uint64_t dis_at;
     uint32_t dis_cunt;
     uint8_t dis_req;
@@ -283,7 +288,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint8_t hlt_mark;
     uint8_t hlt_mark_seen;
     uint8_t brk_on;
-    uint8_t brk_pudding[1];
+    uint8_t brk_pudding[7];
     uint64_t go_addr;
     uint64_t hlt_mark_addr;
     uint64_t hlt_mark_end;

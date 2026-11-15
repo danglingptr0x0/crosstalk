@@ -1,9 +1,9 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/logging/logging.h>
 
@@ -32,8 +32,8 @@
 #define CROSSTALK_CORE_CMDLINE_VERB_ARG_IDX 0
 #define CROSSTALK_CORE_CMDLINE_CANDIDATE_GAP 2
 #define CROSSTALK_CORE_CMDLINE_CANDIDATE_FIRST 0
-#define CROSSTALK_CORE_CMDLINE_CANDIDATE_SEL_FMT "%u of %u; tab cycles, shift+tab back"
-#define CROSSTALK_CORE_CMDLINE_CANDIDATE_LIST_FMT "%u candidates; tab cycles"
+#define CROSSTALK_CORE_CMDLINE_CANDIDATE_SEL_FMT "%u32 of %u32; tab cycles, shift+tab back"
+#define CROSSTALK_CORE_CMDLINE_CANDIDATE_LIST_FMT "%u32 candidates; tab cycles"
 #define CROSSTALK_CORE_CMDLINE_WORD_FWD_CODEPOINT 'l'
 #define CROSSTALK_CORE_CMDLINE_WORD_FWD_CODEPOINT_UPPER 'L'
 #define CROSSTALK_CORE_CMDLINE_WORD_FWD_CTRL_CODE 0x0C
@@ -1540,6 +1540,7 @@ uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term
     const char *text = 0x0;
     const char *ghost_rest = 0x0;
     uint64_t text_len = 0;
+    uint64_t hint_len = 0;
     uint32_t text_start = 0;
     uint32_t cursor_at = 0;
     uint32_t cursor_col = 0;
@@ -1558,12 +1559,12 @@ uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term
 
     if (ctx->isearch_on == LDG_TRUTH_TRUE && ctx->isearch_sel != (uint32_t)UINT32_MAX && crosstalk_core_cmdline_hist_get(ctx, ctx->isearch_sel, &isearch_match) != LDG_ERR_AOK) { isearch_match = 0x0; }
 
-    if (ctx->isearch_on == LDG_TRUTH_TRUE) { if (isearch_match != 0x0) { ret = snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_ISEARCH_HINT_FMT, isearch_match) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (ctx->isearch_on == LDG_TRUTH_TRUE) { if (isearch_match != 0x0) { ret = ldg_str_fmt(ctx->hint, (uint64_t)sizeof(ctx->hint), &hint_len, CROSSTALK_CORE_CMDLINE_ISEARCH_HINT_FMT, isearch_match); }
         else { ret = ldg_str_rbrcpy(ctx->hint, CROSSTALK_CORE_CMDLINE_ISEARCH_NONE_TEXT, (uint64_t)sizeof(ctx->hint)); } }
-    else if (ctx->candidate_on == LDG_TRUTH_TRUE && ctx->candidate_sel != (uint32_t)UINT32_MAX) { ret = snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_CANDIDATE_SEL_FMT, ctx->candidate_sel + (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP, ctx->candidate_cunt) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
-    else if (ctx->candidate_on == LDG_TRUTH_TRUE) { ret = snprintf(ctx->hint, sizeof(ctx->hint), CROSSTALK_CORE_CMDLINE_CANDIDATE_LIST_FMT, ctx->candidate_cunt) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    else if (ctx->candidate_on == LDG_TRUTH_TRUE && ctx->candidate_sel != (uint32_t)UINT32_MAX) { ret = ldg_str_fmt(ctx->hint, (uint64_t)sizeof(ctx->hint), &hint_len, CROSSTALK_CORE_CMDLINE_CANDIDATE_SEL_FMT, ctx->candidate_sel + (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP, ctx->candidate_cunt); }
+    else if (ctx->candidate_on == LDG_TRUTH_TRUE) { ret = ldg_str_fmt(ctx->hint, (uint64_t)sizeof(ctx->hint), &hint_len, CROSSTALK_CORE_CMDLINE_CANDIDATE_LIST_FMT, ctx->candidate_cunt); }
     else if (match_help != 0x0 && match_cunt == CROSSTALK_CORE_CMDLINE_MATCH_UNIQUE) { ret = ldg_str_rbrcpy(ctx->hint, match_help, (uint64_t)sizeof(ctx->hint)); }
-    else if (match_cunt > CROSSTALK_CORE_CMDLINE_MATCH_UNIQUE) { ret = snprintf(ctx->hint, sizeof(ctx->hint), "%u matches; tab to complete", match_cunt) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    else if (match_cunt > CROSSTALK_CORE_CMDLINE_MATCH_UNIQUE) { ret = ldg_str_fmt(ctx->hint, (uint64_t)sizeof(ctx->hint), &hint_len, "%u32 matches; tab to complete", match_cunt); }
     else { ctx->hint[0] = LDG_STR_TERM; }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }

@@ -30,7 +30,7 @@
 #define CROSSTALK_GAME_BOARD_SHOT_EXT ".png"
 #define CROSSTALK_GAME_BOARD_SIZE_CAP 16
 #define CROSSTALK_GAME_BOARD_TIME_CAP 32
-#define CROSSTALK_GAME_BOARD_TIME_FMT "%04" PRIu32 "-%02" PRIu32 "-%02" PRIu32 "T%02" PRIu32 ":%02" PRIu32 ":%02" PRIu32 "+0000"
+#define CROSSTALK_GAME_BOARD_TIME_FMT "%04u32-%02u32-%02u32T%02u32:%02u32:%02u32+0000"
 
 typedef enum crosstalk_game_board_src
 {
@@ -54,6 +54,7 @@ typedef struct crosstalk_game_board
     char author[CROSSTALK_GAME_AUTHOR_NAME_CAP];
     char tag[CROSSTALK_GAME_BOARD_TAG_CAP];
     char editors[CROSSTALK_GAME_BOARD_EDITORS_CAP];
+    uint8_t pudding[7];
 } crosstalk_game_board_t;
 
 typedef struct crosstalk_game_board_ctx
@@ -66,7 +67,7 @@ typedef struct crosstalk_game_board_ctx
     uint32_t src_cunt;
     uint32_t cunt;
     uint8_t truncated;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_game_board_ctx_t;
 
 uint32_t crosstalk_game_board_init(crosstalk_game_board_ctx_t *ctx);

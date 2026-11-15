@@ -115,16 +115,16 @@
 #define CROSSTALK_CORE_BRK_COND_TOK "cond"
 #define CROSSTALK_CORE_BRK_TOK_CAP 32
 #define CROSSTALK_CORE_BRK_MIN_NONE 0
-#define CROSSTALK_CORE_BRK_SKIP_FMT "break; skipping the first %" PRIu64 " hits"
-#define CROSSTALK_CORE_BRK_COND_FMT "break; only when dr%" PRIu64 " is at least %" PRIu64
+#define CROSSTALK_CORE_BRK_SKIP_FMT "break; skipping the first %u64 hits"
+#define CROSSTALK_CORE_BRK_COND_FMT "break; only when dr%u64 is at least %u64"
 #define CROSSTALK_CORE_BRK_COND_OFF_TEXT "breakpoint condition cleared"
 #define CROSSTALK_CORE_BRK_USAGE_TEXT "break <addr> | break off | break skip <n> | break cond <reg> <min>"
 #define CROSSTALK_CORE_BRK_NONE_TEXT "no breakpoint armed"
 #define CROSSTALK_CORE_BRK_OFF_TEXT "breakpoint cleared"
 #define CROSSTALK_CORE_BRK_FAIL_TEXT "the emulator refused the breakpoint"
 #define CROSSTALK_CORE_BRK_NO_SUPPORT_TEXT "this emulator build has no breakpoint support"
-#define CROSSTALK_CORE_BRK_SET_FMT "break; armed at 0x%" PRIX64
-#define CROSSTALK_CORE_BRK_AT_FMT "break; armed at 0x%" PRIX64 "; clear with break off"
+#define CROSSTALK_CORE_BRK_SET_FMT "break; armed at 0x%X64"
+#define CROSSTALK_CORE_BRK_AT_FMT "break; armed at 0x%X64; clear with break off"
 #define CROSSTALK_CORE_DSU_PLAY_TOK "play"
 #define CROSSTALK_CORE_DSU_STOP_TOK "stop"
 #define CROSSTALK_CORE_DSU_PLAY_TEXT "sound card routed to audio; scope dsu to trace it"
@@ -132,21 +132,21 @@
 #define CROSSTALK_CORE_DSU_NO_AUDIO_TEXT "this engine has no audio drain"
 #define CROSSTALK_CORE_DSU_NONE_TEXT "the sound card is unreadable on this engine"
 #define CROSSTALK_CORE_DSU_IDLE_TEXT "the guest has not programmed the sound card"
-#define CROSSTALK_CORE_DSU_FMT "dsu; base: 0x%" PRIX64 "; tail: 0x%" PRIX64 "; curr: 0x%" PRIX64 "; rate: %" PRIu64 " Hz; run: %" PRIu64
+#define CROSSTALK_CORE_DSU_FMT "dsu; base: 0x%X64; tail: 0x%X64; curr: 0x%X64; rate: %u64 Hz; run: %u64"
 #define CROSSTALK_CORE_DISK_USAGE_TEXT "disk <path.dsk|sync|off> [drive]; bare disk reports the media"
 #define CROSSTALK_CORE_DISK_NONE_TEXT "no media attached"
-#define CROSSTALK_CORE_DISK_OK_FMT "media attached; drive: %u"
-#define CROSSTALK_CORE_DISK_OFF_FMT "media ejected; drive: %u"
-#define CROSSTALK_CORE_DISK_SYNC_FMT "media written back; drive: %u"
-#define CROSSTALK_CORE_DISK_FAIL_FMT "media refused; drive: %u; err: %u"
-#define CROSSTALK_CORE_DISK_STATE_FMT "drive %u: %.95s"
+#define CROSSTALK_CORE_DISK_OK_FMT "media attached; drive: %u32"
+#define CROSSTALK_CORE_DISK_OFF_FMT "media ejected; drive: %u32"
+#define CROSSTALK_CORE_DISK_SYNC_FMT "media written back; drive: %u32"
+#define CROSSTALK_CORE_DISK_FAIL_FMT "media refused; drive: %u32; err: %u32"
+#define CROSSTALK_CORE_DISK_STATE_FMT "drive %u32: %.95s"
 #define CROSSTALK_CORE_DISK_SYNC_TOK "sync"
 #define CROSSTALK_CORE_DISK_DRIVE_BAD_TEXT "disk drive out of range; 0-7"
 #define CROSSTALK_CORE_SCAN_NONE_TEXT "no scan provider bound"
 #define CROSSTALK_CORE_SCAN_CLEAN_TEXT "scan clean"
 #define CROSSTALK_CORE_SCAN_HIT_TEXT "scan detected a threat"
-#define CROSSTALK_CORE_SCAN_FAIL_FMT "scan refused; err: %u"
-#define CROSSTALK_CORE_SCAN_STATE_FMT "scan; provider: %u; runs: %" PRIu64 "; hits: %" PRIu64
+#define CROSSTALK_CORE_SCAN_FAIL_FMT "scan refused; err: %u32"
+#define CROSSTALK_CORE_SCAN_STATE_FMT "scan; provider: %u32; runs: %u64; hits: %u64"
 #define CROSSTALK_CORE_SERIAL_MAP_TERM_CHAR ';'
 #define CROSSTALK_CORE_SERIAL_MAP_CAP 8
 #define CROSSTALK_CORE_SERIAL_MAP_PATTERN_CAP 32
@@ -165,12 +165,12 @@
 #define CROSSTALK_CORE_EMU_RELOAD_TEXT "emulator reloaded from disk"
 #define CROSSTALK_CORE_EMU_RELOAD_FAIL_TEXT "emulator changed on disk; load failed"
 #define CROSSTALK_CORE_EMU_STATE_FMT "emulator: %.95s"
-#define CROSSTALK_CORE_NET_STATE_FMT "network: %.95s; open: %u"
-#define CROSSTALK_CORE_NET_FAIL_FMT "network endpoint refused; err: %u"
+#define CROSSTALK_CORE_NET_STATE_FMT "network: %.95s; open: %u32"
+#define CROSSTALK_CORE_NET_FAIL_FMT "network endpoint refused; err: %u32"
 #define CROSSTALK_CORE_NET_NONE_TEXT "no network endpoint set"
 #define CROSSTALK_CORE_NET_OFF_TEXT "network endpoint cleared"
 #define CROSSTALK_CORE_NET_OK_TEXT "network endpoint set"
-#define CROSSTALK_CORE_EMU_FAIL_FMT "emulator refused; err: %u"
+#define CROSSTALK_CORE_EMU_FAIL_FMT "emulator refused; err: %u32"
 #define CROSSTALK_CORE_SYMS_EXT ".elf"
 #define CROSSTALK_CORE_SYMS_DOT '.'
 #define CROSSTALK_CORE_SYMS_SEP_POSIX '/'
@@ -250,7 +250,7 @@
 #define CROSSTALK_CORE_RE_UNDO_OK_TEXT "undone"
 #define CROSSTALK_CORE_RE_UNDO_NONE_TEXT "nothing to undo"
 #define CROSSTALK_CORE_RE_IMG_MISMATCH_TEXT "database pinned to a different artifact; see the log"
-#define CROSSTALK_CORE_RE_IMPORT_FMT "imported %u symbols"
+#define CROSSTALK_CORE_RE_IMPORT_FMT "imported %u32 symbols"
 #define CROSSTALK_CORE_RE_BUILD_START_TEXT "building the candidate"
 #define CROSSTALK_CORE_RE_BUILD_BUSY_TEXT "a build is already running"
 #define CROSSTALK_CORE_RE_BUILD_NO_STEPS_TEXT "no build steps; re cc <n> \"<command with {src} {obj} {out}>\""
@@ -281,7 +281,7 @@
 #define CROSSTALK_CORE_RE_CAND_SYMS_NONE_TEXT "the candidate has no sibling .elf; symbols unavailable"
 #define CROSSTALK_CORE_RE_SP_SLACK 16
 #define CROSSTALK_CORE_RE_STACK_SPAN 65536
-#define CROSSTALK_CORE_PROJ_STATUS_FMT "%.31s; %u/%u verified"
+#define CROSSTALK_CORE_PROJ_STATUS_FMT "%.31s; %u32/%u32 verified"
 #define CROSSTALK_CORE_PROJ_STATUS_CAP 96
 #define CROSSTALK_CORE_RE_BUSY_TITLE "Differential run"
 #define CROSSTALK_CORE_RE_BUSY_BODY_TEXT "running both artifacts on the emulator; input is blocked"
@@ -290,7 +290,7 @@
 #define CROSSTALK_CORE_MEMRD_OK_TEXT "memory written to the log"
 #define CROSSTALK_CORE_MEMRD_ROW_CUNT 64
 #define CROSSTALK_CORE_MEMRD_TEXT_CAP 384
-#define CROSSTALK_CORE_MEMRD_BYTE_FMT " %02" PRIX64
+#define CROSSTALK_CORE_MEMRD_BYTE_FMT " %02X64"
 #define CROSSTALK_CORE_MEMRD_BYTE_MASK 0xFF
 #define CROSSTALK_CORE_MEMVIEW_SIG_DEFAULT "mem"
 #define CROSSTALK_CORE_TEXT_OK_TEXT "text screen wired to the design"
@@ -383,7 +383,7 @@
 #define CROSSTALK_CORE_SCRIPT_QUOTE_BYTES 2
 #define CROSSTALK_CORE_SCRIPT_QUOTE_NONE 0
 #define CROSSTALK_CORE_SCRIPT_RUN_HELP "run <path.xts>; execute a script file"
-#define CROSSTALK_CORE_SCRIPT_RUN_FAIL_FMT "run failed; err: %u; path: %.100s"
+#define CROSSTALK_CORE_SCRIPT_RUN_FAIL_FMT "run failed; err: %u32; path: %.100s"
 #define CROSSTALK_CORE_SCRIPT_HELP_NAME "help"
 #define CROSSTALK_CORE_SCRIPT_HELP_LEN 4
 #define CROSSTALK_CORE_SCRIPT_HELP_HELP "help [command]; list the commands, or show how to use one"
@@ -391,7 +391,7 @@
 #define CROSSTALK_CORE_SCRIPT_HELP_UNKNOWN_FMT "no such command: %.63s"
 #define CROSSTALK_CORE_SCRIPT_HELP_LIST_CAP 1024
 #define CROSSTALK_CORE_SCRIPT_HELP_SEP " "
-#define CROSSTALK_CORE_SCRIPT_DIAG_FMT "%u:%u: %.100s"
+#define CROSSTALK_CORE_SCRIPT_DIAG_FMT "%u32:%u32: %.100s"
 #define CROSSTALK_CORE_SCRIPT_SUGGESTION_FMT "try: %.130s"
 #define CROSSTALK_CORE_MIDI_NO_PIN_TEXT "wire midi to a design pin first"
 #define CROSSTALK_CORE_MIDI_PLAY_TEXT "playing the midi file"
@@ -410,15 +410,15 @@
 #define CROSSTALK_CORE_MEMSNAP_MISMATCH_TEXT "that snap belongs to a different design"
 #define CROSSTALK_CORE_SNAP_LIST_TOK "list"
 #define CROSSTALK_CORE_SNAP_LIST_EXT ".bake"
-#define CROSSTALK_CORE_SNAP_LIST_DONE_FMT "%u snaps; names in the log"
+#define CROSSTALK_CORE_SNAP_LIST_DONE_FMT "%u32 snaps; names in the log"
 #define CROSSTALK_CORE_SNAP_LIST_FAIL_TEXT "could not read the runtime directory"
 #define CROSSTALK_CORE_MEMDBG_STEP_DEFAULT 1
-#define CROSSTALK_CORE_MEMDBG_STEP_FMT "stepped %" PRIu64 " cycles"
+#define CROSSTALK_CORE_MEMDBG_STEP_FMT "stepped %u64 cycles"
 #define CROSSTALK_CORE_MEMDBG_HLT_TEXT "clock stopped"
 #define CROSSTALK_CORE_MEMDBG_RUN_TEXT "clock running"
 #define CROSSTALK_CORE_MEMDBG_RUN_FAIL_TEXT "the clock would not start"
 #define CROSSTALK_CORE_MEMDBG_STEP_DIS_CUNT 1
-#define CROSSTALK_CORE_MEMBREAK_FMT "clock stopped; watch hit at 0x%" PRIX64
+#define CROSSTALK_CORE_MEMBREAK_FMT "clock stopped; watch hit at 0x%X64"
 #define CROSSTALK_CORE_MEMBREAK_DIS_CUNT 4
 #define CROSSTALK_CORE_CRT_TITLE "Monitor"
 #define CROSSTALK_CORE_CRT_TITLE_HLT "Monitor [hlt'd]"
@@ -428,7 +428,7 @@
 #define CROSSTALK_CORE_FREEZE_LEN_MAX 16
 #define CROSSTALK_CORE_FREEZE_LEN_DEFAULT 4
 #define CROSSTALK_CORE_FREEZE_USAGE_TEXT "freeze 0xADDR|<symbol> [len]; freeze off [0xADDR]"
-#define CROSSTALK_CORE_FREEZE_OK_FMT "frozen; addr: 0x%" PRIX64 "; bytes: %u"
+#define CROSSTALK_CORE_FREEZE_OK_FMT "frozen; addr: 0x%X64; bytes: %u32"
 #define CROSSTALK_CORE_FREEZE_OFF_TEXT "freeze cleared"
 #define CROSSTALK_CORE_FREEZE_FULL_TEXT "freeze table full"
 #define CROSSTALK_CORE_MEMVIEW_TITLE_ARCH_FMT "%s [%s]"
@@ -455,13 +455,13 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_SCOPE_MEM_USAGE_TEXT "scope mem <0xADDR|symbol> [uint8|uint16|uint32|int8|int16|int32] [fixed] | scope mem off"
 #define CROSSTALK_CORE_SCOPE_MEM_FULL_TEXT "the scope is out of trace slots"
 #define CROSSTALK_CORE_SCOPE_MEM_OFF_TEXT "memory traces cleared"
-#define CROSSTALK_CORE_SCOPE_MEM_OK_FMT "trace %u on %.31s"
+#define CROSSTALK_CORE_SCOPE_MEM_OK_FMT "trace %u32 on %.31s"
 #define CROSSTALK_CORE_SCOPE_XY_USAGE_TEXT "scope xy <trace> <trace> | scope xy off"
 #define CROSSTALK_CORE_SCOPE_XY_OFF_TEXT "xy mode off"
 #define CROSSTALK_CORE_SCOPE_XY_OK_TEXT "xy mode on"
 #define CROSSTALK_CORE_MEMBREAK_RANGE_NONE 0
 #define CROSSTALK_CORE_MEMBREAK_USAGE_TEXT "break 0xLO [0xHI] | break off"
-#define CROSSTALK_CORE_MEMBREAK_ARM_FMT "watching stores into 0x%" PRIX64 " through 0x%" PRIX64
+#define CROSSTALK_CORE_MEMBREAK_ARM_FMT "watching stores into 0x%X64 through 0x%X64"
 #define CROSSTALK_CORE_MEMBREAK_OFF_TEXT "store watch cleared"
 #define CROSSTALK_CORE_MEMBREAK_REFUSED_TEXT "the emulator refused that store watch"
 #define CROSSTALK_CORE_SYMS_USAGE_TEXT "syms <path.elf>"
@@ -473,7 +473,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_GAMMA_USAGE_TEXT "gamma [0.5 to 4.0]; 1.0 is flat"
 #define CROSSTALK_CORE_IDENT_USAGE_TEXT "ident 0xADDR|<symbol>[+0xOFF]"
 #define CROSSTALK_CORE_IDENT_NONE_TEXT "no symbol covers that address"
-#define CROSSTALK_CORE_IDENT_OK_FMT "%.31s+0x%" PRIX64
+#define CROSSTALK_CORE_IDENT_OK_FMT "%.31s+0x%X64"
 #define CROSSTALK_CORE_IDENT_TABLE_PROG "prog"
 #define CROSSTALK_CORE_IDENT_TABLE_KERNEL "kernel"
 #define CROSSTALK_CORE_PROG_PUB_ADDR 0xF00
@@ -495,12 +495,12 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_PROG_PUB_WORD_BYTES 4
 #define CROSSTALK_CORE_PROG_PUB_HI_SHIFT 32
 #define CROSSTALK_CORE_MEMPOKE_USAGE_TEXT "poke 0xADDR|<symbol> 0xNN [0xNN ...]"
-#define CROSSTALK_CORE_MEMPOKE_OK_FMT "wrote %u bytes"
+#define CROSSTALK_CORE_MEMPOKE_OK_FMT "wrote %u32 bytes"
 #define CROSSTALK_CORE_MEMPOKE_FAIL_TEXT "could not write that memory"
 #define CROSSTALK_CORE_MEMPOKE_VAL_CAP 32
 #define CROSSTALK_CORE_MEMDIFF_OK_TEXT "diff mounted; rows with changes highlight"
 #define CROSSTALK_CORE_MEMWATCH_ADDR_CUNT 2
-#define CROSSTALK_CORE_MEMWATCH_BYTE_FMT "0x%02" PRIX64 " "
+#define CROSSTALK_CORE_MEMWATCH_BYTE_FMT "0x%02X64 "
 #define CROSSTALK_CORE_MEMWATCH_UP_MARK '+'
 #define CROSSTALK_CORE_MEMWATCH_DOWN_MARK '-'
 #define CROSSTALK_CORE_MEMWATCH_ANY_MARK '*'
@@ -513,8 +513,8 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_MEMWATCH_USAGE_TEXT "memview watch [0xADDR|<symbol> [0xEND|0xVAL]] [0xNN ...|\"text\"]"
 #define CROSSTALK_CORE_MEMWATCH_OK_TEXT "watching memory"
 #define CROSSTALK_CORE_MEMWATCH_FAIL_TEXT "the memory window refused that watch"
-#define CROSSTALK_CORE_MEMWATCH_HIT_FMT "memory watch hit at 0x%" PRIX64
-#define CROSSTALK_CORE_MEMWATCH_MUT_FMT "memory changed at 0x%" PRIX64
+#define CROSSTALK_CORE_MEMWATCH_HIT_FMT "memory watch hit at 0x%X64"
+#define CROSSTALK_CORE_MEMWATCH_MUT_FMT "memory changed at 0x%X64"
 #define CROSSTALK_CORE_MEMWATCH_NOTICE_CAP 96
 #define CROSSTALK_CORE_MEMWATCH_NOTIFY_SECS 1.0
 #define CROSSTALK_CORE_BUSY_TITLE "Working"
@@ -620,7 +620,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_DISPLAY_OK_TEXT "monitor wired to the design"
 #define CROSSTALK_CORE_LD_FAIL_TEXT "could not program that design"
 #define CROSSTALK_CORE_LD_DIAG_TOAST_CAP 128
-#define CROSSTALK_CORE_LD_DIAG_TOAST_FMT "line %" PRIu32 ": %.95s"
+#define CROSSTALK_CORE_LD_DIAG_TOAST_FMT "line %u32: %.95s"
 #define CROSSTALK_CORE_RELOAD_SKIP_TEXT "design modified but not yet reloaded"
 #define CROSSTALK_CORE_PRESENCE_NUM_REFRESH_MS 30000
 #define CROSSTALK_CORE_POKE_USAGE_TEXT "poke <signal> [value]"
@@ -648,7 +648,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_WATER_TEXT "Time for a glass of water"
 #define CROSSTALK_CORE_WATER_OFF_TEXT "water reminders off"
 #define CROSSTALK_CORE_WATER_USAGE_TEXT "water [1 to 1440|off]; bare water reports"
-#define CROSSTALK_CORE_WATER_ON_FMT "water reminder every %u min"
+#define CROSSTALK_CORE_WATER_ON_FMT "water reminder every %u32 min"
 #define CROSSTALK_CORE_TERM_RST_SEQ "\x0F\x1B(B\x1B[0" "m\x1B[r\x1B[?6" "l\x1B[?25" "l\x1B[2J\x1B[H"
 #define CROSSTALK_CORE_TERM_HOST_EDIT_WIN_FMT "if (Get-Command edit -ErrorAction SilentlyContinue) { edit \"%.200s\" }\r"
 #define CROSSTALK_CORE_TERM_HOST_EDIT_UNIX_FMT "e=$(command -v vim || command -v nvim || command -v nano) && \"$e\" \"%.200s\"\r"
@@ -706,7 +706,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_DELAY_UNIT_MS "ms"
 #define CROSSTALK_CORE_DELAY_UNIT_SEC "s"
 #define CROSSTALK_CORE_DELAY_USAGE_TEXT "delay <n> [ns|us|ms|s]; a bare number is ns"
-#define CROSSTALK_CORE_DELAY_DONE_FMT "delay: %" PRIu64 " ns"
+#define CROSSTALK_CORE_DELAY_DONE_FMT "delay: %u64 ns"
 #define CROSSTALK_CORE_EVENT_DEPTH_MAX 1
 #define CROSSTALK_CORE_EVENT_USAGE_TEXT "on <load|save|exit|fault> <path.xts|off>; bare on lists"
 #define CROSSTALK_CORE_EVENT_NONE_TEXT "no event scripts bound"
@@ -762,7 +762,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_EMU_PROG_PRESENCE_FMT "Running %.31s on the DLU"
 #define CROSSTALK_CORE_EMU_PROG_PRESENCE_RATE_FMT "Running %.31s on the DLU @ %.7s Hz; %.7s cycles in"
 #define CROSSTALK_CORE_HUNT_PRESENCE_TEXT "On the hunt in memory"
-#define CROSSTALK_CORE_PRESENCE_SI_FMT "%" PRIu64 "%s"
+#define CROSSTALK_CORE_PRESENCE_SI_FMT "%u64%s"
 #define CROSSTALK_CORE_PRESENCE_SI_CAP 16
 #define CROSSTALK_CORE_PTY_PRESENCE_TEXT "Pseudoterminalicious"
 #define CROSSTALK_CORE_CHAT_PRESENCE_TEXT "Fraternizing instead of working"
@@ -816,6 +816,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_DEMO_DIR_REL "demo"
 #define CROSSTALK_CORE_DEMO_SCRIPT_NAME "demo.xts"
 #define CROSSTALK_CORE_GUIDE_DEMO_PICK_CUNT 2
+#define CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE 0
 #define CROSSTALK_CORE_GUIDE_PICK_DEMO 1
 #define CROSSTALK_CORE_GUIDE_PICK_EMU 2
 #define CROSSTALK_CORE_NEWPROJECT_KIND_RTL 0U
@@ -863,7 +864,7 @@ typedef struct crosstalk_ctx
     uint8_t discord_restore_req;
     uint8_t discord_relink_req;
     uint8_t libresteam_live;
-    uint8_t discord_pudding[4];
+    uint8_t discord_pudding[6];
     uint64_t join_lobby_pending;
     uint64_t discord_invite_prev;
     crosstalk_game_progression_queue_ctx_t progression_queue;
@@ -923,6 +924,7 @@ typedef struct crosstalk_ctx
     uint32_t defer_kind[CROSSTALK_CORE_DEFER_CAP];
     uint32_t defer_cunt;
     uint32_t event_depth;
+    uint8_t watch_pool_pudding[16];
     ldg_thread_pool_t watch_pool;
     ldg_mut_t watch_mut;
     char watch_path[CROSSTALK_CORE_WATCH_CAP][LDG_IO_PATH_MAX];
@@ -933,6 +935,7 @@ typedef struct crosstalk_ctx
     uint8_t watch_stale[CROSSTALK_CORE_WATCH_CAP];
     uint8_t theme_playing;
     uint8_t theme_done;
+    uint8_t watch_pudding[2];
     uint32_t watch_cunt;
     uint32_t watch_stop;
     uint8_t watch_ok;
@@ -940,6 +943,7 @@ typedef struct crosstalk_ctx
     uint8_t prof_pudding[2];
     uint32_t dsu_probe_handle;
     uint32_t dsu_stream_handle;
+    uint8_t dsu_pudding[4];
     uint64_t dsu_sample_at;
     uint64_t dsu_base;
     uint64_t dsu_tail;
@@ -974,6 +978,7 @@ typedef struct crosstalk_ctx
     uint8_t quit_no_persist;
     uint8_t scope_probe_owned;
     uint8_t brk_on;
+    uint8_t brk_pudding[3];
     uint64_t brk_addr;
     uint64_t emu_step_on;
     uint32_t recept_key[CROSSTALK_CORE_RECEPT_KEY_CAP];
@@ -994,8 +999,10 @@ typedef struct crosstalk_ctx
     ldg_sched_event_desc_t step_event;
     crosstalk_net_wire_ident_t ident[CROSSTALK_CORE_IDENT_CAP];
     uint32_t ident_cunt;
+    uint8_t ident_pudding[4];
     crosstalk_net_wire_peer_state_t peer_state[CROSSTALK_CORE_IDENT_CAP];
     uint32_t peer_state_cunt;
+    uint8_t peer_state_pudding[4];
     double peer_state_next;
     double idle_secs;
     uint8_t peer_state_sent;
@@ -1024,6 +1031,7 @@ typedef struct crosstalk_ctx
     double credit_time_seen;
     uint64_t credit_peer_steam[CROSSTALK_NET_CLIENT_MAX];
     uint64_t credit_peer_seq[CROSSTALK_NET_CLIENT_MAX];
+    uint8_t eda_pudding[32];
     crosstalk_eda_ctx_t eda;
     crosstalk_core_task_ctx_t task;
     crosstalk_ui_window_ctx_t win_nav;
@@ -1032,6 +1040,7 @@ typedef struct crosstalk_ctx
     crosstalk_hdl_elf_ctx_t prog_elf;
     uint32_t ach_io_seen;
     char prog_pub_name[CROSSTALK_CORE_PROG_PUB_NAME_CAP];
+    uint8_t prog_pub_pudding[4];
     crosstalk_hdl_type_ctx_t prog_type;
     crosstalk_eda_ic_fpga_emu_stat_t emu_stat;
     char memview_title[CROSSTALK_EDA_UI_MEMVIEW_TITLE_CAP];
@@ -1039,6 +1048,7 @@ typedef struct crosstalk_ctx
     uint64_t freeze_val[CROSSTALK_CORE_FREEZE_MAX][CROSSTALK_CORE_FREEZE_LEN_MAX];
     uint32_t freeze_len[CROSSTALK_CORE_FREEZE_MAX];
     uint32_t freeze_cunt;
+    uint8_t freeze_pudding[12];
     crosstalk_re_ctx_t re;
     crosstalk_re_repl_ctx_t repl;
     crosstalk_re_repl_sesh_t repl_sesh;
@@ -1051,7 +1061,7 @@ typedef struct crosstalk_ctx
     uint8_t *reng_sect_buff;
     uint32_t reng_sect_len;
     uint8_t re_diff_pending;
-    uint8_t re_pudding[3];
+    uint8_t re_pudding[35];
     crosstalk_game_ctx_t game;
     double dt;
     double time;
@@ -1094,12 +1104,14 @@ typedef struct crosstalk_ctx
     uint8_t mp_host_pending;
     uint8_t mp_lobby_state_prev;
     uint8_t mp_host_retry;
+    uint8_t lobby_member_prev_pudding[3];
     crosstalk_net_libresteam_lobby_member_t lobby_member_prev[CROSSTALK_NET_LOBBY_MEMBER_MAX];
     uint32_t lobby_member_prev_cunt;
+    uint8_t lobby_member_cunt_pudding[4];
     crosstalk_game_settings_t settings_applied;
     uint8_t settings_applied_ok;
     uint8_t mp_busy;
-    uint8_t lobby_member_pudding[2];
+    uint8_t lobby_member_pudding[6];
     double mp_host_retry_next;
     double serial_access_last;
     double serial_access_grant_next;
@@ -1117,6 +1129,7 @@ typedef struct crosstalk_ctx
     char extras_items[CROSSTALK_CORE_EXTRAS_ITEMS_CAP];
     char credits_items[CROSSTALK_CORE_CREDITS_ITEMS_CAP];
     char extras_file[CROSSTALK_CORE_EXTRAS_CAP][CROSSTALK_CORE_EXTRAS_NAME_CAP];
+    uint8_t extras_pudding[7];
     uint64_t board_sel_confirm_ms;
     uint64_t board_sel_lock_ms;
     uint32_t pty_want_cols_prev;
@@ -1126,6 +1139,7 @@ typedef struct crosstalk_ctx
     uint32_t newproject_row[CROSSTALK_GAME_BOARD_CAP];
     char editorpick_items[CROSSTALK_CORE_EDITORPICK_ITEMS_CAP];
     uint8_t editorpick_kind[CROSSTALK_CORE_EDITOR_KIND_CUNT];
+    uint8_t editorpick_kind_pudding[1];
     uint32_t editorpick_cunt;
     uint32_t editorpick_idx;
     uint8_t editorpick_mask;
@@ -1146,7 +1160,7 @@ typedef struct crosstalk_ctx
     uint8_t card_kind_set;
     uint8_t splash_cw_rolled;
     uint8_t ld_frames;
-    uint8_t crt_pudding[4];
+    uint8_t crt_pudding[44];
 } crosstalk_ctx_t;
 
 uint32_t crosstalk_core_runtime_path_resolve(const char *file, char *out, uint64_t out_size);

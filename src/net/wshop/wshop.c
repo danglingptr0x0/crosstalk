@@ -199,7 +199,7 @@ uint32_t crosstalk_net_wshop_refresh(crosstalk_net_wshop_ctx_t *ctx)
     if (ctx->init_ok == LDG_TRUTH_FALSE) { return LDG_ERR_NOT_INIT; }
 
     ctx->item_cunt = 0;
-    memset(ctx->type_cunt, 0x0, sizeof(ctx->type_cunt));
+    memset(&ctx->type_cunt[0], 0x0, sizeof(ctx->type_cunt));
 
     ret = libresteam_wshop_subscribed_items_get(ctx->set, file_id, CROSSTALK_NET_WSHOP_ITEM_MAX, LDG_TRUTH_FALSE, &file_cunt);
     if (ret != LDG_ERR_AOK) { return ret; }

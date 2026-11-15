@@ -67,7 +67,7 @@ typedef struct crosstalk_hdl_aig_ctx
     uint32_t latch_bits;
     uint32_t cur_op;
     uint8_t comb_mode;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_hdl_aig_ctx_t;
 
 #define CROSSTALK_HDL_AIG_RD_SLOT_CUNT 3

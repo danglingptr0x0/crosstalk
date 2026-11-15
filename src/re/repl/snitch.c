@@ -24,7 +24,7 @@
 #define SNITCH_RESP_HDR_SIZE 16
 #define SNITCH_RESP_MORE UINT32_MAX
 #define SNITCH_DRAIN_CAP 8
-#define SNITCH_PUDDING_SIZE 3
+#define SNITCH_PUDDING_SIZE 7
 
 typedef struct snitch_hello
 {

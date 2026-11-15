@@ -1,9 +1,9 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 
 #include "core/log.h"
@@ -314,10 +314,12 @@ static uint32_t crosstalk_game_chat_wrap(const char *text, uint32_t max_w, uint3
 static uint32_t crosstalk_game_chat_tab_put(ldg_term_render_t *render, uint32_t *pos_col, uint32_t row, const char *name, uint8_t unseen, uint8_t lit)
 {
     char line[CROSSTALK_GAME_CHAT_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
     uint32_t seg_w = 0;
     uint32_t ret = 0;
 
-    if (snprintf(line, sizeof(line), CROSSTALK_GAME_CHAT_TAB_FMT, name, unseen != LDG_TRUTH_FALSE ? CROSSTALK_GAME_CHAT_UNSEEN_MARK : "") < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &len, CROSSTALK_GAME_CHAT_TAB_FMT, name, unseen != LDG_TRUTH_FALSE ? CROSSTALK_GAME_CHAT_UNSEEN_MARK : "");
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = crosstalk_ui_cell_rgba_put(render, *pos_col, row, line, (uint64_t)sizeof(line), lit == LDG_TRUTH_TRUE ? (uint32_t)CROSSTALK_UI_THEME_LIT_RGBA : (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, &seg_w);
 
@@ -374,16 +376,18 @@ static uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_chat_conv_t *
         uint32_t seg_len[CROSSTALK_GAME_CHAT_WRAP_CAP] = LDG_ARR_ZERO_INIT;
         uint32_t seg_cunt = 0;
         uint32_t slot = (conv->hd + idx) % CROSSTALK_GAME_CHAT_HISTORY_CAP;
-        int32_t name_w = 0;
+        uint64_t name_len = 0;
+        uint64_t line_len = 0;
         uint32_t name_end = 0;
         const ldg_term_render_color_t *name_fg = conv->msg[slot].self == LDG_TRUTH_TRUE ? &self_fg : &peer_fg;
 
-        name_w = snprintf(line, sizeof(line), CROSSTALK_GAME_CHAT_NAME_FMT, conv->msg[slot].name);
-        if (name_w < 0) { return LDG_ERR_STR_FMT; }
+        ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &name_len, CROSSTALK_GAME_CHAT_NAME_FMT, conv->msg[slot].name);
+        if (ret != LDG_ERR_AOK) { return ret; }
 
-        name_end = (uint32_t)name_w;
+        name_end = (uint32_t)name_len;
 
-        if (snprintf(line, sizeof(line), CROSSTALK_GAME_CHAT_MSG_FMT, conv->msg[slot].name, conv->msg[slot].text) < 0) { return LDG_ERR_STR_FMT; }
+        ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &line_len, CROSSTALK_GAME_CHAT_MSG_FMT, conv->msg[slot].name, conv->msg[slot].text);
+        if (ret != LDG_ERR_AOK) { return ret; }
 
         ret = crosstalk_game_chat_wrap(line, col_cunt, seg_start, seg_len, &seg_cunt);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -593,6 +597,8 @@ static uint32_t chat_key_isr(uint64_t win_id, void *user, const ldg_term_key_eve
 uint32_t crosstalk_game_chat_frame_set(crosstalk_game_chat_ctx_t *ctx, uint8_t sesh_live, uint8_t discord_live)
 {
     char title[CROSSTALK_GAME_CHAT_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
+    uint32_t ret = 0;
     uint8_t group_prev = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -609,7 +615,8 @@ uint32_t crosstalk_game_chat_frame_set(crosstalk_game_chat_ctx_t *ctx, uint8_t s
 
     if (ctx->win_nav == 0x0 || (ctx->group == group_prev && ctx->group == ctx->group_seen)) { return LDG_ERR_AOK; }
 
-    snprintf(title, sizeof(title), CROSSTALK_GAME_CHAT_TITLE_FMT, CROSSTALK_GAME_CHAT_TITLE, crosstalk_game_chat_group_name_get(ctx->group));
+    ret = ldg_str_fmt(title, (uint64_t)sizeof(title), &len, CROSSTALK_GAME_CHAT_TITLE_FMT, CROSSTALK_GAME_CHAT_TITLE, crosstalk_game_chat_group_name_get(ctx->group));
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     return crosstalk_ui_window_title_set(ctx->win_nav, (uint64_t)CROSSTALK_GAME_CHAT_WINDOW_ID, title);
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -46,6 +47,7 @@ uint32_t crosstalk_eda_ui_wshop_publish_init(crosstalk_eda_ui_wshop_publish_ctx_
 
 uint32_t crosstalk_eda_ui_wshop_publish_open_set(crosstalk_eda_ui_wshop_publish_ctx_t *ctx, uint8_t open, const char *seed_title)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     ctx->open = open != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -55,7 +57,7 @@ uint32_t crosstalk_eda_ui_wshop_publish_open_set(crosstalk_eda_ui_wshop_publish_
 
     ctx->field = (uint32_t)WSHOP_PUBLISH_FIELD_TITLE;
 
-    if (seed_title != 0x0 && ctx->title[0] == LDG_STR_TERM) { if (snprintf(ctx->title, sizeof(ctx->title), "%.127s", seed_title) < 0) { ctx->title[0] = LDG_STR_TERM; } }
+    if (seed_title != 0x0 && ctx->title[0] == LDG_STR_TERM) { if (ldg_str_fmt(ctx->title, (uint64_t)sizeof(ctx->title), &fmt_len, "%.127s", seed_title) != LDG_ERR_AOK) { ctx->title[0] = LDG_STR_TERM; } }
 
     return LDG_ERR_AOK;
 }
@@ -93,6 +95,7 @@ static uint32_t wshop_publish_field_draw(const crosstalk_eda_ui_wshop_publish_ct
 
 static uint32_t wshop_publish_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_wshop_publish_ctx_t *ctx = (crosstalk_eda_ui_wshop_publish_ctx_t *)user;
     char isa_label[WSHOP_PUBLISH_LABEL_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t status_row = (uint32_t)WSHOP_PUBLISH_FIELD_CUNT + (uint32_t)WSHOP_PUBLISH_STATUS_GAP;
@@ -102,7 +105,7 @@ static uint32_t wshop_publish_draw_cb(uint64_t win_id, void *user, ldg_term_rend
 
     if (win_id != (uint64_t)CROSSTALK_EDA_UI_WSHOP_PUBLISH_WINDOW_ID || col_cunt == 0 || row_cunt == 0) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (snprintf(isa_label, sizeof(isa_label), "ISA: %.31s", publish_isa_text_get(ctx->isa_idx)) < 0) { return LDG_ERR_IO_FMT; }
+    if (ldg_str_fmt(isa_label, (uint64_t)sizeof(isa_label), &fmt_len, "ISA: %.31s", publish_isa_text_get(ctx->isa_idx)) != LDG_ERR_AOK) { return LDG_ERR_IO_FMT; }
 
     ret = wshop_publish_field_draw(ctx, render, (uint32_t)WSHOP_PUBLISH_FIELD_TITLE, ctx->title, (uint64_t)sizeof(ctx->title), col_cunt, LDG_TRUTH_TRUE);
     if (ret == LDG_ERR_AOK) { ret = wshop_publish_field_draw(ctx, render, (uint32_t)WSHOP_PUBLISH_FIELD_ISA, isa_label, (uint64_t)sizeof(isa_label), col_cunt, LDG_TRUTH_FALSE); }

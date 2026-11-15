@@ -5,6 +5,7 @@
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -15,17 +16,14 @@
 #include "ui/cell.h"
 #include "ui/theme.h"
 
-#define TERM_CAPTURE_FULL_MSG "window capture registry full"
-#define TERM_STATUS_FMT "%.47s %" PRIu64 " bytes"
+#define TERM_STATUS_FMT "%.47s %u64 bytes"
 #define TERM_STATUS_IDLE "no session attached"
 #define TERM_HEX_DIGITS "0123456789ABCDEF"
-#define TERM_BIT_SET '1'
-#define TERM_BIT_CLR '0'
 #define TERM_STEP 1
 #define TERM_ORIG_COL 0
 #define TERM_TAB_ROW 0
 #define TERM_TAB_GAP 1
-#define TERM_TAB_FMT "[%.1s%u %.24s]"
+#define TERM_TAB_FMT "[%.1s%u32 %.24s]"
 #define TERM_TAB_MARK "*"
 #define TERM_STATUS_ROWS 1
 #define TERM_PTY_COL_CAP 128
@@ -33,7 +31,7 @@
 #define TERM_PTY_CURSOR_W 1
 #define TERM_PTY_CURSOR_SEEN_BASE 4
 #define TERM_PTY_CURSOR_SEEN_VISIBLE 2
-#define TERM_PTY_EXIT_FMT "shell exited; code: %u"
+#define TERM_PTY_EXIT_FMT "shell exited; code: %u32"
 #define TERM_PTY_DEAD_TEXT "no shell; open one from the console"
 #define TERM_PTY_ALPHA_SHIFT 8
 #define TERM_PTY_ALPHA_BYTE 0xFF
@@ -826,6 +824,7 @@ static uint32_t term_placement_draw(ldg_term_render_t *render, const ldg_term_t 
 
 static uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_render_t *render, ldg_term_t *grid, const crosstalk_eda_io_pty_ctx_t *exit_pty, uint32_t row_base, uint32_t col_cunt, uint32_t row_avail)
 {
+    uint64_t fmt_len = 0;
     ldg_term_cell_t row_cell[CROSSTALK_EDA_IO_PTY_COL_MAX];
     char run[TERM_PTY_RUN_CAP] = LDG_ARR_ZERO_INIT;
     char status[CROSSTALK_EDA_UI_TERM_STATUS_CAP] = LDG_ARR_ZERO_INIT;
@@ -941,13 +940,14 @@ static uint32_t term_pty_grid_draw(crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_re
 
     if (exit_pty == 0x0 || exit_pty->exited != LDG_TRUTH_TRUE || rows >= row_avail) { return LDG_ERR_AOK; }
 
-    if (snprintf(status, sizeof(status), TERM_PTY_EXIT_FMT, exit_pty->exit_code) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, TERM_PTY_EXIT_FMT, exit_pty->exit_code) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     return crosstalk_ui_cell_rgba_put(render, (uint32_t)TERM_ORIG_COL, row_base + rows, status, (uint64_t)sizeof(status), (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA, 0x0);
 }
 
 static uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *sesh, ldg_term_render_t *render, uint32_t row_base, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     char ascii[CROSSTALK_EDA_UI_TERM_CELL_CAP] = LDG_ARR_ZERO_INIT;
     char hex[CROSSTALK_EDA_UI_TERM_CELL_CAP] = LDG_ARR_ZERO_INIT;
     char offset[CROSSTALK_EDA_UI_TERM_CELL_CAP] = LDG_ARR_ZERO_INIT;
@@ -965,8 +965,8 @@ static uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *sesh, ldg_term
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    if (sesh->live == LDG_TRUTH_TRUE) { snprintf(status, sizeof(status), TERM_STATUS_FMT, sesh->title, sesh->bytes_total); }
-    else { snprintf(status, sizeof(status), TERM_STATUS_IDLE); }
+    if (sesh->live == LDG_TRUTH_TRUE) { if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, TERM_STATUS_FMT, sesh->title, sesh->bytes_total) != LDG_ERR_AOK) { *(status) = LDG_STR_TERM; } }
+    else { if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, TERM_STATUS_IDLE) != LDG_ERR_AOK) { *(status) = LDG_STR_TERM; } }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)TERM_ORIG_COL, status_row, status, (uint64_t)sizeof(status), (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1003,7 +1003,7 @@ static uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *sesh, ldg_term
 
         if (cunt > bytes_row) { cunt = bytes_row; }
 
-        if (snprintf(offset, sizeof(offset), CROSSTALK_EDA_UI_TERM_OFF_FMT, off) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(offset, (uint64_t)sizeof(offset), &fmt_len, CROSSTALK_EDA_UI_TERM_OFF_FMT, off) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         for (at = 0; at < cunt; at++)
         {
@@ -1047,6 +1047,7 @@ static uint32_t term_raw_draw(const crosstalk_eda_ui_term_sesh_t *sesh, ldg_term
 
 static uint32_t term_tabs_draw(const crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_render_t *render, uint32_t *out_rows)
 {
+    uint64_t fmt_len = 0;
     char tab_text[CROSSTALK_EDA_UI_TERM_TITLE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t pos_col = TERM_ORIG_COL;
     uint32_t seg_w = 0;
@@ -1059,7 +1060,7 @@ static uint32_t term_tabs_draw(const crosstalk_eda_ui_term_ctx_t *ctx, ldg_term_
     {
         if (ctx->sesh[tab_idx].src == (uint32_t)CROSSTALK_EDA_UI_TERM_SRC_NONE) { continue; }
 
-        if (snprintf(tab_text, sizeof(tab_text), TERM_TAB_FMT, tab_idx == ctx->sesh_active ? TERM_TAB_MARK : "", tab_idx, ctx->sesh[tab_idx].title) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(tab_text, (uint64_t)sizeof(tab_text), &fmt_len, TERM_TAB_FMT, tab_idx == ctx->sesh_active ? TERM_TAB_MARK : "", tab_idx, ctx->sesh[tab_idx].title) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = crosstalk_ui_cell_rgba_put(render, pos_col, (uint32_t)TERM_TAB_ROW, tab_text, (uint64_t)sizeof(tab_text), tab_idx == ctx->sesh_active ? (uint32_t)CROSSTALK_UI_THEME_LIT_RGBA : (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, &seg_w);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

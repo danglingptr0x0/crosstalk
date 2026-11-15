@@ -11,7 +11,6 @@
 
 #define EVAL_STEP 1
 #define EVAL_BIT 1
-#define EVAL_DIAG_FMT "%s"
 #define EVAL_ASCII_NINE '9'
 #define EVAL_RADIX_DEC 10
 #define EVAL_RADIX_HEX 16
@@ -26,7 +25,7 @@ typedef struct eval_lv
     uint32_t bit_lo;
     uint8_t elem_is;
     uint8_t bits_is;
-    uint8_t pudding[6];
+    uint8_t pudding[2];
 } eval_lv_t;
 
 static uint32_t eval_expr(crosstalk_eda_script_eval_t *ctx, const crosstalk_eda_script_node_t *node, crosstalk_eda_script_val_t *out);
@@ -49,10 +48,16 @@ static uint32_t eval_width_fit(uint32_t bits)
 
 static uint32_t eval_diag_set(crosstalk_eda_script_eval_t *ctx, const crosstalk_eda_script_node_t *node, uint32_t code, const char *msg, const char *suggestion)
 {
+    uint32_t msg_res = 0;
+    uint32_t suggestion_res = 0;
+
     ctx->diag.line = node != 0x0 ? node->line : 0x0;
     ctx->diag.col = node != 0x0 ? node->col : 0x0;
 
-    if (snprintf(ctx->diag.msg, sizeof(ctx->diag.msg), EVAL_DIAG_FMT, msg) < 0 || snprintf(ctx->diag.suggestion, sizeof(ctx->diag.suggestion), EVAL_DIAG_FMT, suggestion) < 0)
+    msg_res = ldg_str_rbrcpy(ctx->diag.msg, msg, (uint64_t)sizeof(ctx->diag.msg));
+    suggestion_res = ldg_str_rbrcpy(ctx->diag.suggestion, suggestion, (uint64_t)sizeof(ctx->diag.suggestion));
+
+    if ((msg_res != LDG_ERR_AOK && msg_res != LDG_ERR_STR_TRUNC) || (suggestion_res != LDG_ERR_AOK && suggestion_res != LDG_ERR_STR_TRUNC))
     {
         ctx->diag.msg[0] = LDG_STR_TERM;
         ctx->diag.suggestion[0] = LDG_STR_TERM;
@@ -233,9 +238,8 @@ static uint32_t eval_switch_reg(crosstalk_eda_script_eval_t *ctx, const crosstal
 
     if (LDG_UNLIKELY(eval_builtin_find(ctx, stmt->name, stmt->name_len) != 0x0)) { return eval_diag_set(ctx, stmt, CROSSTALK_EDA_SCRIPT_ERR_REDECL, "switch name is already a command", "rename the switch"); }
 
-    if (LDG_UNLIKELY(switch_ref != 0x0 && switch_ref->rack_idx != rack_idx)) { return eval_diag_set(ctx, stmt, CROSSTALK_EDA_SCRIPT_ERR_REDECL, "switch name is taken by another rack", "give each switch its own name across racks"); }
-
-    if (switch_ref == 0x0)
+    if (switch_ref != 0x0) { if (LDG_UNLIKELY(switch_ref->rack_idx != rack_idx)) { return eval_diag_set(ctx, stmt, CROSSTALK_EDA_SCRIPT_ERR_REDECL, "switch name is taken by another rack", "give each switch its own name across racks"); } }
+    else
     {
         if (LDG_UNLIKELY(ctx->switches_cunt >= (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_MAX)) { return eval_diag_set(ctx, stmt, CROSSTALK_EDA_SCRIPT_ERR_FULL, "too many switches", "describe fewer switches across the racks"); }
 
@@ -570,6 +574,8 @@ static uint32_t eval_lv_ld(crosstalk_eda_script_eval_t *ctx, const crosstalk_eda
 static uint32_t eval_lv_st(crosstalk_eda_script_eval_t *ctx, const crosstalk_eda_script_node_t *node, const eval_lv_t *lv, uint64_t val)
 {
     uint64_t masked = 0;
+
+    if (LDG_UNLIKELY(lv->slot == 0x0)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_LVALUE, "target cannot be assigned to", "assign to a variable, an array element, or a bit slice"); }
 
     if (LDG_UNLIKELY(lv->slot->const_is == LDG_TRUTH_TRUE && lv->slot->inited == LDG_TRUTH_TRUE)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_CONST, "this variable is const", "drop the const, or remove the assignment"); }
 

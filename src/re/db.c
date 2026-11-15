@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/file.h>
 #include <dangling/mem/alloc.h>
@@ -567,6 +568,7 @@ uint32_t crosstalk_re_db_by_parse(const char *name, uint32_t *out)
 
 uint32_t crosstalk_re_db_line_fmt(const crosstalk_re_db_rec_t *rec, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     const char *by = "";
     const char *by_sep = "";
     int32_t wrote = 0;
@@ -582,15 +584,15 @@ uint32_t crosstalk_re_db_line_fmt(const crosstalk_re_db_rec_t *rec, char *out, u
         by_sep = " ";
     }
 
-    if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_NAME) { wrote = snprintf(out, cap, "re name 0x%" PRIX64 " %.159s%.1s%.7s;", rec->addr, rec->text, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_NOTE) { wrote = snprintf(out, cap, "re note 0x%" PRIX64 " \"%.159s\"%.1s%.7s;", rec->addr, rec->text, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_FUNC) { wrote = snprintf(out, cap, "re func 0x%" PRIX64 " 0x%" PRIX64 "%.1s%.7s;", rec->addr, rec->size, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_STRUCT) { wrote = snprintf(out, cap, "re struct %.159s 0x%" PRIX64 "%.1s%.7s;", rec->text, rec->size, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_FIELD) { wrote = snprintf(out, cap, "re field %.63s 0x%" PRIX64 " 0x%" PRIX64 " %.159s%.1s%.7s;", rec->owner, rec->addr, rec->size, rec->text, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_PATCH) { wrote = snprintf(out, cap, "re patch 0x%" PRIX64 " %.159s%.1s%.7s;", rec->addr, rec->text, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_CC) { wrote = snprintf(out, cap, "re cc %" PRIu64 " \"%.159s\";", rec->addr, rec->text); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_SRC) { wrote = snprintf(out, cap, "re src 0x%" PRIX64 " \"%.159s\"%.1s%.7s;", rec->addr, rec->text, by_sep, by); }
-    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_VERDICT) { wrote = snprintf(out, cap, "re verdict 0x%" PRIX64 " %" PRIu64 " %.159s%.1s%.7s;", rec->addr, rec->size, rec->text, by_sep, by); }
+    if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_NAME) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re name 0x%X64 %.159s%.1s%.7s;", rec->addr, rec->text, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_NOTE) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re note 0x%X64 \"%.159s\"%.1s%.7s;", rec->addr, rec->text, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_FUNC) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re func 0x%X64 0x%X64%.1s%.7s;", rec->addr, rec->size, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_STRUCT) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re struct %.159s 0x%X64%.1s%.7s;", rec->text, rec->size, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_FIELD) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re field %.63s 0x%X64 0x%X64 %.159s%.1s%.7s;", rec->owner, rec->addr, rec->size, rec->text, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_PATCH) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re patch 0x%X64 %.159s%.1s%.7s;", rec->addr, rec->text, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_CC) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re cc %u64 \"%.159s\";", rec->addr, rec->text) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_SRC) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re src 0x%X64 \"%.159s\"%.1s%.7s;", rec->addr, rec->text, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (rec->kind == (uint32_t)CROSSTALK_RE_DB_KIND_VERDICT) { wrote = ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "re verdict 0x%X64 %u64 %.159s%.1s%.7s;", rec->addr, rec->size, rec->text, by_sep, by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
     else { return CROSSTALK_RE_DB_ERR_KIND; }
 
     if (wrote < 0) { return LDG_ERR_STR_FMT; }
@@ -620,6 +622,7 @@ uint32_t crosstalk_re_db_img_set(crosstalk_re_db_ctx_t *ctx, uint32_t hash, cons
 
 uint32_t crosstalk_re_db_st(crosstalk_re_db_ctx_t *ctx, const char *path)
 {
+    uint64_t fmt_len = 0;
     char line[CROSSTALK_RE_DB_LINE_CAP] = LDG_ARR_ZERO_INIT;
     ldg_io_file_t *fh = 0x0;
     uint32_t idx = 0;
@@ -632,7 +635,7 @@ uint32_t crosstalk_re_db_st(crosstalk_re_db_ctx_t *ctx, const char *path)
     ret = ldg_io_file_open(path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, (uint32_t)CROSSTALK_RE_DB_FILE_MODE, &fh);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (ctx->img_set == LDG_TRUTH_TRUE) { if (snprintf(line, sizeof(line), CROSSTALK_RE_DB_IMG_LINE_FMT, ctx->img_hash, ctx->img_leaf) < 0) { ret = LDG_ERR_STR_FMT; }
+    if (ctx->img_set == LDG_TRUTH_TRUE) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CROSSTALK_RE_DB_IMG_LINE_FMT, ctx->img_hash, ctx->img_leaf) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; }
         else { ret = db_line_wr(fh, line); } }
 
     for (idx = 0; ret == LDG_ERR_AOK && idx < ctx->rec_cunt; idx = idx + 0x1)

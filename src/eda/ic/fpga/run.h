@@ -53,7 +53,7 @@ typedef struct crosstalk_eda_ic_fpga_run_ctx
     uint32_t cpuset_cunt;
     uint8_t live;
     uint8_t ok;
-    uint8_t pudding[2];
+    uint8_t pudding[62];
 } crosstalk_eda_ic_fpga_run_ctx_t;
 
 uint32_t crosstalk_eda_ic_fpga_run_init(crosstalk_eda_ic_fpga_run_ctx_t *ctx, crosstalk_eda_ic_fpga_ctx_t *fpga, crosstalk_eda_clk_ctx_t *clk);

@@ -46,14 +46,14 @@ static double crosstalk_core_svg_num_rd(const char **cursor)
     double val = 0.0;
     double frac = 0.0;
     double scale = 1.0;
-    double sign = 1.0;
+    uint8_t neg = LDG_TRUTH_FALSE;
 
     if (LDG_UNLIKELY(cursor == 0x0 || *cursor == 0x0)) { return val; }
 
     crosstalk_core_svg_sep_skip(cursor);
     if (**cursor == '-')
     {
-        sign = -1.0;
+        neg = LDG_TRUTH_TRUE;
         (*cursor)++;
     }
     else if (**cursor == '+') { (*cursor)++; }
@@ -77,7 +77,9 @@ static double crosstalk_core_svg_num_rd(const char **cursor)
         val = val + frac / scale;
     }
 
-    return sign * val;
+    if (neg == LDG_TRUTH_TRUE) { return -val; }
+
+    return val;
 }
 
 static uint8_t crosstalk_core_svg_flag_rd(const char **cursor)

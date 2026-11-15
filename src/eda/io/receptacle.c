@@ -7,6 +7,7 @@
 #include <dangling/core/macros.h>
 #include <dangling/core/bits.h>
 #include <dangling/logging/logging.h>
+#include <dangling/str/str.h>
 
 #include "core/log.h"
 #include "eda/io/receptacle.h"
@@ -16,7 +17,6 @@
 #define RECEPTACLE_PIN_LOW 0
 #define RECEPTACLE_PIN_HIGH 1
 #define RECEPTACLE_HELD_NONE 0
-#define RECEPTACLE_PORT_FMT "%.63s"
 
 static uint32_t receptacle_pin_bind(crosstalk_eda_io_receptacle_ctx_t *ctx, uint32_t pin_idx, const crosstalk_hdl_exec_ctx_t *exec, const char *port)
 {
@@ -35,7 +35,8 @@ static uint32_t receptacle_pin_bind(crosstalk_eda_io_receptacle_ctx_t *ctx, uint
 
     if (port == 0x0 || port[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
 
-    if (snprintf(pin->port, sizeof(pin->port), RECEPTACLE_PORT_FMT, port) < 0) { return LDG_ERR_IO_FMT; }
+    ret = ldg_str_rbrcpy(pin->port, port, (uint64_t)sizeof(pin->port));
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return LDG_ERR_IO_FMT; }
 
     if (exec == 0x0) { return LDG_ERR_AOK; }
 

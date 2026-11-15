@@ -8,6 +8,7 @@
 #include <dangling/arch/dangcsa/dangcsa.h>
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -21,17 +22,17 @@
 #define PROGVIEW_BODY_ROW 2
 #define PROGVIEW_DEAD_TEXT "no running design"
 #define PROGVIEW_SIG_DEFAULT "cells"
-#define PROGVIEW_HDR_FMT "%.31s loc 0x%08" PRIX64 " depth %" PRIu64
-#define PROGVIEW_ROW_FMT "%c %08" PRIX64 " %08" PRIX64 " %.39s"
+#define PROGVIEW_HDR_FMT "%.31s loc 0x%08X64 depth %u64"
+#define PROGVIEW_ROW_FMT "%c %08X64 %08X64 %.39s"
 #define PROGVIEW_LINE_CAP 112
 #define PROGVIEW_MARK_CH '>'
 #define PROGVIEW_PLAIN_CH ' '
 #define PROGVIEW_FOLLOW_LEAD 8
 #define PROGVIEW_ASM_FAIL_TEXT "??"
-#define PROGVIEW_THREAD_HDR_FMT "thread %u; loc 0x%016" PRIX64 "; bytes %u"
-#define PROGVIEW_THREAD_WAIT_FMT "thread %u; registers unread; err: %u"
-#define PROGVIEW_THREAD_ADDR_FMT "%016" PRIX64 " "
-#define PROGVIEW_THREAD_BYTE_FMT " %02X"
+#define PROGVIEW_THREAD_HDR_FMT "thread %u32; loc 0x%016X64; bytes %u32"
+#define PROGVIEW_THREAD_WAIT_FMT "thread %u32; registers unread; err: %u32"
+#define PROGVIEW_THREAD_ADDR_FMT "%016X64 "
+#define PROGVIEW_THREAD_BYTE_FMT " %02X32"
 #define PROGVIEW_THREAD_ROW_BYTES 16
 #define PROGVIEW_THREAD_GAP_COLS 2
 #define PROGVIEW_THREAD_BYTE_COLS 3
@@ -161,12 +162,13 @@ uint32_t crosstalk_eda_ui_progview_thread_bind(crosstalk_eda_ui_progview_ctx_t *
 
 static uint32_t progview_thread_row_build(const crosstalk_re_repl_thread_t *thread, uint32_t first, char *line, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     uint32_t pos = 0;
     uint32_t at = 0;
     uint32_t pad = 0;
     int32_t wrote = 0;
 
-    wrote = snprintf(line, (uint64_t)cap, PROGVIEW_THREAD_ADDR_FMT, thread->code_addr + (uint64_t)first);
+    wrote = ldg_str_fmt(line, (uint64_t)cap, &fmt_len, PROGVIEW_THREAD_ADDR_FMT, thread->code_addr + (uint64_t)first) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (wrote < 0 || (uint32_t)wrote >= cap) { return LDG_ERR_STR_FMT; }
 
     pos = (uint32_t)wrote;
@@ -175,7 +177,7 @@ static uint32_t progview_thread_row_build(const crosstalk_re_repl_thread_t *thre
 
     for (at = 0; at < (uint32_t)PROGVIEW_THREAD_ROW_BYTES; at = at + (uint32_t)PROGVIEW_STEP)
     {
-        if (first + at < thread->code_cunt) { if (snprintf(line + pos, (uint64_t)(cap - pos), PROGVIEW_THREAD_BYTE_FMT, (uint32_t)thread->code[first + at]) < 0) { return LDG_ERR_STR_FMT; } }
+        if (first + at < thread->code_cunt) { if (ldg_str_fmt(line + pos, (uint64_t)(cap - pos), &fmt_len, PROGVIEW_THREAD_BYTE_FMT, (uint32_t)thread->code[first + at]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; } }
         else { for (pad = 0; pad < (uint32_t)PROGVIEW_THREAD_BYTE_COLS; pad = pad + (uint32_t)PROGVIEW_STEP) { line[pos + pad] = PROGVIEW_PLAIN_CH; } }
 
         pos = pos + (uint32_t)PROGVIEW_THREAD_BYTE_COLS;
@@ -198,6 +200,7 @@ static uint32_t progview_thread_row_build(const crosstalk_re_repl_thread_t *thre
 
 static uint32_t progview_thread_draw(crosstalk_eda_ui_progview_ctx_t *ctx, ldg_term_render_t *render)
 {
+    uint64_t fmt_len = 0;
     const crosstalk_re_repl_thread_t *thread = ctx->thread;
     char line[PROGVIEW_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t row = PROGVIEW_BODY_ROW;
@@ -206,14 +209,14 @@ static uint32_t progview_thread_draw(crosstalk_eda_ui_progview_ctx_t *ctx, ldg_t
 
     if (thread->regs_ok != LDG_TRUTH_TRUE)
     {
-        if (snprintf(line, sizeof(line), PROGVIEW_THREAD_WAIT_FMT, thread->sel, thread->last_err) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PROGVIEW_THREAD_WAIT_FMT, thread->sel, thread->last_err) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ctx->win.content_row_cunt = (uint32_t)PROGVIEW_STEP;
 
         return crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, (uint32_t)PROGVIEW_HDR_ROW, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, 0x0);
     }
 
-    if (snprintf(line, sizeof(line), PROGVIEW_THREAD_HDR_FMT, thread->sel, thread->code_addr, thread->code_cunt) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PROGVIEW_THREAD_HDR_FMT, thread->sel, thread->code_addr, thread->code_cunt) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, (uint32_t)PROGVIEW_HDR_ROW, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -236,6 +239,7 @@ static uint32_t progview_thread_draw(crosstalk_eda_ui_progview_ctx_t *ctx, ldg_t
 
 static uint32_t progview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_progview_ctx_t *ctx = (crosstalk_eda_ui_progview_ctx_t *)user;
     uint64_t words[CROSSTALK_EDA_UI_PROGVIEW_ROW_CUNT] = LDG_ARR_ZERO_INIT;
     char asm_text[CROSSTALK_EDA_UI_PROGVIEW_ASM_CAP] = LDG_ARR_ZERO_INIT;
@@ -264,7 +268,7 @@ static uint32_t progview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
 
     if (progview_base_get(ctx, &word, &base, &width, &live) != LDG_ERR_AOK) { return progview_dead_draw(render, (uint32_t)PROGVIEW_HDR_ROW); }
 
-    if (snprintf(line, sizeof(line), PROGVIEW_HDR_FMT, ctx->sig, word * (uint64_t)LDG_DANGCSA_INSTR_SIZE, width) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PROGVIEW_HDR_FMT, ctx->sig, word * (uint64_t)LDG_DANGCSA_INSTR_SIZE, width) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, (uint32_t)PROGVIEW_HDR_ROW, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -279,7 +283,7 @@ static uint32_t progview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
 
         if (ldg_dangcsa_decode(words[idx], &decoded) != LDG_ERR_AOK || ldg_dangcsa_disasm(&decoded, asm_text, sizeof(asm_text)) != LDG_ERR_AOK) { if (ldg_str_rbrcpy(asm_text, PROGVIEW_ASM_FAIL_TEXT, sizeof(asm_text)) != LDG_ERR_AOK) { return LDG_ERR_STR_TRUNC; } }
 
-        if (snprintf(line, sizeof(line), PROGVIEW_ROW_FMT, at_loc == LDG_TRUTH_TRUE ? PROGVIEW_MARK_CH : PROGVIEW_PLAIN_CH, addr, words[idx], asm_text) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PROGVIEW_ROW_FMT, at_loc == LDG_TRUTH_TRUE ? PROGVIEW_MARK_CH : PROGVIEW_PLAIN_CH, addr, words[idx], asm_text) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, row, line, (uint64_t)sizeof(line), at_loc == LDG_TRUTH_TRUE ? (uint32_t)CROSSTALK_UI_THEME_MARK_RGBA : (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

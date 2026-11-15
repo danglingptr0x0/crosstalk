@@ -5,6 +5,7 @@
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/io/file.h>
 #include <dangling/mem/alloc.h>
@@ -54,7 +55,7 @@
 #define IMG_SEG_DATA_NAME "data"
 #define IMG_SEG_BSS_NAME "bss"
 #define IMG_SEG_RAW_NAME "raw"
-#define IMG_SEG_LD_FMT "ld%u"
+#define IMG_SEG_LD_FMT "ld%u32"
 
 static uint16_t img_u16_get(const uint8_t *at)
 {
@@ -211,6 +212,7 @@ static uint32_t img_elf_isa_get(uint32_t machine, uint32_t *out)
 
 static uint32_t img_elf_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *file, uint64_t span, uint64_t base)
 {
+    uint64_t fmt_len = 0;
     char name[CROSSTALK_RE_IMG_SEG_NAME_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t hdr_len = 0;
     uint64_t ent_len = 0;
@@ -291,7 +293,7 @@ static uint32_t img_elf_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *fi
 
         if (vaddr > UINT64_MAX - base) { return CROSSTALK_RE_IMG_ERR_SPAN; }
 
-        if (snprintf(name, sizeof(name), IMG_SEG_LD_FMT, ctx->seg_cunt) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(name, (uint64_t)sizeof(name), &fmt_len, IMG_SEG_LD_FMT, ctx->seg_cunt) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = img_seg_push(ctx, name, base + vaddr, memsz, off, filesz, flags);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -444,7 +446,7 @@ uint32_t crosstalk_re_img_clear(crosstalk_re_img_ctx_t *ctx)
 
     ctx->pool = 0x0;
     ctx->bytes = 0x0;
-    memset(ctx->seg, 0x0, sizeof(ctx->seg));
+    memset(&ctx->seg[0], 0x0, sizeof(ctx->seg));
     ctx->seg_cunt = 0;
     ctx->base = 0;
     ctx->lo = UINT64_MAX;

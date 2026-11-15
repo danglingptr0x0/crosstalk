@@ -5,6 +5,7 @@
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -67,15 +68,16 @@ uint32_t crosstalk_ui_cell_fmt_put(ldg_term_render_t *render, uint32_t col, uint
 {
     char line[CROSSTALK_UI_CELL_LINE_CAP] = LDG_ARR_ZERO_INIT;
     va_list args;
-    int32_t len = 0;
+    uint64_t len = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(render == 0x0 || fmt == 0x0 || fg == 0x0 || bg == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     va_start(args, fmt);
-    len = (int32_t)vsnprintf(line, sizeof(line), fmt, args);
+    ret = ldg_str_variable_fmt(line, (uint64_t)sizeof(line), &len, fmt, args);
     va_end(args);
 
-    if (len < 0) { return LDG_ERR_STR_FMT; }
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
 
     return crosstalk_ui_cell_text_put(render, col, row, line, (uint64_t)sizeof(line), fg, bg);
 }
@@ -111,17 +113,18 @@ uint32_t crosstalk_ui_cell_rgba_fmt_put(ldg_term_render_t *render, uint32_t col,
 {
     char line[CROSSTALK_UI_CELL_LINE_CAP] = LDG_ARR_ZERO_INIT;
     va_list args;
-    int32_t len = 0;
+    uint64_t len = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(render == 0x0 || fmt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (out_w != 0x0) { *out_w = 0; }
 
     va_start(args, fmt);
-    len = (int32_t)vsnprintf(line, sizeof(line), fmt, args);
+    ret = ldg_str_variable_fmt(line, (uint64_t)sizeof(line), &len, fmt, args);
     va_end(args);
 
-    if (len < 0) { return LDG_ERR_STR_FMT; }
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
 
     return crosstalk_ui_cell_rgba_put(render, col, row, line, (uint64_t)sizeof(line), fg_rgba, out_w);
 }

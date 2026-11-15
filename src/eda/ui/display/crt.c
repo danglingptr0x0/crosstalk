@@ -957,7 +957,7 @@ uint32_t crosstalk_eda_ui_display_crt_state_deserialize(crosstalk_eda_ui_display
     off = off + (uint32_t)sizeof(ctx->gfx_w);
     memcpy(&ctx->gfx_h, &buff[off], sizeof(ctx->gfx_h));
     off = off + (uint32_t)sizeof(ctx->gfx_h);
-    memcpy(ctx->text_sig, &buff[off], sizeof(ctx->text_sig));
+    memcpy(&ctx->text_sig[0], &buff[off], sizeof(ctx->text_sig));
     ctx->text_sig[sizeof(ctx->text_sig) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
 
     ctx->text_next = 0.0;

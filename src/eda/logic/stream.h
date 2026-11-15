@@ -44,7 +44,7 @@ typedef struct crosstalk_eda_logic_stream
     uint32_t sink_cunt;
     uint32_t width;
     uint8_t live;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_eda_logic_stream_t;
 
 typedef struct crosstalk_eda_logic_stream_ctx

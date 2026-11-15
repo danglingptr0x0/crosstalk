@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -44,10 +45,11 @@ static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out);
 
 static uint32_t parse_diag_set(parse_ctx_t *ctx, const crosstalk_eda_script_tok_t *tok, uint32_t code, const char *msg, const char *suggestion)
 {
+    uint64_t fmt_len = 0;
     ctx->diag->line = tok->line;
     ctx->diag->col = tok->col;
 
-    if (snprintf(ctx->diag->msg, sizeof(ctx->diag->msg), PARSE_DIAG_FMT, msg) < 0 || snprintf(ctx->diag->suggestion, sizeof(ctx->diag->suggestion), PARSE_DIAG_FMT, suggestion) < 0)
+    if (ldg_str_fmt(ctx->diag->msg, (uint64_t)sizeof(ctx->diag->msg), &fmt_len, PARSE_DIAG_FMT, msg) != LDG_ERR_AOK || ldg_str_fmt(ctx->diag->suggestion, (uint64_t)sizeof(ctx->diag->suggestion), &fmt_len, PARSE_DIAG_FMT, suggestion) != LDG_ERR_AOK)
     {
         ctx->diag->msg[0] = LDG_STR_TERM;
         ctx->diag->suggestion[0] = LDG_STR_TERM;

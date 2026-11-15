@@ -65,7 +65,7 @@ typedef struct crosstalk_eda_script_slot
     uint8_t has_range;
     uint8_t r_lo_open;
     uint8_t r_hi_open;
-    uint8_t pudding[2];
+    uint8_t pudding[6];
 } crosstalk_eda_script_slot_t;
 
 typedef struct crosstalk_eda_script_section

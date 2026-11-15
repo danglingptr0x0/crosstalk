@@ -1,10 +1,9 @@
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
-#include <inttypes.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/fmt.h>
 #include <dangling/time/time.h>
 
 #include "game/totals.h"
@@ -24,8 +23,9 @@ static void totals_span_fmt(uint64_t span_ms, char *out, uint64_t out_size)
     uint64_t total_secs = span_ms / LDG_MS_PER_SEC;
     uint64_t hours = total_secs / LDG_SECS_PER_HOUR;
     uint64_t mins = (total_secs % LDG_SECS_PER_HOUR) / LDG_SECS_PER_MIN;
+    uint64_t len = 0;
 
-    snprintf(out, out_size, "%" PRIu64 "h %" PRIu64 "m", hours, mins);
+    if (ldg_str_fmt(out, out_size, &len, "%u64h %u64m", hours, mins) != LDG_ERR_AOK) { out[0] = LDG_STR_TERM; }
 }
 
 static uint32_t totals_row_draw(ldg_term_render_t *render, uint32_t *row, const char *text)
@@ -64,6 +64,7 @@ static uint32_t totals_emu_draw(const crosstalk_eda_ic_fpga_emu_stat_t *stat, ld
     char line[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     char span[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     char hlt_span[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
     uint32_t rows = 0;
     uint32_t idx = 0;
     uint32_t ret = LDG_ERR_AOK;
@@ -73,10 +74,12 @@ static uint32_t totals_emu_draw(const crosstalk_eda_ic_fpga_emu_stat_t *stat, ld
         totals_span_fmt(stat->run_ms, span, sizeof(span));
         totals_span_fmt(stat->hlt_ms, hlt_span, sizeof(hlt_span));
 
-        snprintf(line, sizeof(line), "time emulating: %.31s; halted: %.31s", span, hlt_span);
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "time emulating: %.31s; halted: %.31s", span, hlt_span) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+
         ret = totals_row_draw(render, row, line);
 
-        snprintf(line, sizeof(line), "emulator runs: %" PRIu64 "; typed: %" PRIu64 " characters", stat->sesh_cunt, stat->chars);
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "emulator runs: %u64; typed: %u64 characters", stat->sesh_cunt, stat->chars) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+
         if (ret == LDG_ERR_AOK) { ret = totals_row_draw(render, row, line); }
     }
 
@@ -93,7 +96,8 @@ static uint32_t totals_emu_draw(const crosstalk_eda_ic_fpga_emu_stat_t *stat, ld
         totals_span_fmt(stat->prog[idx].run_ms, span, sizeof(span));
         totals_span_fmt(stat->prog[idx].hlt_ms, hlt_span, sizeof(hlt_span));
 
-        snprintf(line, sizeof(line), "%.23s; %.31s; halted: %.31s; runs: %" PRIu64, stat->prog[idx].name, span, hlt_span, stat->prog[idx].launches);
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "%.23s; %.31s; halted: %.31s; runs: %u64", stat->prog[idx].name, span, hlt_span, stat->prog[idx].launches) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+
         ret = totals_row_draw(render, row, line);
     }
 
@@ -107,6 +111,7 @@ static uint32_t totals_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *r
     char line[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     char span[TOTALS_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t now_ms = 0;
+    uint64_t len = 0;
     uint32_t row = 0;
     uint32_t ret = 0;
 
@@ -117,7 +122,8 @@ static uint32_t totals_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *r
     info = &ctx->info;
     now_ms = ldg_time_epoch_ms_get();
 
-    snprintf(line, sizeof(line), "board: %.47s; founded by: %.63s", info->board_name != 0x0 ? info->board_name : "-", info->author_name != 0x0 && info->author_name[0] != LDG_STR_TERM ? info->author_name : "-");
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "board: %.47s; founded by: %.63s", info->board_name != 0x0 ? info->board_name : "-", info->author_name != 0x0 && info->author_name[0] != LDG_STR_TERM ? info->author_name : "-") != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+
     ret = totals_row_draw(render, &row, line);
 
     if (ret == LDG_ERR_AOK && info->created_epoch_ms > 0 && now_ms > info->created_epoch_ms)
@@ -125,11 +131,14 @@ static uint32_t totals_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *r
         uint64_t age_days = (now_ms - info->created_epoch_ms) / LDG_MS_PER_SEC / LDG_SECS_PER_HOUR / TOTALS_HOURS_PER_DAY;
 
         totals_span_fmt(info->bench_ms_total, span, sizeof(span));
-        snprintf(line, sizeof(line), "age: %" PRIu64 " days; time on the bench: %.31s", age_days, span);
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "age: %u64 days; time on the bench: %.31s", age_days, span) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+
         ret = totals_row_draw(render, &row, line);
 
         totals_span_fmt(info->sim_ms_total, span, sizeof(span));
-        snprintf(line, sizeof(line), "time simulating: %.31s", span);
+
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "time simulating: %.31s", span) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+
         if (ret == LDG_ERR_AOK) { ret = totals_row_draw(render, &row, line); }
     }
 

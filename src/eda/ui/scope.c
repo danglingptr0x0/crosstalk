@@ -6,6 +6,7 @@
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 #include <dangling/logging/logging.h>
@@ -20,12 +21,11 @@
 #define SCOPE_PLOT_ORIG 0
 #define SCOPE_FADE_FULL 255
 #define SCOPE_RGBA_ALPHA_FULL 0xFFU
-#define SCOPE_RGBA_CHAN_BITS 8
 #define SCOPE_RGBA_RED_SHIFT 24
 #define SCOPE_RGBA_GREEN_SHIFT 16
 #define SCOPE_RGBA_BLUE_SHIFT 8
-#define SCOPE_STATUS_FMT "%.15s.%.7s %s %.2f Vpp modeled; %" PRIu64 " Hz / %" PRIu64 " Hz comp; %" PRIu64 " ns/div; %.2f V/div"
-#define SCOPE_STATUS_SIG_FMT "%.63s measured; %" PRIu64 " Hz; %" PRIu64 " ns/sample; %" PRIu64 " ns/div; %.2f V/div"
+#define SCOPE_STATUS_FMT "%.15s.%.7s %s %.2f Vpp modeled; %u64 Hz / %u64 Hz comp; %u64 ns/div; %.2f V/div"
+#define SCOPE_STATUS_SIG_FMT "%.63s measured; %u64 Hz; %u64 ns/sample; %u64 ns/div; %.2f V/div"
 #define SCOPE_STATUS_MEM_FMT "%.31s: %.3f; "
 #define SCOPE_WAVE_SINE_TEXT "sine"
 #define SCOPE_WAVE_SQUARE_TEXT "square"
@@ -262,7 +262,7 @@ uint32_t crosstalk_eda_ui_scope_mem_clear(crosstalk_eda_ui_scope_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    memset(ctx->mem_trace, 0x0, sizeof(ctx->mem_trace));
+    memset(&ctx->mem_trace[0], 0x0, sizeof(ctx->mem_trace));
 
     ctx->mem_cunt = 0;
     ctx->mem_mode = (uint32_t)CROSSTALK_EDA_UI_SCOPE_MODE_YT;
@@ -544,6 +544,7 @@ static uint32_t scope_grid_draw(ldg_term_render_t *render, uint32_t divs_x, uint
 
 static uint32_t scope_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_scope_ctx_t *ctx = (crosstalk_eda_ui_scope_ctx_t *)user;
     char status[CROSSTALK_EDA_UI_SCOPE_STATUS_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t meas_hz = 0;
@@ -597,7 +598,7 @@ static uint32_t scope_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *re
 
         for (trace_at = 0; trace_at < ctx->mem_cunt && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(status); trace_at = trace_at + (uint32_t)CROSSTALK_EDA_UI_SCOPE_STEP)
         {
-            int32_t put = snprintf(&status[pos], sizeof(status) - pos, SCOPE_STATUS_MEM_FMT, ctx->mem_trace[trace_at].label, ctx->mem_trace[trace_at].last);
+            int32_t put = ldg_str_fmt(&status[pos], (uint64_t)(sizeof(status) - pos), &fmt_len, SCOPE_STATUS_MEM_FMT, ctx->mem_trace[trace_at].label, ctx->mem_trace[trace_at].last) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
             if (put < 0) { break; }
 
@@ -645,8 +646,8 @@ static uint32_t scope_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *re
 
     if (crosstalk_eda_ui_scope_freq_measure(ctx, &meas_hz) != LDG_ERR_AOK) { meas_hz = CROSSTALK_EDA_UI_SCOPE_HZ_NONE; }
 
-    if (ctx->src == (uint32_t)CROSSTALK_EDA_UI_SCOPE_SRC_SIG) { if (snprintf(status, sizeof(status), SCOPE_STATUS_SIG_FMT, ctx->sig, meas_hz, ctx->sig_step_ns, ctx->ns_per_div, ctx->volt_per_div) < 0) { return LDG_ERR_STR_FMT; } }
-    else if (snprintf(status, sizeof(status), SCOPE_STATUS_FMT, ctx->ref, ctx->pin, ctx->wave == (uint32_t)CROSSTALK_EDA_UI_SCOPE_WAVE_SINE ? SCOPE_WAVE_SINE_TEXT : SCOPE_WAVE_SQUARE_TEXT, ctx->amplitude, meas_hz, ctx->src_f_hz, ctx->ns_per_div, ctx->volt_per_div) < 0) { return LDG_ERR_STR_FMT; }
+    if (ctx->src == (uint32_t)CROSSTALK_EDA_UI_SCOPE_SRC_SIG) { if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, SCOPE_STATUS_SIG_FMT, ctx->sig, meas_hz, ctx->sig_step_ns, ctx->ns_per_div, ctx->volt_per_div) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; } }
+    else if (ldg_str_fmt(status, (uint64_t)sizeof(status), &fmt_len, SCOPE_STATUS_FMT, ctx->ref, ctx->pin, ctx->wave == (uint32_t)CROSSTALK_EDA_UI_SCOPE_WAVE_SINE ? SCOPE_WAVE_SINE_TEXT : SCOPE_WAVE_SQUARE_TEXT, ctx->amplitude, meas_hz, ctx->src_f_hz, ctx->ns_per_div, ctx->volt_per_div) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     return crosstalk_ui_cell_rgba_put(render, (uint32_t)SCOPE_ORIG_COL, plot_row_cunt, status, (uint64_t)sizeof(status), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
 }

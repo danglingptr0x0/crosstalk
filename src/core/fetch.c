@@ -762,9 +762,9 @@ uint32_t crosstalk_core_fetch_files_get(crosstalk_core_fetch_ctx_t *ctx, char *o
     if (ctx->file_cunt == 0) { return LDG_ERR_EMPTY; }
 
     ctx->def_cunt = 0;
-    memset(ctx->def_slot, 0x0, sizeof(ctx->def_slot));
-    memset(ctx->file_kept, 0x0, sizeof(ctx->file_kept));
-    memset(ctx->file_pkg, 0x0, sizeof(ctx->file_pkg));
+    memset(&ctx->def_slot[0], 0x0, sizeof(ctx->def_slot));
+    memset(&ctx->file_kept[0], 0x0, sizeof(ctx->file_kept));
+    memset(&ctx->file_pkg[0], 0x0, sizeof(ctx->file_pkg));
 
     for (idx = 0; idx < ctx->file_cunt; idx = idx + FETCH_STEP)
     {

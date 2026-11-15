@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 #include <dangling/logging/logging.h>
@@ -30,6 +31,7 @@
 
 static uint32_t tasks_items_build(crosstalk_reng_tasks_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     uint32_t idx = 0;
     uint32_t proj = 0;
 
@@ -46,7 +48,7 @@ static uint32_t tasks_items_build(crosstalk_reng_tasks_ctx_t *ctx)
 
         if (crosstalk_reng_task_get(ctx->reng, idx, &task) != LDG_ERR_AOK || task == 0x0 || task->proj != proj) { continue; }
 
-        if (snprintf(ctx->row_label[ctx->rows_cunt], sizeof(ctx->row_label[ctx->rows_cunt]), "%.4s; %.159s", task->done == LDG_TRUTH_TRUE ? TASKS_DONE_TEXT : TASKS_OPEN_TEXT, task->text) < 0) { break; }
+        if (ldg_str_fmt(ctx->row_label[ctx->rows_cunt], (uint64_t)sizeof(ctx->row_label[ctx->rows_cunt]), &fmt_len, "%.4s; %.159s", task->done == LDG_TRUTH_TRUE ? TASKS_DONE_TEXT : TASKS_OPEN_TEXT, task->text) != LDG_ERR_AOK) { break; }
 
         ctx->row_idx[ctx->rows_cunt] = idx;
         ctx->rows_cunt = ctx->rows_cunt + (uint32_t)TASKS_STEP;
@@ -141,6 +143,7 @@ static uint32_t tasks_list_draw(const crosstalk_reng_tasks_ctx_t *ctx, ldg_term_
 
 static uint32_t tasks_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_reng_tasks_ctx_t *ctx = (crosstalk_reng_tasks_ctx_t *)user;
     const crosstalk_reng_proj_t *proj = 0x0;
     char line[TASKS_LINE_CAP] = LDG_ARR_ZERO_INIT;
@@ -179,7 +182,7 @@ static uint32_t tasks_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *re
         if (crosstalk_reng_task_get(ctx->reng, ctx->row_idx[idx], &task) == LDG_ERR_AOK && task != 0x0 && task->done != LDG_TRUTH_TRUE) { open_cunt = open_cunt + (uint32_t)TASKS_STEP; }
     }
 
-    if (snprintf(line, sizeof(line), "%.63s; %u open; %u total", proj->name, open_cunt, ctx->rows_cunt) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%.63s; %u32 open; %u32 total", proj->name, open_cunt, ctx->rows_cunt) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)TASKS_ORIG_COL, (uint32_t)TASKS_ROW_HDR, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_LIVE_RGBA, 0x0);
     if (ret == LDG_ERR_AOK) { ret = tasks_entry_draw(ctx, render); }

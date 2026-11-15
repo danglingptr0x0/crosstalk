@@ -7,6 +7,7 @@
 #include <dangling/arch/dangcsa/dangcsa.h>
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 #include <dangling/logging/logging.h>
@@ -20,12 +21,12 @@
 #define CALC_ORIG_COL 0
 #define CALC_PROMPT_TEXT "> "
 #define CALC_HINT_TEXT "x = expr; \"text\" for ascii; dis expr; sig names live; expr[hi:lo]; mem[idx]; 1.3ms at clk; res = last; drag a result out"
-#define CALC_BYTE_FMT "%02X"
-#define CALC_BYTE_GAP_FMT " %02X"
+#define CALC_BYTE_FMT "%02X32"
+#define CALC_BYTE_GAP_FMT " %02X32"
 #define CALC_TEXT_CAP 32
 #define CALC_ORDER_LE_FMT "le: %.87s"
 #define CALC_ORDER_BE_FMT "be: %.87s"
-#define CALC_TEXT_LEN_FMT "text %u bytes; ascii: %.*s"
+#define CALC_TEXT_LEN_FMT "text %u32 bytes; ascii: %.*s"
 #define CALC_PREC_LOR 1
 #define CALC_PREC_XOR 2
 #define CALC_PREC_LAND 3
@@ -82,6 +83,7 @@ typedef struct calc_cursor
 {
     const char *text;
     uint32_t at;
+    uint8_t pudding[4];
 } calc_cursor_t;
 
 typedef struct calc_env
@@ -639,6 +641,7 @@ static void calc_ascii_fmt(uint64_t val, char *out, uint32_t cap)
 
 static uint32_t calc_bytes_fmt(uint64_t val, uint32_t byte_cunt, uint8_t rev, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     uint32_t used = 0;
     uint32_t idx = 0;
 
@@ -648,7 +651,7 @@ static uint32_t calc_bytes_fmt(uint64_t val, uint32_t byte_cunt, uint8_t rev, ch
     {
         uint32_t take = rev == LDG_TRUTH_TRUE ? byte_cunt - 0x1 - idx : idx;
         uint8_t by = (uint8_t)(val >> (take * (uint32_t)LDG_BYTE_BITS));
-        int32_t wrote = snprintf(out + used, cap - used, idx == 0 ? CALC_BYTE_FMT : CALC_BYTE_GAP_FMT, (uint32_t)by);
+        int32_t wrote = ldg_str_fmt(out + used, (uint64_t)(cap - used), &fmt_len, idx == 0 ? CALC_BYTE_FMT : CALC_BYTE_GAP_FMT, (uint32_t)by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
         if (wrote < 0 || (uint32_t)wrote >= cap - used) { return LDG_ERR_STR_TRUNC; }
 
@@ -681,6 +684,7 @@ static uint32_t calc_text_parse(const char *expr, uint8_t *out, uint32_t cap, ui
 
 static uint32_t calc_text_hex_fmt(const uint8_t *bytes, uint32_t len, uint8_t rev, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     uint32_t used = 0;
     uint32_t idx = 0;
 
@@ -689,7 +693,7 @@ static uint32_t calc_text_hex_fmt(const uint8_t *bytes, uint32_t len, uint8_t re
     for (idx = 0; idx < len; idx = idx + 0x1)
     {
         uint32_t take = rev == LDG_TRUTH_TRUE ? len - 0x1 - idx : idx;
-        int32_t wrote = snprintf(out + used, cap - used, idx == 0 ? CALC_BYTE_FMT : CALC_BYTE_GAP_FMT, (uint32_t)bytes[take]);
+        int32_t wrote = ldg_str_fmt(out + used, (uint64_t)(cap - used), &fmt_len, idx == 0 ? CALC_BYTE_FMT : CALC_BYTE_GAP_FMT, (uint32_t)bytes[take]) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
         if (wrote < 0 || (uint32_t)wrote >= cap - used) { return LDG_ERR_STR_TRUNC; }
 
@@ -713,6 +717,7 @@ static void calc_whole_mark(char *out, uint32_t cap)
 
 static uint32_t calc_fp32_fmt(uint64_t val, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     uint64_t bits = val & (uint64_t)CALC_FP32_MASK;
     uint32_t mant = (uint32_t)(bits & (uint64_t)CALC_FP32_MANT_MASK);
     uint32_t expo = (uint32_t)((bits >> (uint32_t)CALC_FP32_EXP_SHIFT) & (uint64_t)CALC_FP32_EXP_MASK);
@@ -734,7 +739,7 @@ static uint32_t calc_fp32_fmt(uint64_t val, char *out, uint32_t cap)
 
     if (neg_is == LDG_TRUTH_TRUE) { num = 0.0 - num; }
 
-    if (snprintf(out, cap, "%.*g", (int32_t)CALC_FP32_DIGITS, num) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.*g", (int32_t)CALC_FP32_DIGITS, num) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     calc_whole_mark(out, cap);
 
@@ -743,10 +748,11 @@ static uint32_t calc_fp32_fmt(uint64_t val, char *out, uint32_t cap)
 
 static uint32_t calc_fixed_fmt(uint64_t val, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     int32_t raw = (int32_t)(uint32_t)(val & (uint64_t)CALC_FP32_MASK);
     double num = (double)raw / CALC_FIXED_SCALE;
 
-    if (snprintf(out, cap, "%.*g", (int32_t)CALC_FIXED_DIGITS, num) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.*g", (int32_t)CALC_FIXED_DIGITS, num) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     calc_whole_mark(out, cap);
 
@@ -755,11 +761,12 @@ static uint32_t calc_fixed_fmt(uint64_t val, char *out, uint32_t cap)
 
 static uint32_t calc_fp64_fmt(uint64_t val, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     double num = 0.0;
 
     memcpy(&num, &val, sizeof(num));
 
-    if (snprintf(out, cap, "%.*g", (int32_t)CALC_FP64_DIGITS, num) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.*g", (int32_t)CALC_FP64_DIGITS, num) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     calc_whole_mark(out, cap);
 
@@ -768,23 +775,25 @@ static uint32_t calc_fp64_fmt(uint64_t val, char *out, uint32_t cap)
 
 static uint32_t calc_time_fmt(uint64_t cycles, uint64_t rate_hz, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     double secs = 0.0;
 
     if (rate_hz == 0) { out[0] = LDG_STR_TERM; return LDG_ERR_AOK; }
 
     secs = (double)cycles / (double)rate_hz;
 
-    if (secs < CALC_TIME_US_NS / CALC_TIME_S_NS) { return snprintf(out, cap, "%.4g ns @ %" PRIu64 " Hz", secs * CALC_TIME_S_NS, rate_hz) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (secs < CALC_TIME_US_NS / CALC_TIME_S_NS) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g ns @ %u64 Hz", secs * CALC_TIME_S_NS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
-    if (secs < CALC_TIME_MS_NS / CALC_TIME_S_NS) { return snprintf(out, cap, "%.4g us @ %" PRIu64 " Hz", secs * CALC_TIME_S_NS / CALC_TIME_US_NS, rate_hz) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (secs < CALC_TIME_MS_NS / CALC_TIME_S_NS) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g us @ %u64 Hz", secs * CALC_TIME_S_NS / CALC_TIME_US_NS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
-    if (secs < 1.0) { return snprintf(out, cap, "%.4g ms @ %" PRIu64 " Hz", secs * CALC_TIME_S_NS / CALC_TIME_MS_NS, rate_hz) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (secs < 1.0) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g ms @ %u64 Hz", secs * CALC_TIME_S_NS / CALC_TIME_MS_NS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
-    return snprintf(out, cap, "%.4g s @ %" PRIu64 " Hz", secs, rate_hz) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g s @ %u64 Hz", secs, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }
 
 static void calc_map_fmt(const crosstalk_eda_ui_calc_ctx_t *ctx, uint64_t val, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     const crosstalk_hdl_ir_t *ir = 0x0;
     const char *src = 0x0;
     uint32_t idx = 0;
@@ -815,7 +824,7 @@ static void calc_map_fmt(const crosstalk_eda_ui_calc_ctx_t *ctx, uint64_t val, c
         span = (uint64_t)ir->sigs[idx].depth * (uint64_t)CALC_MEM_WORD_BYTES;
         if (val < base || val >= base + span) { continue; }
 
-        if (snprintf(out, cap, "map: %.47s word 0x%" PRIX64, name, (val - base) / (uint64_t)CALC_MEM_WORD_BYTES) < 0) { out[0] = LDG_STR_TERM; }
+        if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "map: %.47s word 0x%X64", name, (val - base) / (uint64_t)CALC_MEM_WORD_BYTES) != LDG_ERR_AOK) { out[0] = LDG_STR_TERM; }
 
         return;
     }
@@ -823,6 +832,7 @@ static void calc_map_fmt(const crosstalk_eda_ui_calc_ctx_t *ctx, uint64_t val, c
 
 static uint32_t calc_dis_text(uint64_t val, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     ldg_dangcsa_decoded_t decoded = LDG_STRUCT_ZERO_INIT;
     char dangcsa_piece[CALC_DIS_PIECE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0;
@@ -830,13 +840,14 @@ static uint32_t calc_dis_text(uint64_t val, char *out, uint32_t cap)
     ret = ldg_dangcsa_decode(val, &decoded);
     if (ret == LDG_ERR_AOK) { ret = ldg_dangcsa_disasm(&decoded, dangcsa_piece, (uint64_t)sizeof(dangcsa_piece)); }
 
-    if (ret != LDG_ERR_AOK) { snprintf(dangcsa_piece, sizeof(dangcsa_piece), "invalid"); }
+    if (ret != LDG_ERR_AOK) { if (ldg_str_fmt(dangcsa_piece, (uint64_t)sizeof(dangcsa_piece), &fmt_len, "invalid") != LDG_ERR_AOK) { *(dangcsa_piece) = LDG_STR_TERM; } }
 
-    return snprintf(out, cap, "dangcsa: %.40s", dangcsa_piece) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "dangcsa: %.40s", dangcsa_piece) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }
 
 static void calc_hist_push(crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, const char *text, uint64_t val, uint8_t text_is)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_calc_hist_t *rec = 0x0;
 
     if (ctx->hist_cunt >= (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP)
@@ -848,9 +859,9 @@ static void calc_hist_push(crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, c
     rec = &ctx->hist[ctx->hist_cunt];
     memset(rec, 0x0, sizeof(*rec));
 
-    if (snprintf(rec->expr, sizeof(rec->expr), "%.63s", expr) < 0) { rec->expr[0] = LDG_STR_TERM; }
+    if (ldg_str_fmt(rec->expr, (uint64_t)sizeof(rec->expr), &fmt_len, "%.63s", expr) != LDG_ERR_AOK) { rec->expr[0] = LDG_STR_TERM; }
 
-    if (text != 0x0) { if (snprintf(rec->text, sizeof(rec->text), "%.95s", text) < 0) { rec->text[0] = LDG_STR_TERM; } }
+    if (text != 0x0) { if (ldg_str_fmt(rec->text, (uint64_t)sizeof(rec->text), &fmt_len, "%.95s", text) != LDG_ERR_AOK) { rec->text[0] = LDG_STR_TERM; } }
 
     rec->val = val;
     rec->text_is = text_is;
@@ -859,6 +870,7 @@ static void calc_hist_push(crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, c
 
 static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     calc_cursor_t cur = LDG_STRUCT_ZERO_INIT;
     char name[CROSSTALK_EDA_UI_CALC_VAR_NAME_CAP] = LDG_ARR_ZERO_INIT;
     char text[CROSSTALK_EDA_UI_CALC_HIST_TEXT_CAP] = LDG_ARR_ZERO_INIT;
@@ -901,7 +913,7 @@ static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
 
                 idx = ctx->var_cunt;
                 ctx->var_cunt = ctx->var_cunt + 0x1;
-                if (snprintf(ctx->var[idx].name, sizeof(ctx->var[idx].name), "%.23s", name) < 0) { ctx->var[idx].name[0] = LDG_STR_TERM; }
+                if (ldg_str_fmt(ctx->var[idx].name, (uint64_t)sizeof(ctx->var[idx].name), &fmt_len, "%.23s", name) != LDG_ERR_AOK) { ctx->var[idx].name[0] = LDG_STR_TERM; }
             }
 
             ctx->var[idx].val = val;
@@ -1067,9 +1079,9 @@ uint32_t crosstalk_eda_ui_calc_state_deserialize(crosstalk_eda_ui_calc_ctx_t *ct
     off = off + (uint32_t)sizeof(uint32_t);
     memcpy(&ctx->res_last, buff + off, sizeof(uint64_t));
     off = off + (uint32_t)sizeof(uint64_t);
-    memcpy(ctx->var, buff + off, sizeof(ctx->var));
+    memcpy(&ctx->var[0], buff + off, sizeof(ctx->var));
     off = off + (uint32_t)sizeof(ctx->var);
-    memcpy(ctx->hist, buff + off, sizeof(ctx->hist));
+    memcpy(&ctx->hist[0], buff + off, sizeof(ctx->hist));
 
     if (ctx->var_cunt > (uint32_t)CROSSTALK_EDA_UI_CALC_VAR_CAP) { ctx->var_cunt = CROSSTALK_EDA_UI_CALC_VAR_CAP; }
 
@@ -1151,6 +1163,7 @@ static uint32_t calc_line_put(ldg_term_render_t *render, uint32_t *row, const ch
 
 static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_calc_ctx_t *ctx = (crosstalk_eda_ui_calc_ctx_t *)user;
     char line[CROSSTALK_EDA_UI_CALC_LINE_CAP] = LDG_ARR_ZERO_INIT;
     char piece[CROSSTALK_EDA_UI_CALC_LINE_CAP] = LDG_ARR_ZERO_INIT;
@@ -1186,19 +1199,19 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
 
         if (calc_text_parse(ctx->expr, bytes, (uint32_t)sizeof(bytes), &len) == LDG_ERR_AOK)
         {
-            if (calc_text_hex_fmt(bytes, len, LDG_TRUTH_FALSE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && snprintf(line, sizeof(line), CALC_ORDER_LE_FMT, piece) > 0)
+            if (calc_text_hex_fmt(bytes, len, LDG_TRUTH_FALSE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CALC_ORDER_LE_FMT, piece) == LDG_ERR_AOK)
             {
                 ret = calc_line_put(render, &row, line, val_col);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
 
-            if (calc_text_hex_fmt(bytes, len, LDG_TRUTH_TRUE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && snprintf(line, sizeof(line), CALC_ORDER_BE_FMT, piece) > 0)
+            if (calc_text_hex_fmt(bytes, len, LDG_TRUTH_TRUE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CALC_ORDER_BE_FMT, piece) == LDG_ERR_AOK)
             {
                 ret = calc_line_put(render, &row, line, val_col);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
 
-            if (snprintf(line, sizeof(line), CALC_TEXT_LEN_FMT, len, (int32_t)len, &ctx->expr[LDG_STR_TERM_SIZE]) > 0)
+            if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CALC_TEXT_LEN_FMT, len, (int32_t)len, &ctx->expr[LDG_STR_TERM_SIZE]) == LDG_ERR_AOK)
             {
                 ret = calc_line_put(render, &row, line, label_col);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1228,7 +1241,7 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
     {
         calc_env_fill(ctx, &env);
 
-        if (snprintf(line, sizeof(line), "hex: 0x%" PRIX64, ctx->res) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "hex: 0x%X64", ctx->res) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = calc_line_put(render, &row, line, val_col);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1238,21 +1251,21 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
 
             if (byte_cunt == 0) { byte_cunt = LDG_STR_TERM_SIZE; }
 
-            if (calc_bytes_fmt(ctx->res, byte_cunt, LDG_TRUTH_FALSE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && snprintf(line, sizeof(line), CALC_ORDER_LE_FMT, piece) > 0)
+            if (calc_bytes_fmt(ctx->res, byte_cunt, LDG_TRUTH_FALSE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CALC_ORDER_LE_FMT, piece) == LDG_ERR_AOK)
             {
                 ret = calc_line_put(render, &row, line, val_col);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
 
-            if (calc_bytes_fmt(ctx->res, byte_cunt, LDG_TRUTH_TRUE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && snprintf(line, sizeof(line), CALC_ORDER_BE_FMT, piece) > 0)
+            if (calc_bytes_fmt(ctx->res, byte_cunt, LDG_TRUTH_TRUE, piece, (uint32_t)sizeof(piece)) == LDG_ERR_AOK && ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CALC_ORDER_BE_FMT, piece) == LDG_ERR_AOK)
             {
                 ret = calc_line_put(render, &row, line, val_col);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
         }
 
-        if ((ctx->res >> CALC_BIT_MAX) != 0) { ret = snprintf(line, sizeof(line), "dec: %" PRIu64 "; sig" "ned: %" PRId64, ctx->res, (int64_t)ctx->res) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
-        else { ret = snprintf(line, sizeof(line), "dec: %" PRIu64, ctx->res) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+        if ((ctx->res >> CALC_BIT_MAX) != 0) { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "dec: %u64; sig" "ned: %i64", ctx->res, (int64_t)ctx->res) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+        else { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "dec: %u64", ctx->res) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -1262,13 +1275,13 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         ret = calc_bin_fmt(ctx->res, piece, (uint32_t)sizeof(piece));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (snprintf(line, sizeof(line), "bin: %.87s", piece) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "bin: %.87s", piece) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = calc_line_put(render, &row, line, val_col);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         calc_ascii_fmt(ctx->res, piece, (uint32_t)sizeof(piece));
-        if (snprintf(line, sizeof(line), "width: %u; align: %" PRIu64 "; ones: %u; ascii: %.15s", calc_width_get(ctx->res), calc_align_get(ctx->res), calc_ones_get(ctx->res), piece) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "width: %u32; align: %u64; ones: %u32; ascii: %.15s", calc_width_get(ctx->res), calc_align_get(ctx->res), calc_ones_get(ctx->res), piece) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = calc_line_put(render, &row, line, val_col);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1289,9 +1302,9 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
                 ret = calc_fp64_fmt(ctx->res, fp64_text, (uint32_t)sizeof(fp64_text));
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (snprintf(line, sizeof(line), "fp32: %.39s; fp64: %.39s; fixed: %.39s", fp32_text, fp64_text, fixed_text) < 0) { return LDG_ERR_STR_FMT; }
+                if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "fp32: %.39s; fp64: %.39s; fixed: %.39s", fp32_text, fp64_text, fixed_text) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
             }
-            else if (snprintf(line, sizeof(line), "fp32: %.39s; fixed: %.39s", fp32_text, fixed_text) < 0) { return LDG_ERR_STR_FMT; }
+            else if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "fp32: %.39s; fixed: %.39s", fp32_text, fixed_text) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
             ret = calc_line_put(render, &row, line, val_col);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1302,7 +1315,7 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
             ret = calc_time_fmt(ctx->res, env.rate_hz, piece, (uint32_t)sizeof(piece));
             if (ret == LDG_ERR_AOK && piece[0] != LDG_STR_TERM)
             {
-                if (snprintf(line, sizeof(line), "time: %.87s", piece) < 0) { return LDG_ERR_STR_FMT; }
+                if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "time: %.87s", piece) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
                 ret = calc_line_put(render, &row, line, val_col);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1332,8 +1345,8 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
     {
         const crosstalk_eda_ui_calc_hist_t *rec = &ctx->hist[idx - 0x1];
 
-        if (rec->text_is == LDG_TRUTH_TRUE) { ret = snprintf(line, sizeof(line), "%.40s: %.79s", rec->expr, rec->text) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
-        else { ret = snprintf(line, sizeof(line), "%.56s = 0x%" PRIX64 " (%" PRIu64 ")", rec->expr, rec->val, rec->val) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+        if (rec->text_is == LDG_TRUTH_TRUE) { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%.40s: %.79s", rec->expr, rec->text) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+        else { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%.56s = 0x%X64 (%u64)", rec->expr, rec->val, rec->val) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 

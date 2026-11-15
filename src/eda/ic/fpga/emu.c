@@ -12,13 +12,14 @@
 #include <dangling/io/file.h>
 #include <dangling/io/path.h>
 #include <dangling/proto/emiemi.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/time/time.h>
 
 #include "core/log.h"
 #include "eda/ic/fpga/emu.h"
 
-#define EMU_DISK_BKP_FMT "%s.%" PRIu64 ".bkp"
+#define EMU_DISK_BKP_FMT "%.4000s.%u64.bkp"
 
 uint32_t crosstalk_eda_ic_fpga_emu_init(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
 {
@@ -520,13 +521,13 @@ static uint32_t emu_disk_bkp_wr(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, uint32_t d
     ldg_byte_t *bytes = 0x0;
     uint64_t got = 0;
     uint64_t done_len = 0;
-    int32_t written = 0;
+    uint64_t written = 0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    written = snprintf(bkp, sizeof(bkp), EMU_DISK_BKP_FMT, ctx->disk_path[drive], ldg_time_epoch_ms_get());
-    if (written < 0 || (uint64_t)written >= (uint64_t)sizeof(bkp)) { return LDG_ERR_STR_TRUNC; }
+    ret = ldg_str_fmt(bkp, (uint64_t)sizeof(bkp), &written, EMU_DISK_BKP_FMT, ctx->disk_path[drive], ldg_time_epoch_ms_get());
+    if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_io_path_info_get(ctx->disk_path[drive], &st);
     if (ret != LDG_ERR_AOK) { return ret; }

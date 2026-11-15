@@ -44,7 +44,7 @@ typedef struct crosstalk_re_cc_ctx
     uint32_t stop;
     uint8_t live;
     uint8_t ok;
-    uint8_t pudding[6];
+    uint8_t pudding[46];
 } crosstalk_re_cc_ctx_t;
 
 uint32_t crosstalk_re_cc_init(crosstalk_re_cc_ctx_t *ctx);

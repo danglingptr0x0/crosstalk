@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/core/types.h>
 #include <dangling/io/dir.h>
@@ -303,6 +304,7 @@ uint32_t crosstalk_game_board_name_sanitize(const char *name, char *out, uint32_
 
 uint32_t crosstalk_game_board_file_compose(const char *name, uint64_t epoch_sec, char *out, uint64_t out_size)
 {
+    uint64_t fmt_len = 0;
     char safe[CROSSTALK_GAME_BOARD_NAME_CAP] = LDG_ARR_ZERO_INIT;
     int32_t written = 0;
     uint32_t ret = 0;
@@ -316,7 +318,7 @@ uint32_t crosstalk_game_board_file_compose(const char *name, uint64_t epoch_sec,
     ret = crosstalk_game_board_name_sanitize(name, safe, (uint32_t)sizeof(safe));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    written = snprintf(out, out_size, "%.63s_%" PRIu64 "%.8s", safe, epoch_sec, CROSSTALK_GAME_BOARD_EXT);
+    written = ldg_str_fmt(out, (uint64_t)(out_size), &fmt_len, "%.63s_%u64%.8s", safe, epoch_sec, CROSSTALK_GAME_BOARD_EXT) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (LDG_UNLIKELY(written <= 0)) { return LDG_ERR_STR_FMT; }
 
     if (LDG_UNLIKELY((uint64_t)written >= out_size)) { return LDG_ERR_STR_TRUNC; }
@@ -326,6 +328,7 @@ uint32_t crosstalk_game_board_file_compose(const char *name, uint64_t epoch_sec,
 
 uint32_t crosstalk_game_board_ext_swap(const char *file, const char *ext, char *out, uint64_t out_size)
 {
+    uint64_t fmt_len = 0;
     char stem[CROSSTALK_GAME_BOARD_FILE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t len = 0;
     uint32_t dot = 0;
@@ -349,7 +352,7 @@ uint32_t crosstalk_game_board_ext_swap(const char *file, const char *ext, char *
 
     stem[dot] = LDG_STR_TERM;
 
-    written = snprintf(out, out_size, "%.127s%.8s", stem, ext);
+    written = ldg_str_fmt(out, (uint64_t)(out_size), &fmt_len, "%.127s%.8s", stem, ext) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
     if (LDG_UNLIKELY(written <= 0)) { return LDG_ERR_STR_FMT; }
 
     if (LDG_UNLIKELY((uint64_t)written >= out_size)) { return LDG_ERR_STR_TRUNC; }
@@ -359,6 +362,7 @@ uint32_t crosstalk_game_board_ext_swap(const char *file, const char *ext, char *
 
 uint32_t crosstalk_game_board_names_build(crosstalk_game_board_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     char safe_name[CROSSTALK_GAME_BOARD_NAME_CAP] = LDG_ARR_ZERO_INIT;
     const char *sep = 0x0;
     uint64_t used = 0;
@@ -382,7 +386,7 @@ uint32_t crosstalk_game_board_names_build(crosstalk_game_board_ctx_t *ctx)
 
         if (room == 0) { break; }
 
-        written = snprintf(&ctx->names[used], room, "%.1s%.63s", sep, safe_name);
+        written = ldg_str_fmt(&ctx->names[used], (uint64_t)(room), &fmt_len, "%.1s%.63s", sep, safe_name) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
         if (written <= 0) { break; }
 
         if ((uint64_t)written >= room)
@@ -399,6 +403,7 @@ uint32_t crosstalk_game_board_names_build(crosstalk_game_board_ctx_t *ctx)
 
 static uint32_t crosstalk_game_board_time_fmt(uint64_t epoch_sec, char *out, uint64_t out_size)
 {
+    uint64_t fmt_len = 0;
     ldg_time_cal_t cal = LDG_STRUCT_ZERO_INIT;
     uint32_t ret = 0;
 
@@ -411,7 +416,7 @@ static uint32_t crosstalk_game_board_time_fmt(uint64_t epoch_sec, char *out, uin
     ret = ldg_time_cal_get(epoch_sec, &cal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (LDG_UNLIKELY(snprintf(out, out_size, CROSSTALK_GAME_BOARD_TIME_FMT, cal.year, (uint32_t)cal.month, (uint32_t)cal.day, (uint32_t)cal.hour, (uint32_t)cal.minute, (uint32_t)cal.second) < 0))
+    if (LDG_UNLIKELY(ldg_str_fmt(out, (uint64_t)(out_size), &fmt_len, CROSSTALK_GAME_BOARD_TIME_FMT, cal.year, (uint32_t)cal.month, (uint32_t)cal.day, (uint32_t)cal.hour, (uint32_t)cal.minute, (uint32_t)cal.second) != LDG_ERR_AOK))
     {
         out[0] = LDG_STR_TERM;
 
@@ -423,15 +428,16 @@ static uint32_t crosstalk_game_board_time_fmt(uint64_t epoch_sec, char *out, uin
 
 uint32_t crosstalk_game_board_size_fmt(uint64_t bytes, char *out, uint64_t out_size)
 {
+    uint64_t fmt_len = 0;
     int32_t written = 0;
 
     if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(out_size == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (bytes >= LDG_GIB) { written = snprintf(out, out_size, "%" PRIu64 "G", (uint64_t)(bytes / LDG_GIB)); }
-    else if (bytes >= LDG_MIB) { written = snprintf(out, out_size, "%" PRIu64 "M", (uint64_t)(bytes / LDG_MIB)); }
-    else { written = snprintf(out, out_size, "%" PRIu64 "K", (uint64_t)(bytes / LDG_KIB)); }
+    if (bytes >= LDG_GIB) { written = ldg_str_fmt(out, (uint64_t)(out_size), &fmt_len, "%u64G", (uint64_t)(bytes / LDG_GIB)) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if (bytes >= LDG_MIB) { written = ldg_str_fmt(out, (uint64_t)(out_size), &fmt_len, "%u64M", (uint64_t)(bytes / LDG_MIB)) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else { written = ldg_str_fmt(out, (uint64_t)(out_size), &fmt_len, "%u64K", (uint64_t)(bytes / LDG_KIB)) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
 
     if (LDG_UNLIKELY(written <= 0)) { return LDG_ERR_STR_FMT; }
 
@@ -442,6 +448,7 @@ uint32_t crosstalk_game_board_size_fmt(uint64_t bytes, char *out, uint64_t out_s
 
 uint32_t crosstalk_game_board_items_build(crosstalk_game_board_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     char row[CROSSTALK_GAME_BOARD_ROW_CAP] = LDG_ARR_ZERO_INIT;
     char safe_name[CROSSTALK_GAME_BOARD_NAME_CAP] = LDG_ARR_ZERO_INIT;
     char safe_author[CROSSTALK_GAME_AUTHOR_NAME_CAP] = LDG_ARR_ZERO_INIT;
@@ -461,7 +468,7 @@ uint32_t crosstalk_game_board_items_build(crosstalk_game_board_ctx_t *ctx)
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     ctx->items[0] = LDG_STR_TERM;
-    memset(ctx->lock, 0x0, sizeof(ctx->lock));
+    memset(&ctx->lock[0], 0x0, sizeof(ctx->lock));
 
     for (idx = 0; idx < ctx->cunt; idx = idx + 1)
     {
@@ -486,7 +493,7 @@ uint32_t crosstalk_game_board_items_build(crosstalk_game_board_ctx_t *ctx)
             {
                 for (col = 0; safe_tag[col] != LDG_STR_TERM; col = col + 1) { if (safe_tag[col] == ';') { safe_tag[col] = '_'; } }
 
-                written = snprintf(mark_text, sizeof(mark_text), "[%.31s] ", safe_tag);
+                written = ldg_str_fmt(mark_text, (uint64_t)sizeof(mark_text), &fmt_len, "[%.31s] ", safe_tag) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
                 if (written <= 0) { mark_text[0] = LDG_STR_TERM; }
             }
 
@@ -501,7 +508,7 @@ uint32_t crosstalk_game_board_items_build(crosstalk_game_board_ctx_t *ctx)
 
         if (crosstalk_game_board_time_fmt(ctx->entry[idx].epoch_sec, time_text, (uint64_t)sizeof(time_text)) != LDG_ERR_AOK) { time_text[0] = LDG_STR_TERM; }
 
-        written = snprintf(row, sizeof(row), CROSSTALK_GAME_BOARD_ROW_FMT, sep, lock_mark, mark, safe_name, time_text, author, contents);
+        written = ldg_str_fmt(row, (uint64_t)sizeof(row), &fmt_len, CROSSTALK_GAME_BOARD_ROW_FMT, sep, lock_mark, mark, safe_name, time_text, author, contents) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
         if (written <= 0) { continue; }
 
         if (used + (uint64_t)written >= (uint64_t)sizeof(ctx->items))

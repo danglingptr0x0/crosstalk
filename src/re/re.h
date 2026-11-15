@@ -15,11 +15,12 @@ typedef struct crosstalk_re_ctx
     crosstalk_re_img_ctx_t img;
     crosstalk_re_db_ctx_t db;
     crosstalk_re_diff_ctx_t diff;
+    uint8_t diff_pudding[16];
     crosstalk_re_cc_ctx_t cc;
     crosstalk_hdl_elf_ctx_t cand_elf;
     uint32_t db_gen_seen;
     uint8_t ok;
-    uint8_t pudding[3];
+    uint8_t pudding[35];
 } crosstalk_re_ctx_t;
 
 uint32_t crosstalk_re_init(crosstalk_re_ctx_t *ctx);

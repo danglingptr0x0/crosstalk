@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -22,9 +23,9 @@
 #define ANALYZER_BUS_LABEL_MIN_CELLS 6
 #define ANALYZER_CELL_MID_DIV 2
 #define ANALYZER_HINT_TEXT "analyzer <sigs|arr[i]|arr[lo:hi]>; up to 4 lanes; analyzer span <cycles>; analyzer off"
-#define ANALYZER_HDR_FMT "span %" PRIu64 " cycles; t %" PRIu64
-#define ANALYZER_LABEL_FMT "%.12s 0x%" PRIX64
-#define ANALYZER_BUS_LABEL_FMT "%" PRIX64
+#define ANALYZER_HDR_FMT "span %u64 cycles; t %u64"
+#define ANALYZER_LABEL_FMT "%.12s 0x%X64"
+#define ANALYZER_BUS_LABEL_FMT "%X64"
 #define ANALYZER_LINE_CAP 96
 #define ANALYZER_DRAIN_CAP 256
 #define ANALYZER_BIT_WIDTH 1
@@ -138,7 +139,7 @@ uint32_t crosstalk_eda_ui_analyzer_rst(crosstalk_eda_ui_analyzer_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    memset(ctx->lane, 0x0, sizeof(ctx->lane));
+    memset(&ctx->lane[0], 0x0, sizeof(ctx->lane));
     ctx->lane_cunt = 0;
 
     return LDG_ERR_AOK;
@@ -186,6 +187,7 @@ typedef struct analyzer_lane_geom
 
 static uint32_t analyzer_lane_draw(ldg_term_render_t *render, const crosstalk_eda_ui_analyzer_lane_t *lane, uint32_t rgba, const analyzer_lane_geom_t *geom, uint64_t win_lo, uint64_t win_hi)
 {
+    uint64_t fmt_len = 0;
     char text[ANALYZER_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t seg_x = 0;
     uint32_t seg_val_y = 0;
@@ -199,7 +201,7 @@ static uint32_t analyzer_lane_draw(ldg_term_render_t *render, const crosstalk_ed
 
     seg_x = geom->x_s;
 
-    if (snprintf(text, sizeof(text), ANALYZER_LABEL_FMT, lane->name, lane->last_val) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, ANALYZER_LABEL_FMT, lane->name, lane->last_val) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)ANALYZER_ORIG_COL, geom->row + (uint32_t)ANALYZER_LANE_MID_ROW, text, (uint64_t)sizeof(text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -247,7 +249,7 @@ static uint32_t analyzer_lane_draw(ldg_term_render_t *render, const crosstalk_ed
 
             if (lane->width != (uint32_t)ANALYZER_BIT_WIDTH && at_x - seg_x >= (uint32_t)ANALYZER_BUS_LABEL_MIN_CELLS * geom->sample_col)
             {
-                if (snprintf(text, sizeof(text), ANALYZER_BUS_LABEL_FMT, seg_val) < 0) { return LDG_ERR_STR_FMT; }
+                if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, ANALYZER_BUS_LABEL_FMT, seg_val) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
                 ret = crosstalk_ui_cell_rgba_put(render, seg_x / geom->sample_col + (uint32_t)ANALYZER_STEP, geom->row, text, (uint64_t)sizeof(text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -273,6 +275,7 @@ static uint32_t analyzer_lane_draw(ldg_term_render_t *render, const crosstalk_ed
 
 static uint32_t analyzer_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_analyzer_ctx_t *ctx = (crosstalk_eda_ui_analyzer_ctx_t *)user;
     char text[ANALYZER_LINE_CAP] = LDG_ARR_ZERO_INIT;
     const uint32_t lane_rgba[CROSSTALK_EDA_UI_ANALYZER_LANE_CAP] = { CROSSTALK_UI_THEME_LIVE_RGBA, CROSSTALK_UI_THEME_MARK_RGBA, CROSSTALK_UI_THEME_HOT_RGBA, CROSSTALK_UI_THEME_TEXT_RGBA };
@@ -306,7 +309,7 @@ static uint32_t analyzer_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
 
     win_lo = t_hi > ctx->span ? t_hi - ctx->span : (uint64_t)ANALYZER_CYCLE_ORIG;
 
-    if (snprintf(text, sizeof(text), ANALYZER_HDR_FMT, ctx->span, t_hi) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, ANALYZER_HDR_FMT, ctx->span, t_hi) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)ANALYZER_ORIG_COL, (uint32_t)ANALYZER_HDR_ROW, text, (uint64_t)sizeof(text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

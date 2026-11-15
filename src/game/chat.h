@@ -60,7 +60,7 @@ typedef struct crosstalk_game_chat_ctx
     uint8_t discord_live;
     uint8_t unseen;
     uint8_t nogo;
-    uint8_t pudding[1];
+    uint8_t pudding[5];
 } crosstalk_game_chat_ctx_t;
 
 uint32_t crosstalk_game_chat_init(crosstalk_game_chat_ctx_t *ctx);

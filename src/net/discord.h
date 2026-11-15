@@ -134,7 +134,7 @@ typedef struct crosstalk_net_discord_contact
     uint8_t provisional;
     uint8_t activity;
     uint8_t ours;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_net_discord_contact_t;
 
 typedef struct crosstalk_net_discord_dev
@@ -233,6 +233,7 @@ typedef struct crosstalk_net_discord_ctx
     uint8_t contact_primed;
     uint8_t guild_member;
     uint8_t guild_req;
+    uint8_t pudding[2];
 } crosstalk_net_discord_ctx_t;
 
 uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t app_id, uint32_t steam_app_id);

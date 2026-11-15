@@ -133,7 +133,7 @@ typedef struct crosstalk_eda_ui_scope_ctx
     uint8_t open;
     uint8_t live;
     uint8_t ok;
-    uint8_t pudding[1];
+    uint8_t pudding[5];
 } crosstalk_eda_ui_scope_ctx_t;
 
 uint32_t crosstalk_eda_ui_scope_init(crosstalk_eda_ui_scope_ctx_t *ctx);

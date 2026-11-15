@@ -7,6 +7,7 @@
 #include <math.h>
 
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 
 #define SETTINGS_DOUBLE_CUNT 40
@@ -563,9 +564,10 @@ uint32_t crosstalk_game_settings_keybind_conflict_get(const uint32_t *binds, uin
 
 static uint32_t settings_keybind_fkey_fmt(uint32_t code, char *out, uint64_t cap)
 {
+    uint64_t fmt_len = 0;
     if (code < (uint32_t)LDG_TERM_KEY_F1 || code > (uint32_t)LDG_TERM_KEY_F12) { return LDG_ERR_NOT_FOUND; }
 
-    return snprintf(out, cap, "F%u", code - (uint32_t)LDG_TERM_KEY_F1 + (uint32_t)SETTINGS_KEYBIND_FKEY_FIRST_NUM) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "F%u32", code - (uint32_t)LDG_TERM_KEY_F1 + (uint32_t)SETTINGS_KEYBIND_FKEY_FIRST_NUM) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }
 
 static const char* settings_keybind_vim_name_get(uint32_t code)
@@ -629,6 +631,7 @@ static uint32_t settings_keybind_upper_get(uint32_t code)
 
 uint32_t crosstalk_game_settings_keybind_vim_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     char key[SETTINGS_KEYBIND_KEY_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     const char *ctrl = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL) != 0 ? "C-" : "";
     const char *shift = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT) != 0 ? "S-" : "";
@@ -641,7 +644,7 @@ uint32_t crosstalk_game_settings_keybind_vim_fmt(uint32_t action, uint32_t chord
 
     if (LDG_UNLIKELY(cap == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (chord == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { return snprintf(out, cap, "%.15s", "unbound") < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (chord == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.15s", "unbound") != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
     set = settings_keybind_set_get(action);
 
@@ -661,16 +664,17 @@ uint32_t crosstalk_game_settings_keybind_vim_fmt(uint32_t action, uint32_t chord
     {
         key[0] = (char)code;
 
-        if ((chord & (uint32_t)CROSSTALK_GAME_KEYBIND_MOD_MASK) == 0) { return snprintf(out, cap, "%.15s", key) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+        if ((chord & (uint32_t)CROSSTALK_GAME_KEYBIND_MOD_MASK) == 0) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.15s", key) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
         name = key;
     }
 
-    return snprintf(out, cap, "<%.2s%.2s%.2s%.15s>", ctrl, shift, alt, name) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "<%.2s%.2s%.2s%.15s>", ctrl, shift, alt, name) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }
 
 uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chord, char *out, uint32_t cap)
 {
+    uint64_t fmt_len = 0;
     char key[SETTINGS_KEYBIND_KEY_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     const char *alt = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_ALT) != 0 ? "M-" : "";
     const char *hat = (chord & (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL) != 0 ? "^" : "";
@@ -685,7 +689,7 @@ uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chor
 
     if (LDG_UNLIKELY(cap == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    if (chord == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { return snprintf(out, cap, "%.15s", "unbound") < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (chord == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.15s", "unbound") != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
     set = settings_keybind_set_get(action);
 
@@ -693,7 +697,7 @@ uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chor
     else if (set == (uint32_t)SETTINGS_KEYBIND_SET_DIGITS) { name = "0..9"; }
     else if (set != (uint32_t)SETTINGS_KEYBIND_SET_NONE)
     {
-        if (ctrl_on != LDG_TRUTH_TRUE && shift_on == LDG_TRUTH_TRUE) { return snprintf(out, cap, "%.2s%.23s", alt, "HJKL/Shiftarrows") < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+        if (ctrl_on != LDG_TRUTH_TRUE && shift_on == LDG_TRUTH_TRUE) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.2s%.23s", alt, "HJKL/Shiftarrows") != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
         name = "hjkl/arrows";
     }
@@ -717,8 +721,8 @@ uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chor
     {
         key[0] = (char)(shift_on == LDG_TRUTH_TRUE ? settings_keybind_shifted_get(code) : code);
 
-        return snprintf(out, cap, "%.2s%.15s", alt, key) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+        return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.2s%.15s", alt, key) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
     }
 
-    return snprintf(out, cap, "%.2s%.1s%.5s%.15s", alt, hat, shift, name) < 0 ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
+    return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.2s%.1s%.5s%.15s", alt, hat, shift, name) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }

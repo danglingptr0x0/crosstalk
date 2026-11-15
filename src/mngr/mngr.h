@@ -22,7 +22,7 @@ typedef struct crosstalk_mngr_ctx
     uint32_t cunt;
     uint32_t sel;
     uint8_t ok;
-    uint8_t pudding[3];
+    uint8_t pudding[7];
 } crosstalk_mngr_ctx_t;
 
 uint32_t crosstalk_mngr_init(crosstalk_mngr_ctx_t *ctx);

@@ -70,7 +70,7 @@
 #define CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_MENU "menu"
 #define CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_ACTIVITY "activity"
 #define CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_OP "op"
-#define CROSSTALK_NET_LIBRESTEAM_PRESENCE_CONNECT_FMT "+connect_lobby %" PRIu64
+#define CROSSTALK_NET_LIBRESTEAM_PRESENCE_CONNECT_FMT "+connect_lobby %u64"
 #define CROSSTALK_NET_LIBRESTEAM_PRESENCE_CONNECT_CAP 48
 #define CROSSTALK_NET_LIBRESTEAM_PRESENCE_GROUP_CLEAR 0
 #define CROSSTALK_NET_LIBRESTEAM_PRESENCE_VAL_CLEAR ""
@@ -258,6 +258,7 @@ typedef struct crosstalk_net_libresteam_ctx
     uint32_t notice_hd;
     uint32_t notice_cunt;
     uint32_t wire_seq;
+    uint8_t wire_pudding[4];
     uint8_t *snap_buff;
     uint32_t snap_cap;
     uint32_t snap_len;

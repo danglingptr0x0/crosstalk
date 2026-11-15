@@ -5,6 +5,7 @@
 
 #include <dangling/arch/dangcsa/dangcsa.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -17,7 +18,7 @@
 #define PIPEVIEW_HINT_ROW 0
 #define PIPEVIEW_DEAD_FMT "%-12.12s %.39s"
 #define PIPEVIEW_FLASH_FRAMES 20
-#define PIPEVIEW_ROW_FMT "%-12.12s %08" PRIX64 " %.39s"
+#define PIPEVIEW_ROW_FMT "%-12.12s %08X64 %.39s"
 #define PIPEVIEW_LINE_CAP 112
 #define PIPEVIEW_HINT_TEXT "pipeview <stage sigs>; one insn-word sig per stage (in order)"
 #define PIPEVIEW_DEAD_TEXT "stage sig not found"
@@ -80,8 +81,8 @@ uint32_t crosstalk_eda_ui_pipeview_stages_set(crosstalk_eda_ui_pipeview_ctx_t *c
     if (cunt == 0) { return LDG_ERR_STR_EMPTY; }
 
     ctx->stage_cunt = cunt;
-    memset(ctx->prev, 0x0, sizeof(ctx->prev));
-    memset(ctx->flash, 0x0, sizeof(ctx->flash));
+    memset(&ctx->prev[0], 0x0, sizeof(ctx->prev));
+    memset(&ctx->flash[0], 0x0, sizeof(ctx->flash));
 
     return LDG_ERR_AOK;
 }
@@ -105,6 +106,7 @@ uint8_t crosstalk_eda_ui_pipeview_open_is(const crosstalk_eda_ui_pipeview_ctx_t 
 
 static uint32_t pipeview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_pipeview_ctx_t *ctx = (crosstalk_eda_ui_pipeview_ctx_t *)user;
     char asm_text[LDG_DANGCSA_DISASM_BUFF_MIN] = LDG_ARR_ZERO_INIT;
     char line[PIPEVIEW_LINE_CAP] = LDG_ARR_ZERO_INIT;
@@ -127,7 +129,7 @@ static uint32_t pipeview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
     {
         if (crosstalk_eda_ic_fpga_sig_peek(ctx->fpga, ctx->slot, ctx->stage_sig[idx], &word, &width) != LDG_ERR_AOK)
         {
-            if (snprintf(line, sizeof(line), PIPEVIEW_DEAD_FMT, ctx->stage_sig[idx], PIPEVIEW_DEAD_TEXT) < 0) { return LDG_ERR_STR_FMT; }
+            if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PIPEVIEW_DEAD_FMT, ctx->stage_sig[idx], PIPEVIEW_DEAD_TEXT) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
             ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PIPEVIEW_ORIG_COL, row, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, 0x0);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -144,7 +146,7 @@ static uint32_t pipeview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
 
         if (ldg_dangcsa_decode(word, &decoded) != LDG_ERR_AOK || ldg_dangcsa_disasm(&decoded, asm_text, sizeof(asm_text)) != LDG_ERR_AOK) { if (ldg_str_rbrcpy(asm_text, PIPEVIEW_ASM_FAIL_TEXT, sizeof(asm_text)) != LDG_ERR_AOK) { return LDG_ERR_STR_TRUNC; } }
 
-        if (snprintf(line, sizeof(line), PIPEVIEW_ROW_FMT, ctx->stage_sig[idx], word, asm_text) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PIPEVIEW_ROW_FMT, ctx->stage_sig[idx], word, asm_text) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PIPEVIEW_ORIG_COL, row, line, (uint64_t)sizeof(line), ctx->flash[idx] != 0 ? (uint32_t)CROSSTALK_UI_THEME_LIVE_RGBA : (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

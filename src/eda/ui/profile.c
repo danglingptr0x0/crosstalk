@@ -5,6 +5,7 @@
 
 #include <dangling/core/bits.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
 #include <dangling/str/str.h>
 
@@ -39,14 +40,14 @@
 #define PROFILE_KEY_EVT_PREV '['
 #define PROFILE_KEY_EVT_NEXT ']'
 #define PROFILE_NO_DATA_TEXT "no profile data; emit and run a design"
-#define PROFILE_SEL_FMT "cycle %" PRIu64 ": total %" PRIu64 " host cyc | comb %" PRIu64 " (%5.1F%%) | blocks %" PRIu64 " (%5.1F%%) | commit %" PRIu64 " (%5.1F%%)"
+#define PROFILE_SEL_FMT "cycle %u64: total %u64 host cyc | comb %u64 (%5.1F%%) | blocks %u64 (%5.1F%%) | commit %u64 (%5.1F%%)"
 #define PROFILE_SEL_NONE_TEXT "click the timeline to inspect a simulated cycle"
-#define PROFILE_AGG_HDR_LIVE_FMT "live totals over %" PRIu64 " cycles; host cyc per site; click a row for detail:"
-#define PROFILE_AGG_HDR_EVT_FMT "capture %.23s over %" PRIu64 " cycles; host cyc per site; click a row for detail:"
-#define PROFILE_AGG_ROW_FMT "%-20.20s %14" PRIu64 " %12" PRIu64 " x %5.1F%%"
-#define PROFILE_DENSITY_FMT "design %" PRIu64 " ops; %.1F host cyc per sim cycle; %.3F evaluations per host cycle"
+#define PROFILE_AGG_HDR_LIVE_FMT "live totals over %u64 cycles; host cyc per site; click a row for detail:"
+#define PROFILE_AGG_HDR_EVT_FMT "capture %.23s over %u64 cycles; host cyc per site; click a row for detail:"
+#define PROFILE_AGG_ROW_FMT "%-20.20s %14u64 %12u64 x %5.1F%%"
+#define PROFILE_DENSITY_FMT "design %u64 ops; %.1F host cyc per sim cycle; %.3F evaluations per host cycle"
 #define PROFILE_DENSITY_NONE_TEXT "evaluation density: needs a run; no host cycles recorded yet"
-#define PROFILE_GATING_FMT "gating: %.1F of %" PRIu64 " regions per sim cycle; %.1F%% of the design touched"
+#define PROFILE_GATING_FMT "gating: %.1F of %u64 regions per sim cycle; %.1F%% of the design touched"
 #define PROFILE_GATING_NONE_TEXT "gating: no activity regions in this design; re-emit if this is unexpected"
 #define PROFILE_BTN_START_TEXT "[start]"
 #define PROFILE_BTN_END_TEXT "[end]"
@@ -55,19 +56,19 @@
 #define PROFILE_STATE_REC_FMT "recording: %.23s"
 #define PROFILE_STATE_VIEW_FMT "viewing capture: %.23s"
 #define PROFILE_STATE_LIVE_TEXT "live"
-#define PROFILE_EVT_CHIP_FMT "%.10s %9" PRIu64
-#define PROFILE_EVT_NAME_FMT "evt%u"
+#define PROFILE_EVT_CHIP_FMT "%.10s %9u64"
+#define PROFILE_EVT_NAME_FMT "evt%u32"
 #define PROFILE_NAME_FMT "%.23s"
 #define PROFILE_LBL_COMB_TEXT "comb"
 #define PROFILE_LBL_CMT_TEXT "commit"
-#define PROFILE_LBL_BLK_FMT "b%u %.31s"
-#define PROFILE_SUB_ORDER_FMT "order stream %14" PRIu64 " %5.1F%% | ops %" PRIu64
-#define PROFILE_SUB_HD_FMT "residue hea" "ds %14" PRIu64 " %5.1F%% | residue ops %" PRIu64
-#define PROFILE_SUB_CORE_FMT "residue core %14" PRIu64 " %5.1F%% | passes avg %5.2F | core ops %" PRIu64
-#define PROFILE_SUB_TAILS_FMT "residue tails %14" PRIu64 " %5.1F%%"
-#define PROFILE_SUB_REGWR_FMT "reg writes %" PRIu64 " | avg %6.2F per commit | staged slots %" PRIu64
-#define PROFILE_SUB_MEMWR_FMT "mem writes %" PRIu64
-#define PROFILE_SUB_BLK_FMT "fires %" PRIu64 " | avg %" PRIu64 " host cyc per fire"
+#define PROFILE_LBL_BLK_FMT "b%u32 %.31s"
+#define PROFILE_SUB_ORDER_FMT "order stream %14u64 %5.1F%% | ops %u64"
+#define PROFILE_SUB_HD_FMT "residue hea" "ds %14u64 %5.1F%% | residue ops %u64"
+#define PROFILE_SUB_CORE_FMT "residue core %14u64 %5.1F%% | passes avg %5.2F | core ops %u64"
+#define PROFILE_SUB_TAILS_FMT "residue tails %14u64 %5.1F%%"
+#define PROFILE_SUB_REGWR_FMT "reg writes %u64 | avg %6.2F per commit | staged slots %u64"
+#define PROFILE_SUB_MEMWR_FMT "mem writes %u64"
+#define PROFILE_SUB_BLK_FMT "fires %u64 | avg %u64 host cyc per fire"
 #define PROFILE_SUB_ORDER_AT 0
 #define PROFILE_SUB_HD_AT 1
 #define PROFILE_SUB_CORE_AT 2
@@ -88,15 +89,14 @@
 #define PROFILE_TAB_PROG_TEXT "[prog]"
 #define PROFILE_TAB_EMU_TEXT "[emu]"
 #define PROFILE_EMU_NONE_TEXT "no emulator counters; needs a plugin with prof en and kinds 16 to 19"
-#define PROFILE_EMU_HOST_FMT "retired %" PRIu64 "; host %" PRIu64 " ms; %.2F MHz; %.1F host cyc per insn"
-#define PROFILE_EMU_MEM_FMT "ram rd %" PRIu64 "; ram wr %" PRIu64 "; io rd %" PRIu64 "; io wr %" PRIu64
+#define PROFILE_EMU_HOST_FMT "retired %u64; host %u64 ms; %.2F MHz; %.1F host cyc per insn"
+#define PROFILE_EMU_MEM_FMT "ram rd %u64; ram wr %u64; io rd %u64; io wr %u64"
 #define PROFILE_EMU_TRAP_HDR_TEXT "traps by cause:"
-#define PROFILE_EMU_TRAP_FMT "%.15s %" PRIu64 " x"
+#define PROFILE_EMU_TRAP_FMT "%.15s %u64 x"
 #define PROFILE_EMU_TRAP_NONE_TEXT "no traps taken"
 #define PROFILE_EMU_OP_HDR_TEXT "opcode histogram, hottest first:"
-#define PROFILE_EMU_OP_FMT "opcode %02" PRIX32 "; %" PRIu64 " x; %.1F%%"
+#define PROFILE_EMU_OP_FMT "opcode %02X32; %u64 x; %.1F%%"
 #define PROFILE_EMU_OP_ROWS 12
-#define PROFILE_EMU_MS_PER_SEC 1000000.0
 #define PROFILE_EMU_HZ_PER_MHZ 1000000.0
 #define PROFILE_PROG_HASH_MUL 0x9E3779B97F4A7C15ULL
 #define PROFILE_PROG_PROBE_MAX 8
@@ -104,20 +104,20 @@
 #define PROFILE_PROG_FRAME_SHIFT 12
 #define PROFILE_PROG_TOP_ROWS 12
 #define PROFILE_PROG_FRAME_ROWS 6
-#define PROFILE_PROG_HDR_FMT "guest samples %" PRIu64 " over the program counter; 1 per 64 cycles; dropped %" PRIu64 "; reset clears"
+#define PROFILE_PROG_HDR_FMT "guest samples %u64 over the program counter; 1 per 64 cycles; dropped %u64; reset clears"
 #define PROFILE_PROG_ADDR_HDR_TEXT "hot addresses:"
 #define PROFILE_PROG_FN_HDR_TEXT "hot functions (from the call frames):"
 #define PROFILE_PROG_FN_NONE_TEXT "no functions found; needs symbols and a call frame in view"
-#define PROFILE_PROG_FN_ROW_FMT "%08" PRIX64 ": %.63s; %" PRIu64 " x; %.1F%%"
+#define PROFILE_PROG_FN_ROW_FMT "%08X64: %.63s; %u64 x; %.1F%%"
 #define PROFILE_PROG_FN_ROWS 12
 #define PROFILE_PROG_FRAME_HDR_TEXT "hot frames (4K):"
-#define PROFILE_PROG_ROW_FMT "%012" PRIX64 "; %" PRIu64 " x; %.1F%%"
-#define PROFILE_PROG_ROW_SYM_FMT "%012" PRIX64 ": %s; %" PRIu64 " x; %.1F%%"
-#define PROFILE_PROG_FRAME_FMT "%012" PRIX64 "; %" PRIu32 " x; %.1F%%"
-#define PROFILE_PROG_FRAME_SYM_FMT "%012" PRIX64 ": %s; %" PRIu32 " x; %.1F%%"
+#define PROFILE_PROG_ROW_FMT "%012X64; %u64 x; %.1F%%"
+#define PROFILE_PROG_ROW_SYM_FMT "%012X64: %s; %u64 x; %.1F%%"
+#define PROFILE_PROG_FRAME_FMT "%012X64; %u32 x; %.1F%%"
+#define PROFILE_PROG_FRAME_SYM_FMT "%012X64: %s; %u32 x; %.1F%%"
 #define PROFILE_PROG_NONE_TEXT "no guest samples; needs a running design with a loc signal"
 
-static uint32_t profile_state_pull(crosstalk_eda_ui_profile_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint32_t kind, uint64_t *dst, uint32_t cap)
+static uint32_t profile_state_pull(const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint32_t kind, uint64_t *dst, uint32_t cap)
 {
     uint64_t *base = 0x0;
     uint32_t cunt = 0;
@@ -247,10 +247,11 @@ uint8_t crosstalk_eda_ui_profile_open_is(const crosstalk_eda_ui_profile_ctx_t *c
 
 uint32_t crosstalk_eda_ui_profile_mark_start(crosstalk_eda_ui_profile_ctx_t *ctx, const char *name)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (name == 0x0 || name[0] == LDG_STR_TERM) { snprintf(ctx->pending_name, sizeof(ctx->pending_name), PROFILE_EVT_NAME_FMT, ctx->evt_next); }
-    else { snprintf(ctx->pending_name, sizeof(ctx->pending_name), PROFILE_NAME_FMT, name); }
+    if (name == 0x0 || name[0] == LDG_STR_TERM) { if (ldg_str_fmt(ctx->pending_name, (uint64_t)sizeof(ctx->pending_name), &fmt_len, PROFILE_EVT_NAME_FMT, ctx->evt_next) != LDG_ERR_AOK) { *(ctx->pending_name) = LDG_STR_TERM; } }
+    else { if (ldg_str_fmt(ctx->pending_name, (uint64_t)sizeof(ctx->pending_name), &fmt_len, PROFILE_NAME_FMT, name) != LDG_ERR_AOK) { *(ctx->pending_name) = LDG_STR_TERM; } }
 
     ctx->pending_start = LDG_TRUTH_TRUE;
 
@@ -284,13 +285,13 @@ static void profile_pending_apply(crosstalk_eda_ui_profile_ctx_t *ctx)
 
     if (ctx->pending_rst != 0)
     {
-        memcpy(ctx->base_t, ctx->agg_t, sizeof(ctx->base_t));
-        memcpy(ctx->base_c, ctx->agg_c, sizeof(ctx->base_c));
-        memcpy(ctx->base_sub, ctx->sub, sizeof(ctx->base_sub));
+        memcpy(&ctx->base_t[0], ctx->agg_t, sizeof(ctx->base_t));
+        memcpy(&ctx->base_c[0], ctx->agg_c, sizeof(ctx->base_c));
+        memcpy(&ctx->base_sub[0], ctx->sub, sizeof(ctx->base_sub));
         ctx->base_cyc = ctx->meta[PROFILE_META_CYC_AT];
-        memset(ctx->prog_addr, 0x0, sizeof(ctx->prog_addr));
-        memset(ctx->prog_hits, 0x0, sizeof(ctx->prog_hits));
-        memset(ctx->prog_frame, 0x0, sizeof(ctx->prog_frame));
+        memset(&ctx->prog_addr[0], 0x0, sizeof(ctx->prog_addr));
+        memset(&ctx->prog_hits[0], 0x0, sizeof(ctx->prog_hits));
+        memset(&ctx->prog_frame[0], 0x0, sizeof(ctx->prog_frame));
         ctx->prog_total = 0;
         ctx->prog_drop = 0;
         ctx->pending_rst = LDG_TRUTH_FALSE;
@@ -298,11 +299,11 @@ static void profile_pending_apply(crosstalk_eda_ui_profile_ctx_t *ctx)
 
     if (ctx->pending_start != 0)
     {
-        memcpy(ctx->snap_t, ctx->agg_t, sizeof(ctx->snap_t));
-        memcpy(ctx->snap_c, ctx->agg_c, sizeof(ctx->snap_c));
-        memcpy(ctx->snap_sub, ctx->sub, sizeof(ctx->snap_sub));
+        memcpy(&ctx->snap_t[0], ctx->agg_t, sizeof(ctx->snap_t));
+        memcpy(&ctx->snap_c[0], ctx->agg_c, sizeof(ctx->snap_c));
+        memcpy(&ctx->snap_sub[0], ctx->sub, sizeof(ctx->snap_sub));
         ctx->snap_cyc = ctx->meta[PROFILE_META_CYC_AT];
-        memcpy(ctx->snap_name, ctx->pending_name, sizeof(ctx->snap_name));
+        memcpy(&ctx->snap_name[0], ctx->pending_name, sizeof(ctx->snap_name));
         ctx->evt_run = LDG_TRUTH_TRUE;
         ctx->pending_start = LDG_TRUTH_FALSE;
     }
@@ -322,7 +323,7 @@ static void profile_pending_apply(crosstalk_eda_ui_profile_ctx_t *ctx)
             for (at = 0; at < (uint32_t)CROSSTALK_EDA_UI_PROFILE_SUB_CAP; at++) { evt->sub[at] = profile_delta_get(ctx->sub[at], ctx->snap_sub[at]); }
 
             evt->cyc = profile_delta_get(ctx->meta[PROFILE_META_CYC_AT], ctx->snap_cyc);
-            memcpy(evt->name, ctx->snap_name, sizeof(evt->name));
+            memcpy(&evt->name[0], ctx->snap_name, sizeof(evt->name));
             evt->used = LDG_TRUTH_TRUE;
             ctx->view_evt = ctx->evt_next;
             ctx->evt_next = (ctx->evt_next + 0x1) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP;
@@ -409,37 +410,37 @@ uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, cros
 
     profile_emu_pull(ctx, fpga, slot_idx);
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_META, ctx->meta, (uint32_t)CROSSTALK_EDA_UI_PROFILE_META_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_META, ctx->meta, (uint32_t)CROSSTALK_EDA_UI_PROFILE_META_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
     ctx->blk_cunt = (uint32_t)ctx->meta[PROFILE_META_BLK_AT];
     ctx->slot_cunt = ctx->blk_cunt + 0x2;
     if (ctx->slot_cunt > (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP) { ctx->slot_cunt = (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_T, ctx->agg_t, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_T, ctx->agg_t, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_C, ctx->agg_c, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_C, ctx->agg_c, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_SUB, ctx->sub, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SUB_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_SUB, ctx->sub, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SUB_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_NM, (uint64_t *)(void *)ctx->nm, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP * (uint32_t)CROSSTALK_EDA_UI_PROFILE_NM_BYTES / (uint32_t)sizeof(uint64_t));
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_NM, (uint64_t *)(void *)ctx->nm, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP * (uint32_t)CROSSTALK_EDA_UI_PROFILE_NM_BYTES / (uint32_t)sizeof(uint64_t));
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
     for (slot = 0; slot < (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP; slot++) { ctx->nm[slot][CROSSTALK_EDA_UI_PROFILE_NM_BYTES - 0x1] = LDG_STR_TERM; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_TOT, ctx->ring_tot, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_TOT, ctx->ring_tot, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_COMB, ctx->ring_comb, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_COMB, ctx->ring_comb, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_BLK, ctx->ring_blk, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_BLK, ctx->ring_blk, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    ret = profile_state_pull(ctx, fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_CMT, ctx->ring_cmt, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
+    ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_CMT, ctx->ring_cmt, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
     ctx->bound = LDG_TRUTH_TRUE;
@@ -539,6 +540,7 @@ static uint32_t profile_bar_row_put(ldg_term_render_t *render, uint32_t row, con
 
 static uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t slot, const uint64_t *eff_t, const uint64_t *eff_c, const uint64_t *eff_sub, uint32_t *row)
 {
+    uint64_t fmt_len = 0;
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     double avg = 0.0;
     uint64_t fires = 0;
@@ -555,20 +557,20 @@ static uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_t
 
     for (line = 0; line < line_cunt; line++)
     {
-        if (slot == ctx->blk_cunt) { if (line == 0) { snprintf(text, sizeof(text), PROFILE_SUB_ORDER_FMT, eff_sub[PROFILE_SUB_ORDER_AT], profile_pct_get(eff_sub[PROFILE_SUB_ORDER_AT], eff_t[slot]), ctx->meta[PROFILE_META_ORDER_AT]); }
-            else if (line == 0x1) { snprintf(text, sizeof(text), PROFILE_SUB_HD_FMT, eff_sub[PROFILE_SUB_HD_AT], profile_pct_get(eff_sub[PROFILE_SUB_HD_AT], eff_t[slot]), ctx->meta[PROFILE_META_RES_AT]); }
+        if (slot == ctx->blk_cunt) { if (line == 0) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_ORDER_FMT, eff_sub[PROFILE_SUB_ORDER_AT], profile_pct_get(eff_sub[PROFILE_SUB_ORDER_AT], eff_t[slot]), ctx->meta[PROFILE_META_ORDER_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+            else if (line == 0x1) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_HD_FMT, eff_sub[PROFILE_SUB_HD_AT], profile_pct_get(eff_sub[PROFILE_SUB_HD_AT], eff_t[slot]), ctx->meta[PROFILE_META_RES_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
             else if (line == 0x2)
             {
                 avg = eff_c[slot] == 0 ? 0.0 : (double)eff_sub[PROFILE_SUB_PASS_AT] / (double)eff_c[slot];
-                snprintf(text, sizeof(text), PROFILE_SUB_CORE_FMT, eff_sub[PROFILE_SUB_CORE_AT], profile_pct_get(eff_sub[PROFILE_SUB_CORE_AT], eff_t[slot]), avg, ctx->meta[PROFILE_META_CORE_AT]);
+                if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_CORE_FMT, eff_sub[PROFILE_SUB_CORE_AT], profile_pct_get(eff_sub[PROFILE_SUB_CORE_AT], eff_t[slot]), avg, ctx->meta[PROFILE_META_CORE_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
             }
-            else { snprintf(text, sizeof(text), PROFILE_SUB_TAILS_FMT, eff_sub[PROFILE_SUB_TAILS_AT], profile_pct_get(eff_sub[PROFILE_SUB_TAILS_AT], eff_t[slot])); } }
+            else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_TAILS_FMT, eff_sub[PROFILE_SUB_TAILS_AT], profile_pct_get(eff_sub[PROFILE_SUB_TAILS_AT], eff_t[slot])) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } } }
         else if (slot == ctx->blk_cunt + 0x1) { if (line == 0)
             {
                 avg = eff_c[slot] == 0 ? 0.0 : (double)eff_sub[PROFILE_SUB_REGWR_AT] / (double)eff_c[slot];
-                snprintf(text, sizeof(text), PROFILE_SUB_REGWR_FMT, eff_sub[PROFILE_SUB_REGWR_AT], avg, ctx->meta[PROFILE_META_STAGED_AT]);
+                if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_REGWR_FMT, eff_sub[PROFILE_SUB_REGWR_AT], avg, ctx->meta[PROFILE_META_STAGED_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
             }
-            else { snprintf(text, sizeof(text), PROFILE_SUB_MEMWR_FMT, eff_sub[PROFILE_SUB_MEMWR_AT]); } }
+            else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_MEMWR_FMT, eff_sub[PROFILE_SUB_MEMWR_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } } }
         else
         {
             fires = eff_c[slot];
@@ -576,7 +578,7 @@ static uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_t
 
             if (fires > 0) { fire_avg = eff_t[slot] / fires; }
 
-            snprintf(text, sizeof(text), PROFILE_SUB_BLK_FMT, fires, fire_avg);
+            if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_BLK_FMT, fires, fire_avg) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
         }
 
         ret = profile_line_put(render, (uint32_t)PROFILE_SUB_INDENT, row, text, (uint32_t)PROFILE_DIM_COL);
@@ -588,6 +590,7 @@ static uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_t
 
 static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at, uint32_t col_cunt)
 {
+    uint64_t fmt_len = 0;
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     char label[PROFILE_ROW_LABEL_CAP] = LDG_ARR_ZERO_INIT;
     uint8_t used[CROSSTALK_EDA_UI_PROFILE_SLOT_CAP] = LDG_ARR_ZERO_INIT;
@@ -611,8 +614,8 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
     for (slot = 0; slot < ctx->slot_cunt; slot++) { grand = grand + eff_t[slot]; }
 
-    if (view_name != 0x0) { snprintf(text, sizeof(text), PROFILE_AGG_HDR_EVT_FMT, view_name, eff_cyc); }
-    else { snprintf(text, sizeof(text), PROFILE_AGG_HDR_LIVE_FMT, eff_cyc); }
+    if (view_name != 0x0) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_AGG_HDR_EVT_FMT, view_name, eff_cyc) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+    else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_AGG_HDR_LIVE_FMT, eff_cyc) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_DIM_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -623,9 +626,9 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
     {
         host_per_cyc = (double)grand / (double)eff_cyc;
         evals_per_host = (double)ops / host_per_cyc;
-        snprintf(text, sizeof(text), PROFILE_DENSITY_FMT, ops, host_per_cyc, evals_per_host);
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_DENSITY_FMT, ops, host_per_cyc, evals_per_host) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
     }
-    else { snprintf(text, sizeof(text), PROFILE_DENSITY_NONE_TEXT); }
+    else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_DENSITY_NONE_TEXT) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_LIT_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -633,9 +636,9 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
     if (eff_cyc > 0 && ctx->meta[PROFILE_META_RGN_AT] > 0)
     {
         rgn_per_cyc = (double)eff_sub[PROFILE_SUB_RGN_AT] / (double)eff_cyc;
-        snprintf(text, sizeof(text), PROFILE_GATING_FMT, rgn_per_cyc, ctx->meta[PROFILE_META_RGN_AT], profile_pct_get(eff_sub[PROFILE_SUB_RGN_AT], eff_cyc * ctx->meta[PROFILE_META_RGN_AT]));
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_GATING_FMT, rgn_per_cyc, ctx->meta[PROFILE_META_RGN_AT], profile_pct_get(eff_sub[PROFILE_SUB_RGN_AT], eff_cyc * ctx->meta[PROFILE_META_RGN_AT])) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
     }
-    else { snprintf(text, sizeof(text), PROFILE_GATING_NONE_TEXT); }
+    else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_GATING_NONE_TEXT) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_LIT_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -660,16 +663,16 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
         used[best_slot] = LDG_TRUTH_TRUE;
 
-        if (best_slot == ctx->blk_cunt) { snprintf(label, sizeof(label), PROFILE_LBL_COMB_TEXT); }
-        else if (best_slot == ctx->blk_cunt + 0x1) { snprintf(label, sizeof(label), PROFILE_LBL_CMT_TEXT); }
-        else { snprintf(label, sizeof(label), PROFILE_LBL_BLK_FMT, best_slot, ctx->nm[best_slot]); }
+        if (best_slot == ctx->blk_cunt) { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_COMB_TEXT) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
+        else if (best_slot == ctx->blk_cunt + 0x1) { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_CMT_TEXT) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
+        else { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_BLK_FMT, best_slot, ctx->nm[best_slot]) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
 
         share = profile_pct_get(best, grand);
         bar_cells = (uint32_t)(((double)col_cunt * share) / PROFILE_PCT_SCALE);
 
         if (row == ctx->agg_sel) { ctx->agg_sel_slot = best_slot; }
 
-        snprintf(text, sizeof(text), PROFILE_AGG_ROW_FMT, label, eff_t[best_slot], eff_c[best_slot], share);
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_AGG_ROW_FMT, label, eff_t[best_slot], eff_c[best_slot], share) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
 
         ret = profile_bar_row_put(render, *row_at, text, bar_cells, row == ctx->agg_sel ? (uint32_t)CROSSTALK_UI_THEME_WHITE_RGBA : (uint32_t)PROFILE_TEXT_COL, (uint32_t)PROFILE_BAR_DIM_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -688,6 +691,7 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
 static uint32_t profile_controls_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
 {
+    uint64_t fmt_len = 0;
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     const char *btn[PROFILE_BTN_CUNT] = { PROFILE_BTN_START_TEXT, PROFILE_BTN_END_TEXT, PROFILE_BTN_RST_TEXT, PROFILE_BTN_LIVE_TEXT };
     uint32_t pos_col = PROFILE_ORIG_COL;
@@ -705,15 +709,16 @@ static uint32_t profile_controls_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_t
         pos_col = pos_col + seg_w + (uint32_t)PROFILE_BTN_GAP;
     }
 
-    if (ctx->evt_run != 0) { snprintf(text, sizeof(text), PROFILE_STATE_REC_FMT, ctx->snap_name); }
-    else if (ctx->view_evt != UINT32_MAX && ctx->evt[ctx->view_evt].used != 0) { snprintf(text, sizeof(text), PROFILE_STATE_VIEW_FMT, ctx->evt[ctx->view_evt].name); }
-    else { snprintf(text, sizeof(text), PROFILE_STATE_LIVE_TEXT); }
+    if (ctx->evt_run != 0) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_STATE_REC_FMT, ctx->snap_name) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+    else if (ctx->view_evt != UINT32_MAX && ctx->evt[ctx->view_evt].used != 0) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_STATE_VIEW_FMT, ctx->evt[ctx->view_evt].name) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+    else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_STATE_LIVE_TEXT) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
     return crosstalk_ui_cell_rgba_put(render, pos_col, row, text, (uint64_t)sizeof(text), (uint32_t)PROFILE_TEXT_COL, 0x0);
 }
 
 static uint32_t profile_evt_row_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
 {
+    uint64_t fmt_len = 0;
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t pos_col = PROFILE_ORIG_COL;
     uint32_t seg_w = 0;
@@ -726,7 +731,7 @@ static uint32_t profile_evt_row_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_te
     {
         if (ctx->evt[at].used == 0) { continue; }
 
-        snprintf(text, sizeof(text), PROFILE_EVT_CHIP_FMT, ctx->evt[at].name, ctx->evt[at].cyc);
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_EVT_CHIP_FMT, ctx->evt[at].name, ctx->evt[at].cyc) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
 
         ret = crosstalk_ui_cell_rgba_put(render, pos_col, row, text, (uint64_t)sizeof(text), at == ctx->view_evt ? (uint32_t)PROFILE_LIT_COL : (uint32_t)PROFILE_DIM_COL, &seg_w);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -760,6 +765,7 @@ static uint32_t profile_tab_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
 static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at)
 {
+    uint64_t fmt_len = 0;
     static const char *trap_text[CROSSTALK_HDL_ABI_TRAP_CUNT] = { "invalid op", "unaligned", "stack over", "stack under", "divide by zero", "dr14 write", "TRAP6", "TRAP7" };
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint8_t used[CROSSTALK_HDL_ABI_OP_CUNT] = LDG_ARR_ZERO_INIT;
@@ -779,12 +785,12 @@ static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
     if (ctx->emu_host[CROSSTALK_HDL_ABI_HOST_RETIRED_AT] != 0) { cyc_per = (double)ctx->emu_host[CROSSTALK_HDL_ABI_HOST_CYCLES_AT] / (double)ctx->emu_host[CROSSTALK_HDL_ABI_HOST_RETIRED_AT]; }
 
-    if (snprintf(text, sizeof(text), PROFILE_EMU_HOST_FMT, ctx->emu_host[CROSSTALK_HDL_ABI_HOST_RETIRED_AT], ctx->emu_host[CROSSTALK_HDL_ABI_HOST_NS_AT] / (uint64_t)LDG_NS_PER_MS, mhz, cyc_per) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_EMU_HOST_FMT, ctx->emu_host[CROSSTALK_HDL_ABI_HOST_RETIRED_AT], ctx->emu_host[CROSSTALK_HDL_ABI_HOST_NS_AT] / (uint64_t)LDG_NS_PER_MS, mhz, cyc_per) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_LIT_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (snprintf(text, sizeof(text), PROFILE_EMU_MEM_FMT, ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_RAM_RD_AT], ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_RAM_WR_AT], ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_MMIO_RD_AT], ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_MMIO_WR_AT]) < 0) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_EMU_MEM_FMT, ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_RAM_RD_AT], ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_RAM_WR_AT], ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_MMIO_RD_AT], ctx->emu_mem[CROSSTALK_HDL_ABI_MEM_MMIO_WR_AT]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_TEXT_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -800,7 +806,7 @@ static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
         traps = traps + ctx->emu_trap[at];
 
-        if (snprintf(text, sizeof(text), PROFILE_EMU_TRAP_FMT, trap_text[at], ctx->emu_trap[at]) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_EMU_TRAP_FMT, trap_text[at], ctx->emu_trap[at]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = profile_line_put(render, (uint32_t)PROFILE_SUB_INDENT, row_at, text, (uint32_t)PROFILE_LIT_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -836,7 +842,7 @@ static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
         used[best_at] = LDG_TRUTH_TRUE;
 
-        if (snprintf(text, sizeof(text), PROFILE_EMU_OP_FMT, best_at, best, profile_pct_get(best, total)) < 0) { return LDG_ERR_STR_FMT; }
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_EMU_OP_FMT, best_at, best, profile_pct_get(best, total)) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
         ret = profile_line_put(render, (uint32_t)PROFILE_SUB_INDENT, row_at, text, (uint32_t)PROFILE_TEXT_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -847,6 +853,7 @@ static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
 
 static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_render_t *render, uint32_t *row_at, uint32_t col_cunt)
 {
+    uint64_t fmt_len = 0;
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint8_t used[CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP] = LDG_ARR_ZERO_INIT;
     uint8_t fn_used[CROSSTALK_EDA_UI_PROFILE_FN_CAP] = LDG_ARR_ZERO_INIT;
@@ -860,7 +867,7 @@ static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_
 
     if (ctx->prog_total == 0) { return profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, PROFILE_PROG_NONE_TEXT, (uint32_t)PROFILE_DIM_COL); }
 
-    snprintf(text, sizeof(text), PROFILE_PROG_HDR_FMT, ctx->prog_total, ctx->prog_drop);
+    if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_PROG_HDR_FMT, ctx->prog_total, ctx->prog_drop) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_DIM_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -895,7 +902,7 @@ static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_
 
         if (ctx->elf == 0x0 || crosstalk_hdl_elf_label_get(ctx->elf, ctx->fn_addr[best_at], label, (uint32_t)sizeof(label)) != LDG_ERR_AOK) { continue; }
 
-        snprintf(text, sizeof(text), PROFILE_PROG_FN_ROW_FMT, ctx->fn_addr[best_at], label, best, share);
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_PROG_FN_ROW_FMT, ctx->fn_addr[best_at], label, best, share) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
 
         ret = profile_line_put(render, (uint32_t)PROFILE_SUB_INDENT, row_at, text, (uint32_t)PROFILE_TEXT_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -928,8 +935,8 @@ static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_
 
         if (ctx->elf != 0x0 && crosstalk_hdl_elf_label_get(ctx->elf, ctx->prog_addr[best_at], label, (uint32_t)sizeof(label)) == LDG_ERR_AOK) { label_ok = LDG_TRUTH_TRUE; }
 
-        if (label_ok == LDG_TRUTH_TRUE) { snprintf(text, sizeof(text), PROFILE_PROG_ROW_SYM_FMT, ctx->prog_addr[best_at], label, ctx->prog_hits[best_at], share); }
-        else { snprintf(text, sizeof(text), PROFILE_PROG_ROW_FMT, ctx->prog_addr[best_at], ctx->prog_hits[best_at], share); }
+        if (label_ok == LDG_TRUTH_TRUE) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_PROG_ROW_SYM_FMT, ctx->prog_addr[best_at], label, ctx->prog_hits[best_at], share) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+        else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_PROG_ROW_FMT, ctx->prog_addr[best_at], ctx->prog_hits[best_at], share) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
         ret = profile_bar_row_put(render, *row_at, text, bar_cells, (uint32_t)PROFILE_TEXT_COL, (uint32_t)PROFILE_BAR_DIM_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -972,8 +979,8 @@ static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_
 
         if (ctx->elf != 0x0 && crosstalk_hdl_elf_label_get(ctx->elf, frame_addr, label, (uint32_t)sizeof(label)) == LDG_ERR_AOK) { label_ok = LDG_TRUTH_TRUE; }
 
-        if (label_ok == LDG_TRUTH_TRUE) { snprintf(text, sizeof(text), PROFILE_PROG_FRAME_SYM_FMT, frame_addr, label, ctx->prog_frame[best_frame], share); }
-        else { snprintf(text, sizeof(text), PROFILE_PROG_FRAME_FMT, frame_addr, ctx->prog_frame[best_frame], share); }
+        if (label_ok == LDG_TRUTH_TRUE) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_PROG_FRAME_SYM_FMT, frame_addr, label, ctx->prog_frame[best_frame], share) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+        else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_PROG_FRAME_FMT, frame_addr, ctx->prog_frame[best_frame], share) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
         ret = profile_line_put(render, (uint32_t)PROFILE_SUB_INDENT, row_at, text, (uint32_t)PROFILE_TEXT_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1056,6 +1063,7 @@ static uint32_t profile_strip_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term
 
 static uint32_t profile_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
 {
+    uint64_t fmt_len = 0;
     crosstalk_eda_ui_profile_ctx_t *ctx = (crosstalk_eda_ui_profile_ctx_t *)user;
     char text[PROFILE_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t have = 0;
@@ -1120,9 +1128,9 @@ static uint32_t profile_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
     if (ctx->sel_cyc != UINT64_MAX && ctx->sel_cyc >= first_cyc && ctx->sel_cyc < ctx->meta[PROFILE_META_CYC_AT])
     {
         sel_at = ctx->sel_cyc & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 0x1);
-        snprintf(text, sizeof(text), PROFILE_SEL_FMT, ctx->sel_cyc, ctx->ring_tot[sel_at], ctx->ring_comb[sel_at], profile_pct_get(ctx->ring_comb[sel_at], ctx->ring_tot[sel_at]), ctx->ring_blk[sel_at], profile_pct_get(ctx->ring_blk[sel_at], ctx->ring_tot[sel_at]), ctx->ring_cmt[sel_at], profile_pct_get(ctx->ring_cmt[sel_at], ctx->ring_tot[sel_at]));
+        if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SEL_FMT, ctx->sel_cyc, ctx->ring_tot[sel_at], ctx->ring_comb[sel_at], profile_pct_get(ctx->ring_comb[sel_at], ctx->ring_tot[sel_at]), ctx->ring_blk[sel_at], profile_pct_get(ctx->ring_blk[sel_at], ctx->ring_tot[sel_at]), ctx->ring_cmt[sel_at], profile_pct_get(ctx->ring_cmt[sel_at], ctx->ring_tot[sel_at])) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
     }
-    else { snprintf(text, sizeof(text), PROFILE_SEL_NONE_TEXT); }
+    else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SEL_NONE_TEXT) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, &row, text, (uint32_t)PROFILE_TEXT_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

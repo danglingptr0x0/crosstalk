@@ -7,6 +7,7 @@
 
 #include <dangling/core/macros.h>
 #include <dangling/core/err.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/mem/secure.h>
 #include <dangling/sys/info.h>
@@ -27,15 +28,11 @@
 #define CROSSTALK_NET_DISCORD_BADGE_SOLO "badge_solo"
 #define CROSSTALK_NET_DISCORD_BADGE_COOP "badge_coop"
 #define CROSSTALK_NET_DISCORD_BADGE_LOBBY "badge_lobby"
-#define CROSSTALK_NET_DISCORD_BADGE_ATTACK "badge_attack"
-#define CROSSTALK_NET_DISCORD_BADGE_DEFEND "badge_defend"
 #define CROSSTALK_NET_DISCORD_BADGE_BOARD "badge_board"
 #define CROSSTALK_NET_DISCORD_BADGE_PAUSED "badge_paused"
 #define CROSSTALK_NET_DISCORD_BADGE_TEXT_SOLO "Building alone"
 #define CROSSTALK_NET_DISCORD_BADGE_TEXT_COOP "Building together"
 #define CROSSTALK_NET_DISCORD_BADGE_TEXT_LOBBY "In a lobby"
-#define CROSSTALK_NET_DISCORD_BADGE_TEXT_ATTACK "Attacking"
-#define CROSSTALK_NET_DISCORD_BADGE_TEXT_DEFEND "Defending"
 #define CROSSTALK_NET_DISCORD_BADGE_TEXT_BOARD "Choosing a board"
 #define CROSSTALK_NET_DISCORD_BADGE_TEXT_PAUSED "Paused"
 #define CROSSTALK_NET_DISCORD_PARTY_PREFIX "ct-"
@@ -63,11 +60,10 @@
 #define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO "At the keyboard"
 #define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED "Paused at the keyboard"
 #define CROSSTALK_NET_DISCORD_TEXT_LOBBY_PAUSED "Paused in a lobby"
-#define CROSSTALK_NET_DISCORD_TEXT_SANDBOX "At the keyboard with %" PRIu32
-#define CROSSTALK_NET_DISCORD_TEXT_LOBBY "Busylooping in a lobby (%" PRIu32 "/%" PRIu32 ")"
+#define CROSSTALK_NET_DISCORD_TEXT_SANDBOX "At the keyboard with %u32"
+#define CROSSTALK_NET_DISCORD_TEXT_LOBBY "Busylooping in a lobby (%u32/%u32)"
 #define CROSSTALK_NET_DISCORD_PARTY_NONE 0
 #define CROSSTALK_NET_DISCORD_STAMP_NONE 0
-#define CROSSTALK_NET_DISCORD_STAMP_DRIFT_MAX 2
 #define CROSSTALK_NET_DISCORD_TEXT_LD "Choosing a project"
 #define CROSSTALK_NET_DISCORD_TEXT_BROWSE "Seeking players"
 #define CROSSTALK_NET_DISCORD_TEXT_NEWPROJ_FMT "Starting %.63s"
@@ -133,7 +129,7 @@ static void crosstalk_net_discord_str_make(const char *text, Discord_String *out
 
     if (LDG_UNLIKELY(!text)) { return; }
 
-    out->ptr = (uint8_t *)((void *)text);
+    out->ptr = (uint8_t *)(uintptr_t)text;
     out->size = (uint64_t)strlen(text);
 }
 
@@ -207,6 +203,7 @@ static void crosstalk_net_discord_url_encode(const char *src, char *dst, uint32_
 
 static void crosstalk_net_discord_scopes_ld(crosstalk_net_discord_ctx_t *ctx, Discord_String *out)
 {
+    uint64_t fmt_len = 0;
     Discord_String sdk_scopes = LDG_STRUCT_ZERO_INIT;
     char merged[CROSSTALK_NET_DISCORD_SCOPE_CAP] = LDG_ARR_ZERO_INIT;
     uint32_t ret = 0;
@@ -215,7 +212,7 @@ static void crosstalk_net_discord_scopes_ld(crosstalk_net_discord_ctx_t *ctx, Di
     crosstalk_net_discord_str_copy(&sdk_scopes, ctx->scopes, (uint32_t)sizeof(ctx->scopes));
     Discord_Free(sdk_scopes.ptr);
 
-    snprintf(merged, sizeof(merged), "%.247s%.7s", ctx->scopes, CROSSTALK_NET_DISCORD_GUILD_SCOPE);
+    if (ldg_str_fmt(merged, (uint64_t)sizeof(merged), &fmt_len, "%.247s%.7s", ctx->scopes, CROSSTALK_NET_DISCORD_GUILD_SCOPE) != LDG_ERR_AOK) { *(merged) = LDG_STR_TERM; }
 
     ret = ldg_str_rbrcpy(ctx->scopes, merged, (uint64_t)sizeof(ctx->scopes));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: scope merge failed; err: %u32", ret); }
@@ -231,19 +228,22 @@ static void crosstalk_net_discord_user_data_free_cb(void *ptr)
 
 static void crosstalk_net_discord_err_capture(crosstalk_net_discord_ctx_t *ctx, Discord_ClientResult *res, const char *what)
 {
+    uint64_t fmt_len = 0;
     Discord_String text = LDG_STRUCT_ZERO_INIT;
 
     if (LDG_UNLIKELY(!ctx || !what)) { return; }
 
     if (!res)
     {
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "%.80s", what);
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "%.80s", what) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.159s", ctx->err_text);
         return;
     }
 
     Discord_ClientResult_ToString(res, &text);
-    snprintf(ctx->err_text, sizeof(ctx->err_text), "%.60s: %.*s", what, (int32_t)text.size, (const char *)text.ptr);
+    if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "%.60s: %.*s", what, (int32_t)text.size, (const char *)text.ptr) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
     Discord_Free(text.ptr);
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.159s; http: %i32; code: %i32", ctx->err_text, (int32_t)Discord_ClientResult_Status(res), (int32_t)Discord_ClientResult_ErrorCode(res));
 }
@@ -282,6 +282,7 @@ static void crosstalk_net_discord_log_cb(Discord_String msg, int32_t severity, v
 
 static void crosstalk_net_discord_status_cb(int32_t status, int32_t err, int32_t err_detail, void *user_data)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)user_data;
     Discord_String text = LDG_STRUCT_ZERO_INIT;
 
@@ -328,7 +329,8 @@ static void crosstalk_net_discord_status_cb(int32_t status, int32_t err, int32_t
     {
         ctx->state = CROSSTALK_NET_DISCORD_STATE_FAIL;
         Discord_Client_ErrorToString((Discord_Client_Error)err, &text);
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "client failed; err: %.*s; detail: %" PRId32, (int32_t)text.size, (const char *)text.ptr, err_detail);
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "client failed; err: %.*s; detail: %i32", (int32_t)text.size, (const char *)text.ptr, err_detail) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         Discord_Free(text.ptr);
     }
 }
@@ -403,6 +405,7 @@ static void crosstalk_net_discord_tok_cb(Discord_ClientResult *res, Discord_Stri
 
 static void crosstalk_net_discord_tok_expired_cb(void *user_data)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)user_data;
     Discord_String refresh = LDG_STRUCT_ZERO_INIT;
 
@@ -411,16 +414,18 @@ static void crosstalk_net_discord_tok_expired_cb(void *user_data)
     if (ctx->refresh_tok[0] == '\0')
     {
         ctx->auth = CROSSTALK_NET_DISCORD_AUTH_NONE;
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "token expired; no refresh token held");
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "token expired; no refresh token held") != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         return;
     }
 
     crosstalk_net_discord_str_make(ctx->refresh_tok, &refresh);
-    Discord_Client_RefreshToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, refresh, (Discord_Client_TokenExchangeCallback)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Client_RefreshToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, refresh, (Discord_Client_TokenExchangeCallback)(uintptr_t)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 }
 
 static void crosstalk_net_discord_authorize_cb(Discord_ClientResult *res, Discord_String code, Discord_String redirect_uri, void *user_data)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)user_data;
     Discord_String verifier = LDG_STRUCT_ZERO_INIT;
 
@@ -443,7 +448,8 @@ static void crosstalk_net_discord_authorize_cb(Discord_ClientResult *res, Discor
 
     if (ctx->verifier_live == LDG_TRUTH_FALSE)
     {
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "authorize returned without a live code verifier");
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "authorize returned without a live code verifier") != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         return;
     }
 
@@ -457,7 +463,7 @@ static void crosstalk_net_discord_authorize_cb(Discord_ClientResult *res, Discor
 
     crosstalk_net_discord_str_make(ctx->verifier_str, &verifier);
 
-    Discord_Client_GetToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, code, verifier, redirect_uri, (Discord_Client_TokenExchangeCallback)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Client_GetToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, code, verifier, redirect_uri, (Discord_Client_TokenExchangeCallback)(uintptr_t)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 }
 
 static void crosstalk_net_discord_guilds_cb(Discord_ClientResult *res, Discord_GuildMinimalSpan guilds, void *user_data)
@@ -813,6 +819,7 @@ static void crosstalk_net_discord_dev_set_cb(Discord_ClientResult *res, void *us
 
 static void crosstalk_net_discord_no_input_cb(uint8_t in_detected, void *user_data)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)user_data;
 
     if (!ctx) { return; }
@@ -823,11 +830,12 @@ static void crosstalk_net_discord_no_input_cb(uint8_t in_detected, void *user_da
         return;
     }
 
-    snprintf(ctx->err_text, sizeof(ctx->err_text), "no microphone input detected");
+    if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "no microphone input detected") != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
 }
 
 static void crosstalk_net_discord_call_status_cb(int32_t status, int32_t err, int32_t err_detail, void *user_data)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)user_data;
     Discord_String text = LDG_STRUCT_ZERO_INIT;
 
@@ -851,7 +859,8 @@ static void crosstalk_net_discord_call_status_cb(int32_t status, int32_t err, in
     {
         ctx->call_state = CROSSTALK_NET_DISCORD_CALL_FAIL;
         Discord_Call_ErrorToString((Discord_Call_Error)err, &text);
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "voice failed; err: %.*s; detail: %" PRId32, (int32_t)text.size, (const char *)text.ptr, err_detail);
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "voice failed; err: %.*s; detail: %i32", (int32_t)text.size, (const char *)text.ptr, err_detail) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         Discord_Free(text.ptr);
     }
 }
@@ -879,6 +888,7 @@ static void crosstalk_net_discord_call_backoff_arm(crosstalk_net_discord_ctx_t *
 
 static void crosstalk_net_discord_call_start(crosstalk_net_discord_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     if (ctx->lobby_live == LDG_TRUTH_FALSE) { return; }
 
     if (ctx->call_live == LDG_TRUTH_TRUE) { return; }
@@ -886,13 +896,14 @@ static void crosstalk_net_discord_call_start(crosstalk_net_discord_ctx_t *ctx)
     if (CROSSTALK_NET_DISCORD_SDK_BOOL(Discord_Client_StartCall(crosstalk_net_discord_client_get(ctx), ctx->call_lobby_id, crosstalk_net_discord_call_get(ctx))) == LDG_TRUTH_FALSE)
     {
         ctx->call_state = CROSSTALK_NET_DISCORD_CALL_FAIL;
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "voice call start rejected; lobby: %" PRIu64, ctx->call_lobby_id);
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "voice call start rejected; lobby: %u64", ctx->call_lobby_id) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         return;
     }
 
     ctx->call_live = LDG_TRUTH_TRUE;
     ctx->call_state = CROSSTALK_NET_DISCORD_CALL_CONNECTING;
-    Discord_Call_SetStatusChangedCallback(crosstalk_net_discord_call_get(ctx), (Discord_Call_OnStatusChanged)crosstalk_net_discord_call_status_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Call_SetStatusChangedCallback(crosstalk_net_discord_call_get(ctx), (Discord_Call_OnStatusChanged)(uintptr_t)crosstalk_net_discord_call_status_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetSelfMuteAll(crosstalk_net_discord_client_get(ctx), (int32_t)ctx->self_mute);
     Discord_Client_SetSelfDeafAll(crosstalk_net_discord_client_get(ctx), (int32_t)ctx->self_deaf);
 }
@@ -1215,6 +1226,7 @@ static void crosstalk_net_discord_contacts_refresh(crosstalk_net_discord_ctx_t *
 
 static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     Discord_Activity activity = LDG_STRUCT_ZERO_INIT;
     Discord_ActivityAssets assets = LDG_STRUCT_ZERO_INIT;
     Discord_ActivityTimestamps stamps = LDG_STRUCT_ZERO_INIT;
@@ -1256,9 +1268,9 @@ static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ct
         char state_out[CROSSTALK_NET_DISCORD_STATE_CAP] = LDG_ARR_ZERO_INIT;
         const char *base = (ctx->presence.activity[0] != LDG_STR_TERM) ? ctx->presence.activity : ctx->presence.state;
 
-        if (ctx->presence.music[0] == LDG_STR_TERM) { snprintf(state_out, sizeof(state_out), "%.127s", base); }
-        else if (base[0] == LDG_STR_TERM) { snprintf(state_out, sizeof(state_out), "%.127s", ctx->presence.music); }
-        else { snprintf(state_out, sizeof(state_out), "%.29s" CROSSTALK_NET_DISCORD_MUSIC_SEP "%.94s", base, ctx->presence.music); }
+        if (ctx->presence.music[0] == LDG_STR_TERM) { if (ldg_str_fmt(state_out, (uint64_t)sizeof(state_out), &fmt_len, "%.127s", base) != LDG_ERR_AOK) { *(state_out) = LDG_STR_TERM; } }
+        else if (base[0] == LDG_STR_TERM) { if (ldg_str_fmt(state_out, (uint64_t)sizeof(state_out), &fmt_len, "%.127s", ctx->presence.music) != LDG_ERR_AOK) { *(state_out) = LDG_STR_TERM; } }
+        else { if (ldg_str_fmt(state_out, (uint64_t)sizeof(state_out), &fmt_len, "%.29s" CROSSTALK_NET_DISCORD_MUSIC_SEP "%.94s", base, ctx->presence.music) != LDG_ERR_AOK) { *(state_out) = LDG_STR_TERM; } }
 
         crosstalk_net_discord_str_make(state_out, &text);
         Discord_Activity_SetState(&activity, &text);
@@ -1367,24 +1379,31 @@ static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ct
 
 static void crosstalk_net_discord_badge_set(crosstalk_net_discord_ctx_t *ctx, const char *key, const char *text)
 {
-    snprintf(ctx->presence.asset_small, sizeof(ctx->presence.asset_small), "%.63s", key);
-    snprintf(ctx->presence.asset_small_text, sizeof(ctx->presence.asset_small_text), "%.63s", text);
+    uint64_t fmt_len = 0;
+    if (ldg_str_fmt(ctx->presence.asset_small, (uint64_t)sizeof(ctx->presence.asset_small), &fmt_len, "%.63s", key) != LDG_ERR_AOK) { *(ctx->presence.asset_small) = LDG_STR_TERM; }
+
+    if (ldg_str_fmt(ctx->presence.asset_small_text, (uint64_t)sizeof(ctx->presence.asset_small_text), &fmt_len, "%.63s", text) != LDG_ERR_AOK) { *(ctx->presence.asset_small_text) = LDG_STR_TERM; }
 }
 
 static void crosstalk_net_discord_presence_stage(crosstalk_net_discord_ctx_t *ctx, uint32_t kind)
 {
+    uint64_t fmt_len = 0;
     if (ctx->presence.kind != kind || ctx->presence.start_epoch_s == 0) { ctx->presence.start_epoch_s = ldg_time_epoch_ms_get() / LDG_MS_PER_SEC; }
 
     ctx->presence.kind = kind;
-    snprintf(ctx->presence.asset_large, sizeof(ctx->presence.asset_large), "%.63s", CROSSTALK_NET_DISCORD_ASSET_LARGE);
+    if (ldg_str_fmt(ctx->presence.asset_large, (uint64_t)sizeof(ctx->presence.asset_large), &fmt_len, "%.63s", CROSSTALK_NET_DISCORD_ASSET_LARGE) != LDG_ERR_AOK) { *(ctx->presence.asset_large) = LDG_STR_TERM; }
+
     crosstalk_net_discord_badge_set(ctx, CROSSTALK_NET_DISCORD_ASSET_SMALL, CROSSTALK_NET_DISCORD_ASSET_SMALL);
-    snprintf(ctx->presence.asset_large_text, sizeof(ctx->presence.asset_large_text), "%.63s", CROSSTALK_NET_DISCORD_ASSET_LARGE_TEXT);
-    snprintf(ctx->presence.asset_large_url, sizeof(ctx->presence.asset_large_url), "%.127s", CROSSTALK_NET_DISCORD_STORE_URL);
-    snprintf(ctx->presence.asset_small_url, sizeof(ctx->presence.asset_small_url), "%.127s", CROSSTALK_NET_DISCORD_WSHOP_URL);
+    if (ldg_str_fmt(ctx->presence.asset_large_text, (uint64_t)sizeof(ctx->presence.asset_large_text), &fmt_len, "%.63s", CROSSTALK_NET_DISCORD_ASSET_LARGE_TEXT) != LDG_ERR_AOK) { *(ctx->presence.asset_large_text) = LDG_STR_TERM; }
+
+    if (ldg_str_fmt(ctx->presence.asset_large_url, (uint64_t)sizeof(ctx->presence.asset_large_url), &fmt_len, "%.127s", CROSSTALK_NET_DISCORD_STORE_URL) != LDG_ERR_AOK) { *(ctx->presence.asset_large_url) = LDG_STR_TERM; }
+
+    if (ldg_str_fmt(ctx->presence.asset_small_url, (uint64_t)sizeof(ctx->presence.asset_small_url), &fmt_len, "%.127s", CROSSTALK_NET_DISCORD_WSHOP_URL) != LDG_ERR_AOK) { *(ctx->presence.asset_small_url) = LDG_STR_TERM; }
 }
 
 uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t app_id, uint32_t steam_app_id)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(app_id == 0)) { return LDG_ERR_FUNC_ARG_INVALID; }
@@ -1407,7 +1426,8 @@ uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t a
     if (LDG_UNLIKELY(!ctx->client))
     {
         ctx->state = CROSSTALK_NET_DISCORD_STATE_FAIL;
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "sdk client init failed; rev: %.32s", CROSSTALK_NET_DISCORD_SDK_REV);
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "sdk client init failed; rev: %.32s", CROSSTALK_NET_DISCORD_SDK_REV) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         return LDG_ERR_NOT_INIT;
     }
 
@@ -1421,8 +1441,8 @@ uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t a
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, launch_ok == LDG_TRUTH_TRUE ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: steam launch registered; steam_app: %u32; ok: %u32", steam_app_id, (uint32_t)launch_ok);
     }
 
-    Discord_Client_AddLogCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_LogCallback)crosstalk_net_discord_log_cb, crosstalk_net_discord_user_data_free_cb, ctx, Discord_LoggingSeverity_Verbose);
-    Discord_Client_SetStatusChangedCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_OnStatusChanged)crosstalk_net_discord_status_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Client_AddLogCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_LogCallback)(uintptr_t)crosstalk_net_discord_log_cb, crosstalk_net_discord_user_data_free_cb, ctx, Discord_LoggingSeverity_Verbose);
+    Discord_Client_SetStatusChangedCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_OnStatusChanged)(uintptr_t)crosstalk_net_discord_status_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     {
         uint64_t pid = 0;
 
@@ -1435,7 +1455,7 @@ uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t a
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: msg callback registered");
     Discord_Client_SetActivityInviteCreatedCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_invite_created_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetDeviceChangeCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_dev_change_cb, crosstalk_net_discord_user_data_free_cb, ctx);
-    Discord_Client_SetNoAudioInputCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_NoAudioInputCallback)crosstalk_net_discord_no_input_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Client_SetNoAudioInputCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_NoAudioInputCallback)(uintptr_t)crosstalk_net_discord_no_input_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetNoAudioInputThreshold(crosstalk_net_discord_client_get(ctx), (float)CROSSTALK_NET_DISCORD_NO_INPUT_DBFS);
     Discord_Client_SetEchoCancellation(crosstalk_net_discord_client_get(ctx), (int32_t)LDG_TRUTH_TRUE);
     Discord_Client_SetAutomaticGainControl(crosstalk_net_discord_client_get(ctx), (int32_t)LDG_TRUTH_TRUE);
@@ -1591,6 +1611,7 @@ uint32_t crosstalk_net_discord_en_set(crosstalk_net_discord_ctx_t *ctx, uint8_t 
 
 uint32_t crosstalk_net_discord_auth_link(crosstalk_net_discord_ctx_t *ctx)
 {
+    uint64_t fmt_len = 0;
     Discord_String scopes = LDG_STRUCT_ZERO_INIT;
 
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -1609,7 +1630,8 @@ uint32_t crosstalk_net_discord_auth_link(crosstalk_net_discord_ctx_t *ctx)
 
     if (LDG_UNLIKELY(!ctx->verifier))
     {
-        snprintf(ctx->err_text, sizeof(ctx->err_text), "code verifier create failed");
+        if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "code verifier create failed") != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
+
         return LDG_ERR_NOT_INIT;
     }
 
@@ -1618,7 +1640,7 @@ uint32_t crosstalk_net_discord_auth_link(crosstalk_net_discord_ctx_t *ctx)
     crosstalk_net_discord_auth_args_drop(ctx);
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: pre-authorize; sdk_status: %i32; authenticated: %u32; app_id: %u64", (int32_t)Discord_Client_GetStatus(crosstalk_net_discord_client_get(ctx)), (uint32_t)CROSSTALK_NET_DISCORD_SDK_BOOL(Discord_Client_IsAuthenticated(crosstalk_net_discord_client_get(ctx))), Discord_Client_GetApplicationId(crosstalk_net_discord_client_get(ctx)));
-    Discord_Client_IsDiscordAppInstalled(crosstalk_net_discord_client_get(ctx), (Discord_Client_IsDiscordAppInstalledCallback)crosstalk_net_discord_app_installed_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Client_IsDiscordAppInstalled(crosstalk_net_discord_client_get(ctx), (Discord_Client_IsDiscordAppInstalledCallback)(uintptr_t)crosstalk_net_discord_app_installed_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     Discord_AuthorizationCodeVerifier_Challenge(crosstalk_net_discord_verifier_get(ctx), crosstalk_net_discord_auth_challenge_get(ctx));
 
@@ -1642,7 +1664,7 @@ uint32_t crosstalk_net_discord_auth_link(crosstalk_net_discord_ctx_t *ctx)
         crosstalk_net_discord_url_encode(CROSSTALK_NET_DISCORD_REDIRECT_URI, redirect_enc, (uint32_t)sizeof(redirect_enc));
         crosstalk_net_discord_url_encode(ctx->scopes, scopes_enc, (uint32_t)sizeof(scopes_enc));
 
-        snprintf(ctx->auth_url, sizeof(ctx->auth_url), "%.63s?client_id=%" PRIu64 "&response_type=code&redirect_uri=%.255s&scope=%.255s&code_challenge=%.255s&code_challenge_method=S256", CROSSTALK_NET_DISCORD_AUTH_ENDPOINT, ctx->app_id, redirect_enc, scopes_enc, challenge_str);
+        if (ldg_str_fmt(ctx->auth_url, (uint64_t)sizeof(ctx->auth_url), &fmt_len, "%.63s?client_id=%u64&response_type=code&redirect_uri=%.255s&scope=%.255s&code_challenge=%.255s&code_challenge_method=S256", CROSSTALK_NET_DISCORD_AUTH_ENDPOINT, ctx->app_id, redirect_enc, scopes_enc, challenge_str) != LDG_ERR_AOK) { *(ctx->auth_url) = LDG_STR_TERM; }
 
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: auth url built; len: %u64", (uint64_t)strlen(ctx->auth_url));
     }
@@ -1672,7 +1694,7 @@ uint32_t crosstalk_net_discord_auth_restore(crosstalk_net_discord_ctx_t *ctx)
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: restoring session from stored refresh token");
 
     crosstalk_net_discord_str_make(ctx->refresh_tok, &refresh);
-    Discord_Client_RefreshToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, refresh, (Discord_Client_TokenExchangeCallback)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
+    Discord_Client_RefreshToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, refresh, (Discord_Client_TokenExchangeCallback)(uintptr_t)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     return LDG_ERR_AOK;
 }
@@ -1836,8 +1858,10 @@ uint32_t crosstalk_net_discord_presence_on_set(crosstalk_net_discord_ctx_t *ctx,
 
 static void crosstalk_net_discord_presence_solo_stage(crosstalk_net_discord_ctx_t *ctx, const char *details)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_presence_stage(ctx, CROSSTALK_NET_DISCORD_KIND_MENU);
-    snprintf(ctx->presence.details, sizeof(ctx->presence.details), "%.100s", details);
+    if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, "%.100s", details) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
+
     ctx->presence.state[0] = LDG_STR_TERM;
     ctx->presence.party_id[0] = LDG_STR_TERM;
     ctx->presence.join_secret[0] = LDG_STR_TERM;
@@ -1849,12 +1873,13 @@ static void crosstalk_net_discord_presence_solo_stage(crosstalk_net_discord_ctx_
 
 uint32_t crosstalk_net_discord_presence_menu_set(crosstalk_net_discord_ctx_t *ctx, const char *menu)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
 
     crosstalk_net_discord_presence_solo_stage(ctx, CROSSTALK_NET_DISCORD_TEXT_MENU);
-    snprintf(ctx->presence.state, sizeof(ctx->presence.state), "%.63s", menu != 0x0 ? menu : CROSSTALK_NET_DISCORD_TEXT_MENU_MAIN);
+    if (ldg_str_fmt(ctx->presence.state, (uint64_t)sizeof(ctx->presence.state), &fmt_len, "%.63s", menu != 0x0 ? menu : CROSSTALK_NET_DISCORD_TEXT_MENU_MAIN) != LDG_ERR_AOK) { *(ctx->presence.state) = LDG_STR_TERM; }
 
     return LDG_ERR_AOK;
 }
@@ -1884,13 +1909,15 @@ uint32_t crosstalk_net_discord_presence_browse_set(crosstalk_net_discord_ctx_t *
 
 uint32_t crosstalk_net_discord_presence_newproj_set(crosstalk_net_discord_ctx_t *ctx, const char *kind)
 {
+    uint64_t fmt_len = 0;
     char line[CROSSTALK_NET_DISCORD_DETAILS_CAP] = LDG_ARR_ZERO_INIT;
 
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
 
-    snprintf(line, sizeof(line), CROSSTALK_NET_DISCORD_TEXT_NEWPROJ_FMT, kind != 0x0 ? kind : CROSSTALK_NET_DISCORD_TEXT_PROJ_RTL);
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_NEWPROJ_FMT, kind != 0x0 ? kind : CROSSTALK_NET_DISCORD_TEXT_PROJ_RTL) != LDG_ERR_AOK) { *(line) = LDG_STR_TERM; }
+
     crosstalk_net_discord_presence_solo_stage(ctx, line);
 
     return LDG_ERR_AOK;
@@ -1920,6 +1947,7 @@ uint32_t crosstalk_net_discord_presence_credits_set(crosstalk_net_discord_ctx_t 
 
 uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t *ctx, uint32_t players, uint32_t players_max, uint64_t lobby_id, uint32_t comp_cunt, uint32_t trace_cunt)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
@@ -1928,21 +1956,25 @@ uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t 
 
     if (players <= CROSSTALK_NET_DISCORD_SCAN_CUNT)
     {
-        snprintf(ctx->presence.details, sizeof(ctx->presence.details), CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO);
+        if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
+
         crosstalk_net_discord_badge_set(ctx, CROSSTALK_NET_DISCORD_BADGE_SOLO, CROSSTALK_NET_DISCORD_BADGE_TEXT_SOLO);
     }
     else
     {
-        snprintf(ctx->presence.details, sizeof(ctx->presence.details), CROSSTALK_NET_DISCORD_TEXT_SANDBOX, players);
+        if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX, players) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
+
         crosstalk_net_discord_badge_set(ctx, CROSSTALK_NET_DISCORD_BADGE_COOP, CROSSTALK_NET_DISCORD_BADGE_TEXT_COOP);
     }
 
-    snprintf(ctx->presence.state, sizeof(ctx->presence.state), "%" PRIu32 " components/%" PRIu32 " traces", comp_cunt, trace_cunt);
+    if (ldg_str_fmt(ctx->presence.state, (uint64_t)sizeof(ctx->presence.state), &fmt_len, "%u32 components/%u32 traces", comp_cunt, trace_cunt) != LDG_ERR_AOK) { *(ctx->presence.state) = LDG_STR_TERM; }
 
     if (lobby_id != 0 && players_max != 0)
     {
-        snprintf(ctx->presence.party_id, sizeof(ctx->presence.party_id), "%.16s%" PRIu64, CROSSTALK_NET_DISCORD_PARTY_PREFIX, lobby_id);
-        snprintf(ctx->presence.join_secret, sizeof(ctx->presence.join_secret), "%.32s%" PRIu64, CROSSTALK_NET_DISCORD_SECRET_PREFIX, lobby_id);
+        if (ldg_str_fmt(ctx->presence.party_id, (uint64_t)sizeof(ctx->presence.party_id), &fmt_len, "%.16s%u64", CROSSTALK_NET_DISCORD_PARTY_PREFIX, lobby_id) != LDG_ERR_AOK) { *(ctx->presence.party_id) = LDG_STR_TERM; }
+
+        if (ldg_str_fmt(ctx->presence.join_secret, (uint64_t)sizeof(ctx->presence.join_secret), &fmt_len, "%.32s%u64", CROSSTALK_NET_DISCORD_SECRET_PREFIX, lobby_id) != LDG_ERR_AOK) { *(ctx->presence.join_secret) = LDG_STR_TERM; }
+
         ctx->presence.party_cunt = players;
         ctx->presence.party_cunt_max = players_max;
         ctx->presence.joinable = (players < players_max) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -1970,6 +2002,7 @@ uint32_t crosstalk_net_discord_presence_paused_set(crosstalk_net_discord_ctx_t *
 
 uint32_t crosstalk_net_discord_presence_music_set(crosstalk_net_discord_ctx_t *ctx, const char *text)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (text == 0x0 || text[0] == LDG_STR_TERM)
@@ -1978,13 +2011,14 @@ uint32_t crosstalk_net_discord_presence_music_set(crosstalk_net_discord_ctx_t *c
         return LDG_ERR_AOK;
     }
 
-    snprintf(ctx->presence.music, sizeof(ctx->presence.music), "%.95s", text);
+    if (ldg_str_fmt(ctx->presence.music, (uint64_t)sizeof(ctx->presence.music), &fmt_len, "%.95s", text) != LDG_ERR_AOK) { *(ctx->presence.music) = LDG_STR_TERM; }
 
     return LDG_ERR_AOK;
 }
 
 uint32_t crosstalk_net_discord_presence_activity_set(crosstalk_net_discord_ctx_t *ctx, const char *text)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (text == 0x0 || text[0] == LDG_STR_TERM)
@@ -1993,13 +2027,14 @@ uint32_t crosstalk_net_discord_presence_activity_set(crosstalk_net_discord_ctx_t
         return LDG_ERR_AOK;
     }
 
-    snprintf(ctx->presence.activity, sizeof(ctx->presence.activity), "%.95s", text);
+    if (ldg_str_fmt(ctx->presence.activity, (uint64_t)sizeof(ctx->presence.activity), &fmt_len, "%.95s", text) != LDG_ERR_AOK) { *(ctx->presence.activity) = LDG_STR_TERM; }
 
     return LDG_ERR_AOK;
 }
 
 uint32_t crosstalk_net_discord_presence_lobby_set(crosstalk_net_discord_ctx_t *ctx, uint32_t players, uint32_t players_max, uint64_t lobby_id)
 {
+    uint64_t fmt_len = 0;
     if (LDG_UNLIKELY(!ctx)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
@@ -2008,9 +2043,12 @@ uint32_t crosstalk_net_discord_presence_lobby_set(crosstalk_net_discord_ctx_t *c
 
     crosstalk_net_discord_presence_stage(ctx, CROSSTALK_NET_DISCORD_KIND_LOBBY);
     crosstalk_net_discord_badge_set(ctx, CROSSTALK_NET_DISCORD_BADGE_LOBBY, CROSSTALK_NET_DISCORD_BADGE_TEXT_LOBBY);
-    snprintf(ctx->presence.details, sizeof(ctx->presence.details), CROSSTALK_NET_DISCORD_TEXT_LOBBY, players, players_max);
-    snprintf(ctx->presence.party_id, sizeof(ctx->presence.party_id), "%.16s%" PRIu64, CROSSTALK_NET_DISCORD_PARTY_PREFIX, lobby_id);
-    snprintf(ctx->presence.join_secret, sizeof(ctx->presence.join_secret), "%.32s%" PRIu64, CROSSTALK_NET_DISCORD_SECRET_PREFIX, lobby_id);
+    if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_LOBBY, players, players_max) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
+
+    if (ldg_str_fmt(ctx->presence.party_id, (uint64_t)sizeof(ctx->presence.party_id), &fmt_len, "%.16s%u64", CROSSTALK_NET_DISCORD_PARTY_PREFIX, lobby_id) != LDG_ERR_AOK) { *(ctx->presence.party_id) = LDG_STR_TERM; }
+
+    if (ldg_str_fmt(ctx->presence.join_secret, (uint64_t)sizeof(ctx->presence.join_secret), &fmt_len, "%.32s%u64", CROSSTALK_NET_DISCORD_SECRET_PREFIX, lobby_id) != LDG_ERR_AOK) { *(ctx->presence.join_secret) = LDG_STR_TERM; }
+
     ctx->presence.party_cunt = players;
     ctx->presence.party_cunt_max = players_max;
     ctx->presence.joinable = (players < players_max) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -2020,6 +2058,7 @@ uint32_t crosstalk_net_discord_presence_lobby_set(crosstalk_net_discord_ctx_t *c
 
 uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_net_presence_desc_t *desc)
 {
+    uint64_t fmt_len = 0;
     crosstalk_net_discord_ctx_t *ctx = (crosstalk_net_discord_ctx_t *)backend_ctx;
     uint32_t ret = 0;
 
@@ -2030,7 +2069,8 @@ uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_
         if (LDG_UNLIKELY(ctx->client_live == LDG_TRUTH_FALSE)) { return LDG_ERR_NOT_INIT; }
 
         crosstalk_net_discord_presence_solo_stage(ctx, CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF);
-        snprintf(ctx->presence.state, sizeof(ctx->presence.state), "%.63s", CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF_STATE);
+        if (ldg_str_fmt(ctx->presence.state, (uint64_t)sizeof(ctx->presence.state), &fmt_len, "%.63s", CROSSTALK_NET_DISCORD_TEXT_TRANSPONDER_OFF_STATE) != LDG_ERR_AOK) { *(ctx->presence.state) = LDG_STR_TERM; }
+
         ctx->presence.activity[0] = LDG_STR_TERM;
         ctx->presence.music[0] = LDG_STR_TERM;
         ctx->presence.paused = LDG_TRUTH_FALSE;
@@ -2385,6 +2425,7 @@ uint32_t crosstalk_net_discord_invite_drop(crosstalk_net_discord_ctx_t *ctx)
 
 uint32_t crosstalk_net_discord_lobby_join(crosstalk_net_discord_ctx_t *ctx, uint64_t lobby_id)
 {
+    uint64_t fmt_len = 0;
     char secret[CROSSTALK_NET_DISCORD_SECRET_CAP] = LDG_ARR_ZERO_INIT;
     Discord_String text = LDG_STRUCT_ZERO_INIT;
 
@@ -2408,7 +2449,7 @@ uint32_t crosstalk_net_discord_lobby_join(crosstalk_net_discord_ctx_t *ctx, uint
 
     ctx->call_req = LDG_TRUTH_TRUE;
     ctx->call_state = ctx->voice_on == LDG_TRUTH_TRUE ? CROSSTALK_NET_DISCORD_CALL_CONNECTING : CROSSTALK_NET_DISCORD_CALL_OFF;
-    snprintf(secret, sizeof(secret), "%.32s%" PRIu64, CROSSTALK_NET_DISCORD_VOICE_SECRET_PREFIX, lobby_id);
+    if (ldg_str_fmt(secret, (uint64_t)sizeof(secret), &fmt_len, "%.32s%u64", CROSSTALK_NET_DISCORD_VOICE_SECRET_PREFIX, lobby_id) != LDG_ERR_AOK) { *(secret) = LDG_STR_TERM; }
 
     crosstalk_net_discord_str_make(secret, &text);
     Discord_Client_CreateOrJoinLobby(crosstalk_net_discord_client_get(ctx), text, crosstalk_net_discord_voice_lobby_cb, crosstalk_net_discord_user_data_free_cb, ctx);
@@ -2544,6 +2585,7 @@ const crosstalk_net_discord_dev_t* crosstalk_net_discord_voice_dev_out_get(const
 
 uint32_t crosstalk_net_discord_voice_dev_in_set(crosstalk_net_discord_ctx_t *ctx, const char *dev_id)
 {
+    uint64_t fmt_len = 0;
     Discord_String text = LDG_STRUCT_ZERO_INIT;
 
     if (LDG_UNLIKELY(!ctx || !dev_id)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -2552,7 +2594,7 @@ uint32_t crosstalk_net_discord_voice_dev_in_set(crosstalk_net_discord_ctx_t *ctx
 
     if (LDG_UNLIKELY((uint64_t)strlen(dev_id) >= (uint64_t)sizeof(ctx->dev_in_sel))) { return LDG_ERR_OVERFLOW; }
 
-    snprintf(ctx->dev_in_sel, sizeof(ctx->dev_in_sel), "%.159s", dev_id);
+    if (ldg_str_fmt(ctx->dev_in_sel, (uint64_t)sizeof(ctx->dev_in_sel), &fmt_len, "%.159s", dev_id) != LDG_ERR_AOK) { *(ctx->dev_in_sel) = LDG_STR_TERM; }
 
     crosstalk_net_discord_str_make(ctx->dev_in_sel, &text);
     Discord_Client_SetInputDevice(crosstalk_net_discord_client_get(ctx), text, crosstalk_net_discord_dev_set_cb, crosstalk_net_discord_user_data_free_cb, ctx);
@@ -2562,6 +2604,7 @@ uint32_t crosstalk_net_discord_voice_dev_in_set(crosstalk_net_discord_ctx_t *ctx
 
 uint32_t crosstalk_net_discord_voice_dev_out_set(crosstalk_net_discord_ctx_t *ctx, const char *dev_id)
 {
+    uint64_t fmt_len = 0;
     Discord_String text = LDG_STRUCT_ZERO_INIT;
 
     if (LDG_UNLIKELY(!ctx || !dev_id)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -2570,7 +2613,7 @@ uint32_t crosstalk_net_discord_voice_dev_out_set(crosstalk_net_discord_ctx_t *ct
 
     if (LDG_UNLIKELY((uint64_t)strlen(dev_id) >= (uint64_t)sizeof(ctx->dev_out_sel))) { return LDG_ERR_OVERFLOW; }
 
-    snprintf(ctx->dev_out_sel, sizeof(ctx->dev_out_sel), "%.159s", dev_id);
+    if (ldg_str_fmt(ctx->dev_out_sel, (uint64_t)sizeof(ctx->dev_out_sel), &fmt_len, "%.159s", dev_id) != LDG_ERR_AOK) { *(ctx->dev_out_sel) = LDG_STR_TERM; }
 
     crosstalk_net_discord_str_make(ctx->dev_out_sel, &text);
     Discord_Client_SetOutputDevice(crosstalk_net_discord_client_get(ctx), text, crosstalk_net_discord_dev_set_cb, crosstalk_net_discord_user_data_free_cb, ctx);

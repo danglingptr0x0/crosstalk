@@ -53,6 +53,7 @@ typedef struct crosstalk_hdl_elab_conn
     uint32_t base;
     uint32_t mem_sig;
     uint32_t mem_inner;
+    uint8_t pudding[4];
 } crosstalk_hdl_elab_conn_t;
 
 typedef struct crosstalk_hdl_elab_pbind
@@ -66,25 +67,6 @@ typedef struct crosstalk_hdl_elab_pbind
 static uint32_t crosstalk_hdl_elab_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint32_t node_idx);
 static uint32_t crosstalk_hdl_elab_module(crosstalk_hdl_elab_ctx_t *ctx, uint32_t mod_node, const crosstalk_hdl_elab_pbind_t *pbinds, uint32_t pbind_cunt, crosstalk_hdl_elab_conn_t *conns, uint32_t conn_cunt);
 static uint32_t crosstalk_hdl_elab_item(crosstalk_hdl_elab_ctx_t *ctx, uint32_t node_idx);
-
-static uint32_t crosstalk_hdl_elab_child_get(const crosstalk_hdl_elab_ctx_t *ctx, uint32_t node_idx, uint32_t *out_idx, const crosstalk_hdl_ast_node_t **out_node)
-{
-    const crosstalk_hdl_ast_node_t *node = 0x0;
-    uint32_t ret = 0;
-
-    if (LDG_UNLIKELY(ctx == 0x0 || out_idx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
-
-    *out_idx = UINT32_MAX;
-
-    ret = crosstalk_hdl_ast_node_get(ctx->ast, node_idx, &node);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-
-    *out_idx = node->first_child;
-
-    if (out_node != 0x0 && node->first_child != UINT32_MAX) { return crosstalk_hdl_ast_node_get(ctx->ast, node->first_child, out_node); }
-
-    return LDG_ERR_AOK;
-}
 
 static uint32_t crosstalk_hdl_elab_type_width_get(crosstalk_hdl_elab_ctx_t *ctx, uint32_t type_idx, uint32_t *out_width)
 {
@@ -3276,9 +3258,9 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
 
         if (child->kind == CROSSTALK_HDL_NODE_PARAM_CONN)
         {
-            if (LDG_UNLIKELY(pbind_cunt >= CROSSTALK_HDL_ELAB_PARAM_CAP)) { return LDG_ERR_FULL; }
-
             const crosstalk_hdl_ast_node_t *pval_node = 0x0;
+
+            if (LDG_UNLIKELY(pbind_cunt >= CROSSTALK_HDL_ELAB_PARAM_CAP)) { return LDG_ERR_FULL; }
 
             pbinds[pbind_cunt].name = child->tok;
             pbinds[pbind_cunt].str_is = LDG_TRUTH_FALSE;
@@ -4057,7 +4039,6 @@ static uint32_t crosstalk_hdl_elab_module(crosstalk_hdl_elab_ctx_t *ctx, uint32_
 {
     const crosstalk_hdl_ast_node_t *node = 0x0;
     const crosstalk_hdl_ast_node_t *child = 0x0;
-    const crosstalk_hdl_ast_node_t *sub_node = 0x0;
     crosstalk_hdl_ir_op_t op = LDG_STRUCT_ZERO_INIT;
     uint32_t glue_formal[CROSSTALK_HDL_ELAB_CONN_CAP];
     uint32_t glue_conn[CROSSTALK_HDL_ELAB_CONN_CAP];

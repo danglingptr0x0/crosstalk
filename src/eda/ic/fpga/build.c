@@ -1,6 +1,4 @@
-#include <inttypes.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <dangling/arch/amd64/atomic.h>
@@ -8,6 +6,7 @@
 #include <dangling/core/macros.h>
 #include <dangling/io/file.h>
 #include <dangling/mem/alloc.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/thread/yield.h>
 #include <dangling/time/time.h>
@@ -371,6 +370,8 @@ uint32_t crosstalk_eda_ic_fpga_build_status_get(crosstalk_eda_ic_fpga_build_ctx_
 {
     char top[CROSSTALK_EDA_IC_FPGA_BUILD_TOP_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t secs = 0;
+    uint64_t len = 0;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -382,10 +383,11 @@ uint32_t crosstalk_eda_ic_fpga_build_status_get(crosstalk_eda_ic_fpga_build_ctx_
 
     secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_EDA_IC_FPGA_BUILD_MS_PER_SEC;
 
-    memcpy(top, ctx->top, sizeof(top));
+    memcpy(&top[0], ctx->top, sizeof(top));
     top[sizeof(top) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
 
-    if (snprintf(ctx->status, sizeof(ctx->status), "bake %.31s: %.15s; %" PRIu64 "s", top, build_phase_text[ctx->phase], secs) < 0) { return LDG_ERR_STR_FMT; }
+    ret = ldg_str_fmt(ctx->status, (uint64_t)sizeof(ctx->status), &len, "bake %.31s: %.15s; %u64s", top, build_phase_text[ctx->phase], secs);
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
 
     *out = ctx->status;
 
