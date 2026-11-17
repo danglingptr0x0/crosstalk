@@ -16,7 +16,7 @@
 #include <libresteam/cb/cb.h>
 #include <libresteam/friends/friends.h>
 #include <libresteam/lobby/lobby.h>
-#include <libresteam/net_socks/net_socks.h>
+#include <libresteam/net/socks/socks.h>
 #include <libresteam/user/user.h>
 #include <libresteam/utils/utils.h>
 

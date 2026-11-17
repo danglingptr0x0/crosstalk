@@ -429,7 +429,7 @@ static void crosstalk_libresteam_down(crosstalk_ctx_t *ctx)
 
     if (crosstalk_net_presence_unreg(&ctx->presence, &ctx->libresteam_set) == LDG_ERR_FUNC_ARG_NULL) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: presence unreg failed; backend: libresteam"); }
 
-    if (libresteam_backend_steam_shutdown(&ctx->libresteam_steam) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: libresteam backend shutdown failed"); }
+    if (libresteam_steam_shutdown(&ctx->libresteam_steam) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: libresteam backend shutdown failed"); }
 
     ctx->libresteam_live = LDG_TRUTH_FALSE;
 }
@@ -14693,13 +14693,13 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: presence init failed; err: %u32", ret); }
 
     {
-        libresteam_backend_steam_conf_t libresteam_conf = LDG_STRUCT_ZERO_INIT;
+        libresteam_steam_conf_t libresteam_conf = LDG_STRUCT_ZERO_INIT;
 
-        ret = libresteam_backend_steam_init(&ctx->libresteam_steam, &libresteam_conf, &ctx->libresteam_backend);
+        ret = libresteam_steam_init(&ctx->libresteam_steam, &libresteam_conf, &ctx->libresteam_backend);
         if (ret == LDG_ERR_AOK)
         {
             ret = libresteam_backend_set_init(&ctx->libresteam_set, &ctx->libresteam_backend, CROSSTALK_CORE_LIBRESTEAM_BACKEND_CUNT, CROSSTALK_CORE_LIBRESTEAM_BACKEND_PRIMARY);
-            if (ret != LDG_ERR_AOK) { if (libresteam_backend_steam_shutdown(&ctx->libresteam_steam) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: libresteam backend shutdown failed"); } }
+            if (ret != LDG_ERR_AOK) { if (libresteam_steam_shutdown(&ctx->libresteam_steam) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: libresteam backend shutdown failed"); } }
         }
     }
 

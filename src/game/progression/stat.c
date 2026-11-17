@@ -3,7 +3,7 @@
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 
-#include <libresteam/user_stats/user_stats.h>
+#include <libresteam/user/stats/stats.h>
 
 #include "game/progression/progression.h"
 #include "game/progression/stat.h"

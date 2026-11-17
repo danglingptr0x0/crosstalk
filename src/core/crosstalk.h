@@ -27,7 +27,7 @@
 
 #include <libresteam/apps/apps.h>
 #include <libresteam/backend/backend.h>
-#include <libresteam/backend/steam/steam.h>
+#include <libresteam/steam/steam.h>
 #include <libresteam/friends/friends.h>
 #include <libresteam/timeline/timeline.h>
 #include <libresteam/utils/utils.h>
@@ -848,7 +848,7 @@ typedef struct crosstalk_core_win_nav_entry
 typedef struct crosstalk_ctx
 {
     ldg_sched_ctx_t sched;
-    libresteam_backend_steam_t libresteam_steam;
+    libresteam_steam_t libresteam_steam;
     libresteam_backend_t libresteam_backend;
     libresteam_backend_set_t libresteam_set;
     crosstalk_net_libresteam_cb_t net_cb;
