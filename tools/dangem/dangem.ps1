@@ -2,11 +2,23 @@ $ErrorActionPreference = 'Continue'
 $ProgressPreference = 'SilentlyContinue'
 
 $script:GH_REPO = 'danglingptr0x0/crosstalk'
-$script:SELF_URL = "https://raw.githubusercontent.com/$($script:GH_REPO)/main/tools/dangem/dangem.ps1"
-$script:SELF_DST = "$env:LOCALAPPDATA/Programs/dangem/dangem.ps1" -replace '\\', '/'
+$script:CC_REPO = 'danglingptr0x0/llvm-project-dangcsa_dangxa'
+$script:LDG_REPO = 'danglingptr0x0/libdangling'
+$script:LRS_REPO = 'danglingptr0x0/libresteam'
+$script:GH_API = 'https://api.github.com/repos'
+$script:GH_DL = 'https://github.com'
+$script:ASSET_SFX = '-windows-amd64.tar.xz'
+$script:TGT = 'x86_64-w64-mingw32'
+$script:STD_LIBS = '-lbcrypt -lxmllite -luuid'
+$script:DISCORD_TAG = 'discordsdk'
+$script:DISCORD_DIR = 'DiscordSocialSdk-1.10.18247'
+$script:DISCORD_ZIP = "$($script:DISCORD_DIR).zip"
+$script:SYS_PREFIX = "$env:LOCALAPPDATA/DANGLING" -replace '\\', '/'
+$script:SYS_LIB = "$($script:SYS_PREFIX)/lib"
+$script:SYS_BIN = "$($script:SYS_PREFIX)/bin"
 
-if ($env:DANGEM_ROOT) { $script:ROOT = $env:DANGEM_ROOT } else { $script:ROOT = "$env:LOCALAPPDATA/crosstalk" }
-$script:ROOT = $script:ROOT -replace '\\', '/'
+$script:ROOT = "$env:LOCALAPPDATA/crosstalk" -replace '\\', '/'
+if ($PSScriptRoot -and (Test-Path -LiteralPath (Join-Path $PSScriptRoot '../../src') -PathType Container)) { $script:ROOT = ([IO.Path]::GetFullPath((Join-Path $PSScriptRoot '../..')) -replace '\\', '/').TrimEnd('/') }
 $script:BUILD_DIR = "$($script:ROOT)/build-win"
 $script:OBJ_DIR = "$($script:BUILD_DIR)/obj"
 $script:JOB_DIR = "$($script:BUILD_DIR)/obj/.jobs"
@@ -17,8 +29,9 @@ $script:CFLAGS_RSP = "$($script:BUILD_DIR)/cflags.rsp"
 $script:LINK_RSP = "$($script:BUILD_DIR)/link.rsp"
 $script:LOG_PATH = "$($script:ROOT)/dangem.log"
 $script:DL_DIR = "$($script:ROOT)/.dl"
+$script:TREE_DIR = $script:ROOT
 $script:SRC_DIR = "$($script:ROOT)/src"
-$script:MINE = 0
+$script:CC_DIR = "$($script:ROOT)/res/utils/cc"
 
 $script:UNAME = "Windows $([Environment]::OSVersion.Version) $env:COMPUTERNAME $env:PROCESSOR_ARCHITECTURE"
 $script:TITLE_MENU = ' DANGLING Ecosystem Manager r0.1'
@@ -159,11 +172,9 @@ function compile_list_ld
 
         switch -CaseSensitive ($key)
         {
-            { $_ -in 'root', 'bin', 'tgt', 'steam', 'ldginc', 'ldglib', 'out', 'std', 'cflagset', 'ldflagset', 'libset' } { $script:KEYV[$key] = $val }
+            { $_ -in 'tgt', 'out', 'std', 'cflagset', 'ldflagset', 'libset' } { $script:KEYV[$key] = $val }
             { $_ -in 'src', 'def', 'inc', 'cflag', 'lib', 'ldflag' }
             {
-                if ($script:MINE -eq 1 -and $key -ceq 'src' -and $val.EndsWith('.c')) { continue }
-
                 $script:ITEM_KIND.Add($key)
                 $script:ITEM_VAL.Add($val)
                 $script:ITEM_CUNT++
@@ -171,78 +182,18 @@ function compile_list_ld
         }
     }
 
-    if ($script:MINE -eq 1) { return (compile_list_mine_ld) }
-
     return $true
-}
-
-function compile_list_mine_ld
-{
-    $cmake_path = "$($script:SRC_DIR)/../CMakeLists.txt"
-    $in_set = $false
-
-    if (-not (Test-Path -LiteralPath $cmake_path -PathType Leaf)) { return $false }
-
-    foreach ($line in [IO.File]::ReadAllLines($cmake_path))
-    {
-        $line = $line.TrimEnd("`r")
-
-        if ($line -match '^set\(CROSSTALK_SRC_ALL')
-        {
-            $in_set = $true
-            continue
-        }
-
-        if (-not $in_set) { continue }
-
-        if ($line -match '^\s*\)') { return $true }
-
-        if ($line -match '^\s*(src/\S+\.c)\s*$')
-        {
-            $script:ITEM_KIND.Add('src')
-            $script:ITEM_VAL.Add($Matches[1])
-            $script:ITEM_CUNT++
-        }
-    }
-
-    return $false
 }
 
 function path_leaf_get([string]$path)
 {
-    if ($path -match '([^/]*)$') { return $Matches[1] }
+    if ($path -match '([^/\\]*)$') { return $Matches[1] }
     return $path
 }
 
 function compile_list_map([string]$src)
 {
-    $ldglib = $script:KEYV['ldglib']
-
-    if ($ldglib -and $src -eq $ldglib) { return "$($script:ROOT)/ldg/lib/$(path_leaf_get $src)" }
-
-    if ($src -ceq 'src' -or $src.StartsWith('src/')) { return $script:SRC_DIR + $src.Substring(3) }
-
-    foreach ($key_name in 'bin', 'ldginc', 'steam', 'root')
-    {
-        $key_val = $script:KEYV[$key_name]
-
-        if (-not $key_val -or -not $src.Contains($key_val)) { continue }
-
-        switch ($key_name)
-        {
-            'bin' { $repl = $script:BUILD_DIR }
-            'ldginc' { $repl = "$($script:ROOT)/ldg/include" }
-            'steam' { $repl = "$($script:ROOT)/sdk/steamworks" }
-            'root' { $repl = $script:ROOT }
-        }
-
-        $at = $src.IndexOf($key_val)
-        $mapped = $src.Substring(0, $at) + $repl + $src.Substring($at + $key_val.Length)
-
-        if ($mapped -eq "$($script:ROOT)/src" -or $mapped.StartsWith("$($script:ROOT)/src/")) { $mapped = $script:SRC_DIR + $mapped.Substring("$($script:ROOT)/src".Length) }
-
-        return $mapped
-    }
+    if ($src.StartsWith('src/')) { return "$($script:TREE_DIR)/$src" }
 
     return $src
 }
@@ -277,9 +228,7 @@ function build_item_compiled_is([int]$idx)
 
 function build_obj_path_get([string]$src)
 {
-    if ($src.StartsWith($script:SRC_DIR)) { $src = 'src' + $src.Substring($script:SRC_DIR.Length) }
-
-    if ($src.StartsWith($script:ROOT)) { $src = $src.Substring($script:ROOT.Length) }
+    if ($src.StartsWith($script:TREE_DIR)) { $src = $src.Substring($script:TREE_DIR.Length) }
 
     while ($src.StartsWith('/') -or $src.StartsWith('\')) { $src = $src.Substring(1) }
 
@@ -318,15 +267,12 @@ function build_cflags_wr
         {
             build_rsp_arg $rsp '-I' $mapped
         }
-        else
+        elseif (Test-Path -LiteralPath $mapped -PathType Container)
         {
             build_rsp_arg $rsp '' '-isystem'
             build_rsp_arg $rsp '' $mapped
         }
     }
-
-    build_rsp_arg $rsp '' '-isystem'
-    build_rsp_arg $rsp '' "$($script:ROOT)/ldg/include"
 
     [IO.File]::WriteAllText($script:CFLAGS_RSP, $rsp.ToString())
     return $true
@@ -357,26 +303,23 @@ function build_link_wr
         build_rsp_arg $rsp '' (compile_list_map $script:ITEM_VAL[$idx])
     }
 
-    build_rsp_arg $rsp '-L' "$($script:ROOT)/ldg/lib"
     build_rsp_arg $rsp '-L' $script:ROOT
+    build_rsp_arg $rsp '-L' $script:SYS_LIB
 
     for ($idx = 0; $idx -lt $script:ITEM_CUNT; $idx++)
     {
         if ($script:ITEM_KIND[$idx] -cne 'lib') { continue }
 
         $val = $script:ITEM_VAL[$idx]
-
-        if ($val.StartsWith('/') -and $val -ne $script:KEYV['ldglib'])
-        {
-            build_rsp_arg $rsp '-l:' (path_leaf_get $val)
-            continue
-        }
-
         $mapped = compile_list_map $val
 
-        if ($val.StartsWith('-') -or $val.Contains('/') -or $val.Contains('\'))
+        if ($val.StartsWith('-'))
         {
             build_rsp_arg $rsp '' $mapped
+        }
+        elseif ([IO.Path]::IsPathRooted($val))
+        {
+            if (Test-Path -LiteralPath $mapped) { build_rsp_arg $rsp '' $mapped } else { build_rsp_arg $rsp '-l:' (path_leaf_get $val) }
         }
         else
         {
@@ -392,13 +335,9 @@ function build_link_wr
 
 function build_cc_find
 {
-    $script:CC = "$($script:ROOT)/res/utils/cc/bin/clang.exe"
-    if (Test-Path -LiteralPath $script:CC) { return $true }
+    $script:CC = "$($script:CC_DIR)/windows/bin/clang.exe"
 
-    $script:CC = "$($script:ROOT)/res/utils/cc/windows/bin/clang.exe"
-    if (Test-Path -LiteralPath $script:CC) { return $true }
-
-    return $false
+    return (Test-Path -LiteralPath $script:CC)
 }
 
 function build_src_newer_ck
@@ -409,7 +348,7 @@ function build_src_newer_ck
 
     $out_time = (Get-Item -LiteralPath $script:OUT_PATH).LastWriteTimeUtc
 
-    foreach ($dir in $script:SRC_DIR, "$($script:ROOT)/ldg", "$($script:BUILD_DIR)/dangem", "$($script:BUILD_DIR)/gen")
+    foreach ($dir in $script:SRC_DIR, "$($script:BUILD_DIR)/dangem")
     {
         if (-not (Test-Path -LiteralPath $dir -PathType Container)) { continue }
 
@@ -656,7 +595,7 @@ function compile_pump
 
 function core_deps_ck
 {
-    if (Test-Path -LiteralPath "$($script:ROOT)/ldg/lib") { $script:DEPS_OK = 1 } else { $script:DEPS_OK = 0 }
+    if ((Test-Path -LiteralPath "$($script:SYS_LIB)/libdangling.dll.a") -and (Test-Path -LiteralPath "$($script:SYS_LIB)/libresteam.dll.a")) { $script:DEPS_OK = 1 } else { $script:DEPS_OK = 0 }
 }
 
 function core_view_fill
@@ -687,7 +626,7 @@ function core_view_fill
 
     if ($script:CC_OK -ne 1)
     {
-        $script:VIEW_BUILD = 'bundled compiler not found'
+        $script:VIEW_BUILD = 'compiler not found'
     }
     elseif ($stale -eq 1)
     {
@@ -698,7 +637,7 @@ function core_view_fill
         $script:VIEW_BUILD = 'up to date'
     }
 
-    if ($script:DEPS_OK -eq 1) { $script:VIEW_DEPS = 'LDG bundled' } else { $script:VIEW_DEPS = 'LDG missing' }
+    if ($script:DEPS_OK -eq 1) { $script:VIEW_DEPS = 'LDG and LibreSteam installed' } else { $script:VIEW_DEPS = 'LDG or LibreSteam missing' }
 }
 
 function ui_text_put([long]$col, [long]$row, [string]$text, [int]$tone)
@@ -896,7 +835,7 @@ function ui_summary_draw
     if ($box_col -eq 36)
     {
         $cc_text = 'missing'
-        if ($script:CC_OK -eq 1) { $cc_text = 'bundled clang' }
+        if ($script:CC_OK -eq 1) { $cc_text = 'DANGCSA clang' }
 
         ui_text_put 1 3 "Release: $(str_cut $script:RELEASE 31)" $script:TONE_NORMAL
         ui_text_put 1 4 "Compiler: $cc_text" $script:TONE_NORMAL
@@ -997,6 +936,18 @@ function core_launch_menu_req
     $script:LAUNCH = 1
 }
 
+function gh_release_get([string]$repo)
+{
+    try
+    {
+        return (Invoke-RestMethod -UseBasicParsing -Uri "$($script:GH_API)/$repo/releases/latest")
+    }
+    catch
+    {
+        return $null
+    }
+}
+
 function core_asset_fetch([string]$name, [string]$url)
 {
     $script:FETCH_NAME = $name
@@ -1019,11 +970,58 @@ function core_asset_fetch([string]$name, [string]$url)
     return $false
 }
 
+function core_dep_build([string]$name, [string[]]$extra)
+{
+    $src = "$($script:DL_DIR)/$name"
+    $bld = "$($script:DL_DIR)/$name-build"
+
+    New-Item -ItemType Directory -Force -Path $src | Out-Null
+    & tar.exe -xzf "$($script:DL_DIR)/$name.tar.gz" -C $src --strip-components=1
+    if ($LASTEXITCODE -ne 0) { return $false }
+
+    [Console]::Out.WriteLine("dangem: compiling $name")
+    & cmake -S $src -B $bld -G Ninja "-DCMAKE_C_COMPILER=$($script:CC)" "-DCMAKE_C_COMPILER_TARGET=$($script:TGT)" "-DCMAKE_INSTALL_PREFIX=$($script:SYS_PREFIX)" "-DCMAKE_PREFIX_PATH=$($script:SYS_PREFIX)" @extra
+    if ($LASTEXITCODE -ne 0) { return $false }
+
+    & cmake --build $bld -j $script:JOB_CUNT
+    if ($LASTEXITCODE -ne 0) { return $false }
+
+    [Console]::Out.WriteLine("dangem: installing $name into $($script:SYS_PREFIX)")
+    & cmake --install $bld
+    return ($LASTEXITCODE -eq 0)
+}
+
+function core_deps_build
+{
+    run_term_leave
+
+    $ok = (core_dep_build 'ldg' @('-DLDG_WITH_GPU=OFF')) -and (core_dep_build 'libresteam' @())
+
+    if ($ok)
+    {
+        & cmake -S $script:TREE_DIR -B $script:BUILD_DIR -G Ninja "-DCMAKE_C_COMPILER=$($script:CC)" "-DCMAKE_C_COMPILER_TARGET=$($script:TGT)" "-DCMAKE_PREFIX_PATH=$($script:SYS_PREFIX)" "-DCROSSTALK_LIBRESTEAM_PREFIX=$($script:SYS_PREFIX)" "-DCMAKE_C_STANDARD_LIBRARIES=$($script:STD_LIBS)"
+        $ok = ($LASTEXITCODE -eq 0)
+    }
+
+    run_term_enter
+
+    return $ok
+}
+
 function core_deps_obtain
 {
-    if (-not (sys_tool_has 'tar.exe'))
+    foreach ($tool in 'tar.exe', 'cmake', 'ninja', 'nasm', 'pkg-config')
     {
-        $script:NOTICE = 'tar.exe is missing from this system'
+        if (-not (sys_tool_has $tool))
+        {
+            $script:NOTICE = "$tool is missing from this system"
+            return
+        }
+    }
+
+    if (-not ((sys_tool_has 'x86_64-w64-mingw32-gcc') -or (sys_tool_has 'gcc')))
+    {
+        $script:NOTICE = 'MinGW-w64 is missing; install it in PowerShell with: winget install -e --id BrechtSanders.WinLibs.POSIX.UCRT; then, start dangem again'
         return
     }
 
@@ -1031,35 +1029,59 @@ function core_deps_obtain
 
     try
     {
-        New-Item -ItemType Directory -Force -Path $script:DL_DIR | Out-Null
+        New-Item -ItemType Directory -Force -Path $script:DL_DIR, $script:CC_DIR | Out-Null
     }
     catch
     {
         return
     }
 
-    $script:NOTICE = 'looking up the latest release'
+    $script:NOTICE = 'looking up the latest releases'
     core_frame_draw
 
-    try
+    if (-not (Test-Path -LiteralPath $script:SRC_DIR -PathType Container))
     {
-        $tag = (Invoke-RestMethod -UseBasicParsing -Uri "https://api.github.com/repos/$($script:GH_REPO)/releases/latest").tag_name
-    }
-    catch
-    {
-        $tag = ''
+        $rel = gh_release_get $script:GH_REPO
+        $fetched = $false
+
+        if ($rel) { $fetched = core_asset_fetch 'crosstalk.tar.gz' "$($script:GH_DL)/$($script:GH_REPO)/archive/refs/tags/$($rel.tag_name).tar.gz" }
+
+        if ($fetched)
+        {
+            & tar.exe -xzf "$($script:DL_DIR)/crosstalk.tar.gz" -C $script:ROOT --strip-components=1
+            $fetched = ($LASTEXITCODE -eq 0)
+        }
+
+        if (-not $fetched)
+        {
+            $script:NOTICE = 'Crosstalk source download failed'
+            logging_line_wr 'ERR' "dangem: $($script:NOTICE)"
+            return
+        }
     }
 
-    if (-not $tag)
+    $cc_rel = gh_release_get $script:CC_REPO
+    $ldg_rel = gh_release_get $script:LDG_REPO
+    $lrs_rel = gh_release_get $script:LRS_REPO
+
+    if (-not $cc_rel -or -not $ldg_rel -or -not $lrs_rel)
     {
-        $script:NOTICE = 'no release found on GitHub'
+        $script:NOTICE = 'a release lookup on GitHub failed'
         return
     }
 
-    $build_asset = "crosstalk-$tag-build-windows-amd64.zip"
+    $cc_url = ($cc_rel.assets | Where-Object { $_.name.EndsWith($script:ASSET_SFX) } | Select-Object -First 1).browser_download_url
 
-    if (($script:MINE -ne 1 -and -not (core_asset_fetch "crosstalk-$tag-src.tar.gz" "https://github.com/$($script:GH_REPO)/archive/refs/tags/$tag.tar.gz")) -or
-        -not (core_asset_fetch $build_asset "https://github.com/$($script:GH_REPO)/releases/download/$tag/$build_asset"))
+    if (-not $cc_url)
+    {
+        $script:NOTICE = 'no compiler release found on GitHub'
+        return
+    }
+
+    if (-not (core_asset_fetch $script:DISCORD_ZIP "$($script:GH_DL)/$($script:GH_REPO)/releases/download/$($script:DISCORD_TAG)/$($script:DISCORD_ZIP)") -or
+        -not (core_asset_fetch "llvm$($script:ASSET_SFX)" $cc_url) -or
+        -not (core_asset_fetch 'ldg.tar.gz' "$($script:GH_DL)/$($script:LDG_REPO)/archive/refs/tags/$($ldg_rel.tag_name).tar.gz") -or
+        -not (core_asset_fetch 'libresteam.tar.gz' "$($script:GH_DL)/$($script:LRS_REPO)/archive/refs/tags/$($lrs_rel.tag_name).tar.gz"))
     {
         $script:NOTICE = "download failed; $($script:FETCH_NAME)"
         logging_line_wr 'ERR' "dangem: $($script:NOTICE)"
@@ -1069,49 +1091,55 @@ function core_deps_obtain
     $script:NOTICE = 'unpacking'
     core_frame_draw
 
-    Remove-Item -LiteralPath "$($script:ROOT)/ldg", "$($script:ROOT)/res/utils/cc", "$($script:BUILD_DIR)/dangem", "$($script:BUILD_DIR)/gen" -Recurse -Force -ErrorAction SilentlyContinue
+    $discord = "$($script:TREE_DIR)/$($script:DISCORD_DIR)"
 
-    $unpacked = $true
+    Remove-Item -LiteralPath "$($script:CC_DIR)/windows", $script:BUILD_DIR, $discord -Recurse -Force -ErrorAction SilentlyContinue
+    New-Item -ItemType Directory -Force -Path $discord | Out-Null
 
-    if ($script:MINE -ne 1)
-    {
-        Remove-Item -LiteralPath "$($script:ROOT)/src" -Recurse -Force -ErrorAction SilentlyContinue
-        & tar.exe -xzf "$($script:DL_DIR)/crosstalk-$tag-src.tar.gz" -C $script:ROOT --strip-components=1
-        if ($LASTEXITCODE -ne 0) { $unpacked = $false }
-    }
+    & tar.exe -xf "$($script:DL_DIR)/$($script:DISCORD_ZIP)" -C $discord
+    $unpacked = ($LASTEXITCODE -eq 0)
 
     if ($unpacked)
     {
-        & tar.exe -xf "$($script:DL_DIR)/$build_asset" -C $script:ROOT
-        if ($LASTEXITCODE -ne 0) { $unpacked = $false }
+        & tar.exe -xf "$($script:DL_DIR)/llvm$($script:ASSET_SFX)" -C $script:CC_DIR
+        $unpacked = ($LASTEXITCODE -eq 0)
     }
 
     if (-not $unpacked)
     {
         $script:NOTICE = 'unpacking failed'
-        logging_line_wr 'ERR' "dangem: unpacking failed; release: $tag"
+        logging_line_wr 'ERR' "dangem: $($script:NOTICE)"
         return
     }
 
-    Remove-Item -LiteralPath $script:DL_DIR -Recurse -Force -ErrorAction SilentlyContinue
-
-    if (-not (Test-Path -LiteralPath $script:SELF_DST))
+    if (-not (Test-Path -LiteralPath "$discord/discord_social_sdk" -PathType Container))
     {
-        try
-        {
-            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $script:SELF_DST) | Out-Null
-            Invoke-WebRequest -UseBasicParsing -Uri $script:SELF_URL -OutFile $script:SELF_DST
-        }
-        catch
-        {
-            logging_line_wr 'WARN' "dangem: self install failed; dst: $($script:SELF_DST)"
-        }
+        $inner = Get-ChildItem -LiteralPath $discord -Directory | ForEach-Object { "$($_.FullName)/discord_social_sdk" } | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if ($inner) { Move-Item -LiteralPath $inner -Destination $discord }
     }
+
+    if (-not (build_cc_find))
+    {
+        $script:NOTICE = "compiler not found after unpacking; path: $($script:CC)"
+        logging_line_wr 'ERR' "dangem: $($script:NOTICE)"
+        return
+    }
+
+    if (-not (core_deps_build))
+    {
+        $script:NOTICE = "LDG or LibreSteam build failed; prefix: $($script:SYS_PREFIX)"
+        logging_line_wr 'ERR' "dangem: $($script:NOTICE)"
+        return
+    }
+
+    Copy-Item -Path "$($script:SYS_BIN)/libdangling.dll", "$($script:SYS_BIN)/libresteam.dll", "$discord/discord_social_sdk/bin/release/*.dll", "$discord/discord_social_sdk/bin/release/*.kef" -Destination $script:ROOT -Force
+
+    Remove-Item -LiteralPath $script:DL_DIR -Recurse -Force -ErrorAction SilentlyContinue
 
     compile_init
     core_deps_ck
 
-    if ($script:DEPS_OK -eq 1) { $script:NOTICE = 'dependencies are in place' } else { $script:NOTICE = 'LDG is missing from this install' }
+    if ($script:DEPS_OK -eq 1) { $script:NOTICE = 'dependencies are in place' } else { $script:NOTICE = "LDG or LibreSteam is missing from $($script:SYS_LIB)" }
 }
 
 function core_deps_menu_req
@@ -1199,42 +1227,10 @@ function run_term_leave
 
 function main([string[]]$argv)
 {
-    foreach ($arg in $argv)
+    if ($argv.Count -gt 0)
     {
-        switch -CaseSensitive ($arg)
-        {
-            '--mine'
-            {
-                if (-not $PSCommandPath)
-                {
-                    [Console]::Out.WriteLine('dangem: --mine needs the script file in a checkout')
-                    return
-                }
-                $script:MINE = 1
-                $script:SRC_DIR = ((Join-Path (Split-Path -Parent $PSCommandPath) '../../src') -replace '\\', '/')
-            }
-            default
-            {
-                [Console]::Out.WriteLine("dangem: unknown argument; arg: $arg")
-                return
-            }
-        }
-
-        if (-not (Test-Path -LiteralPath $script:SRC_DIR -PathType Container))
-        {
-            [Console]::Out.WriteLine("dangem: no source tree next to this script; dir: $($script:SRC_DIR)")
-            return
-        }
-
-        $script:SRC_DIR = ((Resolve-Path -LiteralPath $script:SRC_DIR).Path -replace '\\', '/')
-        $tree_dir = ((Resolve-Path -LiteralPath "$($script:SRC_DIR)/..").Path -replace '\\', '/').TrimEnd('/')
-        $root_dir = ([IO.Path]::GetFullPath($script:ROOT) -replace '\\', '/').TrimEnd('/')
-
-        if ($tree_dir -ieq $root_dir)
-        {
-            [Console]::Out.WriteLine("dangem: --mine needs the checkout outside the dangem root; root: $($script:ROOT)")
-            return
-        }
+        [Console]::Out.WriteLine("dangem: unknown argument; arg: $($argv[0])")
+        return
     }
 
     if ([Console]::IsOutputRedirected -or [Console]::IsInputRedirected) { return }

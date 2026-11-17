@@ -5,12 +5,20 @@ export TZ=UTC
 
 GH_REPO="danglingptr0x0/crosstalk"
 CC_REPO="danglingptr0x0/llvm-project-dangcsa_dangxa"
-CC_TAG="24.0.0git-r2-dangcsa_dangxa"
-CC_ASSET="llvm-$CC_TAG-linux-amd64.tar.xz"
-SELF_URL="https://raw.githubusercontent.com/$GH_REPO/main/tools/dangem/dangem.sh"
-SELF_DST="$HOME/.local/bin/dangem"
-
-ROOT="${DANGEM_ROOT:-$HOME/.local/share/crosstalk}"
+LDG_REPO="danglingptr0x0/libdangling"
+LRS_REPO="danglingptr0x0/libresteam"
+GH_API="https://api.github.com/repos"
+GH_DL="https://github.com"
+ASSET_SFX="-linux-amd64.tar.xz"
+SYS_PREFIX="/usr/local"
+SYS_LIB="$SYS_PREFIX/lib"
+LD_AS_NEEDED="-Wl,--as-needed"
+DISCORD_TAG="discordsdk"
+DISCORD_DIR="DiscordSocialSdk-1.10.18247"
+DISCORD_ZIP="$DISCORD_DIR.zip"
+ROOT="$HOME/.local/share/crosstalk"
+SELF="${BASH_SOURCE[0]:-}"
+if [[ -f "$SELF" && -d "$(dirname -- "$SELF")/../../src" ]]; then ROOT="$(realpath -- "$(dirname -- "$SELF")/../..")"; fi
 BUILD_DIR="$ROOT/build"
 OBJ_DIR="$BUILD_DIR/obj"
 JOB_DIR="$BUILD_DIR/obj/.jobs"
@@ -21,8 +29,9 @@ CFLAGS_RSP="$BUILD_DIR/cflags.rsp"
 LINK_RSP="$BUILD_DIR/link.rsp"
 LOG_PATH="$ROOT/dangem.log"
 DL_DIR="$ROOT/.dl"
+TREE_DIR="$ROOT"
 SRC_DIR="$ROOT/src"
-MINE=0
+CC_DIR="$ROOT/res/utils/cc"
 
 UNAME="$(uname -a)"
 TITLE_MENU=" DANGLING Ecosystem Manager r0.1"
@@ -89,6 +98,8 @@ ITEM_KIND=()
 ITEM_VAL=()
 ITEM_CUNT=0
 FETCH_NAME=""
+ASSET_URL=""
+ASSET_TAG=""
 JOB_PID=()
 JOB_ITEM=()
 
@@ -127,6 +138,11 @@ logging_line_wr()
 {
     mkdir -p "$ROOT" || return 0
     printf '%s %s %s\n' "$(time_epoch_get)" "$1" "$2" >>"$LOG_PATH"
+}
+
+sys_tool_has()
+{
+    [[ -n "$(type -P "$1")" ]]
 }
 
 run_tty_ensure()
@@ -185,10 +201,8 @@ compile_list_ld()
         if [[ -z "$val" ]]; then continue; fi
 
         case "$key" in
-            root | bin | tgt | steam | ldginc | ldglib | out | std | cflagset | ldflagset | libset) KEYV[$key]="$val" ;;
+            tgt | out | std | cflagset | ldflagset | libset) KEYV[$key]="$val" ;;
             src | def | inc | cflag | lib | ldflag)
-                if [[ "$MINE" == 1 && "$key" == "src" && "$val" == *.c ]]; then continue; fi
-
                 ITEM_KIND+=("$key")
                 ITEM_VAL+=("$val")
                 ITEM_CUNT=$((ITEM_CUNT + 1))
@@ -196,81 +210,14 @@ compile_list_ld()
         esac
     done <"$LIST_PATH"
 
-    if [[ "$MINE" == 1 ]]; then
-        compile_list_mine_ld
-        return $?
-    fi
-
     return 0
-}
-
-compile_list_mine_ld()
-{
-    local line in_set=0
-    local cmake_path="$SRC_DIR/../CMakeLists.txt"
-
-    if [[ ! -f "$cmake_path" ]]; then return 1; fi
-
-    while IFS= read -r line || [[ -n "$line" ]]; do
-        line="${line%$'\r'}"
-
-        if [[ "$line" =~ ^set\(CROSSTALK_SRC_ALL ]]; then
-            in_set=1
-            continue
-        fi
-
-        if [[ "$in_set" != 1 ]]; then continue; fi
-
-        if [[ "$line" =~ ^[[:space:]]*\) ]]; then return 0; fi
-
-        if [[ "$line" =~ ^[[:space:]]*(src/[^[:space:]]+\.c)[[:space:]]*$ ]]; then
-            ITEM_KIND+=(src)
-            ITEM_VAL+=("${BASH_REMATCH[1]}")
-            ITEM_CUNT=$((ITEM_CUNT + 1))
-        fi
-    done <"$cmake_path"
-
-    return 1
 }
 
 compile_list_map()
 {
-    local src="$1"
-    local key_name key_val repl pre post
+    MAPPED="$1"
 
-    MAPPED="$src"
-
-    if [[ -n "${KEYV[ldglib]:-}" && "$src" == "${KEYV[ldglib]}" ]]; then
-        path_leaf_get "$src"
-        MAPPED="$ROOT/ldg/lib/$LEAF"
-        return 0
-    fi
-
-    if [[ "$src" == "src" || "$src" == src/* ]]; then
-        MAPPED="$SRC_DIR${src/"src"/}"
-        return 0
-    fi
-
-    for key_name in bin ldginc steam root; do
-        key_val="${KEYV[$key_name]:-}"
-
-        if [[ -z "$key_val" || "$src" != *"$key_val"* ]]; then continue; fi
-
-        case "$key_name" in
-            bin) repl="$BUILD_DIR" ;;
-            ldginc) repl="$ROOT/ldg/include" ;;
-            steam) repl="$ROOT/sdk/steamworks" ;;
-            root) repl="$ROOT" ;;
-        esac
-
-        pre="${src%%"$key_val"*}"
-        post="${src/"$pre$key_val"/}"
-        MAPPED="$pre$repl$post"
-
-        if [[ "$MAPPED" == "$ROOT/src" || "$MAPPED" == "$ROOT/src/"* ]]; then MAPPED="$SRC_DIR${MAPPED/"$ROOT/src"/}"; fi
-
-        return 0
-    done
+    if [[ "$1" == src/* ]]; then MAPPED="$TREE_DIR/$1"; fi
 }
 
 path_leaf_get()
@@ -348,14 +295,11 @@ build_cflags_wr()
             build_rsp_arg "-D" "$MAPPED"
         elif [[ "$MAPPED" == "$SRC_DIR"* ]]; then
             build_rsp_arg "-I" "$MAPPED"
-        else
+        elif [[ -d "$MAPPED" ]]; then
             build_rsp_arg "" "-isystem"
             build_rsp_arg "" "$MAPPED"
         fi
     done
-
-    build_rsp_arg "" "-isystem"
-    build_rsp_arg "" "$ROOT/ldg/include"
 
     printf '%s' "$RSP" >"$CFLAGS_RSP"
 }
@@ -369,7 +313,8 @@ build_link_wr()
     if [[ -n "${KEYV[tgt]:-}" ]]; then build_rsp_arg "--target=" "${KEYV[tgt]}"; fi
 
     build_rsp_arg "" "-fuse-ld=lld"
-    build_rsp_arg "" '-Wl,-rpath,$ORIGIN:$ORIGIN/ldg/lib'
+    build_rsp_arg "" '-Wl,-rpath,$ORIGIN'
+    build_rsp_arg "" "$LD_AS_NEEDED"
     build_rsp_set ldflagset
     build_rsp_arg "" "-o"
     build_rsp_arg "" "$OUT_PATH"
@@ -389,23 +334,23 @@ build_link_wr()
         build_rsp_arg "" "$MAPPED"
     done
 
-    build_rsp_arg "-L" "$ROOT/ldg/lib"
     build_rsp_arg "-L" "$ROOT"
+    build_rsp_arg "-L" "$SYS_LIB"
 
     for idx in "${!ITEM_KIND[@]}"; do
         if [[ "${ITEM_KIND[$idx]}" != "lib" ]]; then continue; fi
 
         val="${ITEM_VAL[$idx]}"
-
-        if [[ "$val" == /* && "$val" != "${KEYV[ldglib]:-}" ]]; then
-            path_leaf_get "$val"
-            build_rsp_arg "-l:" "$LEAF"
-            continue
-        fi
-
         compile_list_map "$val"
 
-        if [[ "$val" == -* || "$val" == */* || "$val" == *\\* ]]; then
+        if [[ "$val" == /* ]]; then
+            if [[ -e "$MAPPED" ]]; then
+                build_rsp_arg "" "$MAPPED"
+            else
+                path_leaf_get "$val"
+                build_rsp_arg "-l:" "$LEAF"
+            fi
+        elif [[ "$val" == -* ]]; then
             build_rsp_arg "" "$MAPPED"
         else
             build_rsp_arg "-l" "$MAPPED"
@@ -419,13 +364,9 @@ build_link_wr()
 
 build_cc_find()
 {
-    CC="$ROOT/res/utils/cc/bin/clang"
-    if [[ -e "$CC" ]]; then return 0; fi
+    CC="$CC_DIR/linux/bin/clang"
 
-    CC="$ROOT/res/utils/cc/linux/bin/clang"
-    if [[ -e "$CC" ]]; then return 0; fi
-
-    return 1
+    [[ -x "$CC" ]]
 }
 
 build_src_newer_ck()
@@ -436,7 +377,7 @@ build_src_newer_ck()
 
     if [[ -z "$OUT_PATH" || ! -e "$OUT_PATH" ]]; then return 0; fi
 
-    for dir in "$SRC_DIR" "$ROOT/ldg" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"; do
+    for dir in "$SRC_DIR" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"; do
         if [[ ! -d "$dir" ]]; then continue; fi
 
         hit="$(find "$dir" -maxdepth 16 -name '.*' -prune -o -type f -newer "$OUT_PATH" -print -quit)"
@@ -554,11 +495,6 @@ sys_proc_alive_is()
     [[ "$state" != "Z" && "$state" != "X" ]]
 }
 
-sys_tool_has()
-{
-    [[ -n "$(type -P "$1")" ]]
-}
-
 build_job_reap()
 {
     local slot="$1"
@@ -616,7 +552,7 @@ compile_start()
 
 compile_pump()
 {
-    local slot
+    local slot src
 
     if ! compile_busy_is; then return 0; fi
 
@@ -635,7 +571,7 @@ compile_pump()
             if ((ITEM_NEXT >= ITEM_CUNT)); then break; fi
 
             compile_list_map "${ITEM_VAL[$ITEM_NEXT]}"
-            local src="$MAPPED"
+            src="$MAPPED"
             build_obj_path_get "$src"
             build_job_spawn "$slot" "$ITEM_NEXT" "$CC" "@$CFLAGS_RSP" -c "$src" -o "$OBJ"
             ITEM_NEXT=$((ITEM_NEXT + 1))
@@ -679,7 +615,7 @@ compile_pump()
 
 core_deps_ck()
 {
-    if [[ -e "$ROOT/ldg/lib" ]]; then DEPS_OK=1; else DEPS_OK=0; fi
+    if [[ -e "$SYS_LIB/libdangling.so" && -e "$SYS_LIB/libresteam.so" ]]; then DEPS_OK=1; else DEPS_OK=0; fi
 }
 
 core_view_fill()
@@ -702,14 +638,14 @@ core_view_fill()
     if [[ "$CC_OK" == 1 && "$stale" == 1 ]]; then BUILD_ALERT=1; fi
 
     if [[ "$CC_OK" != 1 ]]; then
-        VIEW_BUILD="bundled compiler not found"
+        VIEW_BUILD="compiler not found"
     elif [[ "$stale" == 1 ]]; then
         VIEW_BUILD="The available source is newer than your latest compiled binary"
     else
         VIEW_BUILD="up to date"
     fi
 
-    if [[ "$DEPS_OK" == 1 ]]; then VIEW_DEPS="LDG bundled"; else VIEW_DEPS="LDG missing"; fi
+    if [[ "$DEPS_OK" == 1 ]]; then VIEW_DEPS="LDG and LibreSteam installed"; else VIEW_DEPS="LDG or LibreSteam missing"; fi
 }
 
 ui_text_put()
@@ -925,7 +861,7 @@ ui_summary_draw()
 
     if ((box_col == 36)); then
         cc_text="missing"
-        if [[ "$CC_OK" == 1 ]]; then cc_text="bundled clang"; fi
+        if [[ "$CC_OK" == 1 ]]; then cc_text="DANGCSA clang"; fi
 
         ui_text_put 1 3 "Release: ${RELEASE:0:31}" "$TONE_NORMAL"
         ui_text_put 1 4 "Compiler: $cc_text" "$TONE_NORMAL"
@@ -1027,6 +963,26 @@ core_launch_menu_req()
     LAUNCH=1
 }
 
+gh_release_ld()
+{
+    local repo="$1" sfx="$2" json
+
+    ASSET_TAG=""
+    ASSET_URL=""
+
+    json="$(curl -fsL --retry 3 "$GH_API/$repo/releases/latest")" || return 1
+
+    if [[ ! "$json" =~ \"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then return 1; fi
+
+    ASSET_TAG="${BASH_REMATCH[1]}"
+
+    if [[ -z "$sfx" ]]; then return 0; fi
+
+    if [[ ! "$json" =~ \"browser_download_url\"[[:space:]]*:[[:space:]]*\"([^\"]*"$sfx")\" ]]; then return 1; fi
+
+    ASSET_URL="${BASH_REMATCH[1]}"
+}
+
 core_asset_fetch()
 {
     FETCH_NAME="$1"
@@ -1035,42 +991,103 @@ core_asset_fetch()
     curl -fsL --retry 3 -o "$DL_DIR/$1" "$2"
 }
 
+core_dep_build()
+{
+    local name="$1" elevate="$2"
+    shift 2
+    local src="$DL_DIR/$name"
+    local bld="$DL_DIR/$name-build"
+
+    mkdir -p "$src" || return 1
+    tar -xzf "$DL_DIR/$name.tar.gz" -C "$src" --strip-components=1 || return 1
+
+    printf 'dangem: compiling %s\n' "$name"
+    cmake -S "$src" -B "$bld" -DCMAKE_C_COMPILER="$CC" -DCMAKE_INSTALL_PREFIX="$SYS_PREFIX" -DCMAKE_SHARED_LINKER_FLAGS="$LD_AS_NEEDED" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED" "$@" || return 1
+    cmake --build "$bld" -j "$JOB_CUNT" || return 1
+
+    printf 'dangem: installing %s into %s\n' "$name" "$SYS_PREFIX"
+    $elevate sh -c 'cmake --install "$1" && ldconfig' dangem "$bld"
+}
+
+core_deps_build()
+{
+    local elevate="" ret
+
+    if [[ "$EUID" != 0 ]]; then
+        if sys_tool_has doas; then
+            elevate=doas
+        elif sys_tool_has sudo; then
+            elevate=sudo
+        else
+            return 1
+        fi
+    fi
+
+    run_term_leave
+    core_dep_build ldg "$elevate" -DLDG_WITH_GPU=OFF && core_dep_build libresteam "$elevate" && cmake -S "$TREE_DIR" -B "$BUILD_DIR" -DCMAKE_C_COMPILER="$CC" -DCROSSTALK_LIBRESTEAM_PREFIX="$SYS_PREFIX" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED"
+    ret=$?
+    run_term_enter
+
+    return "$ret"
+}
+
 core_deps_obtain()
 {
-    local json tag
+    local tool mod cc_url ldg_tag lrs_tag
 
-    for tool in curl tar xz gzip; do
+    for tool in curl tar xz gzip unzip cmake make nasm pkg-config; do
         if ! sys_tool_has "$tool"; then
             NOTICE="$tool is missing from this system"
             return 0
         fi
     done
 
+    for mod in libcurl libpipewire-0.3 alsa libpulse x11; do
+        if ! pkg-config --exists "$mod"; then
+            NOTICE="$mod development files are missing from this system"
+            return 0
+        fi
+    done
+
     rm -rf "$DL_DIR"
-    mkdir -p "$DL_DIR" "$ROOT/res/utils/cc" || return 0
+    mkdir -p "$DL_DIR" "$CC_DIR" || return 0
 
-    NOTICE="looking up the latest release"
+    NOTICE="looking up the latest releases"
     core_frame_draw
-    json="$(curl -fsL --retry 3 "https://api.github.com/repos/$GH_REPO/releases/latest")"
 
-    if [[ ! "$json" =~ \"tag_name\"[[:space:]]*:[[:space:]]*\"([^\"]+)\" ]]; then
-        NOTICE="no release found on GitHub"
+    if [[ ! -d "$SRC_DIR" ]]; then
+        if ! gh_release_ld "$GH_REPO" "" || ! core_asset_fetch crosstalk.tar.gz "$GH_DL/$GH_REPO/archive/refs/tags/$ASSET_TAG.tar.gz" || ! tar -xzf "$DL_DIR/crosstalk.tar.gz" -C "$ROOT" --strip-components=1; then
+            NOTICE="Crosstalk source download failed"
+            logging_line_wr ERR "dangem: $NOTICE"
+            return 0
+        fi
+    fi
+
+    if ! gh_release_ld "$CC_REPO" "$ASSET_SFX"; then
+        NOTICE="no compiler release found on GitHub"
         return 0
     fi
 
-    tag="${BASH_REMATCH[1]}"
+    cc_url="$ASSET_URL"
 
-    if [[ "$MINE" != 1 ]] && ! core_asset_fetch "crosstalk-$tag-src.tar.gz" "https://github.com/$GH_REPO/archive/refs/tags/$tag.tar.gz"; then
-        NOTICE="download failed; $FETCH_NAME"
-        logging_line_wr ERR "dangem: $NOTICE"
+    if ! gh_release_ld "$LDG_REPO" ""; then
+        NOTICE="no LDG release found on GitHub"
         return 0
     fi
 
-    if ! core_asset_fetch "crosstalk-$tag-res.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-res.tar.xz" ||
-        ! core_asset_fetch "crosstalk-$tag-sdk-linux-amd64.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-sdk-linux-amd64.tar.xz" ||
-        ! core_asset_fetch "crosstalk-$tag-ldg-linux-amd64.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-ldg-linux-amd64.tar.xz" ||
-        ! core_asset_fetch "crosstalk-$tag-build-linux-amd64.tar.xz" "https://github.com/$GH_REPO/releases/download/$tag/crosstalk-$tag-build-linux-amd64.tar.xz" ||
-        ! core_asset_fetch "$CC_ASSET" "https://github.com/$CC_REPO/releases/download/$CC_TAG/$CC_ASSET"; then
+    ldg_tag="$ASSET_TAG"
+
+    if ! gh_release_ld "$LRS_REPO" ""; then
+        NOTICE="no LibreSteam release found on GitHub"
+        return 0
+    fi
+
+    lrs_tag="$ASSET_TAG"
+
+    if ! core_asset_fetch "$DISCORD_ZIP" "$GH_DL/$GH_REPO/releases/download/$DISCORD_TAG/$DISCORD_ZIP" ||
+        ! core_asset_fetch "llvm$ASSET_SFX" "$cc_url" ||
+        ! core_asset_fetch ldg.tar.gz "$GH_DL/$LDG_REPO/archive/refs/tags/$ldg_tag.tar.gz" ||
+        ! core_asset_fetch libresteam.tar.gz "$GH_DL/$LRS_REPO/archive/refs/tags/$lrs_tag.tar.gz"; then
         NOTICE="download failed; $FETCH_NAME"
         logging_line_wr ERR "dangem: $NOTICE"
         return 0
@@ -1079,36 +1096,36 @@ core_deps_obtain()
     NOTICE="unpacking"
     core_frame_draw
 
-    rm -rf "$ROOT/ldg" "$ROOT/res/utils/cc/linux" "$BUILD_DIR/dangem" "$BUILD_DIR/gen"
+    rm -rf "$CC_DIR/linux" "$BUILD_DIR" "$TREE_DIR/$DISCORD_DIR"
 
-    if [[ "$MINE" != 1 ]]; then
-        rm -rf "$ROOT/src"
-
-        if ! tar -xzf "$DL_DIR/crosstalk-$tag-src.tar.gz" -C "$ROOT" --strip-components=1; then
-            NOTICE="unpacking failed"
-            logging_line_wr ERR "dangem: unpacking failed; release: $tag"
-            return 0
-        fi
+    if ! unzip -q "$DL_DIR/$DISCORD_ZIP" -d "$TREE_DIR/$DISCORD_DIR" || ! tar -xJf "$DL_DIR/llvm$ASSET_SFX" -C "$CC_DIR"; then
+        NOTICE="unpacking failed"
+        logging_line_wr ERR "dangem: $NOTICE"
+        return 0
     fi
 
-    if ! tar -xJf "$DL_DIR/crosstalk-$tag-res.tar.xz" -C "$ROOT" ||
-        ! tar -xJf "$DL_DIR/crosstalk-$tag-sdk-linux-amd64.tar.xz" -C "$ROOT" ||
-        ! tar -xJf "$DL_DIR/crosstalk-$tag-ldg-linux-amd64.tar.xz" -C "$ROOT" ||
-        ! tar -xJf "$DL_DIR/crosstalk-$tag-build-linux-amd64.tar.xz" -C "$ROOT" ||
-        ! tar -xJf "$DL_DIR/$CC_ASSET" -C "$ROOT/res/utils/cc"; then
-        NOTICE="unpacking failed"
-        logging_line_wr ERR "dangem: unpacking failed; release: $tag"
+    if [[ ! -d "$TREE_DIR/$DISCORD_DIR/discord_social_sdk" ]]; then mv "$TREE_DIR/$DISCORD_DIR"/*/discord_social_sdk "$TREE_DIR/$DISCORD_DIR/"; fi
+
+    cp "$TREE_DIR/$DISCORD_DIR/discord_social_sdk/lib/release/libdiscord_partner_sdk.so" "$TREE_DIR/$DISCORD_DIR/discord_social_sdk/lib/release/"*.kef "$ROOT/"
+
+    if ! build_cc_find; then
+        NOTICE="compiler not found after unpacking; path: $CC"
+        logging_line_wr ERR "dangem: $NOTICE"
+        return 0
+    fi
+
+    if ! core_deps_build; then
+        NOTICE="LDG or LibreSteam build failed; prefix: $SYS_PREFIX"
+        logging_line_wr ERR "dangem: $NOTICE"
         return 0
     fi
 
     rm -rf "$DL_DIR"
 
-    if [[ ! -x "$SELF_DST" ]] && mkdir -p "${SELF_DST%/*}" && curl -fsL --retry 3 -o "$SELF_DST" "$SELF_URL"; then chmod +x "$SELF_DST"; fi
-
     compile_init
     core_deps_ck
 
-    if [[ "$DEPS_OK" == 1 ]]; then NOTICE="dependencies are in place"; else NOTICE="LDG is missing from this install"; fi
+    if [[ "$DEPS_OK" == 1 ]]; then NOTICE="dependencies are in place"; else NOTICE="LDG or LibreSteam is missing from $SYS_LIB"; fi
 }
 
 core_deps_menu_req()
@@ -1210,34 +1227,12 @@ run_term_leave()
 
 main()
 {
-    local arg tree_dir
-
     TTY_PATH=/dev/tty
 
-    for arg in "$@"; do
-        case "$arg" in
-            --mine)
-                MINE=1
-                SRC_DIR="$(realpath -- "$(dirname -- "${BASH_SOURCE[0]}")/../../src")"
-                ;;
-            *)
-                printf 'dangem: unknown argument; arg: %s\n' "$arg"
-                exit 1
-                ;;
-        esac
-
-        if [[ ! -d "$SRC_DIR" ]]; then
-            printf 'dangem: no source tree next to this script; dir: %s\n' "$SRC_DIR"
-            exit 1
-        fi
-
-        tree_dir="$(realpath -- "$SRC_DIR/..")"
-
-        if [[ "$tree_dir" == "$(realpath -m -- "$ROOT")" ]]; then
-            printf 'dangem: --mine needs the checkout outside the dangem root; root: %s\n' "$ROOT"
-            exit 1
-        fi
-    done
+    if [[ -n "${1:-}" ]]; then
+        printf 'dangem: unknown argument; arg: %s\n' "$1"
+        exit 1
+    fi
 
     run_tty_ensure "$@"
     mkdir -p "$ROOT" || exit 1
