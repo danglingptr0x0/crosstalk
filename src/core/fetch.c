@@ -148,9 +148,13 @@ static uint32_t fetch_git_find(crosstalk_core_fetch_ctx_t *ctx, char *out, uint6
     ret = ldg_sys_env_get(FETCH_PATH_ENV, ctx->env, (uint64_t)sizeof(ctx->env));
     if (ret != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
 
-    for (at = 0; ; at = at + FETCH_STEP)
+    at = 0;
+
+    while (LDG_TRUTH_TRUE)
     {
         char ch = ctx->env[at];
+
+        at = at + FETCH_STEP;
 
         if (ch != sep && ch != LDG_STR_TERM)
         {

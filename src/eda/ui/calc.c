@@ -218,7 +218,7 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
     if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 0x1] == 'x' || cur->text[cur->at + 0x1] == 'X'))
     {
         cur->at = cur->at + 0x2;
-        for (;;)
+        while (LDG_TRUTH_TRUE)
         {
             uint8_t nibble = 0;
 
@@ -236,7 +236,7 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
     else if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 0x1] == 'b' || cur->text[cur->at + 0x1] == 'B'))
     {
         cur->at = cur->at + 0x2;
-        for (;;)
+        while (LDG_TRUTH_TRUE)
         {
             uint8_t bit = 0;
 
@@ -256,7 +256,7 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
     else
     {
         dec_is = LDG_TRUTH_TRUE;
-        for (;;)
+        while (LDG_TRUTH_TRUE)
         {
             uint8_t digit = 0;
 
@@ -471,7 +471,7 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    for (;;)
+    while (LDG_TRUTH_TRUE)
     {
         uint64_t rhs = 0;
         uint32_t prec = 0;

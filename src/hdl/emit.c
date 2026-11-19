@@ -1828,7 +1828,7 @@ static uint32_t crosstalk_hdl_emit_topo_build(crosstalk_hdl_emit_ctx_t *ctx)
 
     ctx->residue_cunt = 0;
 
-    for (;;)
+    while (LDG_TRUTH_TRUE)
     {
         uint32_t forced = UINT32_MAX;
 

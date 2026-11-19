@@ -307,9 +307,13 @@ static uint32_t include_resolve_cb(void *user, const char *name, uint32_t name_l
 
     files = inc->slot->fileset_files;
 
-    for (pos = 0; ; pos = pos + 0x1)
+    pos = 0;
+
+    while (LDG_TRUTH_TRUE)
     {
         char ch = files[pos];
+
+        pos = pos + 0x1;
 
         if (ch != CROSSTALK_EDA_IC_FPGA_FILESET_SEP && ch != LDG_STR_TERM)
         {

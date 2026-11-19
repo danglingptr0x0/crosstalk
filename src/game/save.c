@@ -213,7 +213,7 @@ static uint32_t bkp_wr(const char *path)
         return ret;
     }
 
-    for (;;)
+    while (LDG_TRUTH_TRUE)
     {
         bytes_rd = 0;
         ret = ldg_io_file_rd(src, chunk, sizeof(chunk), &bytes_rd);

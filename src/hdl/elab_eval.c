@@ -124,9 +124,7 @@ uint32_t crosstalk_hdl_elab_lit_decode(const char *src, const crosstalk_hdl_tok_
     else if (ch == 'h' || ch == 'H') { base = 16; }
     else { return CROSSTALK_HDL_ERR_ELAB; }
 
-    idx++;
-
-    for (; idx < tok->len; idx++)
+    for (idx = idx + 0x1; idx < tok->len; idx++)
     {
         ch = src[tok->off + idx];
         if (ch == '_') { continue; }
@@ -199,9 +197,7 @@ uint32_t crosstalk_hdl_elab_lit_mask_decode(const char *src, const crosstalk_hdl
     else if (ch == 'h' || ch == 'H') { base = 16; }
     else { return CROSSTALK_HDL_ERR_ELAB; }
 
-    idx++;
-
-    for (; idx < tok->len; idx++)
+    for (idx = idx + 0x1; idx < tok->len; idx++)
     {
         ch = src[tok->off + idx];
         if (ch == '_') { continue; }
