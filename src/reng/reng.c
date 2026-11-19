@@ -20,7 +20,7 @@ static uint32_t reng_text_ck(const char *text, uint32_t cap)
     {
         if (text[at] == '\n' || text[at] == '\r') { return CROSSTALK_RENG_ERR_TEXT; }
 
-        at = at + 0x1;
+        at++;
 
         if (at + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
     }
@@ -34,7 +34,7 @@ static uint8_t reng_str_eq_is(const char *lhs, const char *rhs)
 {
     uint32_t at = 0;
 
-    while (lhs[at] != LDG_STR_TERM && lhs[at] == rhs[at]) { at = at + 0x1; }
+    while (lhs[at] != LDG_STR_TERM && lhs[at] == rhs[at]) { at++; }
 
     return lhs[at] == rhs[at] ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
@@ -45,7 +45,7 @@ static void reng_touch(crosstalk_reng_ctx_t *ctx, uint32_t proj)
 
     if (proj < ctx->proj_cunt) { ctx->proj[proj].updated_ms = ldg_time_epoch_ms_get(); }
 
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_TRUE;
 }
 
@@ -60,15 +60,15 @@ static void reng_proj_ref_shift(crosstalk_reng_ctx_t *ctx, uint32_t gone)
     {
         if (ctx->task[at].proj == gone)
         {
-            if (at + 0x1 < ctx->task_cunt) { memmove(&ctx->task[at], &ctx->task[at + 0x1], (uint64_t)(ctx->task_cunt - at - 0x1) * sizeof(ctx->task[0])); }
+            if (at + 1 < ctx->task_cunt) { memmove(&ctx->task[at], &ctx->task[at + 1], (uint64_t)(ctx->task_cunt - at - 1) * sizeof(ctx->task[0])); }
 
-            ctx->task_cunt = ctx->task_cunt - 0x1;
+            ctx->task_cunt--;
             continue;
         }
 
-        if (ctx->task[at].proj > gone) { ctx->task[at].proj = ctx->task[at].proj - 0x1; }
+        if (ctx->task[at].proj > gone) { ctx->task[at].proj--; }
 
-        at = at + 0x1;
+        at++;
     }
 
     at = 0;
@@ -76,15 +76,15 @@ static void reng_proj_ref_shift(crosstalk_reng_ctx_t *ctx, uint32_t gone)
     {
         if (ctx->note[at].proj == gone)
         {
-            if (at + 0x1 < ctx->note_cunt) { memmove(&ctx->note[at], &ctx->note[at + 0x1], (uint64_t)(ctx->note_cunt - at - 0x1) * sizeof(ctx->note[0])); }
+            if (at + 1 < ctx->note_cunt) { memmove(&ctx->note[at], &ctx->note[at + 1], (uint64_t)(ctx->note_cunt - at - 1) * sizeof(ctx->note[0])); }
 
-            ctx->note_cunt = ctx->note_cunt - 0x1;
+            ctx->note_cunt--;
             continue;
         }
 
-        if (ctx->note[at].proj > gone) { ctx->note[at].proj = ctx->note[at].proj - 0x1; }
+        if (ctx->note[at].proj > gone) { ctx->note[at].proj--; }
 
-        at = at + 0x1;
+        at++;
     }
 
     at = 0;
@@ -92,23 +92,23 @@ static void reng_proj_ref_shift(crosstalk_reng_ctx_t *ctx, uint32_t gone)
     {
         if (ctx->mark[at].proj == gone)
         {
-            if (at + 0x1 < ctx->mark_cunt) { memmove(&ctx->mark[at], &ctx->mark[at + 0x1], (uint64_t)(ctx->mark_cunt - at - 0x1) * sizeof(ctx->mark[0])); }
+            if (at + 1 < ctx->mark_cunt) { memmove(&ctx->mark[at], &ctx->mark[at + 1], (uint64_t)(ctx->mark_cunt - at - 1) * sizeof(ctx->mark[0])); }
 
-            ctx->mark_cunt = ctx->mark_cunt - 0x1;
+            ctx->mark_cunt--;
             continue;
         }
 
-        if (ctx->mark[at].proj > gone) { ctx->mark[at].proj = ctx->mark[at].proj - 0x1; }
+        if (ctx->mark[at].proj > gone) { ctx->mark[at].proj--; }
 
-        at = at + 0x1;
+        at++;
     }
 
-    for (at = 0; at < ctx->sample_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->sample_cunt; at++)
     {
         crosstalk_reng_sample_t *sample = &ctx->sample[(ctx->sample_hd + at) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX];
 
         if (sample->proj == gone) { sample->proj = (uint32_t)UINT32_MAX; }
-        else if (sample->proj != (uint32_t)UINT32_MAX && sample->proj > gone) { sample->proj = sample->proj - 0x1; }
+        else if (sample->proj != (uint32_t)UINT32_MAX && sample->proj > gone) { sample->proj--; }
     }
 }
 
@@ -135,7 +135,7 @@ uint32_t crosstalk_reng_clear(crosstalk_reng_ctx_t *ctx)
     ctx->sample_cunt = 0;
     ctx->sample_hd = 0;
     ctx->sel = (uint32_t)UINT32_MAX;
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;
@@ -181,7 +181,7 @@ uint32_t crosstalk_reng_kind_parse(const char *name, uint32_t *out)
 
     *out = (uint32_t)CROSSTALK_RENG_KIND_DESIGN;
 
-    for (kind = 0; kind < (uint32_t)CROSSTALK_RENG_KIND_CUNT; kind = kind + 0x1)
+    for (kind = 0; kind < (uint32_t)CROSSTALK_RENG_KIND_CUNT; kind++)
     {
         if (crosstalk_reng_kind_name_get(kind, &known) != LDG_ERR_AOK) { continue; }
 
@@ -232,7 +232,7 @@ uint32_t crosstalk_reng_proj_add(crosstalk_reng_ctx_t *ctx, const char *name, ui
     proj->updated_ms = proj->created_ms;
 
     *out = ctx->proj_cunt;
-    ctx->proj_cunt = ctx->proj_cunt + 0x1;
+    ctx->proj_cunt++;
 
     reng_touch(ctx, *out);
 
@@ -247,7 +247,7 @@ uint32_t crosstalk_reng_proj_find(const crosstalk_reng_ctx_t *ctx, const char *n
 
     *out = (uint32_t)UINT32_MAX;
 
-    for (idx = 0; idx < ctx->proj_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->proj_cunt; idx++)
     {
         if (reng_str_eq_is(ctx->proj[idx].name, name) != LDG_TRUTH_TRUE) { continue; }
 
@@ -269,7 +269,7 @@ uint32_t crosstalk_reng_proj_hash_find(const crosstalk_reng_ctx_t *ctx, uint32_t
 
     if (img_hash == 0) { return LDG_ERR_NOT_FOUND; }
 
-    for (idx = 0; idx < ctx->proj_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->proj_cunt; idx++)
     {
         if (ctx->proj[idx].img_hash != img_hash) { continue; }
 
@@ -307,14 +307,14 @@ uint32_t crosstalk_reng_proj_remove(crosstalk_reng_ctx_t *ctx, uint32_t idx)
 
     if (idx >= ctx->proj_cunt) { return LDG_ERR_BOUNDS; }
 
-    if (idx + 0x1 < ctx->proj_cunt) { memmove(&ctx->proj[idx], &ctx->proj[idx + 0x1], (uint64_t)(ctx->proj_cunt - idx - 0x1) * sizeof(ctx->proj[0])); }
+    if (idx + 1 < ctx->proj_cunt) { memmove(&ctx->proj[idx], &ctx->proj[idx + 1], (uint64_t)(ctx->proj_cunt - idx - 1) * sizeof(ctx->proj[0])); }
 
-    ctx->proj_cunt = ctx->proj_cunt - 0x1;
+    ctx->proj_cunt--;
 
     reng_proj_ref_shift(ctx, idx);
 
     if (ctx->sel == idx) { ctx->sel = (uint32_t)UINT32_MAX; }
-    else if (ctx->sel != (uint32_t)UINT32_MAX && ctx->sel > idx) { ctx->sel = ctx->sel - 0x1; }
+    else if (ctx->sel != (uint32_t)UINT32_MAX && ctx->sel > idx) { ctx->sel--; }
 
     reng_touch(ctx, (uint32_t)UINT32_MAX);
 
@@ -328,7 +328,7 @@ uint32_t crosstalk_reng_sel_set(crosstalk_reng_ctx_t *ctx, uint32_t idx)
     if (idx != (uint32_t)UINT32_MAX && idx >= ctx->proj_cunt) { return LDG_ERR_BOUNDS; }
 
     ctx->sel = idx;
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_TRUE;
 
     return LDG_ERR_AOK;
@@ -368,7 +368,7 @@ uint32_t crosstalk_reng_task_add(crosstalk_reng_ctx_t *ctx, uint32_t proj, const
     task->created_ms = ldg_time_epoch_ms_get();
 
     *out = ctx->task_cunt;
-    ctx->task_cunt = ctx->task_cunt + 0x1;
+    ctx->task_cunt++;
 
     reng_touch(ctx, proj);
 
@@ -401,9 +401,9 @@ uint32_t crosstalk_reng_task_remove(crosstalk_reng_ctx_t *ctx, uint32_t idx)
 
     proj = ctx->task[idx].proj;
 
-    if (idx + 0x1 < ctx->task_cunt) { memmove(&ctx->task[idx], &ctx->task[idx + 0x1], (uint64_t)(ctx->task_cunt - idx - 0x1) * sizeof(ctx->task[0])); }
+    if (idx + 1 < ctx->task_cunt) { memmove(&ctx->task[idx], &ctx->task[idx + 1], (uint64_t)(ctx->task_cunt - idx - 1) * sizeof(ctx->task[0])); }
 
-    ctx->task_cunt = ctx->task_cunt - 0x1;
+    ctx->task_cunt--;
 
     reng_touch(ctx, proj);
 
@@ -458,7 +458,7 @@ uint32_t crosstalk_reng_note_add(crosstalk_reng_ctx_t *ctx, uint32_t proj, uint6
     note->ms = ldg_time_epoch_ms_get();
 
     *out = ctx->note_cunt;
-    ctx->note_cunt = ctx->note_cunt + 0x1;
+    ctx->note_cunt++;
 
     reng_touch(ctx, proj);
 
@@ -475,9 +475,9 @@ uint32_t crosstalk_reng_note_remove(crosstalk_reng_ctx_t *ctx, uint32_t idx)
 
     proj = ctx->note[idx].proj;
 
-    if (idx + 0x1 < ctx->note_cunt) { memmove(&ctx->note[idx], &ctx->note[idx + 0x1], (uint64_t)(ctx->note_cunt - idx - 0x1) * sizeof(ctx->note[0])); }
+    if (idx + 1 < ctx->note_cunt) { memmove(&ctx->note[idx], &ctx->note[idx + 1], (uint64_t)(ctx->note_cunt - idx - 1) * sizeof(ctx->note[0])); }
 
-    ctx->note_cunt = ctx->note_cunt - 0x1;
+    ctx->note_cunt--;
 
     reng_touch(ctx, proj);
 
@@ -542,7 +542,7 @@ uint32_t crosstalk_reng_mark_add(crosstalk_reng_ctx_t *ctx, uint32_t proj, const
     mark->addr = addr;
 
     *out = ctx->mark_cunt;
-    ctx->mark_cunt = ctx->mark_cunt + 0x1;
+    ctx->mark_cunt++;
 
     reng_touch(ctx, proj);
 
@@ -559,9 +559,9 @@ uint32_t crosstalk_reng_mark_remove(crosstalk_reng_ctx_t *ctx, uint32_t idx)
 
     proj = ctx->mark[idx].proj;
 
-    if (idx + 0x1 < ctx->mark_cunt) { memmove(&ctx->mark[idx], &ctx->mark[idx + 0x1], (uint64_t)(ctx->mark_cunt - idx - 0x1) * sizeof(ctx->mark[0])); }
+    if (idx + 1 < ctx->mark_cunt) { memmove(&ctx->mark[idx], &ctx->mark[idx + 1], (uint64_t)(ctx->mark_cunt - idx - 1) * sizeof(ctx->mark[0])); }
 
-    ctx->mark_cunt = ctx->mark_cunt - 0x1;
+    ctx->mark_cunt--;
 
     reng_touch(ctx, proj);
 
@@ -576,7 +576,7 @@ uint32_t crosstalk_reng_mark_find(const crosstalk_reng_ctx_t *ctx, uint32_t proj
 
     *out = (uint32_t)UINT32_MAX;
 
-    for (idx = 0; idx < ctx->mark_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->mark_cunt; idx++)
     {
         if (ctx->mark[idx].proj != proj) { continue; }
 
@@ -624,8 +624,8 @@ uint32_t crosstalk_reng_sample_push(crosstalk_reng_ctx_t *ctx, uint32_t proj, ui
 
     at = (ctx->sample_hd + ctx->sample_cunt) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX;
 
-    if (ctx->sample_cunt < (uint32_t)CROSSTALK_RENG_SAMPLE_MAX) { ctx->sample_cunt = ctx->sample_cunt + 0x1; }
-    else { ctx->sample_hd = (ctx->sample_hd + 0x1) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX; }
+    if (ctx->sample_cunt < (uint32_t)CROSSTALK_RENG_SAMPLE_MAX) { ctx->sample_cunt++; }
+    else { ctx->sample_hd = (ctx->sample_hd + 1) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX; }
 
     slot = &ctx->sample[at];
 
@@ -664,9 +664,9 @@ uint32_t crosstalk_reng_sample_last_get(const crosstalk_reng_ctx_t *ctx, uint32_
 
     *out = 0x0;
 
-    for (at = ctx->sample_cunt; at > 0; at = at - 0x1)
+    for (at = ctx->sample_cunt; at > 0; at--)
     {
-        const crosstalk_reng_sample_t *sample = &ctx->sample[(ctx->sample_hd + at - 0x1) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX];
+        const crosstalk_reng_sample_t *sample = &ctx->sample[(ctx->sample_hd + at - 1) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX];
 
         if (sample->proj != proj) { continue; }
 
@@ -733,7 +733,7 @@ uint32_t crosstalk_reng_serialize(const crosstalk_reng_ctx_t *ctx, uint8_t *out,
     memcpy(out + at, ctx->mark, (uint64_t)ctx->mark_cunt * sizeof(ctx->mark[0]));
     at = at + (uint64_t)ctx->mark_cunt * sizeof(ctx->mark[0]);
 
-    for (idx = 0; idx < ctx->sample_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->sample_cunt; idx++)
     {
         memcpy(out + at, &ctx->sample[(ctx->sample_hd + idx) % (uint32_t)CROSSTALK_RENG_SAMPLE_MAX], sizeof(ctx->sample[0]));
         at = at + sizeof(ctx->sample[0]);
@@ -791,7 +791,7 @@ uint32_t crosstalk_reng_deserialize(crosstalk_reng_ctx_t *ctx, const uint8_t *bu
     ctx->sample_cunt = hdr.sample_cunt;
     ctx->sample_hd = 0;
     ctx->sel = hdr.sel != (uint32_t)UINT32_MAX && hdr.sel < hdr.proj_cunt ? hdr.sel : (uint32_t)UINT32_MAX;
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_FALSE;
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "reng: restored; projects: %u32; tasks: %u32; notes: %u32; marks: %u32; samples: %u32; sel: %u32", ctx->proj_cunt, ctx->task_cunt, ctx->note_cunt, ctx->mark_cunt, ctx->sample_cunt, ctx->sel);

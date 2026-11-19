@@ -74,7 +74,7 @@ static uint32_t wshop_type_find(const char *path, uint32_t *out_type)
 
         if (ldg_io_entry_name_get(&entry, &name) != LDG_ERR_AOK || name == 0x0) { continue; }
 
-        for (type = 0; type < CROSSTALK_NET_WSHOP_TYPE_CUNT; type = type + WSHOP_STEP)
+        for (type = 0; type < CROSSTALK_NET_WSHOP_TYPE_CUNT; type++)
         {
             if (wshop_suffix_is(name, marker[type]) != LDG_TRUTH_TRUE) { continue; }
 
@@ -206,7 +206,7 @@ uint32_t crosstalk_net_wshop_refresh(crosstalk_net_wshop_ctx_t *ctx)
 
     if (file_cunt > CROSSTALK_NET_WSHOP_ITEM_MAX) { file_cunt = CROSSTALK_NET_WSHOP_ITEM_MAX; }
 
-    for (idx = 0; idx < file_cunt; idx = idx + WSHOP_STEP)
+    for (idx = 0; idx < file_cunt; idx++)
     {
         item = &ctx->item[ctx->item_cunt];
         memset(item, 0x0, sizeof(*item));
@@ -234,8 +234,8 @@ uint32_t crosstalk_net_wshop_refresh(crosstalk_net_wshop_ctx_t *ctx)
         item->installed = LDG_TRUTH_TRUE;
 
         ctx->type_idx[type][ctx->type_cunt[type]] = ctx->item_cunt;
-        ctx->type_cunt[type] = ctx->type_cunt[type] + WSHOP_STEP;
-        ctx->item_cunt = ctx->item_cunt + WSHOP_STEP;
+        ctx->type_cunt[type]++;
+        ctx->item_cunt++;
     }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: refresh; subscribed: %u32; installed: %u32", file_cunt, ctx->item_cunt);

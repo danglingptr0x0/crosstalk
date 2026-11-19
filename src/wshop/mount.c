@@ -58,7 +58,7 @@ uint32_t crosstalk_wshop_mount_img(crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t s
         return CROSSTALK_WSHOP_MOUNT_ERR_COMPAT;
     }
 
-    for (idx = 0; idx < img->manifest.img_cunt; idx = idx + MOUNT_STEP)
+    for (idx = 0; idx < img->manifest.img_cunt; idx++)
     {
         ent = &img->manifest.img[idx];
 

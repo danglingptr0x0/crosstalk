@@ -28,7 +28,7 @@ uint32_t crosstalk_core_clip_set(crosstalk_core_clip_ctx_t *ctx, const char *tex
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
     ctx->has = LDG_TRUTH_TRUE;
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
 
     return LDG_ERR_AOK;
 }
@@ -57,7 +57,7 @@ uint32_t crosstalk_core_clip_clear(crosstalk_core_clip_ctx_t *ctx)
 
     ctx->text[0] = LDG_STR_TERM;
     ctx->has = LDG_TRUTH_FALSE;
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
 
     return LDG_ERR_AOK;
 }

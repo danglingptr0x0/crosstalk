@@ -228,14 +228,14 @@ static uint8_t menu_list_key(const ldg_term_key_event_t *key, crosstalk_game_men
 
     if (key->key == (uint8_t)LDG_TERM_KEY_UP)
     {
-        if (nav->row != 0) { nav->row = nav->row - MENU_STEP; }
+        if (nav->row != 0) { nav->row--; }
 
         return LDG_TRUTH_TRUE;
     }
 
     if (key->key == (uint8_t)LDG_TERM_KEY_DOWN)
     {
-        if (nav->row + MENU_STEP < cunt) { nav->row = nav->row + MENU_STEP; }
+        if (nav->row + MENU_STEP < cunt) { nav->row++; }
 
         return LDG_TRUTH_TRUE;
     }
@@ -312,7 +312,7 @@ static uint32_t menu_btn_put(ldg_term_render_t *render, uint32_t col, uint32_t *
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, MENU_BTN_FMT, label) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
-    *row = *row + MENU_STEP;
+    (*row)++;
 
     return ret;
 }
@@ -329,7 +329,7 @@ static uint32_t menu_choice_put(ldg_term_render_t *render, uint32_t col, uint32_
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, MENU_CHOICE_FMT, label, seg) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
-    *row = *row + MENU_STEP;
+    (*row)++;
 
     return ret;
 }
@@ -351,7 +351,7 @@ static uint32_t menu_text_put(ldg_term_render_t *render, uint32_t col, uint32_t 
 
     if (ret == LDG_ERR_AOK && lit == LDG_TRUTH_TRUE) { ret = crosstalk_ui_cell_span_fill(render, col + (uint32_t)wrote, *row, (uint32_t)MENU_CURSOR_W, &cursor, &cursor); }
 
-    *row = *row + MENU_STEP;
+    (*row)++;
 
     return ret;
 }
@@ -365,7 +365,7 @@ static uint32_t menu_toggle_put(ldg_term_render_t *render, uint32_t col, uint32_
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, on == LDG_TRUTH_TRUE ? MENU_TOGGLE_ON_FMT : MENU_TOGGLE_OFF_FMT, label) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     ret = menu_lit_put(render, col, *row, line, lit);
-    *row = *row + MENU_STEP;
+    (*row)++;
 
     return ret;
 }
@@ -583,7 +583,7 @@ uint32_t crosstalk_game_menu_editorpick_draw(ldg_term_render_t *render, const ld
 
     if (ret == LDG_ERR_AOK) { ret = menu_line_put(render, rect->col, row, MENU_EDITORPICK_LABEL, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA); }
 
-    row = row + MENU_STEP;
+    row++;
 
     if (ret == LDG_ERR_AOK) { ret = menu_choice_put(render, rect->col, &row, "", items, pick_idx, nav->field == (uint32_t)MENU_EP_PICK ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
 
@@ -708,9 +708,9 @@ uint32_t crosstalk_game_menu_mp_draw(ldg_term_render_t *render, const ldg_term_r
 
     if (ret == LDG_ERR_AOK) { ret = menu_line_put(render, rect->col, row, MENU_MP_HOST_LABEL, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA); }
 
-    row = row + MENU_STEP;
+    row++;
 
-    if (ret == LDG_ERR_AOK && board_cunt == 0) { ret = menu_line_put(render, rect->col, row, MENU_MP_NO_BOARD_TEXT, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA); row = row + MENU_STEP; }
+    if (ret == LDG_ERR_AOK && board_cunt == 0) { ret = menu_line_put(render, rect->col, row, MENU_MP_NO_BOARD_TEXT, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA); row++; }
     else if (ret == LDG_ERR_AOK) { ret = menu_choice_put(render, rect->col, &row, MENU_MP_BOARD_LABEL, board_names, board_idx, nav->field == (uint32_t)MENU_MP_BOARD ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
 
     if (ret == LDG_ERR_AOK) { ret = menu_choice_put(render, rect->col, &row, MENU_MP_PLAYERS_LABEL, MENU_MP_PLAYERS_ITEMS, players_idx, nav->field == (uint32_t)MENU_MP_PLAYERS ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
@@ -976,7 +976,7 @@ uint32_t crosstalk_game_menu_board_sel_draw(ldg_term_render_t *render, const ldg
     if (ret == LDG_ERR_AOK && truncated != 0)
     {
         ret = menu_line_put(render, rect->col, row, MENU_SEL_TRUNC_TEXT, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
-        row = row + MENU_STEP;
+        row++;
     }
 
     if (ret == LDG_ERR_AOK) { ret = menu_toggle_put(render, rect->col, &row, MENU_SEL_WSHOP_TEXT, wshop_on != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, nav->field == (uint32_t)MENU_BS_WSHOP ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }

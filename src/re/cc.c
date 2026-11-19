@@ -23,11 +23,11 @@ static uint32_t cc_place_expand(const char *line, uint32_t *at, const char *plac
 
     if (LDG_UNLIKELY(line == 0x0 || at == 0x0 || place == 0x0 || val == 0x0 || out == 0x0 || wr == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    while (place[place_len] != LDG_STR_TERM) { place_len = place_len + 0x1; }
+    while (place[place_len] != LDG_STR_TERM) { place_len++; }
 
     if (memcmp(&line[*at], place, place_len) != 0) { return LDG_ERR_NOT_FOUND; }
 
-    while (val[val_len] != LDG_STR_TERM) { val_len = val_len + 0x1; }
+    while (val[val_len] != LDG_STR_TERM) { val_len++; }
 
     if (*wr + val_len + LDG_STR_TERM_SIZE > cap) { return LDG_ERR_STR_TRUNC; }
 
@@ -74,8 +74,8 @@ uint32_t crosstalk_re_cc_line_expand(const crosstalk_re_cc_ctx_t *ctx, const cha
         if (wr + LDG_STR_TERM_SIZE + LDG_STR_TERM_SIZE > cap) { return LDG_ERR_STR_TRUNC; }
 
         out[wr] = line[at];
-        wr = wr + 0x1;
-        at = at + 0x1;
+        wr++;
+        at++;
     }
 
     out[wr] = LDG_STR_TERM;
@@ -104,7 +104,7 @@ static uint32_t cc_worker(uint32_t worker_id, void *arg)
         ctx->fail_step = (uint32_t)UINT32_MAX;
         ctx->exit_code = (uint32_t)CROSSTALK_RE_SPAWN_EXIT_OK;
 
-        for (idx = 0; idx < ctx->step_cunt; idx = idx + 0x1)
+        for (idx = 0; idx < ctx->step_cunt; idx++)
         {
             uint32_t exit_code = 0;
 
@@ -196,7 +196,7 @@ uint32_t crosstalk_re_cc_step_set(crosstalk_re_cc_ctx_t *ctx, uint32_t idx, cons
     ret = ldg_str_rbrcpy(ctx->step[idx], line, (uint64_t)sizeof(ctx->step[idx]));
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (idx == ctx->step_cunt) { ctx->step_cunt = ctx->step_cunt + 0x1; }
+    if (idx == ctx->step_cunt) { ctx->step_cunt++; }
 
     return LDG_ERR_AOK;
 }
@@ -261,7 +261,7 @@ uint32_t crosstalk_re_cc_start(crosstalk_re_cc_ctx_t *ctx, const char *src, cons
         if (src[at] == '/' || src[at] == '\\') { sep_at = at; }
 
         stem[at] = src[at];
-        at = at + 0x1;
+        at++;
     }
 
     if (dot_at != UINT32_MAX && (sep_at == UINT32_MAX || dot_at > sep_at)) { stem[dot_at] = LDG_STR_TERM; }
@@ -325,7 +325,7 @@ uint32_t crosstalk_re_cc_status_get(crosstalk_re_cc_ctx_t *ctx, const char **out
 
     secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_RE_CC_MS_PER_SEC;
 
-    if (ldg_str_fmt(ctx->status, (uint64_t)sizeof(ctx->status), &fmt_len, "re build: step %u32 of %u32; %u64s", ctx->step_at + 0x1, ctx->step_cunt, secs) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
+    if (ldg_str_fmt(ctx->status, (uint64_t)sizeof(ctx->status), &fmt_len, "re build: step %u32 of %u32; %u64s", ctx->step_at + 1, ctx->step_cunt, secs) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
     *out = ctx->status;
 

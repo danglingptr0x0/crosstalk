@@ -84,7 +84,7 @@ uint8_t crosstalk_core_fetch_name_valid_is(const char *name)
 
     if (strcmp(name, FETCH_NAME_HERE) == 0 || strcmp(name, FETCH_NAME_UP) == 0) { return LDG_TRUTH_FALSE; }
 
-    for (at = 0; name[at] != LDG_STR_TERM; at = at + FETCH_STEP)
+    for (at = 0; name[at] != LDG_STR_TERM; at++)
     {
         if (at + LDG_STR_TERM_SIZE >= (uint64_t)CROSSTALK_CORE_FETCH_NAME_CAP) { return LDG_TRUTH_FALSE; }
 
@@ -110,15 +110,15 @@ static uint32_t fetch_repo_name_get(const char *url, char *out, uint64_t cap)
 
     if (len <= lead_len || len >= (uint64_t)CROSSTALK_CORE_FETCH_URL_CAP) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    for (at = 0; at < len; at = at + FETCH_STEP) { if (fetch_url_char_ok_is(url[at]) != LDG_TRUTH_TRUE) { return LDG_ERR_FUNC_ARG_INVALID; } }
+    for (at = 0; at < len; at++) { if (fetch_url_char_ok_is(url[at]) != LDG_TRUTH_TRUE) { return LDG_ERR_FUNC_ARG_INVALID; } }
 
-    while (len > lead_len && url[len - FETCH_STEP] == '/') { len = len - FETCH_STEP; }
+    while (len > lead_len && url[len - FETCH_STEP] == '/') { len--; }
 
     start = len;
 
-    while (start > lead_len && url[start - FETCH_STEP] != '/') { start = start - FETCH_STEP; }
+    while (start > lead_len && url[start - FETCH_STEP] != '/') { start--; }
 
-    for (at = lead_len; at + FETCH_STEP < start; at = at + FETCH_STEP) { if (url[at] == '/') { host_end = LDG_TRUTH_TRUE; } }
+    for (at = lead_len; at + FETCH_STEP < start; at++) { if (url[at] == '/') { host_end = LDG_TRUTH_TRUE; } }
 
     if (start <= lead_len || host_end != LDG_TRUTH_TRUE) { return LDG_ERR_FUNC_ARG_INVALID; }
 
@@ -154,14 +154,14 @@ static uint32_t fetch_git_find(crosstalk_core_fetch_ctx_t *ctx, char *out, uint6
     {
         char ch = ctx->env[at];
 
-        at = at + FETCH_STEP;
+        at++;
 
         if (ch != sep && ch != LDG_STR_TERM)
         {
             if (ch != '"' && used + LDG_STR_TERM_SIZE < (uint64_t)sizeof(dir))
             {
                 dir[used] = ch;
-                used = used + FETCH_STEP;
+                used++;
             }
 
             continue;
@@ -186,7 +186,7 @@ static void fetch_reason_set(crosstalk_core_fetch_ctx_t *ctx, const char *text, 
     uint64_t at = 0;
     uint64_t used = 0;
 
-    for (at = 0; at < len && used + LDG_STR_TERM_SIZE < (uint64_t)sizeof(ctx->reason); at = at + FETCH_STEP)
+    for (at = 0; at < len && used + LDG_STR_TERM_SIZE < (uint64_t)sizeof(ctx->reason); at++)
     {
         if (text[at] == (char)LDG_ASCII_LF || text[at] == (char)LDG_ASCII_CR)
         {
@@ -196,7 +196,7 @@ static void fetch_reason_set(crosstalk_core_fetch_ctx_t *ctx, const char *text, 
         }
 
         ctx->reason[used] = ((uint8_t)text[at] < (uint8_t)LDG_ASCII_PRINTABLE_MIN || (uint8_t)text[at] > (uint8_t)LDG_ASCII_PRINTABLE_MAX) ? (char)LDG_ASCII_NONPRINTABLE_CHAR : text[at];
-        used = used + FETCH_STEP;
+        used++;
     }
 
     ctx->reason[used] = LDG_STR_TERM;
@@ -368,7 +368,7 @@ static uint32_t fetch_tree_walk(crosstalk_core_fetch_ctx_t *ctx)
     {
         const char *rel = ctx->queue[hd];
 
-        hd = hd + FETCH_STEP;
+        hd++;
 
         if (rel[0] == LDG_STR_TERM) { ret = ldg_str_rbrcpy(abs, ctx->repo_dir, (uint64_t)sizeof(abs)); }
         else { ret = ldg_io_path_join(ctx->repo_dir, rel, abs, (uint64_t)sizeof(abs)); }
@@ -396,7 +396,7 @@ static uint32_t fetch_tree_walk(crosstalk_core_fetch_ctx_t *ctx)
                 }
 
                 memcpy(ctx->queue[tail], child, fetch_len_get(child) + LDG_STR_TERM_SIZE);
-                tail = tail + FETCH_STEP;
+                tail++;
                 continue;
             }
 
@@ -409,7 +409,7 @@ static uint32_t fetch_tree_walk(crosstalk_core_fetch_ctx_t *ctx)
             }
 
             memcpy(ctx->file[ctx->file_cunt], child, fetch_len_get(child) + LDG_STR_TERM_SIZE);
-            ctx->file_cunt = ctx->file_cunt + FETCH_STEP;
+            ctx->file_cunt++;
         }
 
         if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: dir close failed; dir: %.191s", abs); }
@@ -425,7 +425,7 @@ static uint32_t fetch_hash_get(const char *text, uint64_t len)
     uint32_t hash = (uint32_t)LDG_DJB2_HASH_INIT;
     uint64_t at = 0;
 
-    for (at = 0; at < len; at = at + FETCH_STEP) { hash = hash * FETCH_HASH_MUL + (uint32_t)(uint8_t)text[at]; }
+    for (at = 0; at < len; at++) { hash = hash * FETCH_HASH_MUL + (uint32_t)(uint8_t)text[at]; }
 
     return hash;
 }
@@ -458,7 +458,7 @@ static uint32_t fetch_tok_next(const char *src, uint64_t len, uint64_t *io_pos, 
 
         if (ch == FETCH_SLASH && nx == FETCH_SLASH)
         {
-            while (pos < len && src[pos] != (char)LDG_ASCII_LF) { pos = pos + FETCH_STEP; }
+            while (pos < len && src[pos] != (char)LDG_ASCII_LF) { pos++; }
 
             continue;
         }
@@ -467,7 +467,7 @@ static uint32_t fetch_tok_next(const char *src, uint64_t len, uint64_t *io_pos, 
         {
             pos = pos + FETCH_PAIR;
 
-            while (pos + FETCH_STEP < len && (src[pos] != FETCH_STAR || src[pos + FETCH_STEP] != FETCH_SLASH)) { pos = pos + FETCH_STEP; }
+            while (pos + FETCH_STEP < len && (src[pos] != FETCH_STAR || src[pos + FETCH_STEP] != FETCH_SLASH)) { pos++; }
 
             pos = pos + FETCH_PAIR;
             continue;
@@ -475,17 +475,17 @@ static uint32_t fetch_tok_next(const char *src, uint64_t len, uint64_t *io_pos, 
 
         if (ch == (char)LDG_ASCII_QUOTE)
         {
-            pos = pos + FETCH_STEP;
+            pos++;
 
             while (pos < len && src[pos] != (char)LDG_ASCII_QUOTE && src[pos] != (char)LDG_ASCII_LF) { pos = pos + (src[pos] == (char)LDG_ASCII_BSLASH ? FETCH_PAIR : FETCH_STEP); }
 
-            pos = pos + FETCH_STEP;
+            pos++;
             continue;
         }
 
         if (ch == (char)LDG_ASCII_BSLASH)
         {
-            while (pos < len && (uint8_t)src[pos] > (uint8_t)LDG_ASCII_SPACE) { pos = pos + FETCH_STEP; }
+            while (pos < len && (uint8_t)src[pos] > (uint8_t)LDG_ASCII_SPACE) { pos++; }
 
             continue;
         }
@@ -494,7 +494,7 @@ static uint32_t fetch_tok_next(const char *src, uint64_t len, uint64_t *io_pos, 
         {
             *out_start = pos;
 
-            while (pos < len && fetch_ident_cont_is(src[pos]) == LDG_TRUTH_TRUE) { pos = pos + FETCH_STEP; }
+            while (pos < len && fetch_ident_cont_is(src[pos]) == LDG_TRUTH_TRUE) { pos++; }
 
             *out_len = pos - *out_start;
             *io_pos = pos;
@@ -504,12 +504,12 @@ static uint32_t fetch_tok_next(const char *src, uint64_t len, uint64_t *io_pos, 
 
         if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE)
         {
-            while (pos < len && (fetch_ident_cont_is(src[pos]) == LDG_TRUTH_TRUE || src[pos] == FETCH_TICK)) { pos = pos + FETCH_STEP; }
+            while (pos < len && (fetch_ident_cont_is(src[pos]) == LDG_TRUTH_TRUE || src[pos] == FETCH_TICK)) { pos++; }
 
             continue;
         }
 
-        pos = pos + FETCH_STEP;
+        pos++;
     }
 
     *io_pos = len;
@@ -529,7 +529,7 @@ static uint32_t fetch_def_slot_find(const crosstalk_core_fetch_ctx_t *ctx, const
     uint32_t slot = hash & (uint32_t)CROSSTALK_CORE_FETCH_DEF_SLOT_MASK;
     uint32_t probe = 0;
 
-    for (probe = 0; probe < (uint32_t)CROSSTALK_CORE_FETCH_DEF_SLOT_CAP; probe = probe + FETCH_STEP)
+    for (probe = 0; probe < (uint32_t)CROSSTALK_CORE_FETCH_DEF_SLOT_CAP; probe++)
     {
         uint32_t held = ctx->def_slot[slot];
         const crosstalk_core_fetch_def_t *def = 0x0;
@@ -559,7 +559,7 @@ static uint32_t fetch_depth_get(const char *rel)
     uint32_t depth = 0;
     uint64_t at = 0;
 
-    for (at = 0; rel[at] != LDG_STR_TERM; at = at + FETCH_STEP) { if (rel[at] == FETCH_SLASH || rel[at] == FETCH_SEP_WIN) { depth = depth + FETCH_STEP; } }
+    for (at = 0; rel[at] != LDG_STR_TERM; at++) { if (rel[at] == FETCH_SLASH || rel[at] == FETCH_SEP_WIN) { depth++; } }
 
     return depth;
 }
@@ -609,7 +609,7 @@ static uint32_t fetch_def_add(crosstalk_core_fetch_ctx_t *ctx, const char *text,
     def->hash = hash;
     def->file_idx = file_idx;
 
-    ctx->def_cunt = ctx->def_cunt + FETCH_STEP;
+    ctx->def_cunt++;
     ctx->def_slot[slot] = ctx->def_cunt;
 
     return LDG_ERR_AOK;
@@ -715,7 +715,7 @@ static uint32_t fetch_refs_scan(crosstalk_core_fetch_ctx_t *ctx, uint64_t len, u
 
         ctx->file_kept[file_idx] = LDG_TRUTH_TRUE;
         ctx->file_order[*io_tail] = file_idx;
-        *io_tail = *io_tail + FETCH_STEP;
+        (*io_tail)++;
     }
 
     return LDG_ERR_AOK;
@@ -726,7 +726,7 @@ static uint32_t fetch_list_emit(crosstalk_core_fetch_ctx_t *ctx, char *out, uint
     uint32_t at = 0;
     uint32_t ret = 0;
 
-    for (at = 0; at < kept_cunt; at = at + FETCH_STEP)
+    for (at = 0; at < kept_cunt; at++)
     {
         uint32_t file_idx = ctx->file_order[at];
 
@@ -735,7 +735,7 @@ static uint32_t fetch_list_emit(crosstalk_core_fetch_ctx_t *ctx, char *out, uint
         ret = fetch_list_append(out, cap, io_used, ctx->file[file_idx]);
         if (ret != LDG_ERR_AOK) { return ret; }
 
-        *io_cunt = *io_cunt + FETCH_STEP;
+        (*io_cunt)++;
     }
 
     return LDG_ERR_AOK;
@@ -770,7 +770,7 @@ uint32_t crosstalk_core_fetch_files_get(crosstalk_core_fetch_ctx_t *ctx, char *o
     memset(&ctx->file_kept[0], 0x0, sizeof(ctx->file_kept));
     memset(&ctx->file_pkg[0], 0x0, sizeof(ctx->file_pkg));
 
-    for (idx = 0; idx < ctx->file_cunt; idx = idx + FETCH_STEP)
+    for (idx = 0; idx < ctx->file_cunt; idx++)
     {
         ret = fetch_file_ld(ctx, idx, &len);
         if (ret != LDG_ERR_AOK)
@@ -798,7 +798,7 @@ uint32_t crosstalk_core_fetch_files_get(crosstalk_core_fetch_ctx_t *ctx, char *o
     while (hd < tail)
     {
         idx = ctx->file_order[hd];
-        hd = hd + FETCH_STEP;
+        hd++;
 
         if (fetch_file_ld(ctx, idx, &len) != LDG_ERR_AOK) { continue; }
 

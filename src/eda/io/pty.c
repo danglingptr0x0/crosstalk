@@ -98,7 +98,7 @@ static uint32_t pty_cp_fold(uint32_t cp, char *out)
     };
     uint32_t idx = 0;
 
-    for (idx = 0; idx < (uint32_t)(sizeof(ranges) / sizeof(*ranges)); idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)(sizeof(ranges) / sizeof(*ranges)); idx++)
     {
         if (cp < ranges[idx].lo || cp > ranges[idx].hi) { continue; }
 
@@ -108,7 +108,7 @@ static uint32_t pty_cp_fold(uint32_t cp, char *out)
 
         if (ranges[idx].cunt == (uint8_t)PTY_FOLD_CELLS_WIDE)
         {
-            out[0x1] = ranges[idx].ch;
+            out[1] = ranges[idx].ch;
             return PTY_FOLD_CELLS_WIDE;
         }
 
@@ -128,7 +128,7 @@ static uint32_t pty_utf_carry_decode(crosstalk_eda_io_pty_ctx_t *ctx)
     else if (ctx->utf_need == (uint32_t)PTY_UTF_SEQ3_LEN) { cp = (uint32_t)(ctx->utf_carry[0] & (uint8_t)PTY_UTF_LEAD3_MASK); }
     else { cp = (uint32_t)(ctx->utf_carry[0] & (uint8_t)PTY_UTF_LEAD4_MASK); }
 
-    for (idx = 0x1; idx < ctx->utf_carry_len; idx = idx + 0x1) { cp = (cp << PTY_UTF_CONT_BITS) | (uint32_t)(ctx->utf_carry[idx] & (uint8_t)PTY_UTF_CONT_MASK); }
+    for (idx = 1; idx < ctx->utf_carry_len; idx++) { cp = (cp << PTY_UTF_CONT_BITS) | (uint32_t)(ctx->utf_carry[idx] & (uint8_t)PTY_UTF_CONT_MASK); }
 
     return cp;
 }
@@ -150,13 +150,13 @@ static void pty_utf_fold(crosstalk_eda_io_pty_ctx_t *ctx, const uint8_t *in, uin
             if (by >= (uint8_t)PTY_UTF_CONT_MIN && by <= (uint8_t)PTY_UTF_CONT_MAX)
             {
                 ctx->utf_carry[ctx->utf_carry_len] = by;
-                ctx->utf_carry_len = ctx->utf_carry_len + 0x1;
-                at = at + 0x1;
+                ctx->utf_carry_len++;
+                at++;
 
                 if (ctx->utf_carry_len == ctx->utf_need)
                 {
                     piece_cunt = pty_cp_fold(pty_utf_carry_decode(ctx), piece);
-                    for (piece_at = 0; piece_at < piece_cunt; piece_at = piece_at + 0x1) { out[wr] = (uint8_t)piece[piece_at]; wr = wr + 0x1; }
+                    for (piece_at = 0; piece_at < piece_cunt; piece_at++) { out[wr] = (uint8_t)piece[piece_at]; wr++; }
 
                     ctx->utf_need = 0;
                     ctx->utf_carry_len = 0;
@@ -166,7 +166,7 @@ static void pty_utf_fold(crosstalk_eda_io_pty_ctx_t *ctx, const uint8_t *in, uin
             }
 
             out[wr] = (uint8_t)PTY_FOLD_SUB_CH;
-            wr = wr + 0x1;
+            wr++;
             ctx->utf_need = 0;
             ctx->utf_carry_len = 0;
             continue;
@@ -175,8 +175,8 @@ static void pty_utf_fold(crosstalk_eda_io_pty_ctx_t *ctx, const uint8_t *in, uin
         if (by <= (uint8_t)LDG_ASCII_MAX)
         {
             out[wr] = by;
-            wr = wr + 0x1;
-            at = at + 0x1;
+            wr++;
+            at++;
             continue;
         }
 
@@ -186,14 +186,14 @@ static void pty_utf_fold(crosstalk_eda_io_pty_ctx_t *ctx, const uint8_t *in, uin
         else
         {
             out[wr] = (uint8_t)PTY_FOLD_SUB_CH;
-            wr = wr + 0x1;
-            at = at + 0x1;
+            wr++;
+            at++;
             continue;
         }
 
         ctx->utf_carry[0] = by;
-        ctx->utf_carry_len = 0x1;
-        at = at + 0x1;
+        ctx->utf_carry_len = 1;
+        at++;
     }
 
     *out_len = wr;
@@ -213,7 +213,7 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
 
     if (ldg_term_cursor_get(ctx->term, &cursor_col, &cursor_row) != LDG_ERR_AOK) { cursor_col = UINT32_MAX; cursor_row = UINT32_MAX; }
 
-    for (row = 0; row < ctx->row_cunt; row = row + 0x1)
+    for (row = 0; row < ctx->row_cunt; row++)
     {
         uint32_t nonspace = 0;
         uint32_t text_len = 0;
@@ -221,15 +221,15 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
 
         if (ldg_term_row_get(ctx->term, row, cell, (uint32_t)CROSSTALK_EDA_IO_PTY_COL_MAX) != LDG_ERR_AOK) { break; }
 
-        for (col = 0; col < col_limit; col = col + 0x1)
+        for (col = 0; col < col_limit; col++)
         {
             if (cell[col].ch > (uint8_t)LDG_ASCII_PRINTABLE_MIN && cell[col].ch <= (uint8_t)LDG_ASCII_PRINTABLE_MAX)
             {
-                nonspace = nonspace + 0x1;
+                nonspace++;
                 if (first_at == UINT32_MAX) { first_at = col; }
             }
 
-            if (cell[col].ch >= (uint8_t)LDG_ASCII_PRINTABLE_MIN && cell[col].ch <= (uint8_t)LDG_ASCII_PRINTABLE_MAX && text_len < (uint32_t)PTY_GRID_ROW_TEXT_CAP - LDG_STR_TERM_SIZE) { text[text_len] = (char)cell[col].ch; text_len = text_len + 0x1; }
+            if (cell[col].ch >= (uint8_t)LDG_ASCII_PRINTABLE_MIN && cell[col].ch <= (uint8_t)LDG_ASCII_PRINTABLE_MAX && text_len < (uint32_t)PTY_GRID_ROW_TEXT_CAP - LDG_STR_TERM_SIZE) { text[text_len] = (char)cell[col].ch; text_len++; }
         }
 
         text[text_len] = LDG_STR_TERM;
@@ -238,7 +238,7 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
         if (nonspace > 0 && rows_logged < (uint32_t)PTY_GRID_DUMP_ROWS_LOGGED)
         {
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: grid row; row: %u32; nonspace: %u32; fg: %u32 %u32 %u32; text: %s", row, nonspace, (uint32_t)cell[first_at].fg[0], (uint32_t)cell[first_at].fg[1], (uint32_t)cell[first_at].fg[2], text);
-            rows_logged = rows_logged + 0x1;
+            rows_logged++;
         }
     }
 
@@ -253,12 +253,12 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
 
         if (ldg_term_vt_unhandled_get(&ctx->vt, final, (uint64_t)sizeof(final), &final_cunt) == LDG_ERR_AOK)
         {
-            for (final_at = 0; final_at < final_cunt && final_at < (uint64_t)sizeof(final) && text_at + (uint32_t)PTY_UNHANDLED_TEXT_STEP + LDG_STR_TERM_SIZE <= (uint32_t)sizeof(final_text); final_at = final_at + 0x1)
+            for (final_at = 0; final_at < final_cunt && final_at < (uint64_t)sizeof(final) && text_at + (uint32_t)PTY_UNHANDLED_TEXT_STEP + LDG_STR_TERM_SIZE <= (uint32_t)sizeof(final_text); final_at++)
             {
                 final_text[text_at] = (char)final[final_at];
-                text_at = text_at + 0x1;
+                text_at++;
                 final_text[text_at] = ' ';
-                text_at = text_at + 0x1;
+                text_at++;
             }
 
             final_text[text_at] = LDG_STR_TERM;
@@ -482,7 +482,7 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
         {
             uint64_t scan_at = 0;
 
-            for (scan_at = 0; scan_at + PTY_OSC52_MARK_LEN <= got; scan_at = scan_at + 0x1) { if (memcmp(buff + scan_at, PTY_OSC52_MARK, (uint64_t)PTY_OSC52_MARK_LEN) == 0)
+            for (scan_at = 0; scan_at + PTY_OSC52_MARK_LEN <= got; scan_at++) { if (memcmp(buff + scan_at, PTY_OSC52_MARK, (uint64_t)PTY_OSC52_MARK_LEN) == 0)
                 {
                     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: osc52 in stream; at: %u64; got: %u64", scan_at, got);
                     break;
@@ -499,12 +499,12 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
 
             if (dump_len > (uint64_t)PTY_DUMP_BYTES) { dump_len = (uint64_t)PTY_DUMP_BYTES; }
 
-            for (dump_at = 0; dump_at < dump_len; dump_at = dump_at + 0x1)
+            for (dump_at = 0; dump_at < dump_len; dump_at++)
             {
                 if (ldg_byte_to_hex(buff[dump_at], pair) != LDG_ERR_AOK) { break; }
 
                 dump[dump_at * (uint64_t)PTY_DUMP_STRIDE] = pair[0];
-                dump[dump_at * (uint64_t)PTY_DUMP_STRIDE + 0x1] = pair[0x1];
+                dump[dump_at * (uint64_t)PTY_DUMP_STRIDE + 1] = pair[1];
                 dump[dump_at * (uint64_t)PTY_DUMP_STRIDE + 0x2] = ' ';
             }
 

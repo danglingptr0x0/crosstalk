@@ -79,14 +79,14 @@ uint32_t crosstalk_ui_key_mnemonic_assign(const char *const *label, const uint8_
 
     if (LDG_UNLIKELY(label == 0x0 || out_pos == 0x0 || out_ch == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < cunt; idx = idx + 1)
+    for (idx = 0; idx < cunt; idx++)
     {
         out_pos[idx] = (uint32_t)UINT32_MAX;
         out_ch[idx] = (uint8_t)KEY_MNEMONIC_NONE;
 
         if (label[idx] == 0x0 || (skip != 0x0 && skip[idx] == LDG_TRUTH_TRUE)) { continue; }
 
-        for (at = 0; label[idx][at] != LDG_STR_TERM; at = at + 1)
+        for (at = 0; label[idx][at] != LDG_STR_TERM; at++)
         {
             ch = key_mnemonic_fold((uint32_t)(uint8_t)label[idx][at]);
 
@@ -135,7 +135,7 @@ uint32_t crosstalk_ui_key_mnemonic_find(const uint8_t *ch, uint32_t cunt, const 
 
     if (pressed == (uint8_t)KEY_MNEMONIC_NONE) { return LDG_ERR_AOK; }
 
-    for (idx = 0; idx < cunt; idx = idx + 1)
+    for (idx = 0; idx < cunt; idx++)
     {
         if (ch[idx] != pressed) { continue; }
 

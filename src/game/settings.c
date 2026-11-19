@@ -133,7 +133,7 @@ uint32_t crosstalk_game_settings_quantize(crosstalk_game_settings_t *settings)
 
     if (LDG_UNLIKELY(settings == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1)
+    for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++)
     {
         slot = settings_double_at_wr_get(settings, idx);
         memcpy(&val, slot, sizeof(val));
@@ -156,13 +156,13 @@ uint32_t crosstalk_game_settings_serialize(const crosstalk_game_settings_t *sett
 
     if (cap < SETTINGS_BLOB_LEN) { return LDG_ERR_BOUNDS; }
 
-    for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_wr(out, &offset, settings_double_at_get(settings, idx), 8); }
+    for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_wr(out, &offset, settings_double_at_get(settings, idx), 8); }
 
-    for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_wr(out, &offset, settings_uint32_at_get(settings, idx), 4); }
+    for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_wr(out, &offset, settings_uint32_at_get(settings, idx), 4); }
 
-    for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx = idx + 1) { buff_wr(out, &offset, settings_toggle_at_get(settings, idx), 1); }
+    for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx++) { buff_wr(out, &offset, settings_toggle_at_get(settings, idx), 1); }
 
-    for (idx = 0; idx < SETTINGS_KEYBIND_CUNT; idx = idx + 1) { buff_wr(out, &offset, &settings->keybind[idx], 4); }
+    for (idx = 0; idx < SETTINGS_KEYBIND_CUNT; idx++) { buff_wr(out, &offset, &settings->keybind[idx], 4); }
 
     return LDG_ERR_AOK;
 }
@@ -183,90 +183,90 @@ uint32_t crosstalk_game_settings_deserialize(crosstalk_game_settings_t *settings
 
     if (len == SETTINGS_BLOB_LEN_V1)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT_V1; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT_V1; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V1; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V1; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len == SETTINGS_BLOB_LEN_V2)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V2; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V2; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len == SETTINGS_BLOB_LEN_V3)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V3; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V3; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len == SETTINGS_BLOB_LEN_V4)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V4; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V4; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len == SETTINGS_BLOB_LEN_V5)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V5; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V5; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len == SETTINGS_BLOB_LEN_V6)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V6; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V6; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len == SETTINGS_BLOB_LEN_V7)
     {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
         return LDG_ERR_AOK;
     }
 
     if (len != SETTINGS_BLOB_LEN) { return LDG_ERR_IO_FMT; }
 
-    for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
+    for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
 
-    for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
+    for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
 
-    for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx = idx + 1) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
+    for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
-    for (idx = 0; idx < SETTINGS_KEYBIND_CUNT; idx = idx + 1) { buff_rd(buff, &offset, &settings->keybind[idx], 4); }
+    for (idx = 0; idx < SETTINGS_KEYBIND_CUNT; idx++) { buff_rd(buff, &offset, &settings->keybind[idx], 4); }
 
     return LDG_ERR_AOK;
 }
@@ -283,7 +283,7 @@ uint32_t crosstalk_game_last_state_serialize(const crosstalk_game_last_state_t *
 
     if (cap < LAST_STATE_BLOB_LEN) { return LDG_ERR_BOUNDS; }
 
-    for (idx = 0; idx < LAST_STATE_DOUBLE_CUNT; idx = idx + 1) { buff_wr(out, &offset, last_state_double_at_get(state, idx), 8); }
+    for (idx = 0; idx < LAST_STATE_DOUBLE_CUNT; idx++) { buff_wr(out, &offset, last_state_double_at_get(state, idx), 8); }
 
     return LDG_ERR_AOK;
 }
@@ -299,7 +299,7 @@ uint32_t crosstalk_game_last_state_deserialize(crosstalk_game_last_state_t *stat
     avail = len / 8;
     if (avail > LAST_STATE_DOUBLE_CUNT) { avail = LAST_STATE_DOUBLE_CUNT; }
 
-    for (idx = 0; idx < avail; idx = idx + 1) { buff_rd(buff, &offset, last_state_double_at_wr_get(state, idx), 8); }
+    for (idx = 0; idx < avail; idx++) { buff_rd(buff, &offset, last_state_double_at_wr_get(state, idx), 8); }
 
     return LDG_ERR_AOK;
 }
@@ -458,7 +458,7 @@ uint32_t crosstalk_game_settings_keybind_chord_get(const ldg_term_key_event_t *i
         mods = mods | (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT;
     }
 
-    for (at = 0; shifted[at] != LDG_STR_TERM; at = at + 1)
+    for (at = 0; shifted[at] != LDG_STR_TERM; at++)
     {
         if (cp != (uint32_t)(uint8_t)shifted[at]) { continue; }
 
@@ -549,7 +549,7 @@ uint32_t crosstalk_game_settings_keybind_conflict_get(const uint32_t *binds, uin
 
     if (chord == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { return LDG_ERR_AOK; }
 
-    for (other = 0; other < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT; other = other + 1)
+    for (other = 0; other < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT; other++)
     {
         if (other == action || binds[other] == (uint32_t)CROSSTALK_GAME_KEYBIND_UNBOUND) { continue; }
 
@@ -617,7 +617,7 @@ static uint32_t settings_keybind_shifted_get(uint32_t code)
 
     if (code >= (uint32_t)SETTINGS_KEYBIND_LOWER_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_LOWER_LAST) { return code - (uint32_t)SETTINGS_KEYBIND_CASE_GAP; }
 
-    for (at = 0; unshifted[at] != LDG_STR_TERM; at = at + 1) { if (code == (uint32_t)(uint8_t)unshifted[at]) { return (uint32_t)(uint8_t)shifted[at]; } }
+    for (at = 0; unshifted[at] != LDG_STR_TERM; at++) { if (code == (uint32_t)(uint8_t)unshifted[at]) { return (uint32_t)(uint8_t)shifted[at]; } }
 
     return code;
 }

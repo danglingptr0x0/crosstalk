@@ -1045,7 +1045,7 @@ static uint32_t parse_switch(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out
 
     switch_ref->op = kind;
 
-    if (kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_LEVER || kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_BUTTON) { switch_ref->width = 0x1; }
+    if (kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_LEVER || kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_BUTTON) { switch_ref->width = 1; }
 
     ret = parse_advance(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

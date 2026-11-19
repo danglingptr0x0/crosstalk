@@ -75,13 +75,13 @@ static uint32_t crosstalk_hdl_elab_type_width_get(crosstalk_hdl_elab_ctx_t *ctx,
     const crosstalk_hdl_ast_node_t *lsb_node = 0x0;
     uint64_t msb_val = 0;
     uint64_t lsb_val = 0;
-    uint64_t width = 0x1;
+    uint64_t width = 1;
     uint32_t child_idx = 0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_width == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out_width = 0x1;
+    *out_width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
     if (type_idx == UINT32_MAX) { return LDG_ERR_AOK; }
 
@@ -110,8 +110,8 @@ static uint32_t crosstalk_hdl_elab_type_width_get(crosstalk_hdl_elab_ctx_t *ctx,
                 ret = crosstalk_hdl_elab_const_eval(ctx, lsb_node->next_sibling, &lsb_val);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (msb_val >= lsb_val) { width = msb_val - lsb_val + 0x1; }
-                else { width = lsb_val - msb_val + 0x1; }
+                if (msb_val >= lsb_val) { width = msb_val - lsb_val + 1; }
+                else { width = lsb_val - msb_val + 1; }
 
                 range_has = LDG_TRUTH_TRUE;
             }
@@ -147,7 +147,7 @@ static uint32_t crosstalk_hdl_elab_guard_mix(crosstalk_hdl_elab_ctx_t *ctx, uint
 
     if (invert == LDG_TRUTH_TRUE)
     {
-        ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, &cond_use);
+        ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &cond_use);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         op.kind = CROSSTALK_HDL_IR_OP_LNOT;
@@ -155,7 +155,7 @@ static uint32_t crosstalk_hdl_elab_guard_mix(crosstalk_hdl_elab_ctx_t *ctx, uint
         op.src0 = cond_sig;
         op.src1 = UINT32_MAX;
         op.src2 = UINT32_MAX;
-        op.width = 0x1;
+        op.width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
         ret = crosstalk_hdl_elab_op_emit(ctx, &op);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -168,7 +168,7 @@ static uint32_t crosstalk_hdl_elab_guard_mix(crosstalk_hdl_elab_ctx_t *ctx, uint
         return LDG_ERR_AOK;
     }
 
-    ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, out_guard);
+    ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, out_guard);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     op.kind = CROSSTALK_HDL_IR_OP_LAND;
@@ -176,7 +176,7 @@ static uint32_t crosstalk_hdl_elab_guard_mix(crosstalk_hdl_elab_ctx_t *ctx, uint
     op.src0 = ctx->guard;
     op.src1 = cond_use;
     op.src2 = UINT32_MAX;
-    op.width = 0x1;
+    op.width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
     return crosstalk_hdl_elab_op_emit(ctx, &op);
 }
@@ -491,7 +491,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
 
                 out_lv->sig = member_sig;
                 out_lv->off = bit_val;
-                out_lv->width = 0x1;
+                out_lv->width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
                 return LDG_ERR_AOK;
             }
@@ -509,7 +509,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
             out_lv->kind = CROSSTALK_HDL_ELAB_LV_PART_DYN;
             out_lv->sig = member_sig;
             out_lv->off_sig = addr_sig;
-            out_lv->width = 0x1;
+            out_lv->width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
             return LDG_ERR_AOK;
         }
@@ -549,7 +549,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
             out_lv->sig = ctx->syms[sym_idx].sig;
             out_lv->addr_sig = addr_sig;
             out_lv->off = bit_val;
-            out_lv->width = 0x1;
+            out_lv->width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
             return LDG_ERR_AOK;
         }
@@ -588,7 +588,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
             out_lv->kind = CROSSTALK_HDL_ELAB_LV_PART;
             out_lv->sig = ctx->syms[sym_idx].sig;
             out_lv->off = msb_val;
-            out_lv->width = 0x1;
+            out_lv->width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
             return LDG_ERR_AOK;
         }
@@ -599,7 +599,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
         out_lv->kind = CROSSTALK_HDL_ELAB_LV_PART_DYN;
         out_lv->sig = ctx->syms[sym_idx].sig;
         out_lv->off_sig = addr_sig;
-        out_lv->width = 0x1;
+        out_lv->width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
         return LDG_ERR_AOK;
     }
@@ -648,7 +648,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
 
             out_lv->sig = member_sig;
             out_lv->off = lsb_val;
-            out_lv->width = (uint32_t)(msb_val - lsb_val) + 0x1;
+            out_lv->width = (uint32_t)(msb_val - lsb_val) + 1;
 
             return LDG_ERR_AOK;
         }
@@ -693,7 +693,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
             out_lv->sig = ctx->syms[sym_idx].sig;
             out_lv->addr_sig = addr_sig;
             out_lv->off = lsb_val;
-            out_lv->width = (uint32_t)(msb_val - lsb_val) + 0x1;
+            out_lv->width = (uint32_t)(msb_val - lsb_val) + 1;
 
             return LDG_ERR_AOK;
         }
@@ -732,7 +732,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
         out_lv->kind = CROSSTALK_HDL_ELAB_LV_PART;
         out_lv->sig = ctx->syms[sym_idx].sig;
         out_lv->off = lsb_val;
-        out_lv->width = (uint32_t)(msb_val - lsb_val) + 0x1;
+        out_lv->width = (uint32_t)(msb_val - lsb_val) + 1;
 
         return LDG_ERR_AOK;
     }
@@ -772,7 +772,7 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
         if (crosstalk_hdl_elab_const_eval(ctx, base_node->next_sibling, &off_val) == LDG_ERR_AOK)
         {
             out_lv->kind = CROSSTALK_HDL_ELAB_LV_PART;
-            out_lv->off = node->kind == CROSSTALK_HDL_NODE_EXPR_PART_MINUS ? off_val - width_val + 0x1 : off_val;
+            out_lv->off = node->kind == CROSSTALK_HDL_NODE_EXPR_PART_MINUS ? off_val - width_val + 1 : off_val;
 
             return LDG_ERR_AOK;
         }
@@ -780,13 +780,13 @@ static uint32_t crosstalk_hdl_elab_lv_resolve(crosstalk_hdl_elab_ctx_t *ctx, uin
         ret = crosstalk_hdl_elab_expr(ctx, base_node->next_sibling, &addr_sig, &addr_w, &addr_sgn);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (node->kind == CROSSTALK_HDL_NODE_EXPR_PART_MINUS && width_val > 0x1)
+        if (node->kind == CROSSTALK_HDL_NODE_EXPR_PART_MINUS && width_val > 1)
         {
             crosstalk_hdl_ir_op_t adj_op = LDG_STRUCT_ZERO_INIT;
             uint32_t adj_const = 0;
             uint32_t adj_sig = 0;
 
-            ret = crosstalk_hdl_elab_const_sig(ctx, width_val - 0x1, addr_w, &adj_const);
+            ret = crosstalk_hdl_elab_const_sig(ctx, width_val - 1, addr_w, &adj_const);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             ret = crosstalk_hdl_elab_tmp_make(ctx, addr_w, &adj_sig);
@@ -991,7 +991,7 @@ static uint32_t crosstalk_hdl_elab_concat_assign(crosstalk_hdl_elab_ctx_t *ctx, 
         if (LDG_UNLIKELY(member_cunt >= (uint32_t)(sizeof(member_arr) / sizeof(member_arr[0])))) { return LDG_ERR_FULL; }
 
         member_arr[member_cunt] = member_idx;
-        member_cunt = member_cunt + 0x1;
+        member_cunt++;
 
         ret = crosstalk_hdl_ast_node_get(ctx->ast, member_idx, &member_node);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -999,9 +999,9 @@ static uint32_t crosstalk_hdl_elab_concat_assign(crosstalk_hdl_elab_ctx_t *ctx, 
         member_idx = member_node->next_sibling;
     }
 
-    for (idx = member_cunt; idx > 0; idx = idx - 1)
+    for (idx = member_cunt; idx > 0; idx--)
     {
-        ret = crosstalk_hdl_elab_lv_resolve(ctx, member_arr[idx - 0x1], &lv);
+        ret = crosstalk_hdl_elab_lv_resolve(ctx, member_arr[idx - 1], &lv);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         ret = crosstalk_hdl_elab_tmp_make(ctx, lv.width, &part_sig);
@@ -1189,7 +1189,7 @@ static uint32_t crosstalk_hdl_elab_struct_vals_get(crosstalk_hdl_elab_ctx_t *ctx
         uint32_t lit_w = 0;
         uint8_t ones_is = LDG_TRUTH_FALSE;
 
-        if (node->tok.kind == CROSSTALK_HDL_TOK_LIT_UNBASED) { ones_is = ctx->src[node->tok.off + 0x1] == 0x31 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
+        if (node->tok.kind == CROSSTALK_HDL_TOK_LIT_UNBASED) { ones_is = ctx->src[node->tok.off + 1] == 0x31 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
         else
         {
             ret = crosstalk_hdl_elab_lit_decode(ctx->src, &node->tok, &lit_val, &lit_w);
@@ -1206,7 +1206,7 @@ static uint32_t crosstalk_hdl_elab_struct_vals_get(crosstalk_hdl_elab_ctx_t *ctx
             const crosstalk_hdl_elab_sfield_t *fld = &ctx->sfields[styp->field_base + fld_idx];
             uint64_t fill = 0;
 
-            if (ones_is == LDG_TRUTH_TRUE) { fill = fld->width >= 64 ? ~(uint64_t)0x0 : ((uint64_t)0x1 << fld->width) - 0x1; }
+            if (ones_is == LDG_TRUTH_TRUE) { fill = fld->width >= 64 ? ~(uint64_t)0x0 : ((uint64_t)1 << fld->width) - 1; }
 
             ret = crosstalk_hdl_elab_const_sig(ctx, fill, fld->width, &out_vals[fld_idx]);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1537,7 +1537,7 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
     ret = crosstalk_hdl_elab_expr(ctx, node->first_child, &subj_sig, &subj_w, &subj_sgn);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = crosstalk_hdl_elab_const_sig(ctx, 0x0, 0x1, &matched_sig);
+    ret = crosstalk_hdl_elab_const_sig(ctx, 0x0, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &matched_sig);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = crosstalk_hdl_ast_node_get(ctx->ast, node->first_child, &item_node);
@@ -1640,7 +1640,7 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
                             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
                         }
 
-                        ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, &eq_sig);
+                        ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &eq_sig);
                         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                         op.kind = CROSSTALK_HDL_IR_OP_EQ;
@@ -1657,14 +1657,14 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
                         if (or_sig == UINT32_MAX) { or_sig = eq_sig; }
                         else
                         {
-                            ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, &tmp_sig);
+                            ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &tmp_sig);
                             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                             op.kind = CROSSTALK_HDL_IR_OP_LOR;
                             op.dst = tmp_sig;
                             op.src0 = or_sig;
                             op.src1 = eq_sig;
-                            op.width = 0x1;
+                            op.width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
                             ret = crosstalk_hdl_elab_op_emit(ctx, &op);
                             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1684,7 +1684,7 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
                 uint32_t not_matched = 0;
                 uint32_t sel_sig = 0;
 
-                ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, &not_matched);
+                ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &not_matched);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                 op.kind = CROSSTALK_HDL_IR_OP_LNOT;
@@ -1692,21 +1692,21 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
                 op.src0 = matched_sig;
                 op.src1 = UINT32_MAX;
                 op.src2 = UINT32_MAX;
-                op.width = 0x1;
+                op.width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
                 ret = crosstalk_hdl_elab_op_emit(ctx, &op);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                 if (item_node->kind == CROSSTALK_HDL_NODE_CASE_ITEM)
                 {
-                    ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, &sel_sig);
+                    ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &sel_sig);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                     op.kind = CROSSTALK_HDL_IR_OP_LAND;
                     op.dst = sel_sig;
                     op.src0 = or_sig;
                     op.src1 = not_matched;
-                    op.width = 0x1;
+                    op.width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
                     ret = crosstalk_hdl_elab_op_emit(ctx, &op);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1727,7 +1727,7 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
 
                 if (item_node->kind == CROSSTALK_HDL_NODE_CASE_ITEM)
                 {
-                    ret = crosstalk_hdl_elab_tmp_make(ctx, 0x1, &tmp_sig);
+                    ret = crosstalk_hdl_elab_tmp_make(ctx, CROSSTALK_HDL_ELAB_LOGIC_WIDTH, &tmp_sig);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                     op.kind = CROSSTALK_HDL_IR_OP_LOR;
@@ -1735,7 +1735,7 @@ static uint32_t crosstalk_hdl_elab_case_stmt(crosstalk_hdl_elab_ctx_t *ctx, uint
                     op.src0 = matched_sig;
                     op.src1 = or_sig;
                     op.src2 = UINT32_MAX;
-                    op.width = 0x1;
+                    op.width = CROSSTALK_HDL_ELAB_LOGIC_WIDTH;
 
                     ret = crosstalk_hdl_elab_op_emit(ctx, &op);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1847,14 +1847,14 @@ static uint32_t crosstalk_hdl_elab_for_stmt_unroll(crosstalk_hdl_elab_ctx_t *ctx
             if (ctx->gen_depth < (uint32_t)CROSSTALK_HDL_ELAB_GEN_DEPTH_MAX)
             {
                 ctx->gen_at[ctx->gen_depth] = (uint32_t)ctx->syms[sym_idx].val;
-                ctx->gen_depth = ctx->gen_depth + 0x1;
+                ctx->gen_depth++;
                 pushed = LDG_TRUTH_TRUE;
             }
             else { ctx->warn_cunt++; }
 
             ret = crosstalk_hdl_elab_item(ctx, body_idx);
 
-            if (pushed == LDG_TRUTH_TRUE) { ctx->gen_depth = ctx->gen_depth - 0x1; }
+            if (pushed == LDG_TRUTH_TRUE) { ctx->gen_depth--; }
         }
         else { ret = crosstalk_hdl_elab_stmt(ctx, body_idx); }
 
@@ -1866,10 +1866,10 @@ static uint32_t crosstalk_hdl_elab_for_stmt_unroll(crosstalk_hdl_elab_ctx_t *ctx
         step_prev = ctx->syms[sym_idx].val;
         step_dec_is = LDG_TRUTH_FALSE;
 
-        if (step_node->tok.kind == CROSSTALK_HDL_TOK_OP && step_node->tok.val == CROSSTALK_HDL_OP_INC) { ctx->syms[sym_idx].val = ctx->syms[sym_idx].val + 0x1; }
+        if (step_node->tok.kind == CROSSTALK_HDL_TOK_OP && step_node->tok.val == CROSSTALK_HDL_OP_INC) { ctx->syms[sym_idx].val++; }
         else if (step_node->tok.kind == CROSSTALK_HDL_TOK_OP && step_node->tok.val == CROSSTALK_HDL_OP_DEC)
         {
-            ctx->syms[sym_idx].val = ctx->syms[sym_idx].val - 0x1;
+            ctx->syms[sym_idx].val--;
             step_dec_is = LDG_TRUTH_TRUE;
         }
         else if (step_lhs->next_sibling != UINT32_MAX)
@@ -1976,7 +1976,7 @@ static uint32_t crosstalk_hdl_elab_systask(crosstalk_hdl_elab_ctx_t *ctx, uint32
         ret = crosstalk_hdl_ir_systask_arg_add(ctx->ir_ctx, &arg);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ctx->err_tok = fn_node->tok; return ret; }
 
-        task.arg_cunt = task.arg_cunt + 0x1;
+        task.arg_cunt++;
     }
 
     ret = crosstalk_hdl_ir_systask_add(ctx->ir_ctx, &task);
@@ -2261,7 +2261,7 @@ uint32_t crosstalk_hdl_elab_func_call(crosstalk_hdl_elab_ctx_t *ctx, uint32_t ca
     uint32_t child_idx = 0;
     uint32_t arg_idx = 0;
     uint32_t ret_sig = 0;
-    uint32_t ret_w = 0x1;
+    uint32_t ret_w = 1;
     uint32_t ret_sig_save = 0;
     uint32_t ret_w_save = 0;
     uint32_t ret_styp = UINT32_MAX;
@@ -2345,7 +2345,7 @@ uint32_t crosstalk_hdl_elab_func_call(crosstalk_hdl_elab_ctx_t *ctx, uint32_t ca
         ret = crosstalk_hdl_elab_sym_add(ctx, &def_node->tok, CROSSTALK_HDL_ELAB_SYM_SVAR, ret_sig, (uint64_t)ret_styp, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ctx->depth--; return ret; }
 
-        ret_svar_new = ctx->sym_cunt - 0x1;
+        ret_svar_new = ctx->sym_cunt - 1;
     }
     else
     {
@@ -2372,7 +2372,7 @@ uint32_t crosstalk_hdl_elab_func_call(crosstalk_hdl_elab_ctx_t *ctx, uint32_t ca
 
         if (child->kind == CROSSTALK_HDL_NODE_PORT)
         {
-            uint32_t formal_w = 0x1;
+            uint32_t formal_w = 1;
             uint32_t formal_styp = UINT32_MAX;
             uint32_t sub_idx = child->first_child;
 
@@ -2709,7 +2709,7 @@ static uint32_t crosstalk_hdl_elab_final(crosstalk_hdl_elab_ctx_t *ctx, uint32_t
     ctx->mode = CROSSTALK_HDL_ELAB_MODE_COMB;
     ctx->guard = UINT32_MAX;
 
-    if (ret == LDG_ERR_AOK) { ctx->ir_ctx->final_cunt = ctx->ir_ctx->final_cunt + 0x1; }
+    if (ret == LDG_ERR_AOK) { ctx->ir_ctx->final_cunt++; }
 
     return ret;
 }
@@ -2783,7 +2783,7 @@ static uint32_t crosstalk_hdl_elab_initial(crosstalk_hdl_elab_ctx_t *ctx, uint32
 
     if (node->kind == CROSSTALK_HDL_NODE_FOR)
     {
-        ctx->warn_cunt = ctx->warn_cunt + 0x1;
+        ctx->warn_cunt++;
 
         return LDG_ERR_AOK;
     }
@@ -2978,7 +2978,7 @@ static uint32_t crosstalk_hdl_elab_decl(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
     uint64_t range_a = 0;
     uint64_t range_b = 0;
     uint32_t type_idx = UINT32_MAX;
-    uint32_t width = 0x1;
+    uint32_t width = 1;
     uint32_t child_idx = 0;
     uint32_t sig_idx = 0;
     uint32_t decl_styp = UINT32_MAX;
@@ -3051,7 +3051,7 @@ static uint32_t crosstalk_hdl_elab_decl(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
                         ret = crosstalk_hdl_elab_const_eval(ctx, range_lo->next_sibling, &range_b);
                         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                        dim_now = range_a >= range_b ? range_a - range_b + 0x1 : range_b - range_a + 0x1;
+                        dim_now = range_a >= range_b ? range_a - range_b + 1 : range_b - range_a + 1;
                     }
 
                     dim_inner = depth == 0 ? 0x0 : dim_now;
@@ -3141,7 +3141,7 @@ static uint32_t crosstalk_hdl_elab_decl(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
                         ctx->defer_sig[ctx->defer_cunt] = sig_idx;
                         ctx->defer_node[ctx->defer_cunt] = init_idx;
                         ctx->defer_width[ctx->defer_cunt] = width;
-                        ctx->defer_cunt = ctx->defer_cunt + 0x1;
+                        ctx->defer_cunt++;
                     }
                     else if (ctx->stmt_decl == LDG_TRUTH_TRUE)
                     {
@@ -3242,7 +3242,7 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
         if (ctx->unknown_mod_cunt < (uint32_t)CROSSTALK_HDL_ELAB_UNKNOWN_MOD_CAP)
         {
             ctx->unknown_mod[ctx->unknown_mod_cunt] = node->tok;
-            ctx->unknown_mod_cunt = ctx->unknown_mod_cunt + 0x1;
+            ctx->unknown_mod_cunt++;
         }
 
         ctx->warn_cunt++;
@@ -3350,7 +3350,7 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
                                 ret = crosstalk_hdl_elab_expr(ctx, elem_idx, &conns[conn_cunt].pattern_sig[conns[conn_cunt].pattern_cunt], &conns[conn_cunt].pattern_w[conns[conn_cunt].pattern_cunt], &val_sgn);
                                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                                conns[conn_cunt].pattern_cunt = conns[conn_cunt].pattern_cunt + 0x1;
+                                conns[conn_cunt].pattern_cunt++;
 
                                 ret = crosstalk_hdl_ast_node_get(ctx->ast, elem_idx, &elem_node);
                                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -3400,7 +3400,7 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
         uint32_t gen_idx = 0;
         uint32_t sub_idx = 0;
 
-        for (gen_idx = 0; gen_idx < ctx->gen_depth; gen_idx = gen_idx + 0x1)
+        for (gen_idx = 0; gen_idx < ctx->gen_depth; gen_idx++)
         {
             char digits[CROSSTALK_HDL_ELAB_GEN_IDX_CAP] = LDG_ARR_ZERO_INIT;
             uint32_t val = ctx->gen_at[gen_idx];
@@ -3410,7 +3410,7 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
             do
             {
                 digits[digit_cunt] = (char)(LDG_ASCII_DIGIT_ZERO + (val % (uint32_t)LDG_BASE_DEC));
-                digit_cunt = digit_cunt + 0x1;
+                digit_cunt++;
                 val = val / (uint32_t)LDG_BASE_DEC;
             }
             while (val != 0 && digit_cunt < (uint32_t)CROSSTALK_HDL_ELAB_GEN_IDX_CAP);
@@ -3418,19 +3418,19 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
             if (gen_len + digit_cunt + CROSSTALK_HDL_ELAB_GEN_BRACKET_SIZE > (uint32_t)CROSSTALK_HDL_ELAB_GEN_SUFFIX_CAP) { break; }
 
             gen_suffix[gen_len] = CROSSTALK_HDL_ELAB_GEN_OPEN;
-            gen_len = gen_len + 0x1;
+            gen_len++;
 
-            for (at = 0; at < digit_cunt; at = at + 0x1) { gen_suffix[gen_len + at] = digits[digit_cunt - 0x1 - at]; }
+            for (at = 0; at < digit_cunt; at++) { gen_suffix[gen_len + at] = digits[digit_cunt - 1 - at]; }
 
             gen_len = gen_len + digit_cunt;
             gen_suffix[gen_len] = CROSSTALK_HDL_ELAB_GEN_CLOSE;
-            gen_len = gen_len + 0x1;
+            gen_len++;
         }
 
         ret = crosstalk_hdl_elab_module(ctx, mod_node, pbinds, pbind_cunt, conns, conn_cunt);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        for (sub_idx = sig_mark; sub_idx < ctx->ir_ctx->sig_cunt; sub_idx = sub_idx + 0x1)
+        for (sub_idx = sig_mark; sub_idx < ctx->ir_ctx->sig_cunt; sub_idx++)
         {
             crosstalk_hdl_ir_sig_t *sub_sig = &ctx->ir_ctx->sigs[sub_idx];
             const char *tail = 0x0;
@@ -3457,13 +3457,13 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
             path_len = path_name.len + gen_len + CROSSTALK_HDL_ELAB_QUAL_SEP_SIZE + tail_len;
             if (path_len > (uint32_t)CROSSTALK_HDL_ELAB_QUAL_PATH_CAP) { ctx->warn_cunt++; continue; }
 
-            for (ch_idx = 0; ch_idx < path_name.len; ch_idx = ch_idx + 0x1) { path[ch_idx] = ctx->src[path_name.off + ch_idx]; }
+            for (ch_idx = 0; ch_idx < path_name.len; ch_idx++) { path[ch_idx] = ctx->src[path_name.off + ch_idx]; }
 
-            for (ch_idx = 0; ch_idx < gen_len; ch_idx = ch_idx + 0x1) { path[path_name.len + ch_idx] = gen_suffix[ch_idx]; }
+            for (ch_idx = 0; ch_idx < gen_len; ch_idx++) { path[path_name.len + ch_idx] = gen_suffix[ch_idx]; }
 
             path[path_name.len + gen_len] = CROSSTALK_HDL_ELAB_QUAL_SEP;
 
-            for (ch_idx = 0; ch_idx < tail_len; ch_idx = ch_idx + 0x1) { path[path_name.len + gen_len + CROSSTALK_HDL_ELAB_QUAL_SEP_SIZE + ch_idx] = tail[ch_idx]; }
+            for (ch_idx = 0; ch_idx < tail_len; ch_idx++) { path[path_name.len + gen_len + CROSSTALK_HDL_ELAB_QUAL_SEP_SIZE + ch_idx] = tail[ch_idx]; }
 
             if (crosstalk_hdl_ir_sig_qual_set(ctx->ir_ctx, sub_idx, path, path_len) != LDG_ERR_AOK) { ctx->warn_cunt++; }
         }
@@ -3502,7 +3502,7 @@ static uint32_t crosstalk_hdl_elab_enum_reg(crosstalk_hdl_elab_ctx_t *ctx, uint3
             ret = crosstalk_hdl_elab_sym_add(ctx, &item->tok, CROSSTALK_HDL_ELAB_SYM_PARAM, UINT32_MAX, item_val, 32);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            item_val = item_val + 0x1;
+            item_val++;
         }
 
         item_idx = item->next_sibling;
@@ -3611,7 +3611,7 @@ static uint32_t crosstalk_hdl_elab_typedef_reg(crosstalk_hdl_elab_ctx_t *ctx, ui
                         group_styp[group_local_cunt] = member_styp;
                         group_leaf_base[group_local_cunt] = ctx->styps[styp_idx].field_cunt;
                         group_leaf_cunt[group_local_cunt] = sub_styp->field_cunt;
-                        group_local_cunt = group_local_cunt + 0x1;
+                        group_local_cunt++;
 
                         for (leaf_k = 0; leaf_k < sub_styp->field_cunt; leaf_k++)
                         {
@@ -3623,8 +3623,8 @@ static uint32_t crosstalk_hdl_elab_typedef_reg(crosstalk_hdl_elab_ctx_t *ctx, ui
                             ctx->sfields[ctx->sfield_cunt].width = leaf->width;
                             ctx->sfields[ctx->sfield_cunt].off = 0;
                             ctx->sfields[ctx->sfield_cunt].sub_styp = UINT32_MAX;
-                            ctx->sfield_cunt = ctx->sfield_cunt + 0x1;
-                            ctx->styps[styp_idx].field_cunt = ctx->styps[styp_idx].field_cunt + 0x1;
+                            ctx->sfield_cunt++;
+                            ctx->styps[styp_idx].field_cunt++;
                             total = total + leaf->width;
                         }
                     }
@@ -3636,8 +3636,8 @@ static uint32_t crosstalk_hdl_elab_typedef_reg(crosstalk_hdl_elab_ctx_t *ctx, ui
                         ctx->sfields[ctx->sfield_cunt].width = member_width;
                         ctx->sfields[ctx->sfield_cunt].off = 0;
                         ctx->sfields[ctx->sfield_cunt].sub_styp = UINT32_MAX;
-                        ctx->sfield_cunt = ctx->sfield_cunt + 0x1;
-                        ctx->styps[styp_idx].field_cunt = ctx->styps[styp_idx].field_cunt + 0x1;
+                        ctx->sfield_cunt++;
+                        ctx->styps[styp_idx].field_cunt++;
                         total = total + member_width;
                     }
 
@@ -3669,11 +3669,11 @@ static uint32_t crosstalk_hdl_elab_typedef_reg(crosstalk_hdl_elab_ctx_t *ctx, ui
                 ctx->sfields[ctx->sfield_cunt].sub_styp = group_styp[fld_idx];
                 ctx->sfields[ctx->sfield_cunt].sub_leaf_base = group_leaf_base[fld_idx];
                 ctx->sfields[ctx->sfield_cunt].sub_leaf_cunt = group_leaf_cunt[fld_idx];
-                ctx->sfield_cunt = ctx->sfield_cunt + 0x1;
+                ctx->sfield_cunt++;
             }
 
             ctx->styps[styp_idx].total_width = total;
-            ctx->styp_cunt = ctx->styp_cunt + 0x1;
+            ctx->styp_cunt++;
 
             ret = crosstalk_hdl_elab_sym_add(ctx, &td_node->tok, CROSSTALK_HDL_ELAB_SYM_STYP, UINT32_MAX, (uint64_t)styp_idx, total);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -3789,7 +3789,7 @@ static uint32_t crosstalk_hdl_elab_item(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
 
         ctx->funcs[ctx->func_cunt].name = node->tok;
         ctx->funcs[ctx->func_cunt].node = node_idx;
-        ctx->func_cunt = ctx->func_cunt + 0x1;
+        ctx->func_cunt++;
 
         return LDG_ERR_AOK;
     }
@@ -4023,7 +4023,7 @@ static uint32_t crosstalk_hdl_elab_item(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
 static uint8_t crosstalk_hdl_elab_jack_name_is(const char *src, const crosstalk_hdl_tok_t *tok)
 {
     const char prefix[] = CROSSTALK_HDL_IR_JACK_PREFIX;
-    uint32_t prefix_len = (uint32_t)(sizeof(prefix) - 0x1);
+    uint32_t prefix_len = (uint32_t)(sizeof(prefix) - 1);
     uint32_t at = 0;
 
     if (LDG_UNLIKELY(src == 0x0 || tok == 0x0)) { return LDG_TRUTH_FALSE; }

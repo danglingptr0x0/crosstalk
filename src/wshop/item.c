@@ -23,12 +23,12 @@ static uint8_t item_ext_is(const char *name, const char *ext)
 
     if (LDG_UNLIKELY(name == 0x0 || ext == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    while (name[name_len] != LDG_STR_TERM) { name_len = name_len + ITEM_STEP; }
-    while (ext[ext_len] != LDG_STR_TERM) { ext_len = ext_len + ITEM_STEP; }
+    while (name[name_len] != LDG_STR_TERM) { name_len++; }
+    while (ext[ext_len] != LDG_STR_TERM) { ext_len++; }
 
     if (name_len <= ext_len) { return LDG_TRUTH_FALSE; }
 
-    for (idx = 0; idx < ext_len; idx = idx + ITEM_STEP) { if (name[name_len - ext_len + idx] != ext[idx]) { return LDG_TRUTH_FALSE; } }
+    for (idx = 0; idx < ext_len; idx++) { if (name[name_len - ext_len + idx] != ext[idx]) { return LDG_TRUTH_FALSE; } }
 
     return LDG_TRUTH_TRUE;
 }
@@ -60,7 +60,7 @@ static uint32_t item_marker_find(const char *dir, char *out_name, uint64_t out_c
         if (item_ext_is(name, CROSSTALK_WSHOP_MANIFEST_EXT_CORE) != LDG_TRUTH_TRUE && item_ext_is(name, CROSSTALK_WSHOP_MANIFEST_EXT_SOFTWARE) != LDG_TRUTH_TRUE) { continue; }
 
         name_len = 0;
-        while (name[name_len] != LDG_STR_TERM) { name_len = name_len + ITEM_STEP; }
+        while (name[name_len] != LDG_STR_TERM) { name_len++; }
 
         if (name_len >= out_cap) { continue; }
 
@@ -135,7 +135,7 @@ uint32_t crosstalk_wshop_item_ld(const char *dir, char *src_buff, uint64_t src_c
     ret = crosstalk_wshop_manifest_parse(src_buff, src_len, &out->manifest);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    while (dir[dir_len] != LDG_STR_TERM) { dir_len = dir_len + ITEM_STEP; }
+    while (dir[dir_len] != LDG_STR_TERM) { dir_len++; }
 
     if (dir_len >= (uint64_t)sizeof(out->dir)) { return LDG_ERR_BOUNDS; }
 
@@ -164,11 +164,11 @@ uint32_t crosstalk_wshop_list_build(crosstalk_wshop_list_t *out, const crosstalk
 
     memset(out, 0x0, sizeof(*out));
 
-    for (type_idx = 0; type_idx < CROSSTALK_WSHOP_ITEM_SCAN_CUNT; type_idx = type_idx + ITEM_STEP)
+    for (type_idx = 0; type_idx < CROSSTALK_WSHOP_ITEM_SCAN_CUNT; type_idx++)
     {
         ent_cunt = crosstalk_net_wshop_item_cunt_get(net, type_arr[type_idx]);
 
-        for (idx = 0; idx < ent_cunt; idx = idx + ITEM_STEP)
+        for (idx = 0; idx < ent_cunt; idx++)
         {
             ent = crosstalk_net_wshop_item_get(net, type_arr[type_idx], idx);
             if (ent == 0x0) { continue; }
@@ -187,7 +187,7 @@ uint32_t crosstalk_wshop_list_build(crosstalk_wshop_list_t *out, const crosstalk
             }
 
             slot->file_id = ent->file_id;
-            out->cunt = out->cunt + ITEM_STEP;
+            out->cunt++;
 
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: item; id: %u64; kind: %u32; isa: %.31s; name: %.63s", slot->file_id, slot->manifest.kind, slot->manifest.kind == CROSSTALK_WSHOP_MANIFEST_KIND_CORE ? slot->manifest.isa : slot->manifest.tgt_isa, slot->manifest.name);
         }
@@ -205,11 +205,11 @@ uint32_t crosstalk_wshop_list_cunt_get(const crosstalk_wshop_list_t *list, uint3
 
     if (LDG_UNLIKELY(list == 0x0)) { return CROSSTALK_NET_WSHOP_CUNT_NONE; }
 
-    for (idx = 0; idx < list->cunt; idx = idx + ITEM_STEP)
+    for (idx = 0; idx < list->cunt; idx++)
     {
         if (list->item[idx].manifest.kind != kind) { continue; }
 
-        cunt = cunt + ITEM_STEP;
+        cunt++;
     }
 
     return cunt;
@@ -222,13 +222,13 @@ const crosstalk_wshop_item_t* crosstalk_wshop_list_get(const crosstalk_wshop_lis
 
     if (LDG_UNLIKELY(list == 0x0)) { return 0x0; }
 
-    for (at = 0; at < list->cunt; at = at + ITEM_STEP)
+    for (at = 0; at < list->cunt; at++)
     {
         if (list->item[at].manifest.kind != kind) { continue; }
 
         if (seen == idx) { return &list->item[at]; }
 
-        seen = seen + ITEM_STEP;
+        seen++;
     }
 
     return 0x0;

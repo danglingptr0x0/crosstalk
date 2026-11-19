@@ -91,7 +91,7 @@ uint32_t crosstalk_eda_ui_indicator_acc_set(crosstalk_eda_ui_indicator_ctx_t *ct
 
     if (cunt < (uint32_t)CROSSTALK_EDA_UI_INDICATOR_ACC_CUNT) { return LDG_ERR_BOUNDS; }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_INDICATOR_ACC_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_INDICATOR_ACC_CUNT; idx++)
     {
         ctx->acc_lit[idx] = acc[idx] != ctx->acc_prev[idx] ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
         ctx->acc_prev[idx] = acc[idx];

@@ -58,7 +58,7 @@ uint32_t crosstalk_eda_ui_pipeview_stages_set(crosstalk_eda_ui_pipeview_ctx_t *c
 
     while (args[at] != LDG_STR_TERM && cunt < (uint32_t)CROSSTALK_EDA_UI_PIPEVIEW_STAGE_CAP)
     {
-        while (args[at] == ' ') { at = at + 0x1; }
+        while (args[at] == ' ') { at++; }
 
         if (args[at] == LDG_STR_TERM) { break; }
 
@@ -67,15 +67,15 @@ uint32_t crosstalk_eda_ui_pipeview_stages_set(crosstalk_eda_ui_pipeview_ctx_t *c
         while (args[at] != LDG_STR_TERM && args[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_EDA_UI_PIPEVIEW_SIG_CAP)
         {
             ctx->stage_sig[cunt][pos] = args[at];
-            pos = pos + 0x1;
-            at = at + 0x1;
+            pos++;
+            at++;
         }
 
         ctx->stage_sig[cunt][pos] = LDG_STR_TERM;
 
-        while (args[at] != LDG_STR_TERM && args[at] != ' ') { at = at + 0x1; }
+        while (args[at] != LDG_STR_TERM && args[at] != ' ') { at++; }
 
-        cunt = cunt + 0x1;
+        cunt++;
     }
 
     if (cunt == 0) { return LDG_ERR_STR_EMPTY; }

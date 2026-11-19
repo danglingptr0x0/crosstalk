@@ -64,7 +64,7 @@ static uint32_t progview_base_get(const crosstalk_eda_ui_progview_ctx_t *ctx, ui
 
         if (loc >= off) { word = (loc - off) / (uint64_t)LDG_DANGCSA_INSTR_SIZE; }
 
-        if (word >= width && LDG_IS_POW2(width)) { word = word & (width - 0x1); }
+        if (word >= width && LDG_IS_POW2(width)) { word = word & (width - 1); }
 
         if (word < width) { *out_live = LDG_TRUTH_TRUE; }
         else { word = 0; }
@@ -173,24 +173,24 @@ static uint32_t progview_thread_row_build(const crosstalk_re_repl_thread_t *thre
 
     pos = (uint32_t)wrote;
 
-    if (pos + (uint32_t)PROGVIEW_THREAD_ROW_BYTES * ((uint32_t)PROGVIEW_THREAD_BYTE_COLS + (uint32_t)PROGVIEW_STEP) + (uint32_t)PROGVIEW_THREAD_GAP_COLS + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
+    if (pos + (uint32_t)PROGVIEW_THREAD_ROW_BYTES * ((uint32_t)PROGVIEW_THREAD_BYTE_COLS + (uint32_t)1) + (uint32_t)PROGVIEW_THREAD_GAP_COLS + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
 
-    for (at = 0; at < (uint32_t)PROGVIEW_THREAD_ROW_BYTES; at = at + (uint32_t)PROGVIEW_STEP)
+    for (at = 0; at < (uint32_t)PROGVIEW_THREAD_ROW_BYTES; at = at + (uint32_t)1)
     {
         if (first + at < thread->code_cunt) { if (ldg_str_fmt(line + pos, (uint64_t)(cap - pos), &fmt_len, PROGVIEW_THREAD_BYTE_FMT, (uint32_t)thread->code[first + at]) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; } }
-        else { for (pad = 0; pad < (uint32_t)PROGVIEW_THREAD_BYTE_COLS; pad = pad + (uint32_t)PROGVIEW_STEP) { line[pos + pad] = PROGVIEW_PLAIN_CH; } }
+        else { for (pad = 0; pad < (uint32_t)PROGVIEW_THREAD_BYTE_COLS; pad = pad + (uint32_t)1) { line[pos + pad] = PROGVIEW_PLAIN_CH; } }
 
         pos = pos + (uint32_t)PROGVIEW_THREAD_BYTE_COLS;
     }
 
-    for (pad = 0; pad < (uint32_t)PROGVIEW_THREAD_GAP_COLS; pad = pad + (uint32_t)PROGVIEW_STEP) { line[pos + pad] = PROGVIEW_PLAIN_CH; }
+    for (pad = 0; pad < (uint32_t)PROGVIEW_THREAD_GAP_COLS; pad = pad + (uint32_t)1) { line[pos + pad] = PROGVIEW_PLAIN_CH; }
 
     pos = pos + (uint32_t)PROGVIEW_THREAD_GAP_COLS;
 
-    for (at = 0; at < (uint32_t)PROGVIEW_THREAD_ROW_BYTES && first + at < thread->code_cunt; at = at + (uint32_t)PROGVIEW_STEP)
+    for (at = 0; at < (uint32_t)PROGVIEW_THREAD_ROW_BYTES && first + at < thread->code_cunt; at = at + (uint32_t)1)
     {
         line[pos] = thread->code[first + at] >= (uint8_t)LDG_ASCII_PRINTABLE_MIN && thread->code[first + at] <= (uint8_t)LDG_ASCII_PRINTABLE_MAX ? (char)thread->code[first + at] : PROGVIEW_THREAD_DOT;
-        pos = pos + (uint32_t)PROGVIEW_STEP;
+        pos = pos + (uint32_t)1;
     }
 
     line[pos] = LDG_STR_TERM;
@@ -211,7 +211,7 @@ static uint32_t progview_thread_draw(crosstalk_eda_ui_progview_ctx_t *ctx, ldg_t
     {
         if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, PROGVIEW_THREAD_WAIT_FMT, thread->sel, thread->last_err) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
-        ctx->win.content_row_cunt = (uint32_t)PROGVIEW_STEP;
+        ctx->win.content_row_cunt = (uint32_t)1;
 
         return crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, (uint32_t)PROGVIEW_HDR_ROW, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, 0x0);
     }
@@ -229,7 +229,7 @@ static uint32_t progview_thread_draw(crosstalk_eda_ui_progview_ctx_t *ctx, ldg_t
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, row, line, (uint64_t)sizeof(line), first == 0 ? (uint32_t)CROSSTALK_UI_THEME_MARK_RGBA : (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)PROGVIEW_STEP;
+        row = row + (uint32_t)1;
     }
 
     ctx->win.content_row_cunt = row;
@@ -276,7 +276,7 @@ static uint32_t progview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
     ret = crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->sig, base, words, (uint32_t)CROSSTALK_EDA_UI_PROGVIEW_ROW_CUNT, &got);
     if (ret != LDG_ERR_AOK) { return progview_dead_draw(render, row); }
 
-    for (idx = 0; idx < got; idx = idx + (uint32_t)PROGVIEW_STEP)
+    for (idx = 0; idx < got; idx = idx + (uint32_t)1)
     {
         addr = (base + (uint64_t)idx) * (uint64_t)LDG_DANGCSA_INSTR_SIZE;
         at_loc = live == LDG_TRUTH_TRUE && base + (uint64_t)idx == word ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -288,7 +288,7 @@ static uint32_t progview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)PROGVIEW_ORIG_COL, row, line, (uint64_t)sizeof(line), at_loc == LDG_TRUTH_TRUE ? (uint32_t)CROSSTALK_UI_THEME_MARK_RGBA : (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)PROGVIEW_STEP;
+        row = row + (uint32_t)1;
     }
 
     ctx->win.content_row_cunt = row;

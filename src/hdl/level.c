@@ -8,6 +8,8 @@
 
 #include "hdl/level.h"
 
+#define CROSSTALK_HDL_LVL_CUNT_MIN 1
+
 static uint32_t crosstalk_hdl_level_arr_alloc(void *pool, uint64_t cunt, uint64_t item_size, void **out)
 {
     uint64_t bytes = 0;
@@ -17,7 +19,7 @@ static uint32_t crosstalk_hdl_level_arr_alloc(void *pool, uint64_t cunt, uint64_
 
     *out = 0x0;
 
-    if (cunt == 0) { cunt = 0x1; }
+    if (cunt == 0) { cunt = CROSSTALK_HDL_LVL_CUNT_MIN; }
 
     ret = ldg_arith_uint64_mul(cunt, item_size, &bytes);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return LDG_ERR_OVERFLOW; }
@@ -52,43 +54,43 @@ static uint32_t crosstalk_hdl_level_rds_get(const crosstalk_hdl_ir_op_t *op, uin
         case CROSSTALK_HDL_IR_OP_SLICE:
         case CROSSTALK_HDL_IR_OP_REG_NEXT:
             out_sigs[cunt] = op->src0;
-            cunt = cunt + 0x1;
+            cunt++;
             break;
         case CROSSTALK_HDL_IR_OP_SLICE_DYN:
         case CROSSTALK_HDL_IR_OP_INSERT:
             out_sigs[cunt] = op->src0;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src1;
-            cunt = cunt + 0x1;
+            cunt++;
             break;
         case CROSSTALK_HDL_IR_OP_INSERT_DYN:
         case CROSSTALK_HDL_IR_OP_MUX:
             out_sigs[cunt] = op->src0;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src1;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src2;
-            cunt = cunt + 0x1;
+            cunt++;
             break;
         case CROSSTALK_HDL_IR_OP_MEM_RD:
             out_sigs[cunt] = op->src1;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src0;
-            cunt = cunt + 0x1;
+            cunt++;
             break;
         case CROSSTALK_HDL_IR_OP_MEM_WR:
             out_sigs[cunt] = op->dst;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src1;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src2;
-            cunt = cunt + 0x1;
+            cunt++;
             break;
         default:
             out_sigs[cunt] = op->src0;
-            cunt = cunt + 0x1;
+            cunt++;
             out_sigs[cunt] = op->src1;
-            cunt = cunt + 0x1;
+            cunt++;
             break;
     }
 
@@ -103,11 +105,11 @@ static void crosstalk_hdl_level_heap_push(uint32_t *heap, uint32_t *heap_cunt, c
 
     heap[*heap_cunt] = item;
     slot = *heap_cunt;
-    *heap_cunt = *heap_cunt + 0x1;
+    (*heap_cunt)++;
 
     while (slot > 0)
     {
-        parent = (slot - 0x1) / 0x2;
+        parent = (slot - 1) / 0x2;
 
         if (key[heap[parent]] <= key[heap[slot]]) { break; }
 
@@ -126,16 +128,16 @@ static uint32_t crosstalk_hdl_level_heap_pop(uint32_t *heap, uint32_t *heap_cunt
     uint32_t tmp = 0;
 
     top = heap[0];
-    *heap_cunt = *heap_cunt - 0x1;
+    (*heap_cunt)--;
     heap[0] = heap[*heap_cunt];
 
-    while (0x1)
+    while (1)
     {
-        child = slot * 0x2 + 0x1;
+        child = slot * 0x2 + 1;
 
         if (child >= *heap_cunt) { break; }
 
-        if (child + 0x1 < *heap_cunt && key[heap[child + 0x1]] < key[heap[child]]) { child = child + 0x1; }
+        if (child + 1 < *heap_cunt && key[heap[child + 1]] < key[heap[child]]) { child++; }
 
         if (key[heap[slot]] <= key[heap[child]]) { break; }
 
@@ -214,14 +216,14 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
 
     res->depth = (uint32_t *)raw;
 
-    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)op_cunt + 0x1, (uint64_t)sizeof(crosstalk_hdl_level_unit_t), &raw);
+    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)op_cunt + 1, (uint64_t)sizeof(crosstalk_hdl_level_unit_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     res->units = (crosstalk_hdl_level_unit_t *)raw;
 
     if (op_cunt == 0) { return LDG_ERR_AOK; }
 
-    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)sig_cunt + 0x1, (uint64_t)sizeof(uint32_t), &raw);
+    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)sig_cunt + 1, (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     wr_base = (uint32_t *)raw;
@@ -232,10 +234,10 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
     {
         wsig = crosstalk_hdl_level_wsig_get(&ir_ctx->comb_ops[idx]);
 
-        if (wsig != UINT32_MAX && wsig < sig_cunt) { wr_base[wsig + 0x1] = wr_base[wsig + 0x1] + 0x1; }
+        if (wsig != UINT32_MAX && wsig < sig_cunt) { wr_base[wsig + 1]++; }
     }
 
-    for (idx = 0; idx < sig_cunt; idx++) { wr_base[idx + 0x1] = wr_base[idx + 0x1] + wr_base[idx]; }
+    for (idx = 0; idx < sig_cunt; idx++) { wr_base[idx + 1] = wr_base[idx + 1] + wr_base[idx]; }
 
     ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)wr_base[sig_cunt], (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -259,12 +261,12 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
             if (wsig != UINT32_MAX && wsig < sig_cunt)
             {
                 wr_ops[wr_fill[wsig]] = idx;
-                wr_fill[wsig] = wr_fill[wsig] + 0x1;
+                wr_fill[wsig]++;
             }
         }
     }
 
-    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)op_cunt + 0x1, (uint64_t)sizeof(uint32_t), &raw);
+    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)op_cunt + 1, (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     succ_base = (uint32_t *)raw;
@@ -279,15 +281,15 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
         {
             sig = rd_sigs[sub];
 
-            if (sig != UINT32_MAX && sig < sig_cunt) { edge_cunt = edge_cunt + (wr_base[sig + 0x1] - wr_base[sig]); }
+            if (sig != UINT32_MAX && sig < sig_cunt) { edge_cunt = edge_cunt + (wr_base[sig + 1] - wr_base[sig]); }
         }
     }
 
     for (idx = 0; idx < sig_cunt; idx++)
     {
-        uint32_t wr_cunt = wr_base[idx + 0x1] - wr_base[idx];
+        uint32_t wr_cunt = wr_base[idx + 1] - wr_base[idx];
 
-        if (wr_cunt > 0x1) { edge_cunt = edge_cunt + wr_cunt - 0x1; }
+        if (wr_cunt > 1) { edge_cunt = edge_cunt + wr_cunt - 1; }
     }
 
     for (idx = 0; idx <= op_cunt; idx++) { succ_base[idx] = 0; }
@@ -304,7 +306,7 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
 
             if (sig == UINT32_MAX || sig >= sig_cunt) { continue; }
 
-            for (wpos = wr_base[sig]; wpos < wr_base[sig + 0x1]; wpos++) { succ_base[wr_ops[wpos] + 0x1] = succ_base[wr_ops[wpos] + 0x1] + 0x1; }
+            for (wpos = wr_base[sig]; wpos < wr_base[sig + 1]; wpos++) { succ_base[wr_ops[wpos] + 1]++; }
         }
     }
 
@@ -312,10 +314,10 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
     {
         uint32_t wpos = 0;
 
-        for (wpos = wr_base[idx]; wpos + 0x1 < wr_base[idx + 0x1]; wpos++) { succ_base[wr_ops[wpos] + 0x1] = succ_base[wr_ops[wpos] + 0x1] + 0x1; }
+        for (wpos = wr_base[idx]; wpos + 1 < wr_base[idx + 1]; wpos++) { succ_base[wr_ops[wpos] + 1]++; }
     }
 
-    for (idx = 0; idx < op_cunt; idx++) { succ_base[idx + 0x1] = succ_base[idx + 0x1] + succ_base[idx]; }
+    for (idx = 0; idx < op_cunt; idx++) { succ_base[idx + 1] = succ_base[idx + 1] + succ_base[idx]; }
 
     ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)edge_cunt, (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -341,10 +343,10 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
 
             if (sig == UINT32_MAX || sig >= sig_cunt) { continue; }
 
-            for (wpos = wr_base[sig]; wpos < wr_base[sig + 0x1]; wpos++)
+            for (wpos = wr_base[sig]; wpos < wr_base[sig + 1]; wpos++)
             {
                 succ_ops[indeg[wr_ops[wpos]]] = idx;
-                indeg[wr_ops[wpos]] = indeg[wr_ops[wpos]] + 0x1;
+                indeg[wr_ops[wpos]]++;
             }
         }
     }
@@ -353,10 +355,10 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
     {
         uint32_t wpos = 0;
 
-        for (wpos = wr_base[idx]; wpos + 0x1 < wr_base[idx + 0x1]; wpos++)
+        for (wpos = wr_base[idx]; wpos + 1 < wr_base[idx + 1]; wpos++)
         {
-            succ_ops[indeg[wr_ops[wpos]]] = wr_ops[wpos + 0x1];
-            indeg[wr_ops[wpos]] = indeg[wr_ops[wpos]] + 0x1;
+            succ_ops[indeg[wr_ops[wpos]]] = wr_ops[wpos + 1];
+            indeg[wr_ops[wpos]]++;
         }
     }
 
@@ -409,68 +411,68 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
 
         frame_op[0] = idx;
         frame_edge[0] = 0;
-        frame_cunt = 0x1;
+        frame_cunt = 1;
 
         while (frame_cunt > 0)
         {
-            uint32_t now = frame_op[frame_cunt - 0x1];
-            uint32_t epos = frame_edge[frame_cunt - 0x1];
+            uint32_t now = frame_op[frame_cunt - 1];
+            uint32_t epos = frame_edge[frame_cunt - 1];
 
             if (epos == 0 && t_idx[now] == UINT32_MAX)
             {
                 t_idx[now] = visit_cunt;
                 t_low[now] = visit_cunt;
-                visit_cunt = visit_cunt + 0x1;
+                visit_cunt++;
                 t_stk[t_stk_cunt] = now;
-                t_stk_cunt = t_stk_cunt + 0x1;
+                t_stk_cunt++;
                 t_onstk[now] = LDG_TRUTH_TRUE;
             }
 
-            if (epos < succ_base[now + 0x1] - succ_base[now])
+            if (epos < succ_base[now + 1] - succ_base[now])
             {
                 uint32_t succ_op = succ_ops[succ_base[now] + epos];
 
-                frame_edge[frame_cunt - 0x1] = epos + 0x1;
+                frame_edge[frame_cunt - 1] = epos + 1;
 
                 if (t_idx[succ_op] == UINT32_MAX)
                 {
                     frame_op[frame_cunt] = succ_op;
                     frame_edge[frame_cunt] = 0;
-                    frame_cunt = frame_cunt + 0x1;
+                    frame_cunt++;
                 }
                 else if (t_onstk[succ_op] == LDG_TRUTH_TRUE && t_idx[succ_op] < t_low[now]) { t_low[now] = t_idx[succ_op]; }
 
                 continue;
             }
 
-            frame_cunt = frame_cunt - 0x1;
+            frame_cunt--;
 
             if (frame_cunt > 0)
             {
-                uint32_t up = frame_op[frame_cunt - 0x1];
+                uint32_t up = frame_op[frame_cunt - 1];
 
                 if (t_low[now] < t_low[up]) { t_low[up] = t_low[now]; }
             }
 
             if (t_low[now] == t_idx[now])
             {
-                while (0x1)
+                while (1)
                 {
-                    uint32_t member = t_stk[t_stk_cunt - 0x1];
+                    uint32_t member = t_stk[t_stk_cunt - 1];
 
-                    t_stk_cunt = t_stk_cunt - 0x1;
+                    t_stk_cunt--;
                     t_onstk[member] = LDG_TRUTH_FALSE;
                     scc_id[member] = scc_cunt;
 
                     if (member == now) { break; }
                 }
 
-                scc_cunt = scc_cunt + 0x1;
+                scc_cunt++;
             }
         }
     }
 
-    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)scc_cunt + 0x1, (uint64_t)sizeof(uint32_t), &raw);
+    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)scc_cunt + 1, (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     scc_base = (uint32_t *)raw;
@@ -497,9 +499,9 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
 
     for (idx = 0; idx <= scc_cunt; idx++) { scc_base[idx] = 0; }
 
-    for (idx = 0; idx < op_cunt; idx++) { scc_base[scc_id[idx] + 0x1] = scc_base[scc_id[idx] + 0x1] + 0x1; }
+    for (idx = 0; idx < op_cunt; idx++) { scc_base[scc_id[idx] + 1]++; }
 
-    for (idx = 0; idx < scc_cunt; idx++) { scc_base[idx + 0x1] = scc_base[idx + 0x1] + scc_base[idx]; }
+    for (idx = 0; idx < scc_cunt; idx++) { scc_base[idx + 1] = scc_base[idx + 1] + scc_base[idx]; }
 
     {
         uint32_t *scc_fill = 0x0;
@@ -520,22 +522,22 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
         for (idx = 0; idx < op_cunt; idx++)
         {
             scc_ops[scc_fill[scc_id[idx]]] = idx;
-            scc_fill[scc_id[idx]] = scc_fill[scc_id[idx]] + 0x1;
+            scc_fill[scc_id[idx]]++;
 
             if (idx < scc_key[scc_id[idx]]) { scc_key[scc_id[idx]] = idx; }
         }
     }
 
-    for (idx = 0; idx < scc_cunt; idx++) { if (scc_base[idx + 0x1] - scc_base[idx] > 0x1) { scc_iter[idx] = LDG_TRUTH_TRUE; } }
+    for (idx = 0; idx < scc_cunt; idx++) { if (scc_base[idx + 1] - scc_base[idx] > 1) { scc_iter[idx] = LDG_TRUTH_TRUE; } }
 
     for (idx = 0; idx < op_cunt; idx++)
     {
         uint32_t epos = 0;
 
-        for (epos = succ_base[idx]; epos < succ_base[idx + 0x1]; epos++) { if (succ_ops[epos] == idx) { scc_iter[scc_id[idx]] = LDG_TRUTH_TRUE; } }
+        for (epos = succ_base[idx]; epos < succ_base[idx + 1]; epos++) { if (succ_ops[epos] == idx) { scc_iter[scc_id[idx]] = LDG_TRUTH_TRUE; } }
     }
 
-    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)scc_cunt + 0x1, (uint64_t)sizeof(uint32_t), &raw);
+    ret = crosstalk_hdl_level_arr_alloc(pool, (uint64_t)scc_cunt + 1, (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     cond_base = (uint32_t *)raw;
@@ -558,10 +560,10 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
     {
         uint32_t epos = 0;
 
-        for (epos = succ_base[idx]; epos < succ_base[idx + 0x1]; epos++) { if (scc_id[succ_ops[epos]] != scc_id[idx]) { cond_base[scc_id[idx] + 0x1] = cond_base[scc_id[idx] + 0x1] + 0x1; } }
+        for (epos = succ_base[idx]; epos < succ_base[idx + 1]; epos++) { if (scc_id[succ_ops[epos]] != scc_id[idx]) { cond_base[scc_id[idx] + 1]++; } }
     }
 
-    for (idx = 0; idx < scc_cunt; idx++) { cond_base[idx + 0x1] = cond_base[idx + 0x1] + cond_base[idx]; }
+    for (idx = 0; idx < scc_cunt; idx++) { cond_base[idx + 1] = cond_base[idx + 1] + cond_base[idx]; }
 
     {
         uint32_t *cond_fill = 0x0;
@@ -577,11 +579,11 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
         {
             uint32_t epos = 0;
 
-            for (epos = succ_base[idx]; epos < succ_base[idx + 0x1]; epos++) { if (scc_id[succ_ops[epos]] != scc_id[idx])
+            for (epos = succ_base[idx]; epos < succ_base[idx + 1]; epos++) { if (scc_id[succ_ops[epos]] != scc_id[idx])
                 {
                     cond_succ[cond_fill[scc_id[idx]]] = scc_id[succ_ops[epos]];
-                    cond_fill[scc_id[idx]] = cond_fill[scc_id[idx]] + 0x1;
-                    cond_indeg[scc_id[succ_ops[epos]]] = cond_indeg[scc_id[succ_ops[epos]]] + 0x1;
+                    cond_fill[scc_id[idx]]++;
+                    cond_indeg[scc_id[succ_ops[epos]]]++;
                 }
             }
         }
@@ -600,14 +602,14 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
     while (heap_cunt > 0)
     {
         uint32_t now_scc = crosstalk_hdl_level_heap_pop(heap, &heap_cunt, scc_key);
-        uint32_t member_cunt = scc_base[now_scc + 0x1] - scc_base[now_scc];
+        uint32_t member_cunt = scc_base[now_scc + 1] - scc_base[now_scc];
         uint32_t epos = 0;
 
-        for (idx = scc_base[now_scc]; idx < scc_base[now_scc + 0x1]; idx++)
+        for (idx = scc_base[now_scc]; idx < scc_base[now_scc + 1]; idx++)
         {
             res->order[emit_pos] = scc_ops[idx];
             res->depth[scc_ops[idx]] = scc_level[now_scc];
-            emit_pos = emit_pos + 0x1;
+            emit_pos++;
         }
 
         if (scc_level[now_scc] > res->level_max) { res->level_max = scc_level[now_scc]; }
@@ -619,28 +621,28 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
                 res->units[res->unit_cunt].start = once_start;
                 res->units[res->unit_cunt].cunt = once_cunt;
                 res->units[res->unit_cunt].iter_is = 0;
-                res->unit_cunt = res->unit_cunt + 0x1;
+                res->unit_cunt++;
             }
 
             res->units[res->unit_cunt].start = emit_pos - member_cunt;
             res->units[res->unit_cunt].cunt = member_cunt;
-            res->units[res->unit_cunt].iter_is = 0x1;
-            res->unit_cunt = res->unit_cunt + 0x1;
+            res->units[res->unit_cunt].iter_is = LDG_TRUTH_TRUE;
+            res->unit_cunt++;
             res->iter_op_cunt = res->iter_op_cunt + member_cunt;
             once_start = emit_pos;
             once_cunt = 0;
         }
         else { once_cunt = once_cunt + member_cunt; }
 
-        emit_scc_cunt = emit_scc_cunt + 0x1;
+        emit_scc_cunt++;
 
-        for (epos = cond_base[now_scc]; epos < cond_base[now_scc + 0x1]; epos++)
+        for (epos = cond_base[now_scc]; epos < cond_base[now_scc + 1]; epos++)
         {
             uint32_t succ_scc = cond_succ[epos];
 
-            if (scc_level[now_scc] + 0x1 > scc_level[succ_scc]) { scc_level[succ_scc] = scc_level[now_scc] + 0x1; }
+            if (scc_level[now_scc] + 1 > scc_level[succ_scc]) { scc_level[succ_scc] = scc_level[now_scc] + 1; }
 
-            cond_indeg[succ_scc] = cond_indeg[succ_scc] - 0x1;
+            cond_indeg[succ_scc]--;
 
             if (cond_indeg[succ_scc] == 0) { crosstalk_hdl_level_heap_push(heap, &heap_cunt, scc_key, succ_scc); }
         }
@@ -651,7 +653,7 @@ uint32_t crosstalk_hdl_level_run(const crosstalk_hdl_ir_t *ir_ctx, void *pool, c
         res->units[res->unit_cunt].start = once_start;
         res->units[res->unit_cunt].cunt = once_cunt;
         res->units[res->unit_cunt].iter_is = 0;
-        res->unit_cunt = res->unit_cunt + 0x1;
+        res->unit_cunt++;
     }
 
     if (LDG_UNLIKELY(emit_scc_cunt != scc_cunt || emit_pos != op_cunt)) { return CROSSTALK_HDL_ERR_LEVEL; }
@@ -686,7 +688,7 @@ uint8_t crosstalk_hdl_level_fast_is(const crosstalk_hdl_ir_t *ir_ctx, uint32_t c
     if (clk_sig >= ir_ctx->sig_cunt) { return LDG_TRUTH_FALSE; }
 
     set_arr[0] = clk_sig;
-    set_cunt = 0x1;
+    set_cunt = 1;
     grew = LDG_TRUTH_TRUE;
 
     while (grew == LDG_TRUTH_TRUE)
@@ -707,16 +709,16 @@ uint8_t crosstalk_hdl_level_fast_is(const crosstalk_hdl_ir_t *ir_ctx, uint32_t c
 
             if (crosstalk_hdl_level_set_has(set_arr, set_cunt, op->dst) == LDG_TRUTH_TRUE) { continue; }
 
-            for (sweep = 0; sweep < ir_ctx->comb_cunt; sweep++) { if (crosstalk_hdl_level_wsig_get(&ir_ctx->comb_ops[sweep]) == op->dst) { wr_cunt = wr_cunt + 0x1; } }
+            for (sweep = 0; sweep < ir_ctx->comb_cunt; sweep++) { if (crosstalk_hdl_level_wsig_get(&ir_ctx->comb_ops[sweep]) == op->dst) { wr_cunt++; } }
 
             for (sweep = 0; sweep < ir_ctx->seq_op_cunt; sweep++) { if (crosstalk_hdl_level_wsig_get(&ir_ctx->seq_ops[sweep]) == op->dst) { wr_cunt = wr_cunt + 0x2; } }
 
-            if (wr_cunt != 0x1) { continue; }
+            if (wr_cunt != 1) { continue; }
 
             if (set_cunt >= CROSSTALK_HDL_LEVEL_FAST_CAP) { return LDG_TRUTH_FALSE; }
 
             set_arr[set_cunt] = op->dst;
-            set_cunt = set_cunt + 0x1;
+            set_cunt++;
             grew = LDG_TRUTH_TRUE;
         }
     }
@@ -757,11 +759,11 @@ uint8_t crosstalk_hdl_level_fast_is(const crosstalk_hdl_ir_t *ir_ctx, uint32_t c
         }
     }
 
-    if (set_cunt - 0x1 > alias_cap) { return LDG_TRUTH_FALSE; }
+    if (set_cunt - 1 > alias_cap) { return LDG_TRUTH_FALSE; }
 
-    for (idx = 0x1; idx < set_cunt; idx++) { alias_sigs[idx - 0x1] = set_arr[idx]; }
+    for (idx = 1; idx < set_cunt; idx++) { alias_sigs[idx - 1] = set_arr[idx]; }
 
-    *out_alias_cunt = set_cunt - 0x1;
+    *out_alias_cunt = set_cunt - 1;
 
     return LDG_TRUTH_TRUE;
 }

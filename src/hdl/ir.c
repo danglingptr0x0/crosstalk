@@ -245,7 +245,7 @@ uint32_t crosstalk_hdl_ir_seq_op_add(crosstalk_hdl_ir_t *ir_ctx, uint32_t blk_id
 
     if (LDG_UNLIKELY(blk_idx >= ir_ctx->seq_blk_cunt)) { return LDG_ERR_BOUNDS; }
 
-    if (LDG_UNLIKELY(blk_idx + 0x1 != ir_ctx->seq_blk_cunt)) { return LDG_ERR_INVALID; }
+    if (LDG_UNLIKELY(blk_idx + 1 != ir_ctx->seq_blk_cunt)) { return LDG_ERR_INVALID; }
 
     if (LDG_UNLIKELY(ir_ctx->seq_op_cunt >= ir_ctx->seq_op_cap)) { return LDG_ERR_FULL; }
 
@@ -340,7 +340,7 @@ uint32_t crosstalk_hdl_ir_sig_qual_set(crosstalk_hdl_ir_t *ir_ctx, uint32_t sig_
 
     if (ir_ctx->qual_text_len + len > ir_ctx->qual_text_cap) { return LDG_ERR_FULL; }
 
-    for (idx = 0; idx < len; idx = idx + 0x1) { ir_ctx->qual_text[ir_ctx->qual_text_len + idx] = text[idx]; }
+    for (idx = 0; idx < len; idx++) { ir_ctx->qual_text[ir_ctx->qual_text_len + idx] = text[idx]; }
 
     ir_ctx->sigs[sig_idx].qual_off = ir_ctx->qual_text_len;
     ir_ctx->sigs[sig_idx].qual_len = len;

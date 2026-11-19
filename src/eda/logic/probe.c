@@ -128,7 +128,7 @@ uint32_t crosstalk_eda_logic_probe_find(const crosstalk_eda_logic_probe_ctx_t *c
 
     *out = UINT32_MAX;
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++)
     {
         if (ctx->probe[idx].live != LDG_TRUTH_TRUE || ctx->probe[idx].slot_idx != slot_idx) { continue; }
 
@@ -158,7 +158,7 @@ uint32_t crosstalk_eda_logic_probe_host_attach(crosstalk_eda_logic_probe_ctx_t *
 
     if (crosstalk_eda_logic_probe_find(ctx, slot_idx, port, out) == LDG_ERR_AOK) { return LDG_ERR_EXISTS; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1) { if (ctx->probe[idx].live != LDG_TRUTH_TRUE) { break; } }
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++) { if (ctx->probe[idx].live != LDG_TRUTH_TRUE) { break; } }
 
     if (idx >= CROSSTALK_EDA_LOGIC_PROBE_MAX) { return CROSSTALK_EDA_LOGIC_PROBE_ERR_FULL; }
 
@@ -183,7 +183,7 @@ uint32_t crosstalk_eda_logic_probe_host_attach(crosstalk_eda_logic_probe_ctx_t *
 
     probe->host = LDG_TRUTH_TRUE;
     probe->live = LDG_TRUTH_TRUE;
-    ctx->live_cunt = ctx->live_cunt + 0x1;
+    ctx->live_cunt++;
     *out = idx;
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "probe: host attach; slot: %u32; port: %.63s; width: %u32; probe: %u32", slot_idx, port, width, idx);
@@ -206,14 +206,14 @@ uint32_t crosstalk_eda_logic_probe_sample_push(crosstalk_eda_logic_probe_ctx_t *
 
     if (probe->hd - probe->tail >= (uint32_t)CROSSTALK_EDA_LOGIC_PROBE_RING_CAP)
     {
-        probe->tail = probe->tail + 0x1;
-        probe->dropped = probe->dropped + 0x1;
+        probe->tail++;
+        probe->dropped++;
     }
 
     slot = probe->hd & (uint32_t)CROSSTALK_EDA_LOGIC_PROBE_RING_MASK;
     probe->ring[slot].cycle = cycle;
     probe->ring[slot].val = val;
-    LDG_ST_RELEASE(probe->hd, probe->hd + 0x1);
+    LDG_ST_RELEASE(probe->hd, probe->hd + 1);
 
     probe->last_val = val;
 
@@ -271,7 +271,7 @@ uint32_t crosstalk_eda_logic_probe_attach(crosstalk_eda_logic_probe_ctx_t *ctx, 
         sig_idx = UINT32_MAX;
     }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1) { if (ctx->probe[idx].live != LDG_TRUTH_TRUE) { break; } }
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++) { if (ctx->probe[idx].live != LDG_TRUTH_TRUE) { break; } }
 
     if (idx >= CROSSTALK_EDA_LOGIC_PROBE_MAX) { return CROSSTALK_EDA_LOGIC_PROBE_ERR_FULL; }
 
@@ -295,7 +295,7 @@ uint32_t crosstalk_eda_logic_probe_attach(crosstalk_eda_logic_probe_ctx_t *ctx, 
     probe->period = 0x0;
     probe->next_cycle = 0x0;
     probe->live = LDG_TRUTH_TRUE;
-    ctx->live_cunt = ctx->live_cunt + 0x1;
+    ctx->live_cunt++;
     *out = idx;
 
     return LDG_ERR_AOK;
@@ -332,7 +332,7 @@ uint32_t crosstalk_eda_logic_probe_detach(crosstalk_eda_logic_probe_ctx_t *ctx, 
     ctx->probe[handle].tail = 0x0;
     ctx->probe[handle].port[0] = LDG_STR_TERM;
 
-    if (ctx->live_cunt != 0x0) { ctx->live_cunt = ctx->live_cunt - 0x1; }
+    if (ctx->live_cunt != 0x0) { ctx->live_cunt--; }
 
     return LDG_ERR_AOK;
 }
@@ -344,7 +344,7 @@ uint32_t crosstalk_eda_logic_probe_slot_detach(crosstalk_eda_logic_probe_ctx_t *
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++)
     {
         if (ctx->probe[idx].live != LDG_TRUTH_TRUE) { continue; }
 
@@ -363,7 +363,7 @@ uint32_t crosstalk_eda_logic_probe_abi_rst(crosstalk_eda_logic_probe_ctx_t *ctx,
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++)
     {
         if (ctx->probe[idx].slot_idx != slot_idx) { continue; }
 
@@ -382,7 +382,7 @@ uint32_t crosstalk_eda_logic_probe_cycle_sample(crosstalk_eda_logic_probe_ctx_t 
 
     if (LDG_UNLIKELY(ctx == 0x0 || (exec == 0x0 && packed != LDG_TRUTH_TRUE))) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++)
     {
         crosstalk_eda_logic_probe_t *probe = &ctx->probe[idx];
         uint64_t val = 0;
@@ -435,14 +435,14 @@ uint32_t crosstalk_eda_logic_probe_cycle_sample(crosstalk_eda_logic_probe_ctx_t 
 
         if (probe->hd - probe->tail >= (uint32_t)CROSSTALK_EDA_LOGIC_PROBE_RING_CAP)
         {
-            probe->tail = probe->tail + 0x1;
-            probe->dropped = probe->dropped + 0x1;
+            probe->tail++;
+            probe->dropped++;
         }
 
         slot = probe->hd & (uint32_t)CROSSTALK_EDA_LOGIC_PROBE_RING_MASK;
         probe->ring[slot].cycle = cycle;
         probe->ring[slot].val = val;
-        LDG_ST_RELEASE(probe->hd, probe->hd + 0x1);
+        LDG_ST_RELEASE(probe->hd, probe->hd + 1);
     }
 
     return LDG_ERR_AOK;
@@ -468,8 +468,8 @@ uint32_t crosstalk_eda_logic_probe_drain(crosstalk_eda_logic_probe_ctx_t *ctx, u
     while (probe->tail != hd && cunt < cap)
     {
         out[cunt] = probe->ring[probe->tail & (uint32_t)CROSSTALK_EDA_LOGIC_PROBE_RING_MASK];
-        LDG_ST_RELEASE(probe->tail, probe->tail + 0x1);
-        cunt = cunt + 0x1;
+        LDG_ST_RELEASE(probe->tail, probe->tail + 1);
+        cunt++;
     }
 
     *out_cunt = cunt;

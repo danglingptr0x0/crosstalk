@@ -29,12 +29,12 @@ static uint8_t publish_ext_is(const char *name, const char *ext)
 
     if (LDG_UNLIKELY(name == 0x0 || ext == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    while (name[name_len] != LDG_STR_TERM) { name_len = name_len + PUBLISH_STEP; }
-    while (ext[ext_len] != LDG_STR_TERM) { ext_len = ext_len + PUBLISH_STEP; }
+    while (name[name_len] != LDG_STR_TERM) { name_len++; }
+    while (ext[ext_len] != LDG_STR_TERM) { ext_len++; }
 
     if (name_len <= ext_len) { return LDG_TRUTH_FALSE; }
 
-    for (idx = 0; idx < ext_len; idx = idx + PUBLISH_STEP) { if (name[name_len - ext_len + idx] != ext[idx]) { return LDG_TRUTH_FALSE; } }
+    for (idx = 0; idx < ext_len; idx++) { if (name[name_len - ext_len + idx] != ext[idx]) { return LDG_TRUTH_FALSE; } }
 
     return LDG_TRUTH_TRUE;
 }
@@ -84,7 +84,7 @@ uint32_t crosstalk_wshop_publish_fileset_scan(const char *dir, char *out_files, 
         if (*out_cunt >= CROSSTALK_EDA_IC_FPGA_FILESET_MAX) { break; }
 
         name_len = 0;
-        while (name[name_len] != LDG_STR_TERM) { name_len = name_len + PUBLISH_STEP; }
+        while (name[name_len] != LDG_STR_TERM) { name_len++; }
 
         if (name_len >= CROSSTALK_EDA_IC_FPGA_FILESET_NAME_CAP) { continue; }
 
@@ -93,14 +93,14 @@ uint32_t crosstalk_wshop_publish_fileset_scan(const char *dir, char *out_files, 
         if (*out_cunt != 0)
         {
             out_files[pos] = CROSSTALK_EDA_IC_FPGA_FILESET_SEP;
-            pos = pos + PUBLISH_STEP;
+            pos++;
         }
 
         memcpy(&out_files[pos], name, name_len);
         pos = pos + name_len;
         out_files[pos] = LDG_STR_TERM;
 
-        *out_cunt = *out_cunt + PUBLISH_STEP;
+        (*out_cunt)++;
     }
 
     if (ldg_io_dir_close(dh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish dir close failed"); }
@@ -159,7 +159,7 @@ uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_ws
             else { ret = LDG_ERR_IO_FMT; }
         }
 
-        for (idx = 0; idx < manifest->mem_cunt && ret == LDG_ERR_AOK; idx = idx + PUBLISH_STEP)
+        for (idx = 0; idx < manifest->mem_cunt && ret == LDG_ERR_AOK; idx++)
         {
             len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "mem.%u32.sig: %.63s\nmem.%u32.words: %u64\nmem.%u32.base: %u64\n", idx, manifest->mem[idx].sig, idx, manifest->mem[idx].words, idx, manifest->mem[idx].base) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
             if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
@@ -173,7 +173,7 @@ uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_ws
         if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }
         else { ret = LDG_ERR_IO_FMT; }
 
-        for (idx = 0; idx < manifest->img_cunt && ret == LDG_ERR_AOK; idx = idx + PUBLISH_STEP)
+        for (idx = 0; idx < manifest->img_cunt && ret == LDG_ERR_AOK; idx++)
         {
             len = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "img.%u32.path: %.255s\nimg.%u32.mem: %.63s\nimg.%u32.word_off: %u64\n", idx, manifest->img[idx].path, idx, manifest->img[idx].mem, idx, manifest->img[idx].word_off) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
             if (len > 0) { ret = publish_line_wr(fh, line, (uint64_t)len); }

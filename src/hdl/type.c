@@ -209,12 +209,12 @@ typedef struct type_build
 
 static uint16_t type_u16_get(const uint8_t *at)
 {
-    return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[0x1] << LDG_BYTE_BITS));
+    return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[1] << LDG_BYTE_BITS));
 }
 
 static uint32_t type_u32_get(const uint8_t *at)
 {
-    return (uint32_t)at[0] | ((uint32_t)at[0x1] << 8) | ((uint32_t)at[0x2] << 16) | ((uint32_t)at[0x3] << 24);
+    return (uint32_t)at[0] | ((uint32_t)at[1] << 8) | ((uint32_t)at[2] << 16) | ((uint32_t)at[3] << 24);
 }
 
 static uint64_t type_u64_get(const uint8_t *at)
@@ -251,7 +251,7 @@ static void type_name_cpy(char *dst, const char *src, uint32_t cap)
     while (at + LDG_STR_TERM_SIZE < cap && src[at] != LDG_STR_TERM)
     {
         dst[at] = src[at];
-        at = at + 0x1;
+        at++;
     }
 
     dst[at] = LDG_STR_TERM;
@@ -271,8 +271,8 @@ static uint32_t type_uleb_rd(const uint8_t *buff, uint64_t len, uint64_t *at, ui
     {
         uint8_t byte = buff[*at];
 
-        *at = *at + 0x1;
-        steps = steps + 0x1;
+        (*at)++;
+        steps++;
 
         if (shift < (uint32_t)(LDG_BYTE_BITS * 8)) { val = val | ((uint64_t)(byte & (uint8_t)TYPE_ULEB_MASK) << shift); }
 
@@ -298,8 +298,8 @@ static uint32_t type_sleb_rd(const uint8_t *buff, uint64_t len, uint64_t *at, ui
     {
         uint8_t byte = buff[*at];
 
-        *at = *at + 0x1;
-        steps = steps + 0x1;
+        (*at)++;
+        steps++;
 
         if (shift < (uint32_t)(LDG_BYTE_BITS * 8)) { val = val | ((uint64_t)(byte & (uint8_t)TYPE_ULEB_MASK) << shift); }
 
@@ -327,7 +327,7 @@ static uint32_t type_sect_find(const uint8_t *sect, uint32_t shnum, uint64_t ent
     *out_off = 0;
     *out_len = 0;
 
-    for (at = 0; at < shnum; at = at + 0x1)
+    for (at = 0; at < shnum; at++)
     {
         const uint8_t *ent = sect + (uint64_t)at * ent_len;
         uint32_t name_off = type_u32_get(ent + TYPE_SH_NAME_AT);
@@ -433,7 +433,7 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
 
     if (form == (uint32_t)TYPE_FORM_IMPLICIT_CONST) { out->num = implicit; return LDG_ERR_AOK; }
 
-    if (form == (uint32_t)TYPE_FORM_FLAG_PRESENT) { out->num = 0x1; return LDG_ERR_AOK; }
+    if (form == (uint32_t)TYPE_FORM_FLAG_PRESENT) { out->num = 1; return LDG_ERR_AOK; }
 
     if (form == (uint32_t)TYPE_FORM_ADDR)
     {
@@ -449,10 +449,10 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
 
     if (form == (uint32_t)TYPE_FORM_DATA1 || form == (uint32_t)TYPE_FORM_REF1 || form == (uint32_t)TYPE_FORM_FLAG || form == (uint32_t)TYPE_FORM_STRX1 || form == (uint32_t)TYPE_FORM_ADDRX1)
     {
-        if (*at + 0x1 > len) { return LDG_ERR_BOUNDS; }
+        if (*at + 1 > len) { return LDG_ERR_BOUNDS; }
 
         out->num = (uint64_t)info[*at];
-        *at = *at + 0x1;
+        (*at)++;
     }
     else if (form == (uint32_t)TYPE_FORM_DATA2 || form == (uint32_t)TYPE_FORM_REF2 || form == (uint32_t)TYPE_FORM_STRX2 || form == (uint32_t)TYPE_FORM_ADDRX2)
     {
@@ -465,7 +465,7 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
     {
         if (*at + 0x3 > len) { return LDG_ERR_BOUNDS; }
 
-        out->num = (uint64_t)info[*at] | ((uint64_t)info[*at + 0x1] << 8) | ((uint64_t)info[*at + 0x2] << 16);
+        out->num = (uint64_t)info[*at] | ((uint64_t)info[*at + 1] << 8) | ((uint64_t)info[*at + 0x2] << 16);
         *at = *at + 0x3;
     }
     else if (form == (uint32_t)TYPE_FORM_DATA4 || form == (uint32_t)TYPE_FORM_REF4 || form == (uint32_t)TYPE_FORM_REF_SUP4 || form == (uint32_t)TYPE_FORM_STRX4 || form == (uint32_t)TYPE_FORM_ADDRX4)
@@ -511,11 +511,11 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
 
         out->str = (const char *)info + *at;
 
-        while (*at < len && info[*at] != LDG_STR_TERM) { *at = *at + 0x1; }
+        while (*at < len && info[*at] != LDG_STR_TERM) { (*at)++; }
 
         if (*at >= len) { return LDG_ERR_BOUNDS; }
 
-        *at = *at + 0x1;
+        (*at)++;
 
         return LDG_ERR_AOK;
     }
@@ -523,10 +523,10 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
     {
         if (form == (uint32_t)TYPE_FORM_BLOCK1)
         {
-            if (*at + 0x1 > len) { return LDG_ERR_BOUNDS; }
+            if (*at + 1 > len) { return LDG_ERR_BOUNDS; }
 
             blk_len = (uint64_t)info[*at];
-            *at = *at + 0x1;
+            (*at)++;
         }
         else if (form == (uint32_t)TYPE_FORM_BLOCK2)
         {
@@ -617,7 +617,7 @@ static uint32_t type_abbrev_find(const type_sect_t *abbrev, uint64_t base, uint6
         if (at >= abbrev->len) { return LDG_ERR_BOUNDS; }
 
         kids = abbrev->at[at];
-        at = at + 0x1;
+        at++;
 
         if (ent_code == code)
         {
@@ -661,7 +661,7 @@ static uint32_t type_die_map_add(type_build_t *build, uint64_t die_off, uint32_t
 
     build->die_off[build->die_cunt] = die_off;
     build->die_idx[build->die_cunt] = idx;
-    build->die_cunt = build->die_cunt + 0x1;
+    build->die_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -688,7 +688,7 @@ static uint32_t type_die_map_find(const type_build_t *build, uint64_t die_off, u
             return LDG_ERR_AOK;
         }
 
-        if (build->die_off[mid] < die_off) { lo = mid + 0x1; }
+        if (build->die_off[mid] < die_off) { lo = mid + 1; }
         else { hi = mid; }
     }
 
@@ -703,7 +703,7 @@ static uint32_t type_cv_add(type_build_t *build, uint64_t die_off, uint64_t ref)
 
     build->cv_off[build->cv_cunt] = die_off;
     build->cv_ref[build->cv_cunt] = ref;
-    build->cv_cunt = build->cv_cunt + 0x1;
+    build->cv_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -731,13 +731,13 @@ static uint64_t type_cv_chase(const type_build_t *build, uint64_t die_off)
                 break;
             }
 
-            if (build->cv_off[mid] < at) { lo = mid + 0x1; }
+            if (build->cv_off[mid] < at) { lo = mid + 1; }
             else { hi = mid; }
         }
 
         if (hit != LDG_TRUTH_TRUE) { return at; }
 
-        depth = depth + 0x1;
+        depth++;
     }
 
     return at;
@@ -751,7 +751,7 @@ static uint32_t type_named_find(const type_build_t *build, const char *name, con
 
     *out = (uint32_t)UINT32_MAX;
 
-    for (at = 0; at < build->type_cunt; at = at + 0x1)
+    for (at = 0; at < build->type_cunt; at++)
     {
         if (build->type[at].kind != kind) { continue; }
 
@@ -794,7 +794,7 @@ static uint32_t type_rec_add(type_build_t *build, const char *name, const char *
     rec->member_cunt = 0;
 
     *out = build->type_cunt;
-    build->type_cunt = build->type_cunt + 0x1;
+    build->type_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -823,29 +823,29 @@ static void type_member_regroup(type_build_t *build)
 {
     uint32_t at = 0;
 
-    for (at = 0x1; at < build->member_cunt; at = at + 0x1)
+    for (at = 1; at < build->member_cunt; at++)
     {
         crosstalk_hdl_type_member_t tmp = LDG_STRUCT_ZERO_INIT;
         uint32_t back = at;
 
         memcpy(&tmp, &build->member[at], sizeof(tmp));
 
-        while (back > 0 && type_member_ahead_is(&build->member[back - 0x1], &tmp) == LDG_TRUTH_TRUE)
+        while (back > 0 && type_member_ahead_is(&build->member[back - 1], &tmp) == LDG_TRUTH_TRUE)
         {
-            memcpy(&build->member[back], &build->member[back - 0x1], sizeof(tmp));
-            back = back - 0x1;
+            memcpy(&build->member[back], &build->member[back - 1], sizeof(tmp));
+            back--;
         }
 
         memcpy(&build->member[back], &tmp, sizeof(tmp));
     }
 
-    for (at = 0; at < build->type_cunt; at = at + 0x1)
+    for (at = 0; at < build->type_cunt; at++)
     {
         build->type[at].member_at = 0;
         build->type[at].member_cunt = 0;
     }
 
-    for (at = 0; at < build->member_cunt; at = at + 0x1)
+    for (at = 0; at < build->member_cunt; at++)
     {
         uint32_t owner = build->member[at].owner;
 
@@ -853,7 +853,7 @@ static void type_member_regroup(type_build_t *build)
 
         if (build->type[owner].member_cunt == 0) { build->type[owner].member_at = at; }
 
-        build->type[owner].member_cunt = build->type[owner].member_cunt + 0x1;
+        build->type[owner].member_cunt++;
     }
 }
 
@@ -871,11 +871,11 @@ static void type_var_sift(crosstalk_hdl_type_var_t *arr, uint32_t root, uint32_t
     uint32_t top = root;
     uint32_t kid = 0;
 
-    while (top * 0x2 + 0x1 < cunt)
+    while (top * 0x2 + 1 < cunt)
     {
-        kid = top * 0x2 + 0x1;
+        kid = top * 0x2 + 1;
 
-        if (kid + 0x1 < cunt && arr[kid + 0x1].addr > arr[kid].addr) { kid = kid + 0x1; }
+        if (kid + 1 < cunt && arr[kid + 1].addr > arr[kid].addr) { kid++; }
 
         if (arr[top].addr >= arr[kid].addr) { return; }
 
@@ -893,14 +893,14 @@ static void type_var_sort(crosstalk_hdl_type_var_t *arr, uint32_t cunt)
     at = cunt / 0x2;
     while (at > 0)
     {
-        at = at - 0x1;
+        at--;
         type_var_sift(arr, at, cunt);
     }
 
     at = cunt;
-    while (at > 0x1)
+    while (at > 1)
     {
-        at = at - 0x1;
+        at--;
         type_var_swap(&arr[0], &arr[at]);
         type_var_sift(arr, (uint32_t)TYPE_HEAP_ROOT_AT, at);
     }
@@ -912,7 +912,7 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
     uint32_t depth = 0;
     uint32_t ret = 0;
 
-    for (depth = 0; depth < (uint32_t)TYPE_STACK_MAX; depth = depth + 0x1) { owner[depth] = (uint32_t)UINT32_MAX; }
+    for (depth = 0; depth < (uint32_t)TYPE_STACK_MAX; depth++) { owner[depth] = (uint32_t)UINT32_MAX; }
 
     depth = 0;
 
@@ -947,7 +947,7 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
         {
             if (depth == 0) { return LDG_ERR_AOK; }
 
-            depth = depth - 0x1;
+            depth--;
 
             continue;
         }
@@ -984,7 +984,7 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
             else if (attr == (uint64_t)TYPE_AT_BYTE_SIZE) { byte_size = val.num; size_has = LDG_TRUTH_TRUE; }
             else if (attr == (uint64_t)TYPE_AT_ENCODING) { encoding = val.num; }
             else if (attr == (uint64_t)TYPE_AT_MEMBER_LOC) { member_loc = val.num; }
-            else if (attr == (uint64_t)TYPE_AT_UPPER_BOUND) { upper_bound = val.num + 0x1; }
+            else if (attr == (uint64_t)TYPE_AT_UPPER_BOUND) { upper_bound = val.num + 1; }
             else if (attr == (uint64_t)TYPE_AT_COUNT) { elem_cunt = val.num; }
             else if (attr == (uint64_t)TYPE_AT_DECLARATION) { decl_only = val.num != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
             else if (attr == (uint64_t)TYPE_AT_STR_OFF_BASE) { parse->str_off_base = val.num; }
@@ -998,16 +998,16 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
             }
             else if (attr == (uint64_t)TYPE_AT_LOCATION && val.blk != 0x0 && val.num > 0)
             {
-                if (val.blk[0] == (uint8_t)TYPE_OP_ADDR && val.num >= (uint64_t)parse->addr_size + 0x1)
+                if (val.blk[0] == (uint8_t)TYPE_OP_ADDR && val.num >= (uint64_t)parse->addr_size + 1)
                 {
-                    if (parse->addr_size == sizeof(uint64_t)) { var_addr = type_u64_get(val.blk + 0x1); }
-                    else { var_addr = (uint64_t)type_u32_get(val.blk + 0x1); }
+                    if (parse->addr_size == sizeof(uint64_t)) { var_addr = type_u64_get(val.blk + 1); }
+                    else { var_addr = (uint64_t)type_u32_get(val.blk + 1); }
 
                     loc_has = LDG_TRUTH_TRUE;
                 }
                 else if (val.blk[0] == (uint8_t)TYPE_OP_ADDRX && val.num >= 0x2)
                 {
-                    uint64_t blk_at = 0x1;
+                    uint64_t blk_at = 1;
                     uint64_t addr_idx = 0;
 
                     if (type_uleb_rd(val.blk, val.num, &blk_at, &addr_idx) == LDG_ERR_AOK && type_addrx_get(parse, addr_idx, &var_addr) == LDG_ERR_AOK) { loc_has = LDG_TRUTH_TRUE; }
@@ -1054,10 +1054,10 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
 
             if (type_has == LDG_TRUTH_TRUE && build->type[idx].ref == (uint32_t)UINT32_MAX)
             {
-                ret = type_cv_add(build, die_off + 0x1, type_ref);
+                ret = type_cv_add(build, die_off + 1, type_ref);
                 if (ret != LDG_ERR_AOK) { return ret; }
 
-                build->type[idx].ref = (uint32_t)(die_off + 0x1);
+                build->type[idx].ref = (uint32_t)(die_off + 1);
             }
         }
         else if (tag == (uint64_t)TYPE_TAG_STRUCT || tag == (uint64_t)TYPE_TAG_UNION || tag == (uint64_t)TYPE_TAG_ENUM)
@@ -1080,7 +1080,7 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
 
             if (size_has == LDG_TRUTH_TRUE && build->type[idx].size == 0) { build->type[idx].size = byte_size; }
 
-            if (kids == LDG_TRUTH_TRUE && depth + 0x1 < (uint32_t)TYPE_STACK_MAX) { owner[depth + 0x1] = build->type[idx].member_cunt == 0 ? idx : (uint32_t)UINT32_MAX; }
+            if (kids == LDG_TRUTH_TRUE && depth + 1 < (uint32_t)TYPE_STACK_MAX) { owner[depth + 1] = build->type[idx].member_cunt == 0 ? idx : (uint32_t)UINT32_MAX; }
         }
         else if (tag == (uint64_t)TYPE_TAG_PTR)
         {
@@ -1094,10 +1094,10 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
 
             if (type_has == LDG_TRUTH_TRUE)
             {
-                ret = type_cv_add(build, die_off + 0x1, type_ref);
+                ret = type_cv_add(build, die_off + 1, type_ref);
                 if (ret != LDG_ERR_AOK) { return ret; }
 
-                build->type[idx].ref = (uint32_t)(die_off + 0x1);
+                build->type[idx].ref = (uint32_t)(die_off + 1);
             }
         }
         else if (tag == (uint64_t)TYPE_TAG_ARR)
@@ -1110,13 +1110,13 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
 
             if (type_has == LDG_TRUTH_TRUE)
             {
-                ret = type_cv_add(build, die_off + 0x1, type_ref);
+                ret = type_cv_add(build, die_off + 1, type_ref);
                 if (ret != LDG_ERR_AOK) { return ret; }
 
-                build->type[idx].ref = (uint32_t)(die_off + 0x1);
+                build->type[idx].ref = (uint32_t)(die_off + 1);
             }
 
-            if (kids == LDG_TRUTH_TRUE && depth + 0x1 < (uint32_t)TYPE_STACK_MAX) { owner[depth + 0x1] = idx; }
+            if (kids == LDG_TRUTH_TRUE && depth + 1 < (uint32_t)TYPE_STACK_MAX) { owner[depth + 1] = idx; }
         }
         else if (tag == (uint64_t)TYPE_TAG_SUBROUTINE || tag == (uint64_t)TYPE_TAG_SUBPROGRAM)
         {
@@ -1129,7 +1129,7 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
                 if (ret != LDG_ERR_AOK) { return ret; }
             }
 
-            if (kids == LDG_TRUTH_TRUE && depth + 0x1 < (uint32_t)TYPE_STACK_MAX) { owner[depth + 0x1] = (uint32_t)UINT32_MAX; }
+            if (kids == LDG_TRUTH_TRUE && depth + 1 < (uint32_t)TYPE_STACK_MAX) { owner[depth + 1] = (uint32_t)UINT32_MAX; }
         }
         else if (tag == (uint64_t)TYPE_TAG_SUBRANGE) { if (depth > 0 && owner[depth] != (uint32_t)UINT32_MAX && build->type[owner[depth]].kind == (uint32_t)CROSSTALK_HDL_TYPE_KIND_ARR) { build->type[owner[depth]].elem_cunt = (uint32_t)elem_cunt; } }
         else if (tag == (uint64_t)TYPE_TAG_MEMBER)
@@ -1149,14 +1149,14 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
 
                 if (type_has == LDG_TRUTH_TRUE)
                 {
-                    ret = type_cv_add(build, die_off + 0x1, type_ref);
+                    ret = type_cv_add(build, die_off + 1, type_ref);
                     if (ret != LDG_ERR_AOK) { return ret; }
 
-                    member->type_idx = (uint32_t)(die_off + 0x1);
+                    member->type_idx = (uint32_t)(die_off + 1);
                 }
 
-                build->type[owner[depth]].member_cunt = build->type[owner[depth]].member_cunt + 0x1;
-                build->member_cunt = build->member_cunt + 0x1;
+                build->type[owner[depth]].member_cunt++;
+                build->member_cunt++;
             }
         }
         else if (tag == (uint64_t)TYPE_TAG_VAR)
@@ -1172,18 +1172,18 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
                 var->addr = var_addr;
                 var->size = 0;
 
-                ret = type_cv_add(build, die_off + 0x1, type_ref);
+                ret = type_cv_add(build, die_off + 1, type_ref);
                 if (ret != LDG_ERR_AOK) { return ret; }
 
-                var->type_idx = (uint32_t)(die_off + 0x1);
+                var->type_idx = (uint32_t)(die_off + 1);
 
-                build->var_cunt = build->var_cunt + 0x1;
+                build->var_cunt++;
             }
         }
 
         if (kids == LDG_TRUTH_TRUE)
         {
-            depth = depth + 0x1;
+            depth++;
 
             if (depth >= (uint32_t)TYPE_STACK_MAX) { return LDG_ERR_BOUNDS; }
 
@@ -1220,17 +1220,17 @@ static void type_cv_sort(type_build_t *build)
 {
     uint32_t at = 0;
 
-    for (at = 0x1; at < build->cv_cunt; at = at + 0x1)
+    for (at = 1; at < build->cv_cunt; at++)
     {
         uint64_t off = build->cv_off[at];
         uint64_t ref = build->cv_ref[at];
         uint32_t back = at;
 
-        while (back > 0 && build->cv_off[back - 0x1] > off)
+        while (back > 0 && build->cv_off[back - 1] > off)
         {
-            build->cv_off[back] = build->cv_off[back - 0x1];
-            build->cv_ref[back] = build->cv_ref[back - 0x1];
-            back = back - 0x1;
+            build->cv_off[back] = build->cv_off[back - 1];
+            build->cv_ref[back] = build->cv_ref[back - 1];
+            back--;
         }
 
         build->cv_off[back] = off;
@@ -1242,17 +1242,17 @@ static void type_die_sort(type_build_t *build)
 {
     uint32_t at = 0;
 
-    for (at = 0x1; at < build->die_cunt; at = at + 0x1)
+    for (at = 1; at < build->die_cunt; at++)
     {
         uint64_t off = build->die_off[at];
         uint32_t idx = build->die_idx[at];
         uint32_t back = at;
 
-        while (back > 0 && build->die_off[back - 0x1] > off)
+        while (back > 0 && build->die_off[back - 1] > off)
         {
-            build->die_off[back] = build->die_off[back - 0x1];
-            build->die_idx[back] = build->die_idx[back - 0x1];
-            back = back - 0x1;
+            build->die_off[back] = build->die_off[back - 1];
+            build->die_idx[back] = build->die_idx[back - 1];
+            back--;
         }
 
         build->die_off[back] = off;
@@ -1268,14 +1268,14 @@ static void type_resolve(type_build_t *build)
     type_cv_sort(build);
     type_die_sort(build);
 
-    for (at = 0; at < build->type_cunt; at = at + 0x1)
+    for (at = 0; at < build->type_cunt; at++)
     {
         if (build->type[at].kind != (uint32_t)CROSSTALK_HDL_TYPE_KIND_ENUM || build->type[at].size != 0) { continue; }
 
         build->type[at].size = (uint64_t)sizeof(uint32_t);
     }
 
-    for (at = 0; at < build->type_cunt; at = at + 0x1)
+    for (at = 0; at < build->type_cunt; at++)
     {
         uint32_t idx = 0;
 
@@ -1286,7 +1286,7 @@ static void type_resolve(type_build_t *build)
         build->type[at].ref = idx;
     }
 
-    for (at = 0; at < build->member_cunt; at = at + 0x1)
+    for (at = 0; at < build->member_cunt; at++)
     {
         uint32_t idx = 0;
 
@@ -1297,7 +1297,7 @@ static void type_resolve(type_build_t *build)
         build->member[at].type_idx = idx;
     }
 
-    for (at = 0; at < build->var_cunt; at = at + 0x1)
+    for (at = 0; at < build->var_cunt; at++)
     {
         uint32_t idx = 0;
 
@@ -1308,9 +1308,9 @@ static void type_resolve(type_build_t *build)
         build->var[at].type_idx = idx;
     }
 
-    for (pass = 0; pass < (uint32_t)TYPE_RESOLVE_PASS_MAX; pass = pass + 0x1)
+    for (pass = 0; pass < (uint32_t)TYPE_RESOLVE_PASS_MAX; pass++)
     {
-        for (at = 0; at < build->type_cunt; at = at + 0x1)
+        for (at = 0; at < build->type_cunt; at++)
         {
             crosstalk_hdl_type_rec_t *rec = &build->type[at];
 
@@ -1335,7 +1335,7 @@ static void type_resolve(type_build_t *build)
         }
     }
 
-    for (at = 0; at < build->member_cunt; at = at + 0x1)
+    for (at = 0; at < build->member_cunt; at++)
     {
         if (build->member[at].type_idx == (uint32_t)UINT32_MAX) { continue; }
 
@@ -1344,7 +1344,7 @@ static void type_resolve(type_build_t *build)
 
     type_member_regroup(build);
 
-    for (at = 0; at < build->var_cunt; at = at + 0x1)
+    for (at = 0; at < build->var_cunt; at++)
     {
         if (build->var[at].type_idx == (uint32_t)UINT32_MAX) { continue; }
 
@@ -1453,7 +1453,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
 
     ret = type_rd_at(file, (uint64_t)TYPE_HDR_AT, ident, (uint64_t)TYPE_IDENT_LEN);
 
-    if (ret == LDG_ERR_AOK && (ident[0] != TYPE_MAG0 || ident[0x1] != TYPE_MAG1 || ident[0x2] != TYPE_MAG2 || ident[0x3] != TYPE_MAG3)) { ret = LDG_ERR_IO_FMT; }
+    if (ret == LDG_ERR_AOK && (ident[0] != TYPE_MAG0 || ident[1] != TYPE_MAG1 || ident[2] != TYPE_MAG2 || ident[3] != TYPE_MAG3)) { ret = LDG_ERR_IO_FMT; }
 
     if (ret == LDG_ERR_AOK && ident[TYPE_DATA_AT] != TYPE_DATA_LSB) { ret = LDG_ERR_UNSUPPORTED; }
 
@@ -1628,9 +1628,9 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
             {
                 if (at + 0x2 > parse.info.len) { break; }
 
-                at = at + 0x1;
+                at++;
                 parse.addr_size = parse.info.at[at];
-                at = at + 0x1;
+                at++;
 
                 if (at + 0x4 > parse.info.len) { break; }
 
@@ -1644,7 +1644,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
                 abbrev_base = (uint64_t)type_u32_get(parse.info.at + at);
                 at = at + 0x4;
                 parse.addr_size = parse.info.at[at];
-                at = at + 0x1;
+                at++;
             }
 
             if (parse.addr_size != sizeof(uint32_t) && parse.addr_size != sizeof(uint64_t)) { at = cu_end; continue; }
@@ -1688,7 +1688,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
         ctx->type_cunt = build.type_cunt;
         ctx->member_cunt = build.member_cunt;
         ctx->var_cunt = build.var_cunt;
-        ctx->gen = ctx->gen + 0x1;
+        ctx->gen++;
         ctx->ok = LDG_TRUTH_TRUE;
     }
 
@@ -1776,7 +1776,7 @@ uint32_t crosstalk_hdl_type_find(const crosstalk_hdl_type_ctx_t *ctx, const char
 
     if (ctx->ok != LDG_TRUTH_TRUE || ctx->type == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    for (at = 0; at < ctx->type_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->type_cunt; at++)
     {
         if (strncmp(ctx->type[at].alias, name, (uint64_t)CROSSTALK_HDL_TYPE_NAME_CAP) == 0 && ctx->type[at].alias[0] != LDG_STR_TERM)
         {
@@ -1831,7 +1831,7 @@ uint32_t crosstalk_hdl_type_var_at(const crosstalk_hdl_type_ctx_t *ctx, uint64_t
         if (ctx->var[mid].addr <= addr)
         {
             best = mid;
-            lo = mid + 0x1;
+            lo = mid + 1;
         }
         else { hi = mid; }
     }
@@ -1890,13 +1890,13 @@ uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint
         while (path[at] != LDG_STR_TERM && path[at] != (char)CROSSTALK_HDL_TYPE_PATH_SEP && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(name))
         {
             name[pos] = path[at];
-            pos = pos + 0x1;
-            at = at + 0x1;
+            pos++;
+            at++;
         }
 
         name[pos] = LDG_STR_TERM;
 
-        if (path[at] == (char)CROSSTALK_HDL_TYPE_PATH_SEP) { at = at + 0x1; }
+        if (path[at] == (char)CROSSTALK_HDL_TYPE_PATH_SEP) { at++; }
 
         rec = &ctx->type[cur];
 
@@ -1906,7 +1906,7 @@ uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint
             rec = &ctx->type[cur];
         }
 
-        for (member_at = 0; member_at < rec->member_cunt; member_at = member_at + 0x1)
+        for (member_at = 0; member_at < rec->member_cunt; member_at++)
         {
             if (strncmp(ctx->member[rec->member_at + member_at].name, name, (uint64_t)CROSSTALK_HDL_TYPE_NAME_CAP) != 0) { continue; }
 
@@ -1922,7 +1922,7 @@ uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint
         if (ctx->member[hit].type_idx == (uint32_t)UINT32_MAX || ctx->member[hit].type_idx >= ctx->type_cunt) { return LDG_ERR_NOT_FOUND; }
 
         cur = ctx->member[hit].type_idx;
-        depth = depth + 0x1;
+        depth++;
     }
 
     type_name_cpy(out->path, path, (uint32_t)CROSSTALK_HDL_TYPE_PATH_CAP);
@@ -1967,15 +1967,15 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
             if (rec->member_cunt == 0 && rec->ref != (uint32_t)UINT32_MAX && rec->ref < ctx->type_cunt)
             {
                 cur = rec->ref;
-                depth = depth + 0x1;
+                depth++;
 
                 continue;
             }
 
-            for (at = 0; at < rec->member_cunt; at = at + 0x1)
+            for (at = 0; at < rec->member_cunt; at++)
             {
                 const crosstalk_hdl_type_member_t *member = &ctx->member[rec->member_at + at];
-                uint64_t span = member->size != 0 ? member->size : 0x1;
+                uint64_t span = member->size != 0 ? member->size : 1;
 
                 if (rest < member->off || rest >= member->off + span) { continue; }
 
@@ -2001,7 +2001,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
             if (ctx->member[hit].type_idx == (uint32_t)UINT32_MAX || ctx->member[hit].type_idx >= ctx->type_cunt) { break; }
 
             cur = ctx->member[hit].type_idx;
-            depth = depth + 0x1;
+            depth++;
 
             continue;
         }
@@ -2027,7 +2027,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
 
             rest = rest - slot * elem->size;
             cur = rec->ref;
-            depth = depth + 0x1;
+            depth++;
 
             continue;
         }

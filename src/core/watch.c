@@ -68,14 +68,14 @@ static uint32_t watch_set_sample(const char *dir, const char *files, uint64_t *s
 
     *out_cunt = 0x0;
 
-    for (pos = 0; pos <= files_len; pos = pos + 0x1)
+    for (pos = 0; pos <= files_len; pos++)
     {
         if (files[pos] != CROSSTALK_CORE_WATCH_SET_SEP && files[pos] != LDG_STR_TERM)
         {
             if (name_len >= CROSSTALK_CORE_WATCH_SET_NAME_CAP - LDG_STR_TERM_SIZE) { return LDG_ERR_FUNC_ARG_INVALID; }
 
             name[name_len] = files[pos];
-            name_len = name_len + 0x1;
+            name_len++;
             continue;
         }
 
@@ -94,7 +94,7 @@ static uint32_t watch_set_sample(const char *dir, const char *files, uint64_t *s
 
         size[cunt] = info.size;
         modified_ns[cunt] = info.modified_ns;
-        cunt = cunt + 0x1;
+        cunt++;
     }
 
     if (cunt == 0) { return LDG_ERR_EMPTY; }

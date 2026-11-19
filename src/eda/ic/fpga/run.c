@@ -23,7 +23,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    alive_now = LDG_ADD_FETCH(ctx->alive, 0x1);
+    alive_now = LDG_ADD_FETCH(ctx->alive, 1);
 
     if (ctx->cpuset_cunt != 0)
     {
@@ -36,7 +36,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
 
     if (LDG_LD_ACQUIRE(ctx->stop) == LDG_TRUTH_TRUE)
     {
-        alive_now = LDG_SUB_FETCH(ctx->alive, 0x1);
+        alive_now = LDG_SUB_FETCH(ctx->alive, 1);
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker exit; id: %u32; alive: %u32", worker_id, alive_now);
         return LDG_ERR_AOK;
     }
@@ -56,7 +56,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
         if (crosstalk_eda_clk_advance(ctx->clk, (double)(now - mark) / (double)LDG_NS_PER_SEC, &steps) != LDG_ERR_AOK) { steps = 0; }
 
         mark = now;
-        ctx->iters_total = ctx->iters_total + 0x1;
+        ctx->iters_total++;
 
         if (steps == 0)
         {
@@ -161,7 +161,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
 
     ctx->worker_id = worker_id;
 
-    alive_now = LDG_SUB_FETCH(ctx->alive, 0x1);
+    alive_now = LDG_SUB_FETCH(ctx->alive, 1);
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker exit; id: %u32; alive: %u32", worker_id, alive_now);
 
@@ -208,7 +208,7 @@ uint32_t crosstalk_eda_ic_fpga_run_cpuset_set(crosstalk_eda_ic_fpga_run_ctx_t *c
 
     if (cunt > (uint32_t)CROSSTALK_EDA_IC_FPGA_RUN_CPUSET_CAP) { return LDG_ERR_BOUNDS; }
 
-    for (uint32_t at = 0; at < cunt; at = at + 0x1) { ctx->cpuset_id[at] = id[at]; }
+    for (uint32_t at = 0; at < cunt; at++) { ctx->cpuset_id[at] = id[at]; }
 
     ctx->cpuset_cunt = cunt;
 

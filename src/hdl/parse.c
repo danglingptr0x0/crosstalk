@@ -589,7 +589,7 @@ static uint32_t crosstalk_hdl_parse_bin(crosstalk_hdl_parse_ctx_t *ctx, uint32_t
         ret = crosstalk_hdl_parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_parse_bin(ctx, prec + 0x1, &rhs_idx);
+        ret = crosstalk_hdl_parse_bin(ctx, prec + 1, &rhs_idx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EXPR_BIN, &op_tok, &bin_idx);

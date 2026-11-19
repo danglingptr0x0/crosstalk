@@ -17,7 +17,7 @@ static uint64_t crosstalk_hdl_exec_mask_get(uint32_t width)
 
     if (width == 0) { return 0x0; }
 
-    return ((uint64_t)0x1 << width) - 0x1;
+    return ((uint64_t)1 << width) - 1;
 }
 
 static uint64_t crosstalk_hdl_exec_mask_hi_get(uint32_t width)
@@ -33,7 +33,7 @@ static int64_t crosstalk_hdl_exec_sext_get(uint64_t val, uint32_t width)
 
     if (width == 0 || width >= 64) { return (int64_t)val; }
 
-    sign_bit = (uint64_t)0x1 << (width - 0x1);
+    sign_bit = (uint64_t)1 << (width - 1);
 
     if ((val & sign_bit) != 0) { return (int64_t)(val | ~crosstalk_hdl_exec_mask_get(width)); }
 
@@ -49,7 +49,7 @@ static uint32_t crosstalk_hdl_exec_arr_alloc(void *pool, uint64_t cunt, uint64_t
 
     *out = 0x0;
 
-    if (cunt == 0) { cunt = 0x1; }
+    if (cunt == 0) { cunt = 1; }
 
     ret = ldg_arith_uint64_mul(cunt, item_size, &bytes);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return LDG_ERR_OVERFLOW; }
@@ -73,7 +73,7 @@ static uint32_t crosstalk_hdl_exec_nrw_build(crosstalk_hdl_exec_ctx_t *ctx, void
 
     ir_ctx = ctx->ir_ctx;
     zero_slot = ir_ctx->sig_cunt;
-    one_slot = ir_ctx->sig_cunt + 0x1;
+    one_slot = ir_ctx->sig_cunt + 1;
     total = (uint64_t)ir_ctx->comb_cunt + (uint64_t)ir_ctx->seq_op_cunt;
     ret = crosstalk_hdl_exec_arr_alloc(pool, total, (uint64_t)sizeof(crosstalk_hdl_exec_nrw_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -123,7 +123,7 @@ static uint32_t crosstalk_hdl_exec_nrw_build(crosstalk_hdl_exec_ctx_t *ctx, void
         {
             if (LDG_UNLIKELY(op->width == 0 || op->width > 64)) { return LDG_ERR_INVALID; }
 
-            nop->op_mask = (uint64_t)0x1 << (op->width - 0x1);
+            nop->op_mask = (uint64_t)1 << (op->width - 1);
         }
     }
 
@@ -183,7 +183,7 @@ static uint32_t crosstalk_hdl_exec_nrw_apply(crosstalk_hdl_exec_ctx_t *ctx, cons
             res = s1 != 0 ? s0 % s1 : 0x0;
             break;
         case CROSSTALK_HDL_IR_OP_NEG:
-            res = ~s0 + 0x1;
+            res = ~s0 + 1;
             break;
         case CROSSTALK_HDL_IR_OP_SHL:
             res = s1 >= 64 ? 0x0 : s0 << s1;
@@ -199,49 +199,49 @@ static uint32_t crosstalk_hdl_exec_nrw_apply(crosstalk_hdl_exec_ctx_t *ctx, cons
             break;
         }
         case CROSSTALK_HDL_IR_OP_EQ:
-            res = s0 == s1 ? 0x1 : 0x0;
+            res = s0 == s1 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_NEQ:
-            res = s0 != s1 ? 0x1 : 0x0;
+            res = s0 != s1 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LT:
-            res = s0 < s1 ? 0x1 : 0x0;
+            res = s0 < s1 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LE:
-            res = s0 <= s1 ? 0x1 : 0x0;
+            res = s0 <= s1 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_GT:
-            res = s0 > s1 ? 0x1 : 0x0;
+            res = s0 > s1 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_GE:
-            res = s0 >= s1 ? 0x1 : 0x0;
+            res = s0 >= s1 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LT_S:
-            res = (s0 ^ nop->op_mask) < (s1 ^ nop->op_mask) ? 0x1 : 0x0;
+            res = (s0 ^ nop->op_mask) < (s1 ^ nop->op_mask) ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LE_S:
-            res = (s0 ^ nop->op_mask) <= (s1 ^ nop->op_mask) ? 0x1 : 0x0;
+            res = (s0 ^ nop->op_mask) <= (s1 ^ nop->op_mask) ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_GT_S:
-            res = (s0 ^ nop->op_mask) > (s1 ^ nop->op_mask) ? 0x1 : 0x0;
+            res = (s0 ^ nop->op_mask) > (s1 ^ nop->op_mask) ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_GE_S:
-            res = (s0 ^ nop->op_mask) >= (s1 ^ nop->op_mask) ? 0x1 : 0x0;
+            res = (s0 ^ nop->op_mask) >= (s1 ^ nop->op_mask) ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LAND:
-            res = s0 != 0 && s1 != 0 ? 0x1 : 0x0;
+            res = s0 != 0 && s1 != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LOR:
-            res = s0 != 0 || s1 != 0 ? 0x1 : 0x0;
+            res = s0 != 0 || s1 != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LNOT:
-            res = s0 == 0 ? 0x1 : 0x0;
+            res = s0 == 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_RED_AND:
-            res = s0 == nop->imm ? 0x1 : 0x0;
+            res = s0 == nop->imm ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_RED_OR:
-            res = s0 != 0 ? 0x1 : 0x0;
+            res = s0 != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_RED_XOR:
         {
@@ -252,8 +252,8 @@ static uint32_t crosstalk_hdl_exec_nrw_apply(crosstalk_hdl_exec_ctx_t *ctx, cons
             fold = fold ^ (fold >> 8);
             fold = fold ^ (fold >> 4);
             fold = fold ^ (fold >> 2);
-            fold = fold ^ (fold >> 0x1);
-            res = fold & 0x1;
+            fold = fold ^ (fold >> 1);
+            res = fold & 1;
             break;
         }
         case CROSSTALK_HDL_IR_OP_CONCAT:
@@ -409,7 +409,7 @@ uint32_t crosstalk_hdl_exec_init(crosstalk_hdl_exec_ctx_t *ctx, const crosstalk_
     ctx->fast_ok = LDG_TRUTH_FALSE;
     ctx->poke_dirty = LDG_TRUTH_TRUE;
     ctx->stage_cunt = 0;
-    ctx->stage_cap = ir_ctx->seq_op_cunt == 0 ? 0x1 : ir_ctx->seq_op_cunt;
+    ctx->stage_cap = ir_ctx->seq_op_cunt == 0 ? 1 : ir_ctx->seq_op_cunt;
     ctx->mem_words = 0;
     ctx->busy_sig = UINT32_MAX;
     ctx->busy_op = UINT32_MAX;
@@ -420,14 +420,14 @@ uint32_t crosstalk_hdl_exec_init(crosstalk_hdl_exec_ctx_t *ctx, const crosstalk_
 
     ctx->vals = (uint64_t *)raw;
     ctx->vals[ir_ctx->sig_cunt] = 0;
-    ctx->vals[ir_ctx->sig_cunt + 0x1] = 0x1;
+    ctx->vals[ir_ctx->sig_cunt + 1] = 1;
 
     ret = crosstalk_hdl_exec_arr_alloc(pool, (uint64_t)ir_ctx->sig_cunt + 0x2, (uint64_t)sizeof(uint64_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ctx->vals_hi = (uint64_t *)raw;
     ctx->vals_hi[ir_ctx->sig_cunt] = 0;
-    ctx->vals_hi[ir_ctx->sig_cunt + 0x1] = 0;
+    ctx->vals_hi[ir_ctx->sig_cunt + 1] = 0;
 
     ret = crosstalk_hdl_exec_arr_alloc(pool, ir_ctx->sig_cunt, (uint64_t)sizeof(uint32_t), &raw);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -725,7 +725,7 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
 
     if (op->kind == CROSSTALK_HDL_IR_OP_MEM_WR)
     {
-        uint64_t en = 0x1;
+        uint64_t en = 1;
 
         if (op->dst != UINT32_MAX) { en = ctx->vals[op->dst]; }
 
@@ -790,7 +790,7 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
             }
             else
             {
-                uint64_t sign = (src0_hi >> ((uint32_t)op->imm - 65)) & 0x1;
+                uint64_t sign = (src0_hi >> ((uint32_t)op->imm - 65)) & 1;
 
                 res = src0_val;
                 res_hi = sign != 0 ? src0_hi | ~crosstalk_hdl_exec_mask_hi_get((uint32_t)op->imm) : src0_hi;
@@ -821,13 +821,13 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
         case CROSSTALK_HDL_IR_OP_ADD:
         {
             res = src0_val + src1_val;
-            res_hi = src0_hi + src1_hi + (res < src0_val ? 0x1 : 0x0);
+            res_hi = src0_hi + src1_hi + (res < src0_val ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         }
         case CROSSTALK_HDL_IR_OP_SUB:
         {
             res = src0_val - src1_val;
-            res_hi = src0_hi - src1_hi - (src0_val < src1_val ? 0x1 : 0x0);
+            res_hi = src0_hi - src1_hi - (src0_val < src1_val ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         }
         case CROSSTALK_HDL_IR_OP_MUL:
@@ -882,8 +882,8 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
         }
         case CROSSTALK_HDL_IR_OP_NEG:
         {
-            res = ~src0_val + 0x1;
-            res_hi = ~src0_hi + (src0_val == 0 ? 0x1 : 0x0);
+            res = ~src0_val + 1;
+            res_hi = ~src0_hi + (src0_val == 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         }
         case CROSSTALK_HDL_IR_OP_SHL:
@@ -905,7 +905,7 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
             }
             else
             {
-                uint64_t sign = (src0_hi >> (op->width - 65)) & 0x1;
+                uint64_t sign = (src0_hi >> (op->width - 65)) & 1;
 
                 if (src1_hi != 0 || src1_val >= (uint64_t)op->width)
                 {
@@ -932,22 +932,22 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
             break;
         }
         case CROSSTALK_HDL_IR_OP_EQ:
-            res = src0_val == src1_val && src0_hi == src1_hi ? 0x1 : 0x0;
+            res = src0_val == src1_val && src0_hi == src1_hi ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_NEQ:
-            res = src0_val != src1_val || src0_hi != src1_hi ? 0x1 : 0x0;
+            res = src0_val != src1_val || src0_hi != src1_hi ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LT:
-            res = src0_hi != src1_hi ? (src0_hi < src1_hi ? 0x1 : 0x0) : (src0_val < src1_val ? 0x1 : 0x0);
+            res = src0_hi != src1_hi ? (src0_hi < src1_hi ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO) : (src0_val < src1_val ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         case CROSSTALK_HDL_IR_OP_LE:
-            res = src0_hi != src1_hi ? (src0_hi < src1_hi ? 0x1 : 0x0) : (src0_val <= src1_val ? 0x1 : 0x0);
+            res = src0_hi != src1_hi ? (src0_hi < src1_hi ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO) : (src0_val <= src1_val ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         case CROSSTALK_HDL_IR_OP_GT:
-            res = src0_hi != src1_hi ? (src0_hi > src1_hi ? 0x1 : 0x0) : (src0_val > src1_val ? 0x1 : 0x0);
+            res = src0_hi != src1_hi ? (src0_hi > src1_hi ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO) : (src0_val > src1_val ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         case CROSSTALK_HDL_IR_OP_GE:
-            res = src0_hi != src1_hi ? (src0_hi > src1_hi ? 0x1 : 0x0) : (src0_val >= src1_val ? 0x1 : 0x0);
+            res = src0_hi != src1_hi ? (src0_hi > src1_hi ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO) : (src0_val >= src1_val ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO);
             break;
         case CROSSTALK_HDL_IR_OP_LT_S:
         case CROSSTALK_HDL_IR_OP_LE_S:
@@ -963,41 +963,41 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
 
             if (op->width != 0 && op->width <= 64)
             {
-                flip_a_lo = src0_val ^ ((uint64_t)0x1 << (op->width - 0x1));
-                flip_b_lo = src1_val ^ ((uint64_t)0x1 << (op->width - 0x1));
+                flip_a_lo = src0_val ^ ((uint64_t)1 << (op->width - 1));
+                flip_b_lo = src1_val ^ ((uint64_t)1 << (op->width - 1));
                 flip_a_hi = 0;
                 flip_b_hi = 0;
             }
             else if (op->width > 64 && op->width <= 128)
             {
-                flip_a_hi = src0_hi ^ ((uint64_t)0x1 << (op->width - 65));
-                flip_b_hi = src1_hi ^ ((uint64_t)0x1 << (op->width - 65));
+                flip_a_hi = src0_hi ^ ((uint64_t)1 << (op->width - 65));
+                flip_b_hi = src1_hi ^ ((uint64_t)1 << (op->width - 65));
             }
 
-            lt_is = flip_a_hi != flip_b_hi ? (flip_a_hi < flip_b_hi ? 0x1 : 0x0) : (flip_a_lo < flip_b_lo ? 0x1 : 0x0);
-            eq_is = flip_a_hi == flip_b_hi && flip_a_lo == flip_b_lo ? 0x1 : 0x0;
+            lt_is = flip_a_hi != flip_b_hi ? (flip_a_hi < flip_b_hi ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE) : (flip_a_lo < flip_b_lo ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
+            eq_is = flip_a_hi == flip_b_hi && flip_a_lo == flip_b_lo ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
             if (op->kind == CROSSTALK_HDL_IR_OP_LT_S) { res = lt_is; }
-            else if (op->kind == CROSSTALK_HDL_IR_OP_LE_S) { res = lt_is != 0 || eq_is != 0 ? 0x1 : 0x0; }
-            else if (op->kind == CROSSTALK_HDL_IR_OP_GT_S) { res = lt_is == 0 && eq_is == 0 ? 0x1 : 0x0; }
-            else { res = lt_is == 0 ? 0x1 : 0x0; }
+            else if (op->kind == CROSSTALK_HDL_IR_OP_LE_S) { res = lt_is != 0 || eq_is != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO; }
+            else if (op->kind == CROSSTALK_HDL_IR_OP_GT_S) { res = lt_is == 0 && eq_is == 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO; }
+            else { res = lt_is == 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO; }
 
             break;
         }
         case CROSSTALK_HDL_IR_OP_LAND:
-            res = (src0_val | src0_hi) != 0 && (src1_val | src1_hi) != 0 ? 0x1 : 0x0;
+            res = (src0_val | src0_hi) != 0 && (src1_val | src1_hi) != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LOR:
-            res = (src0_val | src0_hi) != 0 || (src1_val | src1_hi) != 0 ? 0x1 : 0x0;
+            res = (src0_val | src0_hi) != 0 || (src1_val | src1_hi) != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_LNOT:
-            res = (src0_val | src0_hi) == 0 ? 0x1 : 0x0;
+            res = (src0_val | src0_hi) == 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_RED_AND:
-            res = src0_val == crosstalk_hdl_exec_mask_get((uint32_t)op->imm) && src0_hi == crosstalk_hdl_exec_mask_hi_get((uint32_t)op->imm) ? 0x1 : 0x0;
+            res = src0_val == crosstalk_hdl_exec_mask_get((uint32_t)op->imm) && src0_hi == crosstalk_hdl_exec_mask_hi_get((uint32_t)op->imm) ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_RED_OR:
-            res = (src0_val | src0_hi) != 0 ? 0x1 : 0x0;
+            res = (src0_val | src0_hi) != 0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO;
             break;
         case CROSSTALK_HDL_IR_OP_RED_XOR:
         {
@@ -1008,8 +1008,8 @@ static uint32_t crosstalk_hdl_exec_op_apply(crosstalk_hdl_exec_ctx_t *ctx, const
             fold = fold ^ (fold >> 8);
             fold = fold ^ (fold >> 4);
             fold = fold ^ (fold >> 2);
-            fold = fold ^ (fold >> 0x1);
-            res = fold & 0x1;
+            fold = fold ^ (fold >> 1);
+            res = fold & 1;
             break;
         }
         case CROSSTALK_HDL_IR_OP_CONCAT:
@@ -1111,7 +1111,7 @@ static uint32_t crosstalk_hdl_exec_eval_level(crosstalk_hdl_exec_ctx_t *ctx)
     lvl = ctx->level_res;
     ctx->busy_sig = UINT32_MAX;
     ctx->busy_op = UINT32_MAX;
-    ctx->eval_cunt = ctx->eval_cunt + 0x1;
+    ctx->eval_cunt++;
 
     for (unit_idx = 0; unit_idx < lvl->unit_cunt; unit_idx++)
     {
@@ -1128,7 +1128,7 @@ static uint32_t crosstalk_hdl_exec_eval_level(crosstalk_hdl_exec_ctx_t *ctx)
                     ret = crosstalk_hdl_exec_nrw_apply(ctx, &ctx->nrw[lvl->order[unit->start + pos]], LDG_TRUTH_FALSE, &op_changed);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                    if (op_changed == LDG_TRUTH_TRUE) { ctx->act_op_cunt = ctx->act_op_cunt + 0x1; }
+                    if (op_changed == LDG_TRUTH_TRUE) { ctx->act_op_cunt++; }
                 }
 
                 continue;
@@ -1141,7 +1141,7 @@ static uint32_t crosstalk_hdl_exec_eval_level(crosstalk_hdl_exec_ctx_t *ctx)
                 ret = crosstalk_hdl_exec_op_apply(ctx, &ctx->ir_ctx->comb_ops[lvl->order[unit->start + pos]], LDG_TRUTH_FALSE, &op_changed);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (op_changed == LDG_TRUTH_TRUE) { ctx->act_op_cunt = ctx->act_op_cunt + 0x1; }
+                if (op_changed == LDG_TRUTH_TRUE) { ctx->act_op_cunt++; }
             }
 
             continue;
@@ -1163,7 +1163,7 @@ static uint32_t crosstalk_hdl_exec_eval_level(crosstalk_hdl_exec_ctx_t *ctx)
                 if (op_changed == LDG_TRUTH_TRUE)
                 {
                     changed = LDG_TRUTH_TRUE;
-                    ctx->act_op_cunt = ctx->act_op_cunt + 0x1;
+                    ctx->act_op_cunt++;
 
                     if (ctx->busy_op == UINT32_MAX)
                     {
@@ -1222,7 +1222,7 @@ uint32_t crosstalk_hdl_exec_eval(crosstalk_hdl_exec_ctx_t *ctx)
 
     if (ctx->level_res != 0x0) { return crosstalk_hdl_exec_eval_level(ctx); }
 
-    ctx->eval_cunt = ctx->eval_cunt + 0x1;
+    ctx->eval_cunt++;
 
     for (pass = 0; pass < CROSSTALK_HDL_EXEC_SETTLE_MAX; pass++)
     {
@@ -1240,7 +1240,7 @@ uint32_t crosstalk_hdl_exec_eval(crosstalk_hdl_exec_ctx_t *ctx)
             if (op_changed == LDG_TRUTH_TRUE)
             {
                 changed = LDG_TRUTH_TRUE;
-                ctx->act_op_cunt = ctx->act_op_cunt + 0x1;
+                ctx->act_op_cunt++;
 
                 if (ctx->busy_op == UINT32_MAX)
                 {
@@ -1343,9 +1343,9 @@ static uint32_t crosstalk_hdl_exec_cycle_fast(crosstalk_hdl_exec_ctx_t *ctx, uin
     uint32_t ret = 0;
     uint8_t changed = 0;
 
-    ctx->vals[clk_sig] = 0x1;
+    ctx->vals[clk_sig] = 1;
 
-    for (idx = 0; idx < ctx->fast_alias_cunt; idx++) { ctx->vals[ctx->fast_alias[idx]] = 0x1; }
+    for (idx = 0; idx < ctx->fast_alias_cunt; idx++) { ctx->vals[ctx->fast_alias[idx]] = 1; }
 
     ctx->stage_cunt = 0;
 
@@ -1397,14 +1397,14 @@ uint32_t crosstalk_hdl_exec_cycle(crosstalk_hdl_exec_ctx_t *ctx, uint32_t clk_si
 
     if (LDG_UNLIKELY(clk_sig >= ctx->ir_ctx->sig_cunt)) { return LDG_ERR_BOUNDS; }
 
-    ctx->cycle_cunt = ctx->cycle_cunt + 0x1;
+    ctx->cycle_cunt++;
 
     if (ctx->gate_on == LDG_TRUTH_TRUE && ctx->gate != 0x0) { return crosstalk_hdl_logic_gate_cycle_run((crosstalk_hdl_logic_gate_ctx_t *)ctx->gate, ctx, clk_sig); }
 
     if (ctx->fast_ok == LDG_TRUTH_TRUE && ctx->poke_dirty != LDG_TRUTH_TRUE && clk_sig == ctx->fast_clk) { return crosstalk_hdl_exec_cycle_fast(ctx, clk_sig); }
 
     ctx->poke_dirty = LDG_TRUTH_FALSE;
-    ctx->vals[clk_sig] = 0x1;
+    ctx->vals[clk_sig] = 1;
 
     ret = crosstalk_hdl_exec_eval(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

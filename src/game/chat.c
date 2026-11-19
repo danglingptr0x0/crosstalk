@@ -179,7 +179,7 @@ uint32_t crosstalk_game_chat_conv_get(crosstalk_game_chat_ctx_t *ctx, uint8_t gr
     }
 
     *out_idx = ctx->conv_cunt;
-    ctx->conv_cunt = ctx->conv_cunt + CROSSTALK_GAME_CHAT_STEP;
+    ctx->conv_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -252,7 +252,7 @@ uint32_t crosstalk_game_chat_push(crosstalk_game_chat_ctx_t *ctx, uint8_t group,
     conv = &ctx->conv[conv_idx];
     slot = (conv->hd + conv->cunt) % CROSSTALK_GAME_CHAT_HISTORY_CAP;
 
-    if (conv->cunt < CROSSTALK_GAME_CHAT_HISTORY_CAP) { conv->cunt = conv->cunt + CROSSTALK_GAME_CHAT_STEP; }
+    if (conv->cunt < CROSSTALK_GAME_CHAT_HISTORY_CAP) { conv->cunt++; }
     else { conv->hd = (conv->hd + CROSSTALK_GAME_CHAT_STEP) % CROSSTALK_GAME_CHAT_HISTORY_CAP; }
 
     ret = ldg_str_rbrcpy(conv->msg[slot].name, name, (uint64_t)sizeof(conv->msg[slot].name));
@@ -370,7 +370,7 @@ static uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_chat_conv_t *
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (uint32_t idx = 0; idx < conv->cunt; idx = idx + CROSSTALK_GAME_CHAT_STEP)
+    for (uint32_t idx = 0; idx < conv->cunt; idx++)
     {
         uint32_t seg_start[CROSSTALK_GAME_CHAT_WRAP_CAP] = LDG_ARR_ZERO_INIT;
         uint32_t seg_len[CROSSTALK_GAME_CHAT_WRAP_CAP] = LDG_ARR_ZERO_INIT;
@@ -411,7 +411,7 @@ static uint32_t crosstalk_game_chat_msgs_draw(const crosstalk_game_chat_conv_t *
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
 
-            *row = *row + CROSSTALK_GAME_CHAT_STEP;
+            (*row)++;
         }
     }
 
@@ -465,13 +465,13 @@ static uint32_t chat_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)CROSSTALK_GAME_CHAT_ORIG_COL, row, conv->name, (uint64_t)sizeof(conv->name), peer_col, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + CROSSTALK_GAME_CHAT_STEP;
+        row++;
     }
 
     if (conv == 0x0 || conv->cunt == 0)
     {
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)CROSSTALK_GAME_CHAT_ORIG_COL, row, CROSSTALK_GAME_CHAT_EMPTY_TEXT, (uint64_t)CROSSTALK_GAME_CHAT_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
-        row = row + CROSSTALK_GAME_CHAT_STEP;
+        row++;
     }
     else { ret = crosstalk_game_chat_msgs_draw(conv, render, col_cunt, &row); }
 
@@ -492,7 +492,7 @@ static uint32_t chat_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
 
 static void crosstalk_game_chat_group_cycle(crosstalk_game_chat_ctx_t *ctx)
 {
-    for (uint32_t step = 0; step < (uint32_t)CROSSTALK_GAME_CHAT_GROUP_CUNT; step = step + CROSSTALK_GAME_CHAT_STEP)
+    for (uint32_t step = 0; step < (uint32_t)CROSSTALK_GAME_CHAT_GROUP_CUNT; step++)
     {
         ctx->group = (uint8_t)(((uint32_t)ctx->group + CROSSTALK_GAME_CHAT_STEP) % (uint32_t)CROSSTALK_GAME_CHAT_GROUP_CUNT);
 
@@ -508,7 +508,7 @@ static void crosstalk_game_chat_conv_cycle(crosstalk_game_chat_ctx_t *ctx, uint8
 
     if (at >= ctx->conv_cunt) { at = (uint32_t)CROSSTALK_GAME_CHAT_SEL_FIRST; }
 
-    for (uint32_t step = 0; step < ctx->conv_cunt; step = step + CROSSTALK_GAME_CHAT_STEP)
+    for (uint32_t step = 0; step < ctx->conv_cunt; step++)
     {
         if (back == LDG_TRUTH_TRUE) { at = at == 0 ? ctx->conv_cunt - CROSSTALK_GAME_CHAT_STEP : at - CROSSTALK_GAME_CHAT_STEP; }
         else { at = (at + CROSSTALK_GAME_CHAT_STEP) % ctx->conv_cunt; }
@@ -578,7 +578,7 @@ static uint32_t chat_key_isr(uint64_t win_id, void *user, const ldg_term_key_eve
 
     *consumed = LDG_TRUTH_FALSE;
 
-    for (uint32_t at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + CROSSTALK_GAME_CHAT_STEP)
+    for (uint32_t at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at++)
     {
         if (key->text[at] < (uint32_t)LDG_ASCII_PRINTABLE_MIN || key->text[at] > (uint32_t)LDG_ASCII_PRINTABLE_MAX) { continue; }
 

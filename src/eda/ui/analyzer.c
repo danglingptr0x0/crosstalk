@@ -44,17 +44,17 @@ static uint32_t analyzer_lane_pump(crosstalk_eda_ui_analyzer_ctx_t *ctx, crossta
 
     if (crosstalk_eda_logic_probe_drain(ctx->probes, lane->probe_handle, drain, (uint32_t)ANALYZER_DRAIN_CAP, &got) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
 
-    for (idx = 0; idx < got; idx = idx + 0x1)
+    for (idx = 0; idx < got; idx++)
     {
         if (lane->cunt < (uint32_t)CROSSTALK_EDA_UI_ANALYZER_EDGE_CAP)
         {
             at = (lane->hd + lane->cunt) % (uint32_t)CROSSTALK_EDA_UI_ANALYZER_EDGE_CAP;
-            lane->cunt = lane->cunt + 0x1;
+            lane->cunt++;
         }
         else
         {
             at = lane->hd;
-            lane->hd = (lane->hd + 0x1) % (uint32_t)CROSSTALK_EDA_UI_ANALYZER_EDGE_CAP;
+            lane->hd = (lane->hd + 1) % (uint32_t)CROSSTALK_EDA_UI_ANALYZER_EDGE_CAP;
         }
 
         lane->edge_cycle[at] = drain[idx].cycle;
@@ -96,7 +96,7 @@ uint32_t crosstalk_eda_ui_analyzer_lane_add(crosstalk_eda_ui_analyzer_ctx_t *ctx
 
     if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (at = 0; at < ctx->lane_cunt; at = at + 0x1) { if (strcmp(ctx->lane[at].name, name) == 0) { return LDG_ERR_EXISTS; } }
+    for (at = 0; at < ctx->lane_cunt; at++) { if (strcmp(ctx->lane[at].name, name) == 0) { return LDG_ERR_EXISTS; } }
 
     if (ctx->lane_cunt >= (uint32_t)CROSSTALK_EDA_UI_ANALYZER_LANE_CAP) { return LDG_ERR_FULL; }
 
@@ -108,7 +108,7 @@ uint32_t crosstalk_eda_ui_analyzer_lane_add(crosstalk_eda_ui_analyzer_ctx_t *ctx
     lane->probe_handle = probe_handle;
     lane->width = width;
     lane->live = LDG_TRUTH_TRUE;
-    ctx->lane_cunt = ctx->lane_cunt + 0x1;
+    ctx->lane_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -208,7 +208,7 @@ static uint32_t analyzer_lane_draw(ldg_term_render_t *render, const crosstalk_ed
 
     if (span == 0 || geom->sample_col == 0) { return LDG_ERR_AOK; }
 
-    for (idx = 0; idx <= lane->cunt; idx = idx + (uint32_t)ANALYZER_STEP)
+    for (idx = 0; idx <= lane->cunt; idx = idx + (uint32_t)1)
     {
         uint64_t at_cycle = 0;
         uint64_t at_val = 0;
@@ -251,7 +251,7 @@ static uint32_t analyzer_lane_draw(ldg_term_render_t *render, const crosstalk_ed
             {
                 if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, ANALYZER_BUS_LABEL_FMT, seg_val) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
-                ret = crosstalk_ui_cell_rgba_put(render, seg_x / geom->sample_col + (uint32_t)ANALYZER_STEP, geom->row, text, (uint64_t)sizeof(text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
+                ret = crosstalk_ui_cell_rgba_put(render, seg_x / geom->sample_col + (uint32_t)1, geom->row, text, (uint64_t)sizeof(text), (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
         }
@@ -295,11 +295,11 @@ static uint32_t analyzer_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
 
     if (ctx->lane_cunt == 0) { return crosstalk_ui_cell_rgba_put(render, (uint32_t)ANALYZER_ORIG_COL, (uint32_t)ANALYZER_HDR_ROW, ANALYZER_HINT_TEXT, (uint64_t)sizeof(ANALYZER_HINT_TEXT), (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, 0x0); }
 
-    for (idx = 0; idx < ctx->lane_cunt; idx = idx + (uint32_t)ANALYZER_STEP)
+    for (idx = 0; idx < ctx->lane_cunt; idx = idx + (uint32_t)1)
     {
         if (analyzer_lane_pump(ctx, &ctx->lane[idx]) != LDG_ERR_AOK) { continue; }
 
-        for (edge_idx = 0; edge_idx < ctx->lane[idx].cunt; edge_idx = edge_idx + (uint32_t)ANALYZER_STEP)
+        for (edge_idx = 0; edge_idx < ctx->lane[idx].cunt; edge_idx = edge_idx + (uint32_t)1)
         {
             uint32_t slot = (ctx->lane[idx].hd + edge_idx) % (uint32_t)CROSSTALK_EDA_UI_ANALYZER_EDGE_CAP;
 
@@ -323,7 +323,7 @@ static uint32_t analyzer_draw_cb(uint64_t win_id, void *user, ldg_term_render_t 
     geom.x_s = (uint32_t)ANALYZER_LABEL_W * geom.sample_col;
     geom.w_s = (col_cunt - (uint32_t)ANALYZER_LABEL_W) * geom.sample_col;
 
-    for (idx = 0; idx < ctx->lane_cunt; idx = idx + (uint32_t)ANALYZER_STEP)
+    for (idx = 0; idx < ctx->lane_cunt; idx = idx + (uint32_t)1)
     {
         geom.row = (uint32_t)ANALYZER_LANE_ROW_FIRST + idx * (uint32_t)ANALYZER_LANE_ROW_CUNT;
         geom.y_hi = geom.row * sample_row + sample_row / (uint32_t)ANALYZER_CELL_MID_DIV;

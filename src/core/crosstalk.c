@@ -331,7 +331,7 @@ static uint32_t crosstalk_data_subdir_resolve(const char *subdir, char *out, uin
 
     seg[2] = subdir;
 
-    for (idx = 0; idx < 3; idx = idx + 1)
+    for (idx = 0; idx < 3; idx++)
     {
         ret = ldg_io_path_join(out, seg[idx], nxt, (uint64_t)sizeof(nxt));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -457,7 +457,7 @@ static uint32_t crosstalk_persona_resolve(crosstalk_ctx_t *ctx, uint64_t steam_i
 
     cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
 
-    for (idx = 0; idx < cunt; idx = idx + 1)
+    for (idx = 0; idx < cunt; idx++)
     {
         member = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
         if (member == 0x0) { continue; }
@@ -467,7 +467,7 @@ static uint32_t crosstalk_persona_resolve(crosstalk_ctx_t *ctx, uint64_t steam_i
 
     cunt = crosstalk_net_libresteam_client_cunt_get(&ctx->libresteam_net);
 
-    for (idx = 0; idx < cunt; idx = idx + 1)
+    for (idx = 0; idx < cunt; idx++)
     {
         if (crosstalk_net_libresteam_client_steam_id_get(&ctx->libresteam_net, idx) != steam_id) { continue; }
 
@@ -502,7 +502,7 @@ static uint32_t crosstalk_lobby_items_build(crosstalk_ctx_t *ctx)
 
     cunt = crosstalk_net_libresteam_lobby_list_cunt_get(&ctx->libresteam_net);
 
-    for (idx = 0; idx < cunt; idx = idx + 1)
+    for (idx = 0; idx < cunt; idx++)
     {
         info = crosstalk_net_libresteam_lobby_list_get(&ctx->libresteam_net, idx);
         if (info == 0x0) { continue; }
@@ -550,7 +550,7 @@ static uint32_t crosstalk_lan_member_items_build(crosstalk_ctx_t *ctx)
     else { ctx->member_items[0] = LDG_STR_TERM; return LDG_ERR_AOK; }
 
     client_cunt = crosstalk_net_libresteam_client_cunt_get(&ctx->libresteam_net);
-    for (idx = 0; idx < client_cunt; idx = idx + 1)
+    for (idx = 0; idx < client_cunt; idx++)
     {
         name = crosstalk_net_libresteam_client_name_get(&ctx->libresteam_net, idx);
         if (name == 0x0 || name[0] == LDG_STR_TERM) { name = "player"; }
@@ -591,7 +591,7 @@ static uint32_t crosstalk_member_items_build(crosstalk_ctx_t *ctx)
     ctx->member_items[0] = LDG_STR_TERM;
     cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
 
-    for (idx = 0; idx < cunt; idx = idx + 1)
+    for (idx = 0; idx < cunt; idx++)
     {
         member = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
         if (member == 0x0) { continue; }
@@ -645,12 +645,12 @@ static uint32_t crosstalk_board_sel_refresh(crosstalk_ctx_t *ctx)
         ret = crosstalk_net_wshop_refresh(&ctx->wshop);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: wshop refresh failed; err: %u32", ret); }
 
-        for (type_idx = 0; type_idx < CROSSTALK_NET_WSHOP_TYPE_CUNT; type_idx = type_idx + 1)
+        for (type_idx = 0; type_idx < CROSSTALK_NET_WSHOP_TYPE_CUNT; type_idx++)
         {
             wshop_cunt = crosstalk_net_wshop_item_cunt_get(&ctx->wshop, type_idx);
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: wshop enum; type: %u32; items: %u32", type_idx, wshop_cunt);
 
-            for (idx = 0; idx < wshop_cunt; idx = idx + 1)
+            for (idx = 0; idx < wshop_cunt; idx++)
             {
                 item = crosstalk_net_wshop_item_get(&ctx->wshop, type_idx, idx);
                 if (item == 0x0) { continue; }
@@ -706,7 +706,7 @@ static uint32_t crosstalk_newproject_list_build(crosstalk_ctx_t *ctx)
 
     used = strlen(ctx->newproject_items);
 
-    for (idx = 0; idx < ctx->board_sel.cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->board_sel.cunt; idx++)
     {
         if (ctx->board_sel.entry[idx].src != CROSSTALK_GAME_BOARD_SRC_LOCAL) { continue; }
 
@@ -714,18 +714,18 @@ static uint32_t crosstalk_newproject_list_build(crosstalk_ctx_t *ctx)
 
         if (ldg_str_rbrcpy(safe_name, ctx->board_sel.entry[idx].name, (uint64_t)sizeof(safe_name)) != LDG_ERR_AOK) { continue; }
 
-        for (col = 0; safe_name[col] != LDG_STR_TERM; col = col + 0x1) { if (safe_name[col] == CROSSTALK_CORE_NEWPROJECT_SEP_CHAR) { safe_name[col] = CROSSTALK_CORE_NEWPROJECT_SEP_SUB; } }
+        for (col = 0; safe_name[col] != LDG_STR_TERM; col++) { if (safe_name[col] == CROSSTALK_CORE_NEWPROJECT_SEP_CHAR) { safe_name[col] = CROSSTALK_CORE_NEWPROJECT_SEP_SUB; } }
 
         if (used + strlen(safe_name) + LDG_STR_TERM_SIZE >= (uint64_t)sizeof(ctx->newproject_items)) { break; }
 
         if (ldg_str_rbrcpy(&ctx->newproject_items[used], CROSSTALK_CORE_NEWPROJECT_SEP, (uint64_t)sizeof(ctx->newproject_items) - used) != LDG_ERR_AOK) { break; }
 
-        used = used + LDG_STR_TERM_SIZE;
+        used++;
         if (ldg_str_rbrcpy(&ctx->newproject_items[used], safe_name, (uint64_t)sizeof(ctx->newproject_items) - used) != LDG_ERR_AOK) { break; }
 
         used = used + strlen(safe_name);
         ctx->newproject_row[ctx->newproject_pick_cunt] = idx;
-        ctx->newproject_pick_cunt = ctx->newproject_pick_cunt + 0x1;
+        ctx->newproject_pick_cunt++;
     }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: newproject list; existing: %u32", ctx->newproject_pick_cunt);
@@ -795,7 +795,7 @@ static uint8_t extras_audio_ext_is(const char *name)
 
     if (ldg_io_path_ext_get(name, ext, (uint64_t)sizeof(ext)) != LDG_ERR_AOK) { return LDG_TRUTH_FALSE; }
 
-    for (idx = 0; idx < CROSSTALK_CORE_EXTRAS_EXT_CUNT; idx = idx + 1)
+    for (idx = 0; idx < CROSSTALK_CORE_EXTRAS_EXT_CUNT; idx++)
     {
         if (strcmp(ext, ext_list[idx]) == 0) { return LDG_TRUTH_TRUE; }
 
@@ -832,7 +832,7 @@ static uint32_t crosstalk_credits_refresh(crosstalk_ctx_t *ctx)
 
     ctx->credits_items[got] = LDG_STR_TERM;
 
-    for (pos = 0; pos < (uint32_t)got; pos = pos + 0x1)
+    for (pos = 0; pos < (uint32_t)got; pos++)
     {
         if (ctx->credits_items[pos] == '\r') { ctx->credits_items[pos] = ' '; }
 
@@ -841,10 +841,10 @@ static uint32_t crosstalk_credits_refresh(crosstalk_ctx_t *ctx)
         if (ctx->credits_items[pos] != '\n') { continue; }
 
         ctx->credits_items[pos] = CROSSTALK_CORE_CREDITS_SEP;
-        ctx->credits_cunt = ctx->credits_cunt + 0x1;
+        ctx->credits_cunt++;
     }
 
-    if (got != 0) { ctx->credits_cunt = ctx->credits_cunt + 0x1; }
+    if (got != 0) { ctx->credits_cunt++; }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "credits: loaded; path: %.255s; bytes: %u64; lines: %u32", path, got, ctx->credits_cunt);
 
@@ -894,24 +894,24 @@ static uint32_t crosstalk_extras_title_get(const char *dir, const char *name, ch
             break;
         }
 
-        while (line[0] != LDG_STR_TERM && line[0] != '\n') { line = line + LDG_STR_TERM_SIZE; }
+        while (line[0] != LDG_STR_TERM && line[0] != '\n') { line++; }
 
-        if (line[0] == '\n') { line = line + LDG_STR_TERM_SIZE; }
+        if (line[0] == '\n') { line++; }
     }
 
     if (title == 0x0) { return LDG_ERR_NOT_FOUND; }
 
-    while (ldg_char_space_is((uint8_t)title[0]) == LDG_TRUTH_TRUE) { title = title + LDG_STR_TERM_SIZE; }
+    while (ldg_char_space_is((uint8_t)title[0]) == LDG_TRUTH_TRUE) { title++; }
 
-    while (title[title_len] != LDG_STR_TERM && title[title_len] != '\n' && title[title_len] != '\r') { title_len = title_len + LDG_STR_TERM_SIZE; }
+    while (title[title_len] != LDG_STR_TERM && title[title_len] != '\n' && title[title_len] != '\r') { title_len++; }
 
-    while (title_len > 0 && ldg_char_space_is((uint8_t)title[title_len - LDG_STR_TERM_SIZE]) == LDG_TRUTH_TRUE) { title_len = title_len - LDG_STR_TERM_SIZE; }
+    while (title_len > 0 && ldg_char_space_is((uint8_t)title[title_len - LDG_STR_TERM_SIZE]) == LDG_TRUTH_TRUE) { title_len--; }
 
     if (title_len == 0) { return LDG_ERR_EMPTY; }
 
     if (title_len >= out_size) { title_len = out_size - LDG_STR_TERM_SIZE; }
 
-    for (pos = 0; pos < title_len; pos = pos + LDG_STR_TERM_SIZE) { out[pos] = title[pos] == CROSSTALK_CORE_EXTRAS_SEP ? ',' : title[pos]; }
+    for (pos = 0; pos < title_len; pos++) { out[pos] = title[pos] == CROSSTALK_CORE_EXTRAS_SEP ? ',' : title[pos]; }
 
     out[title_len] = LDG_STR_TERM;
     return LDG_ERR_AOK;
@@ -993,7 +993,7 @@ static uint32_t crosstalk_extras_refresh(crosstalk_ctx_t *ctx)
         ret = ldg_str_rbrcpy(ctx->extras_file[ctx->extras_cunt], name, (uint64_t)sizeof(ctx->extras_file[ctx->extras_cunt]));
         if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { break; }
 
-        ctx->extras_cunt = ctx->extras_cunt + CROSSTALK_CORE_EXTRAS_STEP;
+        ctx->extras_cunt++;
     }
 
     ret = ldg_io_dir_close(handle);
@@ -1052,12 +1052,12 @@ static uint32_t crosstalk_ost_refresh(crosstalk_ctx_t *ctx)
 
         if (ldg_io_path_join(dir, name, ctx->ost_path[ctx->ost_cunt], (uint64_t)sizeof(ctx->ost_path[0])) != LDG_ERR_AOK) { continue; }
 
-        ctx->ost_cunt = ctx->ost_cunt + CROSSTALK_CORE_EXTRAS_STEP;
+        ctx->ost_cunt++;
     }
 
     ret = ldg_io_dir_close(handle);
 
-    for (idx = CROSSTALK_CORE_EXTRAS_STEP; idx < ctx->ost_cunt; idx = idx + CROSSTALK_CORE_EXTRAS_STEP)
+    for (idx = CROSSTALK_CORE_EXTRAS_STEP; idx < ctx->ost_cunt; idx++)
     {
         char hold[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
         uint32_t back = idx;
@@ -1068,13 +1068,13 @@ static uint32_t crosstalk_ost_refresh(crosstalk_ctx_t *ctx)
         {
             if (ldg_str_rbrcpy(ctx->ost_path[back], ctx->ost_path[back - CROSSTALK_CORE_EXTRAS_STEP], (uint64_t)sizeof(ctx->ost_path[back])) != LDG_ERR_AOK) { break; }
 
-            back = back - CROSSTALK_CORE_EXTRAS_STEP;
+            back--;
         }
 
         if (ldg_str_rbrcpy(ctx->ost_path[back], hold, (uint64_t)sizeof(ctx->ost_path[back])) != LDG_ERR_AOK) { ctx->ost_path[back][0] = LDG_STR_TERM; }
     }
 
-    for (idx = 0; idx < ctx->ost_cunt; idx = idx + CROSSTALK_CORE_EXTRAS_STEP) { ctx->ost_ptr[idx] = ctx->ost_path[idx]; }
+    for (idx = 0; idx < ctx->ost_cunt; idx++) { ctx->ost_ptr[idx] = ctx->ost_path[idx]; }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: ost scan; dir: %.255s; cunt: %u32; err: %u32", dir, ctx->ost_cunt, ret);
 
@@ -1265,7 +1265,7 @@ uint32_t crosstalk_core_runtime_path_resolve(const char *file, char *out, uint64
         seg[1] = CROSSTALK_SAVE_APP_UNIX;
     }
 
-    for (idx = 0; idx < 2; idx = idx + 1)
+    for (idx = 0; idx < 2; idx++)
     {
         ret = ldg_io_path_join(out, seg[idx], nxt, (uint64_t)sizeof(nxt));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1302,7 +1302,7 @@ uint32_t crosstalk_core_launch_app_id_get(void)
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    for (idx = 0; idx < 2; idx = idx + 1)
+    for (idx = 0; idx < 2; idx++)
     {
         text[0] = LDG_STR_TERM;
 
@@ -1416,7 +1416,7 @@ static void crosstalk_rtl_teardown(crosstalk_ctx_t *ctx)
     ret = crosstalk_eda_ic_fpga_run_hlt(&ctx->eda.fpga_run);
     if (ret != LDG_ERR_AOK && ret != CROSSTALK_EDA_IC_FPGA_RUN_ERR_IDLE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "teardown run halt failed"); }
 
-    for (slot_idx = 0; slot_idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; slot_idx = slot_idx + 0x1)
+    for (slot_idx = 0; slot_idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; slot_idx++)
     {
         ret = crosstalk_eda_ic_fpga_unprogram(&ctx->eda.fpga, slot_idx);
         if (ret != LDG_ERR_AOK && ret != CROSSTALK_EDA_IC_FPGA_ERR_SLOT) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "teardown unprogram failed"); }
@@ -1650,55 +1650,55 @@ static uint32_t crosstalk_layout_wins_get(crosstalk_ctx_t *ctx, crosstalk_layout
 
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_TERM_WINDOW_ID;
     out[cunt].win = &ctx->eda.term.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_SCOPE_WINDOW_ID;
     out[cunt].win = &ctx->eda.scope.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_INDICATOR_WINDOW_ID;
     out[cunt].win = &ctx->eda.indicator.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_MEMVIEW_WINDOW_ID;
     out[cunt].win = &ctx->eda.memview.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_CALC_WINDOW_ID;
     out[cunt].win = &ctx->eda.calc.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_PROFILE_WINDOW_ID;
     out[cunt].win = &ctx->eda.profile.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_REGVIEW_WINDOW_ID;
     out[cunt].win = &ctx->eda.regview.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_STACKVIEW_WINDOW_ID;
     out[cunt].win = &ctx->eda.stackview.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_BRAINOMATIC_WINDOW_ID;
     out[cunt].win = &ctx->eda.brainomatic.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_PROGVIEW_WINDOW_ID;
     out[cunt].win = &ctx->eda.progview.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_PIPEVIEW_WINDOW_ID;
     out[cunt].win = &ctx->eda.pipeview.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_ANALYZER_WINDOW_ID;
     out[cunt].win = &ctx->eda.analyzer.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_FEED_WINDOW_ID;
     out[cunt].win = &ctx->eda.feed.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_EDA_UI_DISPLAY_CRT_WINDOW_ID;
     out[cunt].win = &ctx->eda.crt.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_RENG_PROGRESS_ID;
     out[cunt].win = &ctx->reng_progress.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_RENG_TASKS_ID;
     out[cunt].win = &ctx->reng_tasks.win;
-    cunt = cunt + 0x1;
+    cunt++;
     out[cunt].id = (uint64_t)CROSSTALK_UI_GUIDE_WINDOW_ID;
     out[cunt].win = &ctx->guide.win;
-    cunt = cunt + 0x1;
+    cunt++;
     *out_cunt = cunt;
     return LDG_ERR_AOK;
 }
@@ -1716,7 +1716,7 @@ static uint32_t crosstalk_guide_tgt_open_cb(void *user, uint64_t win_id)
     ret = crosstalk_layout_wins_get(ctx, wins, (uint32_t)CROSSTALK_LAYOUT_WIN_CAP, &win_cunt);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (at = 0; at < win_cunt; at = at + 0x1)
+    for (at = 0; at < win_cunt; at++)
     {
         if (wins[at].id != win_id || wins[at].win == 0x0) { continue; }
 
@@ -1809,7 +1809,7 @@ static uint32_t crosstalk_card_ring_draw(ldg_term_render_t *render, double circ_
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_RING_STEP_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_RING_STEP_CUNT; idx++)
     {
         double angle = CROSSTALK_CORE_CARD_TURN * LDG_MATH_PI * (double)idx / (double)CROSSTALK_CORE_CARD_RING_STEP_CUNT;
 
@@ -1854,7 +1854,7 @@ static uint32_t crosstalk_card_side_draw(ldg_term_render_t *render, double card_
         rect_x = card_x + card_w - (rect_x - card_x) - side_w;
     }
 
-    for (step = 0; top_y + (double)step < top_y + side_h; step = step + 0x1)
+    for (step = 0; top_y + (double)step < top_y + side_h; step++)
     {
         line_y = top_y + (double)step;
 
@@ -1954,21 +1954,21 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     ret = crosstalk_card_gray_fill(render, card_x, card_y, card_w, card_h, CROSSTALK_CORE_CARD_FIELD_GRAY);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (idx = 1; idx < (uint32_t)CROSSTALK_CORE_CARD_COL_CUNT; idx = idx + 0x1)
+    for (idx = 1; idx < (uint32_t)CROSSTALK_CORE_CARD_COL_CUNT; idx++)
     {
         ret = crosstalk_card_gray_fill(render, card_x + (double)idx * cell - line_px * 0.5, card_y + cast_top, line_px, card_h - cast_top - cast_top, CROSSTALK_CORE_CARD_WHITE);
         if (ret != LDG_ERR_AOK) { return ret; }
     }
 
-    for (idx = 1; idx < (uint32_t)CROSSTALK_CORE_CARD_ROW_CUNT; idx = idx + 0x1)
+    for (idx = 1; idx < (uint32_t)CROSSTALK_CORE_CARD_ROW_CUNT; idx++)
     {
         ret = crosstalk_card_gray_fill(render, card_x + cast_side, card_y + (double)idx * cell - line_px * 0.5, card_w - cast_side - cast_side, line_px, CROSSTALK_CORE_CARD_WHITE);
         if (ret != LDG_ERR_AOK) { return ret; }
     }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_COL_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_COL_CUNT; idx++)
     {
-        level = (idx & 0x1) == 0 ? CROSSTALK_CORE_CARD_BLACK : CROSSTALK_CORE_CARD_WHITE;
+        level = (idx & 1) == 0 ? CROSSTALK_CORE_CARD_BLACK : CROSSTALK_CORE_CARD_WHITE;
 
         ret = crosstalk_card_gray_fill(render, card_x + (double)idx * cell, card_y, cell, cast_top, level);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -1977,9 +1977,9 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
         if (ret != LDG_ERR_AOK) { return ret; }
     }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_ROW_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_ROW_CUNT; idx++)
     {
-        level = (idx & 0x1) == 0 ? CROSSTALK_CORE_CARD_BLACK : CROSSTALK_CORE_CARD_WHITE;
+        level = (idx & 1) == 0 ? CROSSTALK_CORE_CARD_BLACK : CROSSTALK_CORE_CARD_WHITE;
 
         ret = crosstalk_card_gray_fill(render, card_x + card_w - cast_side, card_y + (double)idx * cell, cast_side, cell, level);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -1992,7 +1992,7 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
             continue;
         }
 
-        for (step = 0; card_y + (double)idx * cell + (double)step < card_y + (double)(idx + 0x1) * cell; step = step + 0x1)
+        for (step = 0; card_y + (double)idx * cell + (double)step < card_y + (double)(idx + 1) * cell; step++)
         {
             run_x = card_y + (double)idx * cell + (double)step;
 
@@ -2035,7 +2035,7 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     run_w = us_px * (double)LDG_MS_PER_SEC / CROSSTALK_CORE_CARD_SQUARE_KHZ * 0.5;
     level = CROSSTALK_CORE_CARD_BLACK;
 
-    for (step = 0; card_x + run_w * (double)step < circ_x + half; step = step + 0x1)
+    for (step = 0; card_x + run_w * (double)step < circ_x + half; step++)
     {
         run_x = card_x + run_w * (double)step;
         seg_x0 = run_x > circ_x - half ? run_x : circ_x - half;
@@ -2055,7 +2055,7 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     half = crosstalk_card_half_chord_get(circ_r, band_y + band_h * 0.5 - circ_y);
     run_w = (half + half) / (double)CROSSTALK_CORE_CARD_BAR_CUNT;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_BAR_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_BAR_CUNT; idx++)
     {
         ret = crosstalk_card_rgb_fill(render, circ_x - half + run_w * (double)idx, band_y, run_w, band_h, bar_rgb[idx][0] * CROSSTALK_CORE_CARD_BAR_AMPLITUDE, bar_rgb[idx][1] * CROSSTALK_CORE_CARD_BAR_AMPLITUDE, bar_rgb[idx][2] * CROSSTALK_CORE_CARD_BAR_AMPLITUDE);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -2090,7 +2090,7 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     half = crosstalk_card_half_chord_get(circ_r, band_y + band_h * 0.5 - circ_y);
     run_w = (half + half) / (double)CROSSTALK_CORE_CARD_GRATING_CUNT;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_GRATING_CUNT; idx = idx + 0x1) { for (step = 0; circ_x - half + run_w * (double)idx + (double)step < circ_x - half + run_w * (double)(idx + 0x1); step = step + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_GRATING_CUNT; idx++) { for (step = 0; circ_x - half + run_w * (double)idx + (double)step < circ_x - half + run_w * (double)(idx + 1); step++)
         {
             run_x = circ_x - half + run_w * (double)idx + (double)step;
             level = CROSSTALK_CORE_CARD_GRATING_MID + CROSSTALK_CORE_CARD_GRATING_AMP * sin(2.0 * LDG_MATH_PI * grating_mhz[idx] * (run_x - card_x) / us_px);
@@ -2104,9 +2104,9 @@ static uint32_t crosstalk_card_pal_draw(ldg_term_render_t *render)
     half = crosstalk_card_half_chord_get(circ_r, band_y + band_h * 0.5 - circ_y);
     run_w = (half + half) / (double)CROSSTALK_CORE_CARD_STEP_CUNT;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_STEP_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CARD_STEP_CUNT; idx++)
     {
-        level = (double)idx / (double)(CROSSTALK_CORE_CARD_STEP_CUNT - 0x1);
+        level = (double)idx / (double)(CROSSTALK_CORE_CARD_STEP_CUNT - 1);
 
         ret = crosstalk_card_gray_fill(render, circ_x - half + run_w * (double)idx, band_y, run_w, band_h, level);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -2199,7 +2199,7 @@ static uint32_t crosstalk_layout_sect_dir_rd(const char *path, uint32_t *out_len
     {
         span = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
 
-        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
         {
             memcpy(&out_len_arr[at], buff + (uint64_t)CROSSTALK_LAYOUT_DIR_MAGIC_LEN + (uint64_t)at * sizeof(uint32_t), sizeof(uint32_t));
             span = span + out_len_arr[at];
@@ -2239,7 +2239,7 @@ static uint32_t crosstalk_save_editor_mask_get(const char *path, uint8_t *out)
 
     off = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
     {
         if (dir_len[at] >= (uint32_t)sizeof(uint32_t))
         {
@@ -2268,7 +2268,7 @@ static uint32_t crosstalk_editorpick_items_build(crosstalk_ctx_t *ctx)
     ctx->editorpick_cunt = 0;
     ctx->editorpick_idx = 0;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
     {
         if ((ctx->editorpick_mask & LDG_BIT(at)) == 0 || at == (uint32_t)CROSSTALK_CORE_NEWPROJECT_KIND_RETIRED) { continue; }
 
@@ -2276,14 +2276,14 @@ static uint32_t crosstalk_editorpick_items_build(crosstalk_ctx_t *ctx)
         {
             if (ldg_str_rbrcpy(&ctx->editorpick_items[used], CROSSTALK_CORE_NEWPROJECT_SEP, (uint64_t)sizeof(ctx->editorpick_items) - used) != LDG_ERR_AOK) { break; }
 
-            used = used + LDG_STR_TERM_SIZE;
+            used++;
         }
 
         if (ldg_str_rbrcpy(&ctx->editorpick_items[used], name[at], (uint64_t)sizeof(ctx->editorpick_items) - used) != LDG_ERR_AOK) { break; }
 
         used = used + strlen(name[at]);
         ctx->editorpick_kind[ctx->editorpick_cunt] = (uint8_t)at;
-        ctx->editorpick_cunt = ctx->editorpick_cunt + 0x1;
+        ctx->editorpick_cunt++;
     }
 
     return LDG_ERR_AOK;
@@ -2358,7 +2358,7 @@ static uint32_t crosstalk_layout_default_apply(crosstalk_ctx_t *ctx, uint8_t tou
     ret = crosstalk_layout_wins_get(ctx, wins, (uint32_t)CROSSTALK_LAYOUT_WIN_CAP, &win_cunt);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (at = 0; at < win_cunt; at = at + 0x1)
+    for (at = 0; at < win_cunt; at++)
     {
         if (wins[at].win == 0x0) { continue; }
 
@@ -2375,20 +2375,20 @@ static uint32_t crosstalk_layout_default_apply(crosstalk_ctx_t *ctx, uint8_t tou
         return LDG_ERR_AOK;
     }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_LAYOUT_DEFAULT_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_LAYOUT_DEFAULT_CUNT; at++)
     {
         uint32_t win_at = 0;
 
-        for (win_at = 0; win_at < win_cunt; win_at = win_at + 0x1)
+        for (win_at = 0; win_at < win_cunt; win_at++)
         {
             if (wins[win_at].id != defaults[at].id || wins[win_at].win == 0x0) { continue; }
 
             wins[win_at].win->rect_x = defaults[at].frac[0];
-            wins[win_at].win->rect_y = defaults[at].frac[0x1];
-            wins[win_at].win->rect_w = defaults[at].frac[0x2];
-            wins[win_at].win->rect_h = defaults[at].frac[0x3];
+            wins[win_at].win->rect_y = defaults[at].frac[1];
+            wins[win_at].win->rect_w = defaults[at].frac[2];
+            wins[win_at].win->rect_h = defaults[at].frac[3];
             wins[win_at].win->open = defaults[at].open;
-            applied = applied + 0x1;
+            applied++;
             break;
         }
     }
@@ -2427,7 +2427,7 @@ static uint32_t crosstalk_layout_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
 
     slot_len = (uint32_t)sizeof(uint32_t) + cunt * (uint32_t)CROSSTALK_LAYOUT_REC_SIZE + (uint32_t)sizeof(double) + (uint32_t)sizeof(uint8_t);
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1) { dir_len[at] = 0; }
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++) { dir_len[at] = 0; }
 
     if (ctx->save_path[0] != LDG_STR_TERM) { if (crosstalk_layout_sect_dir_rd(ctx->save_path, dir_len, &disk_buff, &disk_len) != LDG_ERR_AOK)
         {
@@ -2438,7 +2438,7 @@ static uint32_t crosstalk_layout_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
 
     dir_len[ctx->editor_kind] = slot_len;
     need = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1) { need = need + dir_len[at]; }
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++) { need = need + dir_len[at]; }
 
     ret = ldg_mem_alloc((uint64_t)need, (void **)&buff);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
@@ -2452,7 +2452,7 @@ static uint32_t crosstalk_layout_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
     memcpy(buff, CROSSTALK_LAYOUT_DIR_MAGIC, (uint64_t)CROSSTALK_LAYOUT_DIR_MAGIC_LEN);
     off = (uint32_t)CROSSTALK_LAYOUT_DIR_MAGIC_LEN;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
     {
         memcpy(buff + off, &dir_len[at], sizeof(uint32_t));
         off = off + (uint32_t)sizeof(uint32_t);
@@ -2463,7 +2463,7 @@ static uint32_t crosstalk_layout_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
         uint32_t src_at = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
         uint32_t dst_at = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
 
-        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
         {
             uint32_t src_len = 0;
 
@@ -2479,20 +2479,20 @@ static uint32_t crosstalk_layout_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
     }
 
     off = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
-    for (at = 0; at < (uint32_t)ctx->editor_kind; at = at + 0x1) { off = off + dir_len[at]; }
+    for (at = 0; at < (uint32_t)ctx->editor_kind; at++) { off = off + dir_len[at]; }
 
     memcpy(buff + off, &cunt, sizeof(uint32_t));
     off = off + (uint32_t)sizeof(uint32_t);
 
-    for (at = 0; at < cunt; at = at + 0x1)
+    for (at = 0; at < cunt; at++)
     {
         double frac[CROSSTALK_LAYOUT_FRAC_CUNT] = LDG_ARR_ZERO_INIT;
         uint8_t open = wins[at].win->open != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
         frac[0] = wins[at].win->rect_x;
-        frac[0x1] = wins[at].win->rect_y;
-        frac[0x2] = wins[at].win->rect_w;
-        frac[0x3] = wins[at].win->rect_h;
+        frac[1] = wins[at].win->rect_y;
+        frac[2] = wins[at].win->rect_w;
+        frac[3] = wins[at].win->rect_h;
 
         memcpy(buff + off, &wins[at].id, sizeof(uint64_t));
         off = off + (uint32_t)sizeof(uint64_t);
@@ -2551,7 +2551,7 @@ static uint32_t crosstalk_layout_sect_restore(crosstalk_ctx_t *ctx)
 
     slot_len = dir_len[ctx->editor_kind];
     off = (uint32_t)CROSSTALK_LAYOUT_DIR_BYTES;
-    for (at = 0; at < (uint32_t)ctx->editor_kind; at = at + 0x1) { off = off + dir_len[at]; }
+    for (at = 0; at < (uint32_t)ctx->editor_kind; at++) { off = off + dir_len[at]; }
 
     if (slot_len < (uint32_t)sizeof(uint32_t))
     {
@@ -2584,7 +2584,7 @@ static uint32_t crosstalk_layout_sect_restore(crosstalk_ctx_t *ctx)
         return ret;
     }
 
-    for (at = 0; at < rec_cunt; at = at + 0x1)
+    for (at = 0; at < rec_cunt; at++)
     {
         double frac[CROSSTALK_LAYOUT_FRAC_CUNT] = LDG_ARR_ZERO_INIT;
         uint64_t id = 0;
@@ -2598,16 +2598,16 @@ static uint32_t crosstalk_layout_sect_restore(crosstalk_ctx_t *ctx)
         open = buff[off];
         off = off + (uint32_t)sizeof(uint8_t);
 
-        for (win_at = 0; win_at < win_cunt; win_at = win_at + 0x1)
+        for (win_at = 0; win_at < win_cunt; win_at++)
         {
             if (wins[win_at].id != id) { continue; }
 
-            if (frac[0x2] > LDG_MATH_EPSILON && frac[0x3] > LDG_MATH_EPSILON)
+            if (frac[2] > LDG_MATH_EPSILON && frac[3] > LDG_MATH_EPSILON)
             {
                 wins[win_at].win->rect_x = frac[0];
-                wins[win_at].win->rect_y = frac[0x1];
-                wins[win_at].win->rect_w = frac[0x2];
-                wins[win_at].win->rect_h = frac[0x3];
+                wins[win_at].win->rect_y = frac[1];
+                wins[win_at].win->rect_w = frac[2];
+                wins[win_at].win->rect_h = frac[3];
             }
 
             wins[win_at].win->open = open != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -2648,7 +2648,7 @@ static void crosstalk_verb_layout(crosstalk_ctx_t *ctx, const char *arg)
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "layout: dump begin; windows: %u32", cunt);
 
-    for (at = 0; at < cunt; at = at + 0x1)
+    for (at = 0; at < cunt; at++)
     {
         if (wins[at].win == 0x0) { continue; }
 
@@ -3352,11 +3352,11 @@ static void crosstalk_serial_lane_push(crosstalk_ctx_t *ctx, uint32_t handle, ui
 
     if (handle == UINT32_MAX) { return; }
 
-    for (at = 0; at < len; at = at + 0x1)
+    for (at = 0; at < len; at++)
     {
         if (crosstalk_eda_logic_probe_sample_push(&ctx->eda.logic_probe, handle, (uint64_t)bytes[at], *sample_at) != LDG_ERR_AOK) { break; }
 
-        *sample_at = *sample_at + 0x1;
+        (*sample_at)++;
     }
 }
 
@@ -3469,18 +3469,18 @@ static uint32_t crosstalk_serial_rx_cb(void *user, const uint8_t *bytes, uint32_
 
     crosstalk_serial_lane_push(ctx, ctx->serial_rx_probe_handle, &ctx->serial_rx_sample_at, bytes, len);
 
-    for (at = 0; at < len && ctx->serial_map_cunt != 0; at = at + 0x1)
+    for (at = 0; at < len && ctx->serial_map_cunt != 0; at++)
     {
         if (ctx->serial_map_window_len >= (uint32_t)CROSSTALK_CORE_SERIAL_MAP_PATTERN_CAP)
         {
             memmove(ctx->serial_map_window, &ctx->serial_map_window[LDG_STR_TERM_SIZE], (uint64_t)(ctx->serial_map_window_len - LDG_STR_TERM_SIZE));
-            ctx->serial_map_window_len = ctx->serial_map_window_len - LDG_STR_TERM_SIZE;
+            ctx->serial_map_window_len--;
         }
 
         ctx->serial_map_window[ctx->serial_map_window_len] = bytes[at];
-        ctx->serial_map_window_len = ctx->serial_map_window_len + 0x1;
+        ctx->serial_map_window_len++;
 
-        for (map_idx = 0; map_idx < ctx->serial_map_cunt; map_idx = map_idx + 0x1)
+        for (map_idx = 0; map_idx < ctx->serial_map_cunt; map_idx++)
         {
             uint32_t pattern_len = ctx->serial_map_pattern_len[map_idx];
 
@@ -3495,7 +3495,7 @@ static uint32_t crosstalk_serial_rx_cb(void *user, const uint8_t *bytes, uint32_
             {
                 uint32_t line_len = pattern_len;
 
-                while (line_len != 0 && (ctx->serial_map_pattern[map_idx][line_len - 0x1] == '\n' || ctx->serial_map_pattern[map_idx][line_len - 0x1] == '\r')) { line_len = line_len - 0x1; }
+                while (line_len != 0 && (ctx->serial_map_pattern[map_idx][line_len - 1] == '\n' || ctx->serial_map_pattern[map_idx][line_len - 1] == '\r')) { line_len--; }
 
                 if (line_len + LDG_STR_TERM_SIZE > (uint32_t)sizeof(ctx->serial_map_pending)) { continue; }
 
@@ -3506,18 +3506,18 @@ static uint32_t crosstalk_serial_rx_cb(void *user, const uint8_t *bytes, uint32_
             {
                 uint32_t pend_len = 0;
 
-                while (ctx->serial_map_pending[pend_len] != LDG_STR_TERM) { pend_len = pend_len + 0x1; }
+                while (ctx->serial_map_pending[pend_len] != LDG_STR_TERM) { pend_len++; }
 
-                while (pend_len != 0 && ctx->serial_map_pending[pend_len - 0x1] == ' ') { pend_len = pend_len - 0x1; }
+                while (pend_len != 0 && ctx->serial_map_pending[pend_len - 1] == ' ') { pend_len--; }
 
                 if (pend_len == 0) { continue; }
 
-                if (ctx->serial_map_pending[pend_len - 0x1] != CROSSTALK_CORE_SERIAL_MAP_TERM_CHAR)
+                if (ctx->serial_map_pending[pend_len - 1] != CROSSTALK_CORE_SERIAL_MAP_TERM_CHAR)
                 {
                     if (pend_len + LDG_STR_TERM_SIZE >= (uint32_t)sizeof(ctx->serial_map_pending)) { continue; }
 
                     ctx->serial_map_pending[pend_len] = CROSSTALK_CORE_SERIAL_MAP_TERM_CHAR;
-                    pend_len = pend_len + 0x1;
+                    pend_len++;
                 }
 
                 ctx->serial_map_pending[pend_len] = LDG_STR_TERM;
@@ -3628,18 +3628,18 @@ static uint32_t crosstalk_receptacle_keys_drain(crosstalk_ctx_t *ctx, uint8_t *o
 
     *out_cunt = 0;
 
-    for (at = 0; at < ctx->recept_irq_cunt && cunt < cap; at = at + 0x1)
+    for (at = 0; at < ctx->recept_irq_cunt && cunt < cap; at++)
     {
         const ldg_term_key_event_t *irq = &ctx->recept_irq[at];
 
         if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { continue; }
 
-        for (text_at = 0; text_at < irq->text_cunt && text_at < (uint32_t)LDG_TERM_KEY_TEXT_MAX && cunt < cap; text_at = text_at + 0x1)
+        for (text_at = 0; text_at < irq->text_cunt && text_at < (uint32_t)LDG_TERM_KEY_TEXT_MAX && cunt < cap; text_at++)
         {
             if (irq->text[text_at] < (uint32_t)LDG_ASCII_PRINTABLE_MIN || irq->text[text_at] > (uint32_t)LDG_ASCII_PRINTABLE_MAX) { continue; }
 
             out[cunt] = (uint8_t)irq->text[text_at];
-            cunt = cunt + 0x1;
+            cunt++;
         }
 
         if (irq->text_cunt != 0 || cunt >= cap) { continue; }
@@ -3650,7 +3650,7 @@ static uint32_t crosstalk_receptacle_keys_drain(crosstalk_ctx_t *ctx, uint8_t *o
         else if (irq->key == (uint8_t)LDG_TERM_KEY_ESCAPE) { out[cunt] = (uint8_t)LDG_ASCII_ESC; }
         else { continue; }
 
-        cunt = cunt + 0x1;
+        cunt++;
     }
 
     *out_cunt = cunt;
@@ -3735,7 +3735,7 @@ static void crosstalk_receptacle_key_release(crosstalk_ctx_t *ctx, uint32_t at)
 
     if (crosstalk_eda_io_receptacle_scan_edge_put(&ctx->eda.receptacle, ctx->recept_code[at], LDG_TRUTH_FALSE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "receptacle key release push failed"); }
 
-    ctx->recept_key_cunt = ctx->recept_key_cunt - 0x1;
+    ctx->recept_key_cunt--;
     ctx->recept_key[at] = ctx->recept_key[ctx->recept_key_cunt];
     ctx->recept_code[at] = ctx->recept_code[ctx->recept_key_cunt];
 }
@@ -3744,7 +3744,7 @@ static uint32_t crosstalk_receptacle_held_find(const crosstalk_ctx_t *ctx, uint3
 {
     uint32_t at = 0;
 
-    for (at = 0; at < ctx->recept_key_cunt; at = at + 0x1) { if (ctx->recept_key[at] == key) { return at; } }
+    for (at = 0; at < ctx->recept_key_cunt; at++) { if (ctx->recept_key[at] == key) { return at; } }
 
     return (uint32_t)UINT32_MAX;
 }
@@ -3771,7 +3771,7 @@ static void crosstalk_receptacle_key_press(crosstalk_ctx_t *ctx, uint32_t key)
 
     ctx->recept_key[ctx->recept_key_cunt] = key;
     ctx->recept_code[ctx->recept_key_cunt] = code;
-    ctx->recept_key_cunt = ctx->recept_key_cunt + 0x1;
+    ctx->recept_key_cunt++;
 }
 
 static void crosstalk_receptacle_mods_drive(crosstalk_ctx_t *ctx, uint32_t mods)
@@ -3779,7 +3779,7 @@ static void crosstalk_receptacle_mods_drive(crosstalk_ctx_t *ctx, uint32_t mods)
     const uint32_t mod_bit[CROSSTALK_CORE_RECEPT_MOD_CUNT] = { (uint32_t)LDG_TERM_MOD_CTRL, (uint32_t)LDG_TERM_MOD_SHIFT, (uint32_t)LDG_TERM_MOD_ALT };
     uint32_t at = 0;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_RECEPT_MOD_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_RECEPT_MOD_CUNT; at++)
     {
         uint32_t key = (uint32_t)CROSSTALK_CORE_RECEPT_ID_MOD | mod_bit[at];
         uint32_t held = crosstalk_receptacle_held_find(ctx, key);
@@ -3795,7 +3795,7 @@ static void crosstalk_receptacle_keys_release_drive(crosstalk_ctx_t *ctx)
 
     if (ctx->irq_src != 0x0 && ldg_term_input_release_report_is(ctx->irq_src) == LDG_TRUTH_TRUE) { return; }
 
-    while (ctx->recept_key_cunt != 0) { crosstalk_receptacle_key_release(ctx, ctx->recept_key_cunt - 0x1); }
+    while (ctx->recept_key_cunt != 0) { crosstalk_receptacle_key_release(ctx, ctx->recept_key_cunt - 1); }
 }
 
 static void crosstalk_receptacle_keys_edge_drive(crosstalk_ctx_t *ctx)
@@ -3804,7 +3804,7 @@ static void crosstalk_receptacle_keys_edge_drive(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    for (at = 0; at < ctx->recept_irq_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->recept_irq_cunt; at++)
     {
         const ldg_term_key_event_t *irq = &ctx->recept_irq[at];
         uint32_t key = crosstalk_receptacle_id_get(irq);
@@ -3841,7 +3841,7 @@ static uint32_t crosstalk_receptacle_key_isr(crosstalk_ctx_t *ctx, const ldg_ter
     if (ctx->recept_irq_cunt >= (uint32_t)CROSSTALK_CORE_RECEPT_IRQ_CAP) { return LDG_ERR_FULL; }
 
     ctx->recept_irq[ctx->recept_irq_cunt] = *irq;
-    ctx->recept_irq_cunt = ctx->recept_irq_cunt + 0x1;
+    ctx->recept_irq_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -3927,22 +3927,22 @@ static uint32_t crosstalk_sv_top_get(const char *path, char *out, uint32_t cap)
 
     src_hd[got] = LDG_STR_TERM;
 
-    for (at = 0; src_hd[at] != LDG_STR_TERM; at = at + 0x1)
+    for (at = 0; src_hd[at] != LDG_STR_TERM; at++)
     {
         if (strncmp(&src_hd[at], "module", strlen("module")) != 0x0) { continue; }
 
-        if (at != 0 && (ldg_char_alnum_is((uint8_t)src_hd[at - 0x1]) == LDG_TRUTH_TRUE || src_hd[at - 0x1] == '_')) { continue; }
+        if (at != 0 && (ldg_char_alnum_is((uint8_t)src_hd[at - 1]) == LDG_TRUTH_TRUE || src_hd[at - 1] == '_')) { continue; }
 
         at = at + (uint32_t)strlen("module");
         if (ldg_char_space_is((uint8_t)src_hd[at]) != LDG_TRUTH_TRUE) { continue; }
 
-        while (ldg_char_space_is((uint8_t)src_hd[at]) == LDG_TRUTH_TRUE) { at = at + 0x1; }
+        while (ldg_char_space_is((uint8_t)src_hd[at]) == LDG_TRUTH_TRUE) { at++; }
 
         while (used + LDG_STR_TERM_SIZE < cap && (ldg_char_alnum_is((uint8_t)src_hd[at]) == LDG_TRUTH_TRUE || src_hd[at] == '_' || src_hd[at] == '$'))
         {
             out[used] = src_hd[at];
-            used = used + 0x1;
-            at = at + 0x1;
+            used++;
+            at++;
         }
 
         out[used] = LDG_STR_TERM;
@@ -3965,11 +3965,11 @@ static void crosstalk_editor_file_watch(crosstalk_ctx_t *ctx)
 
     if (crosstalk_eda_io_pty_clip_take(&ctx->eda.pty, clip_text, (uint32_t)sizeof(clip_text), &clip_len) != LDG_ERR_AOK || clip_len == 0) { return; }
 
-    for (idx = 0; idx < clip_len; idx = idx + 0x1) { if (clip_text[idx] == '\n' || clip_text[idx] == '\r') { return; } }
+    for (idx = 0; idx < clip_len; idx++) { if (clip_text[idx] == '\n' || clip_text[idx] == '\r') { return; } }
 
     if (ldg_io_path_ext_get(clip_text, ext, (uint64_t)sizeof(ext)) != LDG_ERR_AOK) { return; }
 
-    ext_stem = ext[0] == '.' ? ext + 0x1 : ext;
+    ext_stem = ext[0] == '.' ? ext + 1 : ext;
     if (strcmp(ext_stem, "sv") != 0x0) { return; }
 
     if (ldg_io_path_exists_is(clip_text) != LDG_TRUTH_TRUE)
@@ -4002,7 +4002,7 @@ static void crosstalk_pty_tick(crosstalk_ctx_t *ctx)
 
     if (ctx->eda.term.pty_cols_want > 0 && ctx->eda.term.pty_rows_want > 0)
     {
-        if (ctx->eda.term.pty_cols_want == ctx->pty_want_cols_prev && ctx->eda.term.pty_rows_want == ctx->pty_want_rows_prev) { if (ctx->pty_want_stable < (uint32_t)CROSSTALK_CORE_PTY_SETTLE_FRAMES) { ctx->pty_want_stable = ctx->pty_want_stable + 0x1; } }
+        if (ctx->eda.term.pty_cols_want == ctx->pty_want_cols_prev && ctx->eda.term.pty_rows_want == ctx->pty_want_rows_prev) { if (ctx->pty_want_stable < (uint32_t)CROSSTALK_CORE_PTY_SETTLE_FRAMES) { ctx->pty_want_stable++; } }
         else
         {
             ctx->pty_want_cols_prev = ctx->eda.term.pty_cols_want;
@@ -4257,20 +4257,20 @@ static void crosstalk_sound_attach(crosstalk_ctx_t *ctx, const char *arg)
     while (at < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         port[at] = arg[at];
-        at = at + 0x1;
+        at++;
     }
 
     port[at] = LDG_STR_TERM;
 
     if (arg[at] == ' ')
     {
-        at = at + LDG_STR_TERM_SIZE;
+        at++;
 
         while (tok_len < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
         {
             tok[tok_len] = arg[at];
-            tok_len = tok_len + 0x1;
-            at = at + 0x1;
+            tok_len++;
+            at++;
         }
 
         tok[tok_len] = LDG_STR_TERM;
@@ -4284,14 +4284,14 @@ static void crosstalk_sound_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (arg[at] == ' ')
     {
-        at = at + LDG_STR_TERM_SIZE;
+        at++;
         tok_len = 0;
 
         while (tok_len < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
         {
             tok[tok_len] = arg[at];
-            tok_len = tok_len + 0x1;
-            at = at + 0x1;
+            tok_len++;
+            at++;
         }
 
         tok[tok_len] = LDG_STR_TERM;
@@ -4437,7 +4437,7 @@ static void crosstalk_fpga_in_ports_carry(crosstalk_ctx_t *ctx)
         if (crosstalk_hdl_exec_peek(&slot->exec, idx, &val) != LDG_ERR_AOK) { continue; }
 
         slot->abi->poke(abi_sig, val);
-        carried = carried + 0x1;
+        carried++;
     }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: input ports carried to the compiled component; cunt: %u32", carried);
@@ -4517,7 +4517,7 @@ static void crosstalk_snap_list(crosstalk_ctx_t *ctx)
         if (strcmp(&name[name_len - ext_len], CROSSTALK_CORE_SNAP_LIST_EXT) != 0) { continue; }
 
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "snap: found; name: %.255s", name);
-        cunt = cunt + 0x1;
+        cunt++;
     }
 
     if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "snap dir close failed"); }
@@ -4605,14 +4605,14 @@ static uint32_t crosstalk_tail_split(const char *arg, char *out_lhs, uint32_t lh
     out_lhs[0] = LDG_STR_TERM;
     out_rhs[0] = LDG_STR_TERM;
 
-    while (arg[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (arg[len] != LDG_STR_TERM) { len++; }
 
-    while (len != 0 && arg[len - LDG_STR_TERM_SIZE] == ' ') { len = len - LDG_STR_TERM_SIZE; }
+    while (len != 0 && arg[len - LDG_STR_TERM_SIZE] == ' ') { len--; }
 
     if (len == 0) { return LDG_ERR_EMPTY; }
 
     cut = len;
-    while (cut != 0 && arg[cut - LDG_STR_TERM_SIZE] != ' ') { cut = cut - LDG_STR_TERM_SIZE; }
+    while (cut != 0 && arg[cut - LDG_STR_TERM_SIZE] != ' ') { cut--; }
 
     if (cut == 0) { return LDG_ERR_NOT_FOUND; }
 
@@ -4620,7 +4620,7 @@ static uint32_t crosstalk_tail_split(const char *arg, char *out_lhs, uint32_t lh
 
     out_rhs[len - cut < rhs_cap - LDG_STR_TERM_SIZE ? len - cut : rhs_cap - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
 
-    while (cut != 0 && arg[cut - LDG_STR_TERM_SIZE] == ' ') { cut = cut - LDG_STR_TERM_SIZE; }
+    while (cut != 0 && arg[cut - LDG_STR_TERM_SIZE] == ' ') { cut--; }
 
     for (at = 0; at < cut && at + LDG_STR_TERM_SIZE < lhs_cap; at++) { out_lhs[at] = arg[at]; }
 
@@ -4828,7 +4828,7 @@ static void crosstalk_design_probes_reattach(crosstalk_ctx_t *ctx, char port[CRO
 
     if (crosstalk_eda_ic_fpga_slot_abi_get(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, &abi) != LDG_ERR_AOK) { abi = 0x0; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++)
     {
         uint32_t handle = UINT32_MAX;
         uint32_t ret = 0;
@@ -4885,7 +4885,7 @@ static void crosstalk_design_reload(crosstalk_ctx_t *ctx)
         return;
     }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_PROBE_MAX; idx++)
     {
         const crosstalk_eda_logic_probe_t *probe = &ctx->eda.logic_probe.probe[idx];
 
@@ -5107,7 +5107,7 @@ static uint32_t crosstalk_addr_sym_parse(const crosstalk_ctx_t *ctx, const char 
 
     *out_val = 0x0;
 
-    while (text[at] != LDG_STR_TERM && text[at] != CROSSTALK_CORE_ADDR_SYM_PLUS && text[at] != ' ' && at + LDG_STR_TERM_SIZE < (uint32_t)sizeof(name)) { name[at] = text[at]; at = at + 0x1; }
+    while (text[at] != LDG_STR_TERM && text[at] != CROSSTALK_CORE_ADDR_SYM_PLUS && text[at] != ' ' && at + LDG_STR_TERM_SIZE < (uint32_t)sizeof(name)) { name[at] = text[at]; at++; }
 
     name[at] = LDG_STR_TERM;
 
@@ -5134,7 +5134,7 @@ static uint32_t crosstalk_addr_parse(const crosstalk_ctx_t *ctx, const char *tex
 
     *out_val = 0x0;
 
-    for (at = 0x1; text[at] != LDG_STR_TERM && text[at] != ' '; at = at + 0x1) { if (text[at] == CROSSTALK_CORE_ADDR_SYM_PLUS || text[at] == CROSSTALK_CORE_ADDR_SYM_MINUS) { split = at; break; } }
+    for (at = 1; text[at] != LDG_STR_TERM && text[at] != ' '; at++) { if (text[at] == CROSSTALK_CORE_ADDR_SYM_PLUS || text[at] == CROSSTALK_CORE_ADDR_SYM_MINUS) { split = at; break; } }
 
     if (split == 0)
     {
@@ -5147,7 +5147,7 @@ static uint32_t crosstalk_addr_parse(const crosstalk_ctx_t *ctx, const char *tex
 
     if (split + LDG_STR_TERM_SIZE >= (uint32_t)sizeof(base)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    for (at = 0; at < split; at = at + 0x1) { base[at] = text[at]; }
+    for (at = 0; at < split; at++) { base[at] = text[at]; }
 
     base[split] = LDG_STR_TERM;
 
@@ -5229,35 +5229,35 @@ static void crosstalk_verb_render(crosstalk_ctx_t *ctx, const char *arg)
     while (at < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         port[at] = arg[at];
-        at = at + 0x1;
+        at++;
     }
 
     port[at] = LDG_STR_TERM;
 
     if (port[0] == LDG_STR_TERM || arg[at] != ' ') { toast_push(ctx, CROSSTALK_CORE_RENDER_USAGE_TEXT); return; }
 
-    at = at + 0x1;
+    at++;
     pos = 0;
 
     while (pos < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         secs_text[pos] = arg[at];
-        at = at + 0x1;
-        pos = pos + 0x1;
+        at++;
+        pos++;
     }
 
     secs_text[pos] = LDG_STR_TERM;
 
     if (secs_text[0] == LDG_STR_TERM || arg[at] != ' ') { toast_push(ctx, CROSSTALK_CORE_RENDER_USAGE_TEXT); return; }
 
-    at = at + 0x1;
+    at++;
     pos = 0;
 
     while (pos < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         rate_text[pos] = arg[at];
-        at = at + 0x1;
-        pos = pos + 0x1;
+        at++;
+        pos++;
     }
 
     rate_text[pos] = LDG_STR_TERM;
@@ -5287,13 +5287,13 @@ static void crosstalk_verb_render(crosstalk_ctx_t *ctx, const char *arg)
     ret = ldg_io_file_open(path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, 0x0, &fh);
     if (ret != LDG_ERR_AOK) { toast_push(ctx, "render file open failed"); return; }
 
-    memcpy(&wav_hdr[0x0], "RIFF", 0x4);
+    memcpy(&wav_hdr[0], "RIFF", 0x4);
     crosstalk_render_dword_put(wav_hdr, 0x4, (uint32_t)(total * CROSSTALK_CORE_RENDER_BYTES_PER_SAMPLE) + (uint32_t)CROSSTALK_CORE_RENDER_HDR_SIZE - 0x8);
-    memcpy(&wav_hdr[0x8], "WAVE", 0x4);
-    memcpy(&wav_hdr[0xC], "fmt ", 0x4);
+    memcpy(&wav_hdr[8], "WAVE", 0x4);
+    memcpy(&wav_hdr[12], "fmt ", 0x4);
     crosstalk_render_dword_put(wav_hdr, 0x10, 0x10);
-    crosstalk_render_word_put(wav_hdr, 0x14, 0x1);
-    crosstalk_render_word_put(wav_hdr, 0x16, 0x1);
+    crosstalk_render_word_put(wav_hdr, 0x14, 1);
+    crosstalk_render_word_put(wav_hdr, 0x16, 1);
     crosstalk_render_dword_put(wav_hdr, 0x18, (uint32_t)rate);
     crosstalk_render_dword_put(wav_hdr, 0x1C, (uint32_t)(rate * CROSSTALK_CORE_RENDER_BYTES_PER_SAMPLE));
     crosstalk_render_word_put(wav_hdr, 0x20, (uint16_t)CROSSTALK_CORE_RENDER_BYTES_PER_SAMPLE);
@@ -5324,7 +5324,7 @@ static void crosstalk_verb_render(crosstalk_ctx_t *ctx, const char *arg)
 
         conv = crosstalk_render_sample_conv(peek_val, peek_width);
         crosstalk_render_dword_put(chunk, chunk_at * (uint32_t)CROSSTALK_CORE_RENDER_BYTES_PER_SAMPLE, conv);
-        chunk_at = chunk_at + 0x1;
+        chunk_at++;
 
         if (chunk_at == (uint32_t)CROSSTALK_CORE_RENDER_CHUNK_SAMPLES)
         {
@@ -5362,7 +5362,7 @@ static void crosstalk_poke(crosstalk_ctx_t *ctx, const char *arg)
     while (at < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         sig[at] = arg[at];
-        at = at + 0x1;
+        at++;
     }
 
     sig[at] = LDG_STR_TERM;
@@ -5409,7 +5409,7 @@ static uint32_t crosstalk_defer_push(crosstalk_ctx_t *ctx, uint32_t kind, const 
 
     ctx->defer_text[ctx->defer_cunt][len] = LDG_STR_TERM;
     ctx->defer_kind[ctx->defer_cunt] = kind;
-    ctx->defer_cunt = ctx->defer_cunt + 0x1;
+    ctx->defer_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -5430,7 +5430,7 @@ static void crosstalk_verb_switch(crosstalk_ctx_t *ctx, const char *arg)
     while (at < (uint32_t)CROSSTALK_CORE_SWITCH_NAME_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         name[at] = arg[at];
-        at = at + 0x1;
+        at++;
     }
 
     name[at] = LDG_STR_TERM;
@@ -5494,19 +5494,19 @@ static void crosstalk_defer_drain(crosstalk_ctx_t *ctx)
         uint32_t kind = ctx->defer_kind[idx];
         uint32_t text_len = 0;
 
-        idx = idx + 0x1;
+        idx++;
 
-        while (text[text_len] != LDG_STR_TERM) { text_len = text_len + 0x1; }
+        while (text[text_len] != LDG_STR_TERM) { text_len++; }
 
         if (kind == (uint32_t)CROSSTALK_CORE_DEFER_RUN || kind == (uint32_t)CROSSTALK_CORE_DEFER_EVENT)
         {
             char note[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
 
-            if (kind == (uint32_t)CROSSTALK_CORE_DEFER_EVENT) { ctx->event_depth = ctx->event_depth + 0x1; }
+            if (kind == (uint32_t)CROSSTALK_CORE_DEFER_EVENT) { ctx->event_depth++; }
 
             ret = crosstalk_eda_script_file_exec(&ctx->eda.script, text);
 
-            if (kind == (uint32_t)CROSSTALK_CORE_DEFER_EVENT && ctx->event_depth != 0) { ctx->event_depth = ctx->event_depth - 0x1; }
+            if (kind == (uint32_t)CROSSTALK_CORE_DEFER_EVENT && ctx->event_depth != 0) { ctx->event_depth--; }
 
             if (ret == LDG_ERR_AOK) { continue; }
 
@@ -5595,7 +5595,7 @@ static void crosstalk_syms_sibling_ld(crosstalk_ctx_t *ctx, const char *path)
         if (path[at] == CROSSTALK_CORE_SYMS_SEP_POSIX || path[at] == CROSSTALK_CORE_SYMS_SEP_WIN) { sep_at = at; }
 
         elf_path[at] = path[at];
-        at = at + 0x1;
+        at++;
     }
 
     if (dot_at == UINT32_MAX) { return; }
@@ -5664,27 +5664,27 @@ static uint32_t crosstalk_re_word_next(const char *arg, uint32_t *at, char *out,
 
     if (out_quoted != 0x0) { *out_quoted = LDG_TRUTH_FALSE; }
 
-    while (arg[*at] == ' ') { *at = *at + 0x1; }
+    while (arg[*at] == ' ') { (*at)++; }
 
     if (arg[*at] == LDG_STR_TERM) { return LDG_ERR_EOF; }
 
     if (arg[*at] == LDG_ASCII_QUOTE)
     {
         quoted = LDG_TRUTH_TRUE;
-        *at = *at + 0x1;
+        (*at)++;
     }
 
     while (arg[*at] != LDG_STR_TERM)
     {
-        if (quoted == LDG_TRUTH_TRUE && arg[*at] == LDG_ASCII_QUOTE) { *at = *at + 0x1; break; }
+        if (quoted == LDG_TRUTH_TRUE && arg[*at] == LDG_ASCII_QUOTE) { (*at)++; break; }
 
         if (quoted != LDG_TRUTH_TRUE && arg[*at] == ' ') { break; }
 
         if (wr + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
 
         out[wr] = arg[*at];
-        wr = wr + 0x1;
-        *at = *at + 0x1;
+        wr++;
+        (*at)++;
     }
 
     out[wr] = LDG_STR_TERM;
@@ -5721,13 +5721,13 @@ static uint32_t crosstalk_re_addr_parse(const crosstalk_ctx_t *ctx, const char *
 
     if (text[0] == LDG_STR_TERM) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    for (at = 0x1; text[at] != LDG_STR_TERM; at = at + 0x1) { if (text[at] == CROSSTALK_CORE_ADDR_SYM_PLUS) { split = at; break; } }
+    for (at = 1; text[at] != LDG_STR_TERM; at++) { if (text[at] == CROSSTALK_CORE_ADDR_SYM_PLUS) { split = at; break; } }
 
     if (split + LDG_STR_TERM_SIZE >= (uint32_t)sizeof(base)) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    for (at = 0; at < split; at = at + 0x1) { base[at] = text[at]; }
+    for (at = 0; at < split; at++) { base[at] = text[at]; }
 
-    if (split == 0) { for (at = 0; text[at] != LDG_STR_TERM && at + LDG_STR_TERM_SIZE < (uint32_t)sizeof(base); at = at + 0x1) { base[at] = text[at]; } }
+    if (split == 0) { for (at = 0; text[at] != LDG_STR_TERM && at + LDG_STR_TERM_SIZE < (uint32_t)sizeof(base); at++) { base[at] = text[at]; } }
 
     base[at] = LDG_STR_TERM;
 
@@ -5862,7 +5862,7 @@ static void crosstalk_re_seg_log(crosstalk_ctx_t *ctx)
 
     if (crosstalk_re_img_ld_is(&ctx->re.img) != LDG_TRUTH_TRUE) { toast_push(ctx, CROSSTALK_CORE_RE_NO_IMG_TEXT); return; }
 
-    for (idx = 0; idx < ctx->re.img.seg_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->re.img.seg_cunt; idx++)
     {
         const crosstalk_re_img_seg_t *seg = 0x0;
 
@@ -5906,7 +5906,7 @@ static void crosstalk_re_rd(crosstalk_ctx_t *ctx, const char *rest)
 
         pos = (uint32_t)wrote;
 
-        for (col = 0; col < (uint64_t)CROSSTALK_CORE_RE_RD_ROW_BYTES && row + col < got; col = col + 0x1)
+        for (col = 0; col < (uint64_t)CROSSTALK_CORE_RE_RD_ROW_BYTES && row + col < got; col++)
         {
             wrote = ldg_str_fmt(&line[pos], (uint64_t)(sizeof(line) - pos), &fmt_len, CROSSTALK_CORE_MEMRD_BYTE_FMT, (uint64_t)bytes[row + col]) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
             if (wrote < 0 || (uint32_t)wrote >= sizeof(line) - pos) { break; }
@@ -5941,7 +5941,7 @@ static void crosstalk_re_dis(crosstalk_ctx_t *ctx, const char *rest)
 
     if (ctx->re.img.isa != (uint32_t)CROSSTALK_RE_IMG_ISA_DANGCSA) { toast_push(ctx, CROSSTALK_CORE_RE_DIS_NONE_TEXT); return; }
 
-    for (row = 0; row < rows; row = row + 0x1)
+    for (row = 0; row < rows; row++)
     {
         ldg_dangcsa_decoded_t decoded = LDG_STRUCT_ZERO_INIT;
         uint64_t here = addr + row * (uint64_t)CROSSTALK_RE_IMG_WORD_BYTES;
@@ -6119,7 +6119,7 @@ static void crosstalk_re_import(crosstalk_ctx_t *ctx)
 
     if (ctx->re.img.syms_ok != LDG_TRUTH_TRUE) { toast_push(ctx, CROSSTALK_CORE_IDENT_NONE_TEXT); return; }
 
-    for (idx = 0; idx < ctx->re.img.elf.sym_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->re.img.elf.sym_cunt; idx++)
     {
         const crosstalk_hdl_elf_sym_t *sym = &ctx->re.img.elf.sym[idx];
         crosstalk_re_db_rec_t rec = LDG_STRUCT_ZERO_INIT;
@@ -6134,7 +6134,7 @@ static void crosstalk_re_import(crosstalk_ctx_t *ctx)
 
         if (crosstalk_re_db_rec_add(&ctx->re.db, &rec) != LDG_ERR_AOK) { continue; }
 
-        added = added + 0x1;
+        added++;
 
         if (sym->kind != (uint8_t)CROSSTALK_HDL_ELF_KIND_FUNC || sym->size == 0) { continue; }
 
@@ -6142,7 +6142,7 @@ static void crosstalk_re_import(crosstalk_ctx_t *ctx)
         rec.size = sym->size;
         rec.text[0] = LDG_STR_TERM;
 
-        if (crosstalk_re_db_rec_add(&ctx->re.db, &rec) == LDG_ERR_AOK) { added = added + 0x1; }
+        if (crosstalk_re_db_rec_add(&ctx->re.db, &rec) == LDG_ERR_AOK) { added++; }
     }
 
     {
@@ -6194,7 +6194,7 @@ static void crosstalk_re_assert(crosstalk_ctx_t *ctx, const char *rest)
 
     ret = ldg_io_file_wr(fh, "#ifndef CROSSTALK_RE_ASSERT_H\n#define CROSSTALK_RE_ASSERT_H\n\n#include <stddef.h>\n\n", sizeof("#ifndef CROSSTALK_RE_ASSERT_H\n#define CROSSTALK_RE_ASSERT_H\n\n#include <stddef.h>\n\n") - LDG_STR_TERM_SIZE, &wrote);
 
-    for (idx = 0; ret == LDG_ERR_AOK && idx < crosstalk_re_db_rec_cunt_get(&ctx->re.db); idx = idx + 0x1)
+    for (idx = 0; ret == LDG_ERR_AOK && idx < crosstalk_re_db_rec_cunt_get(&ctx->re.db); idx++)
     {
         const crosstalk_re_db_rec_t *rec = 0x0;
         int32_t len = 0;
@@ -6208,7 +6208,7 @@ static void crosstalk_re_assert(crosstalk_ctx_t *ctx, const char *rest)
         if (len < 0 || (uint32_t)len >= sizeof(line)) { ret = LDG_ERR_STR_TRUNC; break; }
 
         ret = ldg_io_file_wr(fh, line, (uint64_t)len, &wrote);
-        cunt = cunt + 0x1;
+        cunt++;
     }
 
     if (ret == LDG_ERR_AOK) { ret = ldg_io_file_wr(fh, "\n#endif\n", sizeof("\n#endif\n") - LDG_STR_TERM_SIZE, &wrote); }
@@ -6263,7 +6263,7 @@ static void crosstalk_re_ls(crosstalk_ctx_t *ctx, const char *rest)
 
     if (crosstalk_re_word_next(rest, &at, word, (uint32_t)sizeof(word), 0x0) == LDG_ERR_AOK) { if (crosstalk_re_db_kind_parse(word, &kind) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_RE_USAGE_TEXT); return; } }
 
-    for (idx = 0; idx < crosstalk_re_db_rec_cunt_get(&ctx->re.db); idx = idx + 0x1)
+    for (idx = 0; idx < crosstalk_re_db_rec_cunt_get(&ctx->re.db); idx++)
     {
         const crosstalk_re_db_rec_t *rec = 0x0;
 
@@ -6275,7 +6275,7 @@ static void crosstalk_re_ls(crosstalk_ctx_t *ctx, const char *rest)
 
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re ls: %.383s", line);
 
-        shown = shown + 0x1;
+        shown++;
     }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re ls: records: %u32; shown: %u32", crosstalk_re_db_rec_cunt_get(&ctx->re.db), shown);
@@ -6304,7 +6304,7 @@ static uint32_t crosstalk_re_cand_syms_ld(crosstalk_ctx_t *ctx)
         if (cand->path[at] == CROSSTALK_RE_IMG_SYMS_SEP_POSIX || cand->path[at] == CROSSTALK_RE_IMG_SYMS_SEP_WIN) { sep_at = at; }
 
         path[at] = cand->path[at];
-        at = at + 0x1;
+        at++;
     }
 
     path[at] = LDG_STR_TERM;
@@ -6516,7 +6516,7 @@ static void crosstalk_re_progress_push(crosstalk_ctx_t *ctx)
 
     if (crosstalk_reng_proj_hash_find(&ctx->reng, ctx->re.db.img_hash, &proj) != LDG_ERR_AOK) { return; }
 
-    for (idx = 0; idx < crosstalk_re_db_rec_cunt_get(&ctx->re.db); idx = idx + 0x1)
+    for (idx = 0; idx < crosstalk_re_db_rec_cunt_get(&ctx->re.db); idx++)
     {
         const crosstalk_re_db_rec_t *rec = 0x0;
         uint32_t hit = 0;
@@ -6525,17 +6525,17 @@ static void crosstalk_re_progress_push(crosstalk_ctx_t *ctx)
 
         if (rec->kind != (uint32_t)CROSSTALK_RE_DB_KIND_FUNC) { continue; }
 
-        total = total + 0x1;
+        total++;
 
-        if (crosstalk_re_db_rec_find(&ctx->re.db, (uint32_t)CROSSTALK_RE_DB_KIND_NAME, rec->addr, "", "", &hit) == LDG_ERR_AOK) { named = named + 0x1; }
+        if (crosstalk_re_db_rec_find(&ctx->re.db, (uint32_t)CROSSTALK_RE_DB_KIND_NAME, rec->addr, "", "", &hit) == LDG_ERR_AOK) { named++; }
 
-        if (crosstalk_re_db_rec_find(&ctx->re.db, (uint32_t)CROSSTALK_RE_DB_KIND_SRC, rec->addr, "", "", &hit) == LDG_ERR_AOK) { ported = ported + 0x1; }
+        if (crosstalk_re_db_rec_find(&ctx->re.db, (uint32_t)CROSSTALK_RE_DB_KIND_SRC, rec->addr, "", "", &hit) == LDG_ERR_AOK) { ported++; }
 
         if (crosstalk_re_db_rec_find(&ctx->re.db, (uint32_t)CROSSTALK_RE_DB_KIND_VERDICT, rec->addr, "", "", &hit) == LDG_ERR_AOK)
         {
             const crosstalk_re_db_rec_t *verdict = 0x0;
 
-            if (crosstalk_re_db_rec_get(&ctx->re.db, hit, &verdict) == LDG_ERR_AOK && verdict != 0x0 && verdict->size == (uint64_t)CROSSTALK_RE_DIFF_VERDICT_MATCH) { verified = verified + 0x1; }
+            if (crosstalk_re_db_rec_get(&ctx->re.db, hit, &verdict) == LDG_ERR_AOK && verdict != 0x0 && verdict->size == (uint64_t)CROSSTALK_RE_DIFF_VERDICT_MATCH) { verified++; }
         }
     }
 
@@ -6714,7 +6714,7 @@ static uint32_t crosstalk_win_nav_reg(crosstalk_ctx_t *ctx)
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_WIN_NAV_CUNT; at = at + 0x1) { if (crosstalk_ui_window_title_set(nav, order[at].win_id, order[at].title) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window title number failed"); } }
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_WIN_NAV_CUNT; at++) { if (crosstalk_ui_window_title_set(nav, order[at].win_id, order[at].title) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window title number failed"); } }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "window: nav slots ready; cunt: %u32", (uint32_t)CROSSTALK_CORE_WIN_NAV_CUNT);
 
@@ -6737,14 +6737,14 @@ static uint32_t crosstalk_win_tab_cycle(crosstalk_ctx_t *ctx)
 
     if (crosstalk_ui_window_focused_is(&ctx->win_nav, (uint64_t)CROSSTALK_EDA_UI_PROFILE_WINDOW_ID) == LDG_TRUTH_TRUE)
     {
-        ctx->eda.profile.tab = (uint8_t)((ctx->eda.profile.tab + 0x1) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_TAB_CUNT);
+        ctx->eda.profile.tab = (uint8_t)((ctx->eda.profile.tab + 1) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_TAB_CUNT);
 
         return LDG_ERR_AOK;
     }
 
     if (crosstalk_ui_window_focused_is(&ctx->win_nav, (uint64_t)CROSSTALK_EDA_UI_TERM_WINDOW_ID) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    for (at = 0x1; at <= (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; at = at + 0x1)
+    for (at = 1; at <= (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX; at++)
     {
         seen = (ctx->eda.term.sesh_active + at) % (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX;
 
@@ -7089,7 +7089,7 @@ static uint32_t crosstalk_win_resize_key_isr(crosstalk_ctx_t *ctx, const ldg_ter
     ret = crosstalk_layout_wins_get(ctx, wins, (uint32_t)CROSSTALK_LAYOUT_WIN_CAP, &win_cunt);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (at = 0; at < win_cunt; at = at + 0x1)
+    for (at = 0; at < win_cunt; at++)
     {
         if (wins[at].win == 0x0 || wins[at].id != ctx->win_nav.focus_id) { continue; }
 
@@ -7250,7 +7250,7 @@ static void crosstalk_prog_pub_poll(crosstalk_ctx_t *ctx)
 
     if (got < cell_cunt) { return; }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_PROG_PUB_WORD_CUNT; at = at + 0x1) { word[at] = (cell[at / words_per_cell] >> ((at % words_per_cell) * (uint32_t)CROSSTALK_CORE_PROG_PUB_HI_SHIFT)) & (uint64_t)UINT32_MAX; }
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_PROG_PUB_WORD_CUNT; at++) { word[at] = (cell[at / words_per_cell] >> ((at % words_per_cell) * (uint32_t)CROSSTALK_CORE_PROG_PUB_HI_SHIFT)) & (uint64_t)UINT32_MAX; }
 
     if (word[CROSSTALK_CORE_PROG_PUB_MAGIC_AT] != (uint64_t)CROSSTALK_CORE_PROG_PUB_MAGIC) { return; }
 
@@ -7272,7 +7272,7 @@ static void crosstalk_prog_pub_poll(crosstalk_ctx_t *ctx)
         return;
     }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_PROG_PUB_NAME_CAP - LDG_STR_TERM_SIZE; at = at + 0x1) { name[at] = (char)((word[(uint32_t)CROSSTALK_CORE_PROG_PUB_NAME_AT + at / (uint32_t)CROSSTALK_CORE_PROG_PUB_WORD_BYTES] >> ((uint64_t)(at % (uint32_t)CROSSTALK_CORE_PROG_PUB_WORD_BYTES) * (uint64_t)LDG_BYTE_BITS)) & (uint64_t)LDG_BYTE_MASK); }
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_PROG_PUB_NAME_CAP - LDG_STR_TERM_SIZE; at++) { name[at] = (char)((word[(uint32_t)CROSSTALK_CORE_PROG_PUB_NAME_AT + at / (uint32_t)CROSSTALK_CORE_PROG_PUB_WORD_BYTES] >> ((uint64_t)(at % (uint32_t)CROSSTALK_CORE_PROG_PUB_WORD_BYTES) * (uint64_t)LDG_BYTE_BITS)) & (uint64_t)LDG_BYTE_MASK); }
 
     name[(uint32_t)CROSSTALK_CORE_PROG_PUB_NAME_CAP - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
 
@@ -7336,7 +7336,7 @@ static void crosstalk_memld(crosstalk_ctx_t *ctx, const char *arg)
     while (at < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM && arg[at] != ' ')
     {
         sig[at] = arg[at];
-        at = at + 0x1;
+        at++;
     }
 
     sig[at] = LDG_STR_TERM;
@@ -7348,13 +7348,13 @@ static void crosstalk_memld(crosstalk_ctx_t *ctx, const char *arg)
         return;
     }
 
-    at = at + 0x1;
+    at++;
 
     while (pos < (uint32_t)LDG_IO_PATH_MAX - LDG_STR_TERM_SIZE && arg[at] != LDG_STR_TERM)
     {
         rest[pos] = arg[at];
-        pos = pos + 0x1;
-        at = at + 0x1;
+        pos++;
+        at++;
     }
 
     rest[pos] = LDG_STR_TERM;
@@ -7413,21 +7413,21 @@ static void crosstalk_memrd(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(sig)) { sig[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(sig)) { sig[pos] = arg[at]; pos++; at++; }
 
     sig[pos] = LDG_STR_TERM;
     pos = 0;
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tail)) { tail[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tail)) { tail[pos] = arg[at]; pos++; at++; }
 
     tail[pos] = LDG_STR_TERM;
     pos = 0;
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rest)) { rest[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rest)) { rest[pos] = arg[at]; pos++; at++; }
 
     rest[pos] = LDG_STR_TERM;
     pos = 0;
@@ -7448,7 +7448,7 @@ static void crosstalk_memrd(crosstalk_ctx_t *ctx, const char *arg)
         return;
     }
 
-    for (at = 0; at < rd; at = at + 0x1)
+    for (at = 0; at < rd; at++)
     {
         int32_t wrote = ldg_str_fmt(row + pos, (uint64_t)(sizeof(row) - pos), &fmt_len, CROSSTALK_CORE_MEMRD_BYTE_FMT, word[at] & (uint64_t)CROSSTALK_CORE_MEMRD_BYTE_MASK) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
@@ -7484,9 +7484,9 @@ static void crosstalk_memview_bake_mount(crosstalk_ctx_t *ctx, const char *arg, 
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(name)) { name[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(name)) { name[pos] = arg[at]; pos++; at++; }
 
     name[pos] = LDG_STR_TERM;
 
@@ -7574,9 +7574,9 @@ static uint32_t crosstalk_memview_break(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(num_txt)) { num_txt[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(num_txt)) { num_txt[pos] = arg[at]; pos++; at++; }
 
     num_txt[pos] = LDG_STR_TERM;
 
@@ -7600,25 +7600,25 @@ static uint32_t crosstalk_memview_break(crosstalk_ctx_t *ctx, const char *arg)
     {
         uint32_t scan = at;
 
-        while (arg[scan] == ' ') { scan = scan + 0x1; }
+        while (arg[scan] == ' ') { scan++; }
 
         if (arg[scan] == LDG_STR_TERM) { break; }
 
         pos = 0;
 
-        while (arg[scan] != LDG_STR_TERM && arg[scan] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(num_txt)) { num_txt[pos] = arg[scan]; pos = pos + 0x1; scan = scan + 0x1; }
+        while (arg[scan] != LDG_STR_TERM && arg[scan] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(num_txt)) { num_txt[pos] = arg[scan]; pos++; scan++; }
 
         num_txt[pos] = LDG_STR_TERM;
 
         if (crosstalk_addr_tok_parse(ctx, num_txt, &addr[addr_cunt]) != LDG_ERR_AOK) { break; }
 
         at = scan;
-        addr_cunt = addr_cunt + 0x1;
+        addr_cunt++;
     }
 
     if (addr_cunt == 0) { return LDG_ERR_UNSUPPORTED; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] != LDG_STR_TERM) { return LDG_ERR_UNSUPPORTED; }
 
@@ -7668,33 +7668,33 @@ static void crosstalk_memview_watch(crosstalk_ctx_t *ctx, const char *arg)
     {
         uint32_t scan = at;
 
-        while (arg[scan] == ' ') { scan = scan + 0x1; }
+        while (arg[scan] == ' ') { scan++; }
 
         if (arg[scan] == LDG_STR_TERM || arg[scan] == LDG_ASCII_QUOTE) { break; }
 
         pos = 0;
 
-        while (arg[scan] != LDG_STR_TERM && arg[scan] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(num_txt)) { num_txt[pos] = arg[scan]; pos = pos + 0x1; scan = scan + 0x1; }
+        while (arg[scan] != LDG_STR_TERM && arg[scan] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(num_txt)) { num_txt[pos] = arg[scan]; pos++; scan++; }
 
         num_txt[pos] = LDG_STR_TERM;
 
         if (crosstalk_addr_tok_parse(ctx, num_txt, &addr[addr_cunt]) != LDG_ERR_AOK) { break; }
 
         at = scan;
-        addr_cunt = addr_cunt + 0x1;
+        addr_cunt++;
     }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_ASCII_QUOTE)
     {
         ascii_is = LDG_TRUTH_TRUE;
-        at = at + LDG_STR_TERM_SIZE;
+        at++;
     }
 
     pos = 0;
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != LDG_ASCII_QUOTE && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(text)) { text[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != LDG_ASCII_QUOTE && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(text)) { text[pos] = arg[at]; pos++; at++; }
 
     text[pos] = LDG_STR_TERM;
 
@@ -7706,21 +7706,21 @@ static void crosstalk_memview_watch(crosstalk_ctx_t *ctx, const char *arg)
         uint32_t kind = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_MOTION_CHANGED;
         uint32_t tail = 0;
 
-        for (tail = 0; text[tail] != LDG_STR_TERM; tail = tail + 0x1)
+        for (tail = 0; text[tail] != LDG_STR_TERM; tail++)
         {
             if (text[tail] != ' ') { continue; }
 
             text[tail] = LDG_STR_TERM;
 
-            tail = tail + 0x1;
+            tail++;
 
-            while (text[tail] == ' ') { tail = tail + 0x1; }
+            while (text[tail] == ' ') { tail++; }
 
             if (strncmp(&text[tail], CROSSTALK_CORE_MEMMOTION_RUN_TOK, sizeof(CROSSTALK_CORE_MEMMOTION_RUN_TOK) - LDG_STR_TERM_SIZE) != 0) { toast_push(ctx, CROSSTALK_CORE_MEMMOTION_USAGE_TEXT); return; }
 
             tail = tail + (uint32_t)sizeof(CROSSTALK_CORE_MEMMOTION_RUN_TOK) - LDG_STR_TERM_SIZE;
 
-            while (text[tail] == ' ') { tail = tail + 0x1; }
+            while (text[tail] == ' ') { tail++; }
 
             if (crosstalk_num_parse(&text[tail], &run) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMMOTION_USAGE_TEXT); return; }
 
@@ -7764,13 +7764,13 @@ static void crosstalk_memview_watch(crosstalk_ctx_t *ctx, const char *arg)
     if (addr_cunt == (uint32_t)CROSSTALK_CORE_MEMWATCH_ADDR_CUNT && text[0] == LDG_STR_TERM)
     {
         uint64_t val = addr[LDG_STR_TERM_SIZE];
-        uint32_t bytes = 0x1;
+        uint32_t bytes = 1;
         uint32_t byte_at = 0;
         uint32_t wrote = 0;
 
-        while (bytes < (uint32_t)LDG_WORD_BYTES && (val >> ((uint64_t)bytes * (uint64_t)LDG_BYTE_BITS)) != 0) { bytes = bytes + 0x1; }
+        while (bytes < (uint32_t)LDG_WORD_BYTES && (val >> ((uint64_t)bytes * (uint64_t)LDG_BYTE_BITS)) != 0) { bytes++; }
 
-        for (byte_at = 0; byte_at < bytes; byte_at = byte_at + 0x1)
+        for (byte_at = 0; byte_at < bytes; byte_at++)
         {
             int32_t put = ldg_str_fmt(&text[wrote], (uint64_t)(sizeof(text) - wrote), &fmt_len, CROSSTALK_CORE_MEMWATCH_BYTE_FMT, (val >> ((uint64_t)byte_at * (uint64_t)LDG_BYTE_BITS)) & (uint64_t)LDG_BYTE_MASK) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
@@ -7779,7 +7779,7 @@ static void crosstalk_memview_watch(crosstalk_ctx_t *ctx, const char *arg)
             wrote = wrote + (uint32_t)put;
         }
 
-        addr_cunt = 0x1;
+        addr_cunt = 1;
     }
 
     if (addr_cunt == (uint32_t)CROSSTALK_CORE_MEMWATCH_ADDR_CUNT)
@@ -7847,7 +7847,7 @@ static uint32_t crosstalk_memview_bytes_wr(crosstalk_ctx_t *ctx, uint64_t addr, 
 
     if (cunt == 0) { return LDG_ERR_AOK; }
 
-    if (LDG_UNLIKELY((uint64_t)cunt - 0x1 > UINT64_MAX - addr)) { return LDG_ERR_BOUNDS; }
+    if (LDG_UNLIKELY((uint64_t)cunt - 1 > UINT64_MAX - addr)) { return LDG_ERR_BOUNDS; }
 
     sig = crosstalk_memview_sig_get(ctx);
     ret = crosstalk_eda_ic_fpga_mem_width_get(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, sig, &width, &elem_width);
@@ -7856,9 +7856,9 @@ static uint32_t crosstalk_memview_bytes_wr(crosstalk_ctx_t *ctx, uint64_t addr, 
     if (LDG_UNLIKELY(elem_width > sizeof(uint64_t) * LDG_BYTE_BITS)) { return LDG_ERR_UNSUPPORTED; }
 
     elem_bytes = elem_width / (uint32_t)LDG_BYTE_BITS;
-    if (elem_bytes == 0) { elem_bytes = 0x1; }
+    if (elem_bytes == 0) { elem_bytes = 1; }
 
-    end = addr + (uint64_t)cunt - 0x1;
+    end = addr + (uint64_t)cunt - 1;
     if (LDG_UNLIKELY(end / elem_bytes >= width)) { return LDG_ERR_BOUNDS; }
 
     while (at < cunt)
@@ -7880,13 +7880,13 @@ static uint32_t crosstalk_memview_bytes_wr(crosstalk_ctx_t *ctx, uint64_t addr, 
 
         if (lead != 0 || span != elem_bytes)
         {
-            ret = crosstalk_eda_ic_fpga_mem_rd(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, sig, elem_at, &word, 0x1, &rd);
+            ret = crosstalk_eda_ic_fpga_mem_rd(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, sig, elem_at, &word, 1, &rd);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            if (LDG_UNLIKELY(rd != 0x1)) { return LDG_ERR_IO_RD; }
+            if (LDG_UNLIKELY(rd != 1)) { return LDG_ERR_IO_RD; }
         }
 
-        for (byte = 0; byte < span; byte = byte + 0x1)
+        for (byte = 0; byte < span; byte++)
         {
             uint32_t shift = 0;
 
@@ -7894,10 +7894,10 @@ static uint32_t crosstalk_memview_bytes_wr(crosstalk_ctx_t *ctx, uint64_t addr, 
             word = (word & ~((uint64_t)LDG_BYTE_MASK << shift)) | ((vals[at + byte] & (uint64_t)LDG_BYTE_MASK) << shift);
         }
 
-        ret = crosstalk_eda_ic_fpga_mem_wr(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, sig, elem_at, &word, 0x1, &wrote);
+        ret = crosstalk_eda_ic_fpga_mem_wr(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, sig, elem_at, &word, 1, &wrote);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (LDG_UNLIKELY(wrote != 0x1)) { return LDG_ERR_IO_WR; }
+        if (LDG_UNLIKELY(wrote != 1)) { return LDG_ERR_IO_WR; }
 
         at = at + span;
         *out_wrote = at;
@@ -7919,9 +7919,9 @@ static void crosstalk_memview_freeze(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -7929,7 +7929,7 @@ static void crosstalk_memview_freeze(crosstalk_ctx_t *ctx, const char *arg)
 
     if (strcmp(tok, CROSSTALK_CORE_OFF_TOK) == 0)
     {
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
         if (arg[at] == LDG_STR_TERM)
         {
@@ -7943,16 +7943,16 @@ static void crosstalk_memview_freeze(crosstalk_ctx_t *ctx, const char *arg)
 
         if (crosstalk_addr_parse(ctx, &arg[at], &addr) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_FREEZE_USAGE_TEXT); return; }
 
-        for (slot = 0; slot < ctx->freeze_cunt; slot = slot + 0x1)
+        for (slot = 0; slot < ctx->freeze_cunt; slot++)
         {
             if (ctx->freeze_addr[slot] != addr) { continue; }
 
-            ctx->freeze_addr[slot] = ctx->freeze_addr[ctx->freeze_cunt - 0x1];
-            ctx->freeze_len[slot] = ctx->freeze_len[ctx->freeze_cunt - 0x1];
+            ctx->freeze_addr[slot] = ctx->freeze_addr[ctx->freeze_cunt - 1];
+            ctx->freeze_len[slot] = ctx->freeze_len[ctx->freeze_cunt - 1];
 
-            memcpy(&ctx->freeze_val[slot][0], ctx->freeze_val[ctx->freeze_cunt - 0x1], sizeof(ctx->freeze_val[slot]));
+            memcpy(&ctx->freeze_val[slot][0], ctx->freeze_val[ctx->freeze_cunt - 1], sizeof(ctx->freeze_val[slot]));
 
-            ctx->freeze_cunt = ctx->freeze_cunt - 0x1;
+            ctx->freeze_cunt--;
 
             break;
         }
@@ -7965,7 +7965,7 @@ static void crosstalk_memview_freeze(crosstalk_ctx_t *ctx, const char *arg)
 
     if (crosstalk_addr_parse(ctx, tok, &addr) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_FREEZE_USAGE_TEXT); return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] != LDG_STR_TERM && crosstalk_addr_parse(ctx, &arg[at], &len) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_FREEZE_USAGE_TEXT); return; }
 
@@ -7973,7 +7973,7 @@ static void crosstalk_memview_freeze(crosstalk_ctx_t *ctx, const char *arg)
 
     if (len == 0 || len > (uint64_t)CROSSTALK_CORE_FREEZE_LEN_MAX) { toast_push(ctx, CROSSTALK_CORE_FREEZE_USAGE_TEXT); return; }
 
-    for (slot = 0; slot < ctx->freeze_cunt; slot = slot + 0x1) { if (ctx->freeze_addr[slot] == addr) { break; } }
+    for (slot = 0; slot < ctx->freeze_cunt; slot++) { if (ctx->freeze_addr[slot] == addr) { break; } }
 
     if (slot == ctx->freeze_cunt && ctx->freeze_cunt >= (uint32_t)CROSSTALK_CORE_FREEZE_MAX) { toast_push(ctx, CROSSTALK_CORE_FREEZE_FULL_TEXT); return; }
 
@@ -7988,7 +7988,7 @@ static void crosstalk_memview_freeze(crosstalk_ctx_t *ctx, const char *arg)
     ctx->freeze_addr[slot] = addr;
     ctx->freeze_len[slot] = (uint32_t)len;
 
-    if (slot == ctx->freeze_cunt) { ctx->freeze_cunt = ctx->freeze_cunt + 0x1; }
+    if (slot == ctx->freeze_cunt) { ctx->freeze_cunt++; }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "memview: freeze; addr: 0x%X64; bytes: %u64; held: %u32", addr, len, ctx->freeze_cunt);
 
@@ -8006,7 +8006,7 @@ static void crosstalk_memview_freeze_step(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    for (slot = 0; slot < ctx->freeze_cunt; slot = slot + 0x1)
+    for (slot = 0; slot < ctx->freeze_cunt; slot++)
     {
         uint32_t rd = 0;
         uint32_t wrote = 0;
@@ -8015,7 +8015,7 @@ static void crosstalk_memview_freeze_step(crosstalk_ctx_t *ctx)
 
         if (crosstalk_eda_ic_fpga_mem_byte_rd(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, crosstalk_memview_sig_get(ctx), ctx->freeze_addr[slot], now_val, ctx->freeze_len[slot], &rd) != LDG_ERR_AOK || rd < ctx->freeze_len[slot]) { continue; }
 
-        for (at = 0; at < ctx->freeze_len[slot]; at = at + 0x1)
+        for (at = 0; at < ctx->freeze_len[slot]; at++)
         {
             if ((now_val[at] & (uint64_t)LDG_BYTE_MASK) == (ctx->freeze_val[slot][at] & (uint64_t)LDG_BYTE_MASK)) { continue; }
 
@@ -8045,9 +8045,9 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(addr_txt)) { addr_txt[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(addr_txt)) { addr_txt[pos] = arg[at]; pos++; at++; }
 
     addr_txt[pos] = LDG_STR_TERM;
 
@@ -8058,9 +8058,9 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
         uint32_t src_at = at;
         uint32_t src_pos = 0;
 
-        while (arg[src_at] == ' ') { src_at = src_at + 0x1; }
+        while (arg[src_at] == ' ') { src_at++; }
 
-        while (arg[src_at] != LDG_STR_TERM && arg[src_at] != ' ' && src_pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(src_txt)) { src_txt[src_pos] = arg[src_at]; src_pos = src_pos + 0x1; src_at = src_at + 0x1; }
+        while (arg[src_at] != LDG_STR_TERM && arg[src_at] != ' ' && src_pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(src_txt)) { src_txt[src_pos] = arg[src_at]; src_pos++; src_at++; }
 
         src_txt[src_pos] = LDG_STR_TERM;
 
@@ -8091,7 +8091,7 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
         uint8_t hi = 0;
         uint8_t lo = 0;
 
-        if (arg[at] == ' ') { at = at + 0x1; continue; }
+        if (arg[at] == ' ') { at++; continue; }
 
         if (arg[at] != CROSSTALK_CORE_HEX_LEAD || (arg[at + LDG_STR_TERM_SIZE] != 'x' && arg[at + LDG_STR_TERM_SIZE] != 'X')) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
 
@@ -8099,14 +8099,14 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
 
         if (ldg_char_hex_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE || ldg_hex_to_nipple(arg[at], &hi) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
 
-        at = at + 0x1;
+        at++;
 
         if (ldg_char_hex_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE || ldg_hex_to_nipple(arg[at], &lo) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
 
-        at = at + 0x1;
+        at++;
 
         vals[val_cunt] = (uint64_t)hi * (uint64_t)LDG_BASE_HEX + (uint64_t)lo;
-        val_cunt = val_cunt + 0x1;
+        val_cunt++;
     }
 
     if (val_cunt == 0) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_USAGE_TEXT); return; }
@@ -8115,8 +8115,8 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
 
     if (addr >= (uint64_t)CROSSTALK_EDA_UI_MEMVIEW_IO_FIRST)
     {
-        uint64_t end = 0x0;
-        uint64_t qw_at = addr & ~((uint64_t)sizeof(uint64_t) - (uint64_t)0x1);
+        uint64_t end = 0;
+        uint64_t qw_at = addr & ~((uint64_t)sizeof(uint64_t) - (uint64_t)1);
 
         if (LDG_UNLIKELY((uint64_t)val_cunt > UINT64_MAX - addr)) { toast_push(ctx, CROSSTALK_CORE_MEMPOKE_FAIL_TEXT); return; }
 
@@ -8124,7 +8124,7 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
 
         while (qw_at < end)
         {
-            uint64_t word = 0x0;
+            uint64_t word = 0;
             uint32_t byte_at = 0;
 
             if (qw_at < addr || end - qw_at < sizeof(uint64_t))
@@ -8133,7 +8133,7 @@ static void crosstalk_memview_poke(crosstalk_ctx_t *ctx, const char *arg)
                 if (ret != LDG_ERR_AOK) { break; }
             }
 
-            for (byte_at = 0; byte_at < sizeof(uint64_t); byte_at = byte_at + 0x1)
+            for (byte_at = 0; byte_at < sizeof(uint64_t); byte_at++)
             {
                 uint64_t byte_addr = qw_at + (uint64_t)byte_at;
                 uint32_t shift = byte_at * (uint32_t)LDG_BYTE_BITS;
@@ -8207,7 +8207,7 @@ static void crosstalk_memview_open(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(sig)) { sig[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(sig)) { sig[pos] = arg[at]; pos++; at++; }
 
     sig[pos] = LDG_STR_TERM;
     pos = 0;
@@ -8216,9 +8216,9 @@ static void crosstalk_memview_open(crosstalk_ctx_t *ctx, const char *arg)
 
     if (strcmp(sig, CROSSTALK_CORE_MEMVIEW_SNAP_TOK) == 0) { crosstalk_memview_bake_mount(ctx, &arg[at], LDG_TRUTH_FALSE); return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rest)) { rest[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rest)) { rest[pos] = arg[at]; pos++; at++; }
 
     rest[pos] = LDG_STR_TERM;
 
@@ -8281,14 +8281,14 @@ static void crosstalk_text_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(sig)) { sig[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(sig)) { sig[pos] = arg[at]; pos++; at++; }
 
     sig[pos] = LDG_STR_TERM;
     pos = 0;
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rest)) { rest[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rest)) { rest[pos] = arg[at]; pos++; at++; }
 
     rest[pos] = LDG_STR_TERM;
 
@@ -8328,13 +8328,13 @@ static void crosstalk_gfx_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    for (tok_idx = 0; tok_idx < (uint32_t)CROSSTALK_CORE_GFX_TOK_CUNT; tok_idx = tok_idx + 0x1)
+    for (tok_idx = 0; tok_idx < (uint32_t)CROSSTALK_CORE_GFX_TOK_CUNT; tok_idx++)
     {
         uint32_t pos = 0;
 
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
-        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[tok_idx][pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[tok_idx][pos] = arg[at]; pos++; at++; }
 
         tok[tok_idx][pos] = LDG_STR_TERM;
     }
@@ -8395,13 +8395,13 @@ static void crosstalk_cgacast_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    for (tok_idx = 0; tok_idx < (uint32_t)CROSSTALK_CORE_GFX_TOK_CUNT; tok_idx = tok_idx + 0x1)
+    for (tok_idx = 0; tok_idx < (uint32_t)CROSSTALK_CORE_GFX_TOK_CUNT; tok_idx++)
     {
         uint32_t pos = 0;
 
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
-        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[tok_idx][pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[tok_idx][pos] = arg[at]; pos++; at++; }
 
         tok[tok_idx][pos] = LDG_STR_TERM;
     }
@@ -8451,28 +8451,28 @@ static void crosstalk_receptacle_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(data)) { data[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(data)) { data[pos] = arg[at]; pos++; at++; }
 
     data[pos] = LDG_STR_TERM;
     pos = 0;
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rdy)) { rdy[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(rdy)) { rdy[pos] = arg[at]; pos++; at++; }
 
     rdy[pos] = LDG_STR_TERM;
     pos = 0;
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(ack)) { ack[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(ack)) { ack[pos] = arg[at]; pos++; at++; }
 
     ack[pos] = LDG_STR_TERM;
     pos = 0;
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tail)) { tail[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tail)) { tail[pos] = arg[at]; pos++; at++; }
 
     tail[pos] = LDG_STR_TERM;
 
@@ -8520,7 +8520,7 @@ static void crosstalk_midi_attach(crosstalk_ctx_t *ctx, const char *arg)
     ret = crosstalk_eda_io_midi_port_cunt_get(&ctx->eda.midi, &port_cunt);
     if (ret != LDG_ERR_AOK) { return; }
 
-    for (idx = 0; idx < port_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < port_cunt; idx++)
     {
         if (crosstalk_eda_io_midi_port_name_get(&ctx->eda.midi, idx, &name) != LDG_ERR_AOK) { continue; }
 
@@ -8653,8 +8653,8 @@ static void crosstalk_memfind(crosstalk_ctx_t *ctx, const char *arg)
     while (arg[at] != LDG_STR_TERM && arg[at] != LDG_ASCII_QUOTE && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(text))
     {
         text[pos] = arg[at];
-        pos = pos + 0x1;
-        at = at + 0x1;
+        pos++;
+        at++;
     }
 
     text[pos] = LDG_STR_TERM;
@@ -8870,7 +8870,7 @@ static void crosstalk_verb_water(crosstalk_ctx_t *ctx, const char *arg)
         if (ldg_char_digit_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE || mins > (uint64_t)CROSSTALK_CORE_WATER_MINS_MAX) { toast_push(ctx, CROSSTALK_CORE_WATER_USAGE_TEXT); return; }
 
         mins = mins * (uint64_t)LDG_BASE_DEC + ((uint64_t)arg[at] - 0x30);
-        at = at + 0x1;
+        at++;
     }
 
     if (mins == 0 || mins > (uint64_t)CROSSTALK_CORE_WATER_MINS_MAX) { toast_push(ctx, CROSSTALK_CORE_WATER_USAGE_TEXT); return; }
@@ -9044,7 +9044,7 @@ static uint32_t crosstalk_remote_cmd_queue(crosstalk_ctx_t *ctx, const uint8_t *
     ret = crosstalk_remote_cmdline_decode(payload, len, ctx->remote_cmd[slot], (uint32_t)sizeof(ctx->remote_cmd[slot]));
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    ctx->remote_cmd_cunt = ctx->remote_cmd_cunt + 0x1;
+    ctx->remote_cmd_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -9786,7 +9786,7 @@ static uint8_t crosstalk_term_idx_parse(const char *arg, uint32_t *out)
         if (ldg_char_digit_is((uint8_t)arg[at]) != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
 
         val = val * (uint32_t)LDG_BASE_DEC + ((uint32_t)arg[at] - 0x30);
-        at = at + 0x1;
+        at++;
     }
 
     if (val >= (uint32_t)CROSSTALK_EDA_UI_TERM_SESH_MAX) { return LDG_TRUTH_FALSE; }
@@ -9904,7 +9904,7 @@ static void crosstalk_verb_term(crosstalk_ctx_t *ctx, const char *arg)
     {
         const char *tail = arg + sizeof(CROSSTALK_CORE_TERM_CLOSE_WORD) - LDG_STR_TERM_SIZE;
 
-        while (tail[0] == ' ') { tail = tail + 0x1; }
+        while (tail[0] == ' ') { tail++; }
 
         if (crosstalk_term_idx_parse(tail, &sesh_idx) != LDG_TRUTH_TRUE) { sesh_idx = ctx->eda.term.sesh_active; }
 
@@ -9960,7 +9960,7 @@ static uint32_t crosstalk_emu_net_open(crosstalk_ctx_t *ctx)
     ret = crosstalk_emu_net_init(&ctx->emu_net, ctx->emu_net_path);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (crosstalk_eda_ic_fpga_emu_abi_get(&ctx->eda.fpga_emu, &abi) == LDG_ERR_AOK && (abi->net_drain == 0x0 || abi->net_feed == 0x0)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the core has no network exports; drain: %u32; feed: %u32", abi->net_drain != 0x0 ? 0x1 : 0x0, abi->net_feed != 0x0 ? 0x1 : 0x0); }
+    if (crosstalk_eda_ic_fpga_emu_abi_get(&ctx->eda.fpga_emu, &abi) == LDG_ERR_AOK && (abi->net_drain == 0x0 || abi->net_feed == 0x0)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the core has no network exports; drain: %u32; feed: %u32", abi->net_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, abi->net_feed != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
 
     return LDG_ERR_AOK;
 }
@@ -10063,13 +10063,13 @@ static uint32_t crosstalk_emu_power_cycle(crosstalk_ctx_t *ctx)
 
     crosstalk_fpga_in_ports_carry(ctx);
 
-    for (at = 0; crosstalk_eda_ic_fpga_mem_watch_get(&ctx->eda.fpga, at, &watch) == LDG_ERR_AOK && watch != 0x0; at = at + 0x1)
+    for (at = 0; crosstalk_eda_ic_fpga_mem_watch_get(&ctx->eda.fpga, at, &watch) == LDG_ERR_AOK && watch != 0x0; at++)
     {
         if (watch->slot_idx != (uint32_t)CROSSTALK_CORE_TERM_SLOT) { continue; }
 
-        if (ldg_str_rbrcpy(sig, watch->sig, (uint64_t)sizeof(sig)) != LDG_ERR_AOK) { fail_cunt = fail_cunt + 0x1; continue; }
+        if (ldg_str_rbrcpy(sig, watch->sig, (uint64_t)sizeof(sig)) != LDG_ERR_AOK) { fail_cunt++; continue; }
 
-        if (ldg_str_rbrcpy(img_path, watch->path, (uint64_t)sizeof(img_path)) != LDG_ERR_AOK) { fail_cunt = fail_cunt + 0x1; continue; }
+        if (ldg_str_rbrcpy(img_path, watch->path, (uint64_t)sizeof(img_path)) != LDG_ERR_AOK) { fail_cunt++; continue; }
 
         word_off = watch->word_off;
 
@@ -10078,11 +10078,11 @@ static uint32_t crosstalk_emu_power_cycle(crosstalk_ctx_t *ctx)
         {
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: power cycle image reload failed; sig: %.63s; path: %.127s; err: %u32", sig, img_path, ret);
 
-            fail_cunt = fail_cunt + 0x1;
+            fail_cunt++;
             continue;
         }
 
-        imgs = imgs + 0x1;
+        imgs++;
     }
 
     crosstalk_fpga_resume(ctx, was_live);
@@ -10123,7 +10123,7 @@ static uint32_t crosstalk_re_diff_side_run(crosstalk_ctx_t *ctx, uint32_t side_i
     ret = crosstalk_eda_ic_fpga_slot_abi_get(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, &abi);
     if (ret != LDG_ERR_AOK || abi == 0x0 || abi->ok != LDG_TRUTH_TRUE || abi->state_get == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    for (at = 0; at < ctx->re.diff.mask_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->re.diff.mask_cunt; at++)
     {
         uint32_t idx = abi->sig_find != 0x0 ? abi->sig_find(ctx->re.diff.mask_name[at]) : (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE;
 
@@ -10145,7 +10145,7 @@ static uint32_t crosstalk_re_diff_side_run(crosstalk_ctx_t *ctx, uint32_t side_i
 
         sentinel = sp;
 
-        for (arg_at = 0; arg_at < ctx->re.diff.arg_cunt; arg_at = arg_at + 0x1)
+        for (arg_at = 0; arg_at < ctx->re.diff.arg_cunt; arg_at++)
         {
             if (ldg_str_fmt(reg, (uint64_t)sizeof(reg), &fmt_len, "dr%u32", arg_at) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
@@ -10158,8 +10158,8 @@ static uint32_t crosstalk_re_diff_side_run(crosstalk_ctx_t *ctx, uint32_t side_i
         ret = crosstalk_eda_ic_fpga_sig_poke(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, reg, sp, LDG_TRUTH_TRUE);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re diff: sp poke failed; err: %u32", ret); return ret; }
 
-        ret = crosstalk_eda_ic_fpga_mem_wr(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, side->sig, sp / (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_ELEM_BYTES, &sentinel, 0x1, &wrote);
-        if (ret != LDG_ERR_AOK || wrote != 0x1) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re diff: sentinel write failed; sp: 0x%X64; err: %u32", sp, ret); return ret != LDG_ERR_AOK ? ret : LDG_ERR_IO_WR; }
+        ret = crosstalk_eda_ic_fpga_mem_wr(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, side->sig, sp / (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_ELEM_BYTES, &sentinel, 1, &wrote);
+        if (ret != LDG_ERR_AOK || wrote != 1) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re diff: sentinel write failed; sp: 0x%X64; err: %u32", sp, ret); return ret != LDG_ERR_AOK ? ret : LDG_ERR_IO_WR; }
 
         ret = crosstalk_eda_ic_fpga_sig_poke(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, CROSSTALK_EDA_IC_FPGA_PROG_SIG, ctx->re.diff.entry[side_idx], LDG_TRUTH_TRUE);
         if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re diff: entry poke failed; err: %u32", ret); return ret; }
@@ -10260,11 +10260,11 @@ static uint32_t crosstalk_hlt_cause_bit_get(const char *tok, uint32_t *out)
 
     if (strcmp(tok, CROSSTALK_CORE_HLT_CAUSE_ALL) == 0)
     {
-        for (val = (uint32_t)CROSSTALK_HDL_ABI_CAUSE_MIN; val <= (uint32_t)CROSSTALK_HDL_ABI_CAUSE_MAX; val = val + 0x1)
+        for (val = (uint32_t)CROSSTALK_HDL_ABI_CAUSE_MIN; val <= (uint32_t)CROSSTALK_HDL_ABI_CAUSE_MAX; val++)
         {
             if (val == (uint32_t)CROSSTALK_HDL_ABI_CAUSE_UNALIGNED) { continue; }
 
-            *out = *out | ((uint32_t)0x1 << val);
+            *out = *out | ((uint32_t)1 << val);
         }
 
         return LDG_ERR_AOK;
@@ -10280,7 +10280,7 @@ static uint32_t crosstalk_hlt_cause_bit_get(const char *tok, uint32_t *out)
 
     if (val < (uint32_t)CROSSTALK_HDL_ABI_CAUSE_MIN || val > (uint32_t)CROSSTALK_HDL_ABI_CAUSE_MAX) { return LDG_ERR_RANGE; }
 
-    *out = (uint32_t)0x1 << val;
+    *out = (uint32_t)1 << val;
 
     return LDG_ERR_AOK;
 }
@@ -10298,7 +10298,7 @@ static uint32_t crosstalk_hlt_mask_parse(const char *arg, uint32_t *out)
 
     while (arg[at] != LDG_STR_TERM)
     {
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
         if (arg[at] == LDG_STR_TERM) { break; }
 
@@ -10307,13 +10307,13 @@ static uint32_t crosstalk_hlt_mask_parse(const char *arg, uint32_t *out)
         while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_HLT_CAUSE_TOK_CAP)
         {
             tok[pos] = arg[at];
-            pos = pos + 0x1;
-            at = at + 0x1;
+            pos++;
+            at++;
         }
 
         tok[pos] = LDG_STR_TERM;
 
-        while (arg[at] != LDG_STR_TERM && arg[at] != ' ') { at = at + 0x1; }
+        while (arg[at] != LDG_STR_TERM && arg[at] != ' ') { at++; }
 
         if (crosstalk_hlt_cause_bit_get(tok, &bit) != LDG_ERR_AOK) { return LDG_ERR_FUNC_ARG_INVALID; }
 
@@ -10464,16 +10464,16 @@ static void crosstalk_dsu_span_push(crosstalk_ctx_t *ctx, const uint8_t *ram, ui
     span = end - start;
     if (span > (uint64_t)CROSSTALK_CORE_DSU_SPAN_MAX) { start = end - (uint64_t)CROSSTALK_CORE_DSU_SPAN_MAX; }
 
-    for (at = start; at < end; at = at + 0x1)
+    for (at = start; at < end; at++)
     {
         uint16_t norm = (uint16_t)((uint16_t)((ram[at] ^ (uint8_t)CROSSTALK_CORE_DSU_SIGN_FLIP) & (uint8_t)LDG_BYTE_MASK) << (uint16_t)LDG_BYTE_BITS);
 
         if (crosstalk_eda_logic_probe_sample_push(&ctx->eda.logic_probe, ctx->dsu_probe_handle, (uint64_t)ram[at], ctx->dsu_sample_at) != LDG_ERR_AOK) { break; }
 
-        ctx->dsu_sample_at = ctx->dsu_sample_at + 0x1;
+        ctx->dsu_sample_at++;
 
         pcm[fill] = (uint8_t)(norm & (uint16_t)LDG_BYTE_MASK);
-        pcm[fill + 0x1] = (uint8_t)((norm >> (uint16_t)LDG_BYTE_BITS) & (uint16_t)LDG_BYTE_MASK);
+        pcm[fill + 1] = (uint8_t)((norm >> (uint16_t)LDG_BYTE_BITS) & (uint16_t)LDG_BYTE_MASK);
         fill = fill + (uint32_t)CROSSTALK_CORE_DSU_PCM_BYTES;
 
         if (fill < (uint32_t)sizeof(pcm)) { continue; }
@@ -10494,7 +10494,7 @@ static uint8_t crosstalk_disk_persist_needed_is(const crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + 0x1) { if (crosstalk_eda_ic_fpga_emu_disk_live_is(&ctx->eda.fpga_emu, drive) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; } }
+    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++) { if (crosstalk_eda_ic_fpga_emu_disk_live_is(&ctx->eda.fpga_emu, drive) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; } }
 
     return LDG_TRUTH_FALSE;
 }
@@ -10505,7 +10505,7 @@ static void crosstalk_disk_persist(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + 0x1)
+    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
     {
         if (crosstalk_eda_ic_fpga_emu_disk_live_is(&ctx->eda.fpga_emu, drive) != LDG_TRUTH_TRUE) { continue; }
 
@@ -10517,9 +10517,9 @@ static void crosstalk_dsu_tick(crosstalk_ctx_t *ctx)
 {
     uint64_t dsu[CROSSTALK_HDL_ABI_DSU_CUNT] = LDG_ARR_ZERO_INIT;
     uint8_t pcm[CROSSTALK_CORE_DSU_PCM_CHUNK] = LDG_ARR_ZERO_INIT;
-    uint64_t got = 0x0;
-    uint64_t drained = 0x0;
-    uint32_t ret = 0x0;
+    uint64_t got = 0;
+    uint64_t drained = 0;
+    uint32_t ret = 0;
     const uint8_t *ram = 0x0;
     uint64_t *base_ptr = 0x0;
     uint64_t ram_bytes = 0;
@@ -10593,7 +10593,7 @@ static void crosstalk_verb_dsu(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (strcmp(&arg[at], CROSSTALK_CORE_DSU_PLAY_TOK) == 0)
     {
@@ -10656,17 +10656,17 @@ static void crosstalk_verb_disk(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (ldg_str_rbrcpy(path, &arg[at], (uint64_t)sizeof(path)) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_DISK_USAGE_TEXT); return; }
 
     len = strlen(path);
 
-    while (len != 0 && path[len - 0x1] == ' ') { len = len - 0x1; path[len] = LDG_STR_TERM; }
+    while (len != 0 && path[len - 1] == ' ') { len--; path[len] = LDG_STR_TERM; }
 
-    for (val = len; val != 0; val = val - 0x1) { if (path[val - 0x1] == ' ') { cut = val - 0x1; break; } }
+    for (val = len; val != 0; val--) { if (path[val - 1] == ' ') { cut = val - 1; break; } }
 
-    if (cut != UINT64_MAX && crosstalk_num_parse(&path[cut + 0x1], &val) == LDG_ERR_AOK)
+    if (cut != UINT64_MAX && crosstalk_num_parse(&path[cut + 1], &val) == LDG_ERR_AOK)
     {
         if (val >= (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX) { toast_push(ctx, CROSSTALK_CORE_DISK_DRIVE_BAD_TEXT); return; }
 
@@ -10674,7 +10674,7 @@ static void crosstalk_verb_disk(crosstalk_ctx_t *ctx, const char *arg)
         len = cut;
         path[len] = LDG_STR_TERM;
 
-        while (len != 0 && path[len - 0x1] == ' ') { len = len - 0x1; path[len] = LDG_STR_TERM; }
+        while (len != 0 && path[len - 1] == ' ') { len--; path[len] = LDG_STR_TERM; }
     }
     else if (cut == UINT64_MAX && len != 0 && crosstalk_num_parse(path, &val) == LDG_ERR_AOK)
     {
@@ -10694,7 +10694,7 @@ static void crosstalk_verb_disk(crosstalk_ctx_t *ctx, const char *arg)
 
     if (path[0] == LDG_STR_TERM)
     {
-        for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + 0x1)
+        for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
         {
             if (crosstalk_eda_ic_fpga_emu_disk_live_is(&ctx->eda.fpga_emu, drive) != LDG_TRUTH_TRUE) { continue; }
 
@@ -10789,7 +10789,7 @@ static void crosstalk_dlc_disks_attach(crosstalk_ctx_t *ctx)
     ret = ldg_io_path_join(ctx->res_dir, CROSSTALK_CORE_DLC_DISK_DIR_REL, dlc_dir, (uint64_t)sizeof(dlc_dir));
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dlc disk dir join failed"); return; }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_DLC_DISK_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_DLC_DISK_CUNT; idx++)
     {
         if (crosstalk_dlc_installed_is(ctx, app_id[idx]) != LDG_TRUTH_TRUE) { continue; }
 
@@ -10807,7 +10807,7 @@ static void crosstalk_dlc_disks_attach(crosstalk_ctx_t *ctx)
             continue;
         }
 
-        while (drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX && crosstalk_eda_ic_fpga_emu_disk_live_is(&ctx->eda.fpga_emu, drive) == LDG_TRUTH_TRUE) { drive = drive + 0x1; }
+        while (drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX && crosstalk_eda_ic_fpga_emu_disk_live_is(&ctx->eda.fpga_emu, drive) == LDG_TRUTH_TRUE) { drive++; }
 
         if (drive >= (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX)
         {
@@ -10840,11 +10840,11 @@ static void crosstalk_verb_on(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
-        for (event = 0; event < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; event = event + 0x1)
+        for (event = 0; event < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; event++)
         {
             if (crosstalk_eda_script_event_get(&ctx->eda.script, event, &path) != LDG_ERR_AOK) { continue; }
 
@@ -10854,7 +10854,7 @@ static void crosstalk_verb_on(crosstalk_ctx_t *ctx, const char *arg)
 
             if (crosstalk_core_cmdline_out_push(&ctx->cmdline, line) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "event list push failed"); }
 
-            bound = bound + 0x1;
+            bound++;
         }
 
         if (bound == 0) { toast_push(ctx, CROSSTALK_CORE_EVENT_NONE_TEXT); }
@@ -10862,7 +10862,7 @@ static void crosstalk_verb_on(crosstalk_ctx_t *ctx, const char *arg)
         return;
     }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -10873,7 +10873,7 @@ static void crosstalk_verb_on(crosstalk_ctx_t *ctx, const char *arg)
         return;
     }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -10915,7 +10915,7 @@ static void crosstalk_verb_privacy(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    if (arg != 0x0) { while (arg[at] == LDG_ASCII_SPACE) { at = at + CROSSTALK_CORE_PRIVACY_STEP; } }
+    if (arg != 0x0) { while (arg[at] == LDG_ASCII_SPACE) { at++; } }
 
     ctx->privacy_on = (arg != 0x0 && strcmp(&arg[at], CROSSTALK_CORE_OFF_TOK) == 0) ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
 
@@ -10946,7 +10946,7 @@ static void crosstalk_verb_hlt(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    if (arg != 0x0) { while (arg[at] == ' ') { at = at + 0x1; } }
+    if (arg != 0x0) { while (arg[at] == ' ') { at++; } }
 
     if (arg != 0x0 && strcmp(&arg[at], CROSSTALK_CORE_OFF_TOK) == 0) { on = LDG_TRUTH_FALSE; }
 
@@ -11055,16 +11055,16 @@ static void crosstalk_verb_delay(crosstalk_ctx_t *ctx, const char *arg)
     char tok[CROSSTALK_CORE_SOUND_ARG_CAP] = LDG_ARR_ZERO_INIT;
     char note[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t val = 0;
-    uint64_t mult = 0x1;
+    uint64_t mult = 1;
     uint64_t span_ns = 0;
     uint32_t at = 0;
     uint32_t pos = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -11075,13 +11075,13 @@ static void crosstalk_verb_delay(crosstalk_ctx_t *ctx, const char *arg)
         return;
     }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] != LDG_STR_TERM)
     {
         pos = 0;
 
-        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
         tok[pos] = LDG_STR_TERM;
 
@@ -11133,7 +11133,7 @@ static uint32_t crosstalk_watch_worker(uint32_t worker_id, void *arg)
 
         if (ldg_mut_unlock(&ctx->watch_mut) != LDG_ERR_AOK) { continue; }
 
-        for (at = 0; at < cunt && LDG_LD_ACQUIRE(ctx->watch_stop) != LDG_TRUTH_TRUE; at = at + 0x1)
+        for (at = 0; at < cunt && LDG_LD_ACQUIRE(ctx->watch_stop) != LDG_TRUTH_TRUE; at++)
         {
             ldg_io_info_t info = LDG_STRUCT_ZERO_INIT;
             uint64_t mtime = 0;
@@ -11206,7 +11206,7 @@ static void crosstalk_watch_entry_put(crosstalk_ctx_t *ctx, uint32_t *cunt, uint
     ctx->watch_kind[at] = kind;
     ctx->watch_slot[at] = slot_idx;
 
-    *cunt = at + 0x1;
+    *cunt = at + 1;
 }
 
 static void crosstalk_watch_sync(crosstalk_ctx_t *ctx)
@@ -11228,7 +11228,7 @@ static void crosstalk_watch_sync(crosstalk_ctx_t *ctx)
 
     if (crosstalk_eda_ic_fpga_emu_live_is(&ctx->eda.fpga_emu) == LDG_TRUTH_TRUE) { crosstalk_watch_entry_put(ctx, &cunt, (uint32_t)CROSSTALK_CORE_WATCH_KIND_EMU, CROSSTALK_CORE_TERM_SLOT, ctx->eda.fpga_emu.path); }
 
-    for (at = 0; crosstalk_eda_ic_fpga_mem_watch_get(&ctx->eda.fpga, at, &watch) == LDG_ERR_AOK && watch != 0x0; at = at + 0x1) { crosstalk_watch_entry_put(ctx, &cunt, (uint32_t)CROSSTALK_CORE_WATCH_KIND_MEM, watch->slot_idx, watch->path); }
+    for (at = 0; crosstalk_eda_ic_fpga_mem_watch_get(&ctx->eda.fpga, at, &watch) == LDG_ERR_AOK && watch != 0x0; at++) { crosstalk_watch_entry_put(ctx, &cunt, (uint32_t)CROSSTALK_CORE_WATCH_KIND_MEM, watch->slot_idx, watch->path); }
 
     ctx->watch_cunt = cunt;
 
@@ -11258,7 +11258,7 @@ static void crosstalk_watch_tick(crosstalk_ctx_t *ctx)
 
     if (ldg_mut_lock(&ctx->watch_mut) != LDG_ERR_AOK) { return; }
 
-    for (at = 0; at < ctx->watch_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->watch_cunt; at++)
     {
         if (ctx->watch_stale[at] != LDG_TRUTH_TRUE) { continue; }
 
@@ -11295,7 +11295,7 @@ static void crosstalk_watch_tick(crosstalk_ctx_t *ctx)
         return;
     }
 
-    for (at = 0; crosstalk_eda_ic_fpga_mem_watch_get(&ctx->eda.fpga, at, &watch) == LDG_ERR_AOK && watch != 0x0; at = at + 0x1)
+    for (at = 0; crosstalk_eda_ic_fpga_mem_watch_get(&ctx->eda.fpga, at, &watch) == LDG_ERR_AOK && watch != 0x0; at++)
     {
         if (strcmp(watch->path, path) != 0) { continue; }
 
@@ -11454,7 +11454,7 @@ static uint32_t crosstalk_script_sect_dir_rd(const char *path, uint32_t *out_len
     {
         span = (uint32_t)CROSSTALK_SCRIPT_DIR_BYTES;
 
-        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
         {
             memcpy(&out_len_arr[at], buff + (uint64_t)CROSSTALK_SCRIPT_DIR_MAGIC_LEN + (uint64_t)at * sizeof(uint32_t), sizeof(uint32_t));
             span = span + out_len_arr[at];
@@ -11506,7 +11506,7 @@ static uint32_t crosstalk_script_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
 
     dir_len[ctx->editor_kind] = slot_len;
     need = (uint32_t)CROSSTALK_SCRIPT_DIR_BYTES;
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1) { need = need + dir_len[at]; }
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++) { need = need + dir_len[at]; }
 
     ret = ldg_mem_alloc((uint64_t)need, (void **)&buff);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
@@ -11520,7 +11520,7 @@ static uint32_t crosstalk_script_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
     memcpy(buff, CROSSTALK_SCRIPT_DIR_MAGIC, (uint64_t)CROSSTALK_SCRIPT_DIR_MAGIC_LEN);
     off = (uint32_t)CROSSTALK_SCRIPT_DIR_MAGIC_LEN;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
     {
         memcpy(buff + off, &dir_len[at], sizeof(uint32_t));
         off = off + (uint32_t)sizeof(uint32_t);
@@ -11531,7 +11531,7 @@ static uint32_t crosstalk_script_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
         uint32_t src_at = (uint32_t)CROSSTALK_SCRIPT_DIR_BYTES;
         uint32_t dst_at = (uint32_t)CROSSTALK_SCRIPT_DIR_BYTES;
 
-        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at = at + 0x1)
+        for (at = 0; at < (uint32_t)CROSSTALK_CORE_EDITOR_KIND_CUNT; at++)
         {
             uint32_t src_len = 0;
 
@@ -11549,7 +11549,7 @@ static uint32_t crosstalk_script_sect_build(crosstalk_ctx_t *ctx, uint8_t **out_
     if (slot_len > 0)
     {
         off = (uint32_t)CROSSTALK_SCRIPT_DIR_BYTES;
-        for (at = 0; at < (uint32_t)ctx->editor_kind; at = at + 0x1) { off = off + dir_len[at]; }
+        for (at = 0; at < (uint32_t)ctx->editor_kind; at++) { off = off + dir_len[at]; }
 
         ret = crosstalk_eda_script_state_serialize(&ctx->eda.script, buff + off, slot_len, &slot_len);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
@@ -11797,7 +11797,7 @@ static uint32_t crosstalk_script_sect_restore(crosstalk_ctx_t *ctx)
 
     slot_len = dir_len[ctx->editor_kind];
     slot_off = (uint32_t)CROSSTALK_SCRIPT_DIR_BYTES;
-    for (at = 0; at < (uint32_t)ctx->editor_kind; at = at + 0x1) { slot_off = slot_off + dir_len[at]; }
+    for (at = 0; at < (uint32_t)ctx->editor_kind; at++) { slot_off = slot_off + dir_len[at]; }
 
     if (slot_len == 0)
     {
@@ -11867,9 +11867,9 @@ static void crosstalk_scope_mem(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -11884,11 +11884,11 @@ static void crosstalk_scope_mem(crosstalk_ctx_t *ctx, const char *arg)
 
     if (crosstalk_addr_parse(ctx, tok, &addr) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_SCOPE_MEM_USAGE_TEXT); return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     pos = 0;
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(width_tok)) { width_tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(width_tok)) { width_tok[pos] = arg[at]; pos++; at++; }
 
     width_tok[pos] = LDG_STR_TERM;
 
@@ -11900,7 +11900,7 @@ static void crosstalk_scope_mem(crosstalk_ctx_t *ctx, const char *arg)
 
     if (crosstalk_scope_width_get(width_tok, &width) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_SCOPE_MEM_USAGE_TEXT); return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (strncmp(&arg[at], CROSSTALK_CORE_SCOPE_FIXED_TOK, sizeof(CROSSTALK_CORE_SCOPE_FIXED_TOK) - LDG_STR_TERM_SIZE) == 0) { fixed = LDG_TRUTH_TRUE; }
 
@@ -11925,9 +11925,9 @@ static void crosstalk_scope_xy(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -11942,7 +11942,7 @@ static void crosstalk_scope_xy(crosstalk_ctx_t *ctx, const char *arg)
 
     if (crosstalk_num_parse(tok, &trace_x) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_SCOPE_XY_USAGE_TEXT); return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (crosstalk_num_parse(&arg[at], &trace_y) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_SCOPE_XY_USAGE_TEXT); return; }
 
@@ -12013,7 +12013,7 @@ static uint32_t crosstalk_serial_str_decode(const char *src, uint8_t *out, uint3
 
     if (src[at] != '"') { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    at = at + 0x1;
+    at++;
 
     while (src[at] != LDG_STR_TERM && src[at] != '"')
     {
@@ -12021,7 +12021,7 @@ static uint32_t crosstalk_serial_str_decode(const char *src, uint8_t *out, uint3
 
         if (ch == '\\')
         {
-            at = at + 0x1;
+            at++;
 
             if (src[at] == 'n') { ch = '\n'; }
             else if (src[at] == 'r') { ch = '\r'; }
@@ -12034,14 +12034,14 @@ static uint32_t crosstalk_serial_str_decode(const char *src, uint8_t *out, uint3
         if (pos >= cap) { return LDG_ERR_OVERFLOW; }
 
         out[pos] = (uint8_t)ch;
-        pos = pos + 0x1;
-        at = at + 0x1;
+        pos++;
+        at++;
     }
 
     if (src[at] != '"') { return LDG_ERR_FUNC_ARG_INVALID; }
 
     *out_len = pos;
-    *out_used = at + 0x1;
+    *out_used = at + 1;
 
     return LDG_ERR_AOK;
 }
@@ -12081,17 +12081,17 @@ static void crosstalk_serial_conf_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != '@' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(port)) { port[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != '@' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(port)) { port[pos] = arg[at]; pos++; at++; }
 
     port[pos] = LDG_STR_TERM;
 
     if (arg[at] != '@' || port[0] == LDG_STR_TERM) { toast_push(ctx, CROSSTALK_CORE_SERIAL_CONF_BAD_TEXT); return; }
 
-    at = at + 0x1;
+    at++;
 
     pos = 0;
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ':' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ':' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -12106,30 +12106,30 @@ static void crosstalk_serial_conf_attach(crosstalk_ctx_t *ctx, const char *arg)
 
     if (arg[at] == ':')
     {
-        at = at + 0x1;
+        at++;
 
         if (arg[at] == 'O') { conf.parity = LDG_IO_SERIAL_PARITY_ODD; }
         else if (arg[at] == 'E') { conf.parity = LDG_IO_SERIAL_PARITY_EVEN; }
         else if (arg[at] != 'N') { toast_push(ctx, CROSSTALK_CORE_SERIAL_CONF_BAD_TEXT); return; }
 
-        at = at + 0x1;
+        at++;
     }
 
     if (arg[at] == ':')
     {
-        at = at + 0x1;
+        at++;
 
         if (arg[at] == '5') { conf.data = LDG_IO_SERIAL_DATA_5; }
         else if (arg[at] == '6') { conf.data = LDG_IO_SERIAL_DATA_6; }
         else if (arg[at] == '7') { conf.data = LDG_IO_SERIAL_DATA_7; }
         else if (arg[at] != '8') { toast_push(ctx, CROSSTALK_CORE_SERIAL_CONF_BAD_TEXT); return; }
 
-        at = at + 0x1;
+        at++;
     }
 
     if (arg[at] == ':')
     {
-        at = at + 0x1;
+        at++;
 
         tok[0] = arg[at];
         tok[LDG_STR_TERM_SIZE] = LDG_STR_TERM;
@@ -12184,8 +12184,8 @@ static void crosstalk_serial_val_tx(crosstalk_ctx_t *ctx, const char *name, uint
     memcpy(tok, name, (uint64_t)name_len);
     tok[name_len] = LDG_STR_TERM;
 
-    if (crosstalk_eda_ic_fpga_sig_peek(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, tok, &val, &width) == LDG_ERR_AOK) { cunt = (width + (uint32_t)LDG_BYTE_BITS - 0x1) / (uint32_t)LDG_BYTE_BITS; }
-    else if (crosstalk_num_parse(tok, &val) == LDG_ERR_AOK) { cunt = 0x1; while ((val >> (cunt * (uint32_t)LDG_BYTE_BITS)) != 0 && cunt < (uint32_t)LDG_WORD_BYTES) { cunt = cunt + 0x1; } }
+    if (crosstalk_eda_ic_fpga_sig_peek(&ctx->eda.fpga, CROSSTALK_CORE_TERM_SLOT, tok, &val, &width) == LDG_ERR_AOK) { cunt = (width + (uint32_t)LDG_BYTE_BITS - 1) / (uint32_t)LDG_BYTE_BITS; }
+    else if (crosstalk_num_parse(tok, &val) == LDG_ERR_AOK) { cunt = 1; while ((val >> (cunt * (uint32_t)LDG_BYTE_BITS)) != 0 && cunt < (uint32_t)LDG_WORD_BYTES) { cunt++; } }
     else
     {
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "serial: value unresolved; name: %.63s", tok);
@@ -12196,7 +12196,7 @@ static void crosstalk_serial_val_tx(crosstalk_ctx_t *ctx, const char *name, uint
 
     if (cunt == 0 || cunt > (uint32_t)LDG_WORD_BYTES) { cunt = (uint32_t)LDG_WORD_BYTES; }
 
-    for (at = 0; at < cunt; at = at + 0x1) { bytes[at] = (uint8_t)((val >> ((cunt - 0x1 - at) * (uint32_t)LDG_BYTE_BITS)) & (uint64_t)LDG_BYTE_MASK); }
+    for (at = 0; at < cunt; at++) { bytes[at] = (uint8_t)((val >> ((cunt - 1 - at) * (uint32_t)LDG_BYTE_BITS)) & (uint64_t)LDG_BYTE_MASK); }
 
     crosstalk_serial_bytes_tx(ctx, bytes, cunt);
 }
@@ -12218,7 +12218,7 @@ static void crosstalk_serial_map_arm(crosstalk_ctx_t *ctx, const char *rest)
 
     if (rest[at] == ':')
     {
-        at = at + 0x1;
+        at++;
 
         if (crosstalk_serial_str_decode(&rest[at], action, (uint32_t)sizeof(action) - LDG_STR_TERM_SIZE, &action_len, &used) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_SERIAL_TX_FAIL_TEXT); return; }
     }
@@ -12231,7 +12231,7 @@ static void crosstalk_serial_map_arm(crosstalk_ctx_t *ctx, const char *rest)
     if (action_len != 0) { memcpy(ctx->serial_map_action[ctx->serial_map_cunt], action, (uint64_t)action_len); }
 
     ctx->serial_map_action[ctx->serial_map_cunt][action_len] = LDG_STR_TERM;
-    ctx->serial_map_cunt = ctx->serial_map_cunt + 0x1;
+    ctx->serial_map_cunt++;
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "serial: listener armed; pattern bytes: %u32; action bytes: %u32; maps: %u32", pattern_len, action_len, ctx->serial_map_cunt);
     toast_push(ctx, CROSSTALK_CORE_SERIAL_MAP_ON_TEXT);
@@ -12247,7 +12247,7 @@ static void crosstalk_verb_serial(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM) { crosstalk_serial_list_log(ctx); return; }
 
@@ -12325,9 +12325,9 @@ static void crosstalk_verb_profile(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -12340,7 +12340,7 @@ static void crosstalk_verb_profile(crosstalk_ctx_t *ctx, const char *arg)
 
     if (strcmp(tok, CROSSTALK_CORE_PROFILE_START_TOK) == 0)
     {
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
         ret = crosstalk_eda_ui_profile_mark_start(&ctx->eda.profile, &arg[at]);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "profile capture start failed"); return; }
@@ -12389,9 +12389,9 @@ static void crosstalk_verb_prof(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos++; at++; }
 
     tok[pos] = LDG_STR_TERM;
 
@@ -12432,14 +12432,14 @@ static uint32_t crosstalk_script_args_join(const crosstalk_eda_script_val_t *arg
 
     out[0] = LDG_STR_TERM;
 
-    for (idx = 0; idx < arg_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < arg_cunt; idx++)
     {
         int32_t put = 0;
 
         if (pos != 0 && pos + LDG_STR_TERM_SIZE < cap)
         {
             out[pos] = ' ';
-            pos = pos + 0x1;
+            pos++;
             out[pos] = LDG_STR_TERM;
         }
 
@@ -12452,7 +12452,7 @@ static uint32_t crosstalk_script_args_join(const crosstalk_eda_script_val_t *arg
             if (arg[idx].quoted == LDG_TRUTH_TRUE)
             {
                 out[pos] = LDG_ASCII_QUOTE;
-                pos = pos + 0x1;
+                pos++;
             }
 
             memcpy(&out[pos], arg[idx].bytes, arg[idx].bytes_len);
@@ -12461,7 +12461,7 @@ static uint32_t crosstalk_script_args_join(const crosstalk_eda_script_val_t *arg
             if (arg[idx].quoted == LDG_TRUTH_TRUE)
             {
                 out[pos] = LDG_ASCII_QUOTE;
-                pos = pos + 0x1;
+                pos++;
             }
 
             out[pos] = LDG_STR_TERM;
@@ -12686,7 +12686,7 @@ static void crosstalk_verb_guide(crosstalk_ctx_t *ctx, const char *arg)
     {
         used = (ldg_str_fmt(list, (uint64_t)sizeof(list), &fmt_len, "guide <name>; names:") == LDG_ERR_AOK ? (uint32_t)fmt_len : 0);
 
-        for (idx = 0; crosstalk_ui_guide_name_get(&ctx->guide, idx, &name) == LDG_ERR_AOK && used < (uint32_t)sizeof(list); idx = idx + 0x1) { used = used + (ldg_str_fmt(list + used, (uint64_t)(sizeof(list) - used), &fmt_len, " %.31s", name) == LDG_ERR_AOK ? (uint32_t)fmt_len : 0); }
+        for (idx = 0; crosstalk_ui_guide_name_get(&ctx->guide, idx, &name) == LDG_ERR_AOK && used < (uint32_t)sizeof(list); idx++) { used = used + (ldg_str_fmt(list + used, (uint64_t)(sizeof(list) - used), &fmt_len, " %.31s", name) == LDG_ERR_AOK ? (uint32_t)fmt_len : 0); }
 
         toast_push(ctx, list);
         return;
@@ -12722,7 +12722,7 @@ static void crosstalk_verb_feed(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -12732,12 +12732,12 @@ static void crosstalk_verb_feed(crosstalk_ctx_t *ctx, const char *arg)
     }
 
     pos = 0;
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos++; at++; }
     tok[pos] = LDG_STR_TERM;
 
     if (strcmp(tok, "off") == 0)
     {
-        if (crosstalk_eda_ui_feed_lane_cunt_get(&ctx->eda.feed, &lane_cunt) == LDG_ERR_AOK) { for (idx = 0; idx < lane_cunt; idx = idx + 0x1)
+        if (crosstalk_eda_ui_feed_lane_cunt_get(&ctx->eda.feed, &lane_cunt) == LDG_ERR_AOK) { for (idx = 0; idx < lane_cunt; idx++)
             {
                 if (crosstalk_eda_ui_feed_lane_handle_get(&ctx->eda.feed, idx, &probe_handle) != LDG_ERR_AOK) { continue; }
 
@@ -12772,7 +12772,7 @@ static void crosstalk_verb_feed(crosstalk_ctx_t *ctx, const char *arg)
 
                 ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "feed: lane already present; sig: %.63s", tok);
 
-                added = added + 0x1;
+                added++;
             }
             else if (ret != LDG_ERR_AOK)
             {
@@ -12783,15 +12783,15 @@ static void crosstalk_verb_feed(crosstalk_ctx_t *ctx, const char *arg)
             }
             else
             {
-                added = added + 0x1;
+                added++;
                 ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "feed: lane; sig: %.63s; probe: %u32; width: %u32", tok, probe_handle, ctx->eda.logic_probe.probe[probe_handle].width);
             }
         }
 
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
         pos = 0;
-        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos++; at++; }
         tok[pos] = LDG_STR_TERM;
     }
 
@@ -12822,7 +12822,7 @@ static uint32_t crosstalk_analyzer_sig_attach(crosstalk_ctx_t *ctx, const crosst
 
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "analyzer: lane already present; sig: %.63s", sig);
 
-        *added = *added + 0x1;
+        (*added)++;
 
         return LDG_ERR_AOK;
     }
@@ -12836,7 +12836,7 @@ static uint32_t crosstalk_analyzer_sig_attach(crosstalk_ctx_t *ctx, const crosst
         return LDG_ERR_FULL;
     }
 
-    *added = *added + 0x1;
+    (*added)++;
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "analyzer: lane; sig: %.63s; probe: %u32; width: %u32", sig, probe_handle, ctx->eda.logic_probe.probe[probe_handle].width);
 
     return LDG_ERR_AOK;
@@ -12864,7 +12864,7 @@ static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -12874,12 +12874,12 @@ static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
     }
 
     pos = 0;
-    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+    while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos++; at++; }
     tok[pos] = LDG_STR_TERM;
 
     if (strcmp(tok, "off") == 0)
     {
-        if (crosstalk_eda_ui_analyzer_lane_cunt_get(&ctx->eda.analyzer, &lane_cunt) == LDG_ERR_AOK) { for (idx = 0; idx < lane_cunt; idx = idx + 0x1)
+        if (crosstalk_eda_ui_analyzer_lane_cunt_get(&ctx->eda.analyzer, &lane_cunt) == LDG_ERR_AOK) { for (idx = 0; idx < lane_cunt; idx++)
             {
                 if (crosstalk_eda_ui_analyzer_lane_handle_get(&ctx->eda.analyzer, idx, &probe_handle) != LDG_ERR_AOK) { continue; }
 
@@ -12895,7 +12895,7 @@ static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
 
     if (strcmp(tok, "span") == 0)
     {
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
         if (ldg_str_to_dec(&arg[at], &span) != LDG_ERR_AOK || crosstalk_eda_ui_analyzer_span_set(&ctx->eda.analyzer, (uint64_t)span) != LDG_ERR_AOK)
         {
@@ -12920,7 +12920,7 @@ static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
             toast_push(ctx, "analyzer sig refused");
         }
         else if (elem_lo == elem_hi) { ret = crosstalk_analyzer_sig_attach(ctx, exec, abi, tok, &added); }
-        else { for (elem = elem_lo; elem <= elem_hi && elem - elem_lo < (uint64_t)CROSSTALK_EDA_UI_ANALYZER_LANE_CAP && ret != LDG_ERR_FULL; elem = elem + 0x1)
+        else { for (elem = elem_lo; elem <= elem_hi && elem - elem_lo < (uint64_t)CROSSTALK_EDA_UI_ANALYZER_LANE_CAP && ret != LDG_ERR_FULL; elem++)
             {
                 if (ldg_str_fmt(sig, (uint64_t)sizeof(sig), &fmt_len, "%.40s[%u64]", base, elem) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; break; }
 
@@ -12930,10 +12930,10 @@ static void crosstalk_verb_analyzer(crosstalk_ctx_t *ctx, const char *arg)
 
         if (ret == LDG_ERR_FULL) { break; }
 
-        while (arg[at] == ' ') { at = at + 0x1; }
+        while (arg[at] == ' ') { at++; }
 
         pos = 0;
-        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos = pos + 0x1; at = at + 0x1; }
+        while (arg[at] != LDG_STR_TERM && arg[at] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)CROSSTALK_CORE_SOUND_ARG_CAP) { tok[pos] = arg[at]; pos++; at++; }
         tok[pos] = LDG_STR_TERM;
     }
 
@@ -12946,7 +12946,7 @@ static void crosstalk_verb_pipeview(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -12970,7 +12970,7 @@ static void crosstalk_verb_progview(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -13005,7 +13005,7 @@ static void crosstalk_verb_scan(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -13151,7 +13151,7 @@ static void crosstalk_verb_break(crosstalk_ctx_t *ctx, const char *arg)
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
 
-    while (arg[at] == ' ') { at = at + 0x1; }
+    while (arg[at] == ' ') { at++; }
 
     if (arg[at] == LDG_STR_TERM)
     {
@@ -13169,11 +13169,11 @@ static void crosstalk_verb_break(crosstalk_ctx_t *ctx, const char *arg)
         uint32_t pos = 0;
         uint32_t scan = at;
 
-        while (arg[scan] != LDG_STR_TERM && arg[scan] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[scan]; pos = pos + 0x1; scan = scan + 0x1; }
+        while (arg[scan] != LDG_STR_TERM && arg[scan] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[scan]; pos++; scan++; }
 
         tok[pos] = LDG_STR_TERM;
 
-        while (arg[scan] == ' ') { scan = scan + 0x1; }
+        while (arg[scan] == ' ') { scan++; }
 
         if (strcmp(tok, CROSSTALK_CORE_BRK_SKIP_TOK) == 0)
         {
@@ -13212,12 +13212,12 @@ static void crosstalk_verb_break(crosstalk_ctx_t *ctx, const char *arg)
 
             pos = 0;
 
-            while (arg[scan + pos] != LDG_STR_TERM && arg[scan + pos] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[scan + pos]; pos = pos + 0x1; }
+            while (arg[scan + pos] != LDG_STR_TERM && arg[scan + pos] != ' ' && pos + LDG_STR_TERM_SIZE < (uint32_t)sizeof(tok)) { tok[pos] = arg[scan + pos]; pos++; }
 
             tok[pos] = LDG_STR_TERM;
             rest = scan + pos;
 
-            while (arg[rest] == ' ') { rest = rest + 0x1; }
+            while (arg[rest] == ' ') { rest++; }
 
             if (crosstalk_num_parse(tok, &reg) != LDG_ERR_AOK || crosstalk_num_parse(&arg[rest], &min) != LDG_ERR_AOK) { toast_push(ctx, CROSSTALK_CORE_BRK_USAGE_TEXT); return; }
 
@@ -13365,7 +13365,7 @@ static uint32_t crosstalk_script_name_len_get(const char *name)
 
     if (LDG_UNLIKELY(name == 0x0)) { return len; }
 
-    while (name[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (name[len] != LDG_STR_TERM) { len++; }
 
     return len;
 }
@@ -13374,77 +13374,77 @@ static uint32_t crosstalk_script_verb_tbl_get(const crosstalk_script_verb_t **ou
 {
     static const crosstalk_script_verb_t tbl[] = {
         { "w", 0x0, 0x0, crosstalk_verb_st, "w; write the board", 0x0 },
-        { "q", 0x0, 0x1, crosstalk_verb_quit, "q [force]; leave to the main menu", "force" },
+        { "q", 0x0, 1, crosstalk_verb_quit, "q [force]; leave to the main menu", "force" },
         { "wq", 0x0, 0x0, crosstalk_verb_st_quit, "wq; write, then leave to the menu", 0x0 },
         { "qqq", 0x0, 0x0, crosstalk_verb_exit, "qqq; exit the game now", 0x0 },
         { "chat", 0x0, 0x0, crosstalk_verb_chat, "chat; toggle the chat window", 0x0 },
-        { "privacy", 0x0, 0x1, crosstalk_verb_privacy, 0x0, 0x0 },
+        { "privacy", 0x0, 1, crosstalk_verb_privacy, 0x0, 0x0 },
         { "totals", 0x0, 0x0, crosstalk_verb_totals, "totals; toggle the totals window", 0x0 },
         { "reset", 0x0, 0x0, crosstalk_verb_term_rst, "reset; reset the terminal and draw everything again", 0x0 },
         { "term", 0x0, 0x2, crosstalk_verb_term, "term [port|idx|close [idx]]; terminal tabs; a port opens the next free tab, an idx focuses it", "@sig|host|close" },
         { "scope", 0x0, 0x4, crosstalk_verb_scope, "scope [port|mem <0xADDR|symbol> [width] [fixed]|xy <trace> <trace>]; oscilloscope on a design signal, the board oscillator, or DLU mem; width is uint8, uint16, uint32, int8, int16 or int32; fixed reads it as 16.16", "@sig|mem|xy @sig|@mem " CROSSTALK_CORE_CMDLINE_SCOPE_WIDTH_WORDS " fixed" },
-        { "ind", 0x0, 0x1, crosstalk_verb_ind, "ind [port]; indicator lamps for a signal", "@sig" },
+        { "ind", 0x0, 1, crosstalk_verb_ind, "ind [port]; indicator lamps for a signal", "@sig" },
         { "serial", 0x0, 0x4, crosstalk_verb_serial, "serial [path | port@baud:parity:data:stop | value:port | \"text\":port | port:\"pattern\"[:\"action\"]]; bare serial lists ports; order encodes direction", "@path" },
-        { "pipe", 0x0, 0x1, crosstalk_verb_pipe, "pipe [port]; drive the wire from a design port", "@sig" },
+        { "pipe", 0x0, 1, crosstalk_verb_pipe, "pipe [port]; drive the wire from a design port", "@sig" },
         { "gate", 0x0, 0x0, crosstalk_verb_gate, "gate; drop from the hdl simulator to the gate-level netlist", 0x0 },
-        { "emu", 0x0, 0x1, crosstalk_verb_emu, "emu [path|off]; run the design on its own emulator; bare emu reports what is attached", "@path|off" },
-        { "net", 0x0, 0x1, crosstalk_verb_net, "net [path|off]; serial endpoint the program's network bytes move through; bare net reports it", "@path|off" },
+        { "emu", 0x0, 1, crosstalk_verb_emu, "emu [path|off]; run the design on its own emulator; bare emu reports what is attached", "@path|off" },
+        { "net", 0x0, 1, crosstalk_verb_net, "net [path|off]; serial endpoint the program's network bytes move through; bare net reports it", "@path|off" },
         { "emit", 0x0, 0x0, crosstalk_verb_emit, "emit; compile the loaded design into a native component", 0x0 },
         { "profile", 0x0, 0x0, crosstalk_verb_profile, "profile [start [name] | end | reset]; profiler window, captures, rebase", "start|end|reset" },
-        { "prof", 0x1, 0x1, crosstalk_verb_prof, CROSSTALK_CORE_PROF_HELP_TEXT, "on|off" },
-        { "publish", 0x1, 0x1, crosstalk_verb_publish, "publish <isa>; share the running design on the Workshop", 0x0 },
-        { "clk", 0x0, 0x1, crosstalk_clk_pin, "clk [hz]; hold the component at a clock; no value frees it", 0x0 },
+        { "prof", 1, 1, crosstalk_verb_prof, CROSSTALK_CORE_PROF_HELP_TEXT, "on|off" },
+        { "publish", 1, 1, crosstalk_verb_publish, "publish <isa>; share the running design on the Workshop", 0x0 },
+        { "clk", 0x0, 1, crosstalk_clk_pin, "clk [hz]; hold the component at a clock; no value frees it", 0x0 },
         { "mem", 0x2, 0x3, crosstalk_memrd, "mem <signal> <hex addr> [cunt]; dump memory to the log", "@mem" },
         { "memview", 0x0, 0x2, crosstalk_verb_memview, "memview [signal] [addr|@sig]; memory window; watch/snap subverbs; debugger repl at the window bottom, type help there", "@mem" },
-        { "memfind", 0x1, 0x2, crosstalk_memfind, "memfind <hex bytes|\"text\">; search the bound memory", 0x0 },
+        { "memfind", 1, 0x2, crosstalk_memfind, "memfind <hex bytes|\"text\">; search the bound memory", 0x0 },
         { "text", 0x0, 0x2, crosstalk_text_attach, "text [signal] [base]; CGA text screen from memory", "@mem" },
-        { "snap", 0x0, 0x1, crosstalk_snap_wr, "snap [name|list]; write the design state; bare snap refuses if one exists; list logs existing snaps", "list" },
-        { "resume", 0x0, 0x1, crosstalk_snap_rd, "resume [name]; restore design state", 0x0 },
+        { "snap", 0x0, 1, crosstalk_snap_wr, "snap [name|list]; write the design state; bare snap refuses if one exists; list logs existing snaps", "list" },
+        { "resume", 0x0, 1, crosstalk_snap_rd, "resume [name]; restore design state", 0x0 },
         { "display", 0x3, 0x3, crosstalk_display_attach, "display <hsync> <vsync> <video>; wire a design's video out to the monitor", "@sig @sig @sig" },
         { "gfx", 0x0, 0x4, crosstalk_gfx_attach, "gfx [signal] [base] [w] [h]; show raw video memory on the monitor", "@mem" },
         { "cgacast", 0x0, 0x4, crosstalk_cgacast_attach, "cgacast [signal] [base] [w] [h] | cgacast off; stream the framebuffer to a real CGA screen over serial", "@mem|off" },
-        { "ld", 0x1, 0x3, crosstalk_dir_ld, "ld <dir> <a.sv,b.sv|url> <top>; program a fileset; a URL is git-cloned with the system's git under the game data dir", "@dir @fileset @mod" },
-        { "midi", 0x1, 0x2, crosstalk_midi_attach, "midi <pin> [device]; clock a MIDI device onto a design pin at 31250 baud", "@sig" },
-        { "midiplay", 0x0, 0x1, crosstalk_midi_play, "midiplay [path]; play a MIDI file into the design; no path stops", "@path" },
-        { "midinote", 0x1, 0x2, crosstalk_midi_note, "midinote <note> [velocity]; send one note; zero velocity releases it", 0x0 },
+        { "ld", 1, 0x3, crosstalk_dir_ld, "ld <dir> <a.sv,b.sv|url> <top>; program a fileset; a URL is git-cloned with the system's git under the game data dir", "@dir @fileset @mod" },
+        { "midi", 1, 0x2, crosstalk_midi_attach, "midi <pin> [device]; clock a MIDI device onto a design pin at 31250 baud", "@sig" },
+        { "midiplay", 0x0, 1, crosstalk_midi_play, "midiplay [path]; play a MIDI file into the design; no path stops", "@path" },
+        { "midinote", 1, 0x2, crosstalk_midi_note, "midinote <note> [velocity]; send one note; zero velocity releases it", 0x0 },
         { "sound", 0x0, 0x3, crosstalk_verb_sound, "sound [port] [rate] [period]; sample a design port as sound", "@sig" },
         { "render", 0x4, 0x8, crosstalk_verb_render, "render <port> <secs> <rate> <path>; bounce a design port to a 32-bit PCM wav", "@sig @none @none @path" },
-        { "poke", 0x1, 0x2, crosstalk_poke, "poke <sig> [val]; write a signal, or read it", "@sig" },
-        { "switch", 0x1, 0x2, crosstalk_verb_switch, "switch <name> [pos]; move a described switch, or read its position", 0x0 },
+        { "poke", 1, 0x2, crosstalk_poke, "poke <sig> [val]; write a signal, or read it", "@sig" },
+        { "switch", 1, 0x2, crosstalk_verb_switch, "switch <name> [pos]; move a described switch, or read its position", 0x0 },
         { "receptacle", 0x2, 0x4, crosstalk_receptacle_attach, "receptacle <data> <ready> [ack] [scan]; input into the design; scan sends PC keyboard scancodes", "@sig @sig @sig|scan scan" },
         { "memld", 0x2, 0x3, crosstalk_memld, "memld <sig> <path> [off]; load a file into a design memory", "@mem @path" },
-        { "layout", 0x0, 0x1, crosstalk_verb_layout, "layout [dump]; print the current editor's window layout as default-table rows", "dump" },
+        { "layout", 0x0, 1, crosstalk_verb_layout, "layout [dump]; print the current editor's window layout as default-table rows", "dump" },
         { "progress", 0x0, 0x0, crosstalk_verb_progress, "progress; toggle the progress window: named, ported and verified against the artifact", 0x0 },
         { "tasks", 0x0, 0x0, crosstalk_verb_tasks, "tasks; toggle the task window: add, tick off and remove what is left to do", 0x0 },
         { "re", 0x0, 0x8, crosstalk_verb_re, "re open <emiru|elf|raw> [base] [isa] | close | seg | rd <addr> [n] | dis [addr] [n] | name|note|func|struct|field|patch ... | cc <n> \"<step>\" | import | save [path] | undo | assert <path.h> | build <src.c> [out] | diff ref|cand <path> [sig] [off] | diff cycles|mask|unmask|run | ls [kind]; the reversing workbench; bare re reports state", "open|close|seg|rd|dis|name|note|func|struct|field|patch|cc|import|save|undo|assert|build|diff|ls" },
-        { "attach", 0x1, 0x1, crosstalk_verb_attach, "attach <pid>; open a running process by pid and a repl tab on it; type help in the tab", 0x0 },
+        { "attach", 1, 1, crosstalk_verb_attach, "attach <pid>; open a running process by pid and a repl tab on it; type help in the tab", 0x0 },
         { "detach", 0x0, 0x0, crosstalk_verb_detach, "detach; close the attached process", 0x0 },
-        { "syms", 0x0, 0x1, crosstalk_verb_syms, "syms [path.elf]; read the running program's symbols so memview can go to them by name; bare syms reports what is loaded", "@path" },
-        { "ident", 0x1, 0x1, crosstalk_verb_ident, "ident 0xADDR|<symbol>[+0xOFF]; name the symbol an address falls inside, with its offset from the symbol's start", 0x0 },
-        { "gamma", 0x0, 0x1, crosstalk_verb_gamma, "gamma [val]; monitor gamma curve, 1.0 flat, 1.8 lifts a linear program stream; bare gamma reports", 0x0 },
+        { "syms", 0x0, 1, crosstalk_verb_syms, "syms [path.elf]; read the running program's symbols so memview can go to them by name; bare syms reports what is loaded", "@path" },
+        { "ident", 1, 1, crosstalk_verb_ident, "ident 0xADDR|<symbol>[+0xOFF]; name the symbol an address falls inside, with its offset from the symbol's start", 0x0 },
+        { "gamma", 0x0, 1, crosstalk_verb_gamma, "gamma [val]; monitor gamma curve, 1.0 flat, 1.8 lifts a linear program stream; bare gamma reports", 0x0 },
         { "hlt", 0x0, 0x6, crosstalk_verb_hlt, "hlt [off|causes]; halt the core and hold its state; causes halt it before a fault dispatches; all leaves out unaligned, which the kernel repairs, so name it to watch for it", "off" },
         { "on", 0x0, 0x2, crosstalk_verb_on, "on [load|save|exit|fault] [path.aww|off]; run a script when the game does something; bare on lists", "load|save|exit|fault @path|off" },
         { "disk", 0x0, 0x2, crosstalk_verb_disk, "disk [path.dsk|sync|off] [drive]; attach media to an emulator drive, 0-7; sync writes the image back; bare disk lists drives", "@path|sync|off" },
-        { "dsu", 0x0, 0x1, crosstalk_verb_dsu, "dsu [play|stop]; route the emulator sound card to audio; bare dsu reports buffer, cursor, rate, running", "play|stop" },
-        { "delay", 0x1, 0x2, crosstalk_verb_delay, "delay <n> [ns|us|ms|s]; hold the script for a span; a bare number is ns", "@none ns|us|ms|s" },
+        { "dsu", 0x0, 1, crosstalk_verb_dsu, "dsu [play|stop]; route the emulator sound card to audio; bare dsu reports buffer, cursor, rate, running", "play|stop" },
+        { "delay", 1, 0x2, crosstalk_verb_delay, "delay <n> [ns|us|ms|s]; hold the script for a span; a bare number is ns", "@none ns|us|ms|s" },
         { "rst", 0x0, 0x0, crosstalk_verb_rst, "rst; power-cycle the emulator; core reset, memory images reloaded, disk kept", 0x0 },
         { "break", 0x0, 0x3, crosstalk_verb_break, "break [addr|off|skip <n>|cond <reg> <min>]; halt the emulator when the program locator reaches an address; skip ignores the first n hits, cond halts only when drN is at least min; bare break reports the armed one", "off|skip|cond" },
-        { "stackview", 0x0, 0x1, crosstalk_verb_stackview, "stackview [memory]; the live stack from sp to its base, frozen at a fault; memory defaults to cells; type a signal inside to record its history", "@mem" },
-        { "scan", 0x0, 0x1, crosstalk_verb_scan, "scan [path]; hand a file to the host antimalware provider; bare scan reports provider state and counts", "@path" },
+        { "stackview", 0x0, 1, crosstalk_verb_stackview, "stackview [memory]; the live stack from sp to its base, frozen at a fault; memory defaults to cells; type a signal inside to record its history", "@mem" },
+        { "scan", 0x0, 1, crosstalk_verb_scan, "scan [path]; hand a file to the host antimalware provider; bare scan reports provider state and counts", "@path" },
         { "hcf", 0x0, 0x0, crosstalk_verb_hcf, 0x0, 0x0 },
-        { "hostmem", 0x0, 0x1, crosstalk_verb_hostmem, "hostmem [dump]; log LDG heap totals; dump lists live allocations", "dump" },
+        { "hostmem", 0x0, 1, crosstalk_verb_hostmem, "hostmem [dump]; log LDG heap totals; dump lists live allocations", "dump" },
         { "calc", 0x0, 0x0, crosstalk_verb_calc, "calc; toggle the hex and binary calculator", 0x0 },
         { "focus", 0x0, 0x0, crosstalk_verb_focus, "focus; toggle focus: Steam away, Discord do not disturb", 0x0 },
-        { "water", 0x0, 0x1, crosstalk_verb_water, "water [min|off]; water reminder every min minutes; bare water reports", "off" },
-        { "transponder", 0x0, 0x1, crosstalk_verb_transponder, "transponder [off]; rich presence on Steam and Discord; off shows only that the transponder is off", "off" },
+        { "water", 0x0, 1, crosstalk_verb_water, "water [min|off]; water reminder every min minutes; bare water reports", "off" },
+        { "transponder", 0x0, 1, crosstalk_verb_transponder, "transponder [off]; rich presence on Steam and Discord; off shows only that the transponder is off", "off" },
         { "regs", 0x0, 0x0, crosstalk_verb_regs, "regs; toggle the live register window", 0x0 },
-        { "guide", 0x0, 0x1, crosstalk_verb_guide, "guide [name|next|back|show|close]; step through a guide; show me opens and flashes the window a step points at; bare guide lists names", "@guide|next|back|show|close" },
+        { "guide", 0x0, 1, crosstalk_verb_guide, "guide [name|next|back|show|close]; step through a guide; show me opens and flashes the window a step points at; bare guide lists names", "@guide|next|back|show|close" },
         { "brainomatic", 0x0, 0x0, crosstalk_verb_brainomatic, "brainomatic; toggle the ISA cheat sheet", 0x0 },
-        { "progview", 0x0, 0x1, crosstalk_verb_progview, "progview [signal]; live disassembly following loc, no profiler tax", "@sig" },
+        { "progview", 0x0, 1, crosstalk_verb_progview, "progview [signal]; live disassembly following loc, no profiler tax", "@sig" },
         { "pipeview", 0x0, 0x8, crosstalk_verb_pipeview, "pipeview [stage sigs]; disassemble one insn-word sig per stage, in order", "@sig @sig @sig @sig @sig @sig @sig @sig" },
         { "analyzer", 0x0, 0x4, crosstalk_verb_analyzer, "analyzer [sigs|arr[i]|arr[lo:hi]|span N|off]; cycle-accurate multi-lane digital traces; indices decimal or 0x hex", "@sig|span|off @sig @sig @sig" },
         { "feed", 0x0, 0x4, crosstalk_verb_feed, "feed [sigs|off]; cycle-stamped change events; exc values annotated", "@sig|off @sig @sig @sig" },
-        { "program", 0x0, 0x1, crosstalk_verb_program, "program [path]; program the editor's file; bare uses the last path copied in the editor", "@path" }
+        { "program", 0x0, 1, crosstalk_verb_program, "program [path]; program the editor's file; bare uses the last path copied in the editor", "@path" }
     };
 
     if (LDG_UNLIKELY(out == 0x0 || out_cunt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -13468,7 +13468,7 @@ static void crosstalk_script_help_push(crosstalk_ctx_t *ctx, const char *text)
     {
         uint32_t take = 0;
 
-        while (at < len && text[at] == ' ') { at = at + 0x1; }
+        while (at < len && text[at] == ' ') { at++; }
 
         if (at >= len) { break; }
 
@@ -13478,7 +13478,7 @@ static void crosstalk_script_help_push(crosstalk_ctx_t *ctx, const char *text)
         {
             uint32_t cut = width;
 
-            while (cut > 0 && text[at + cut] != ' ') { cut = cut - 0x1; }
+            while (cut > 0 && text[at + cut] != ' ') { cut--; }
 
             take = cut > 0 ? cut : width;
         }
@@ -13507,7 +13507,7 @@ static void crosstalk_script_help(crosstalk_ctx_t *ctx, const char *arg)
     {
         used = (ldg_str_fmt(list, (uint64_t)sizeof(list), &fmt_len, "%.31s", CROSSTALK_CORE_SCRIPT_HELP_LIST_HD) == LDG_ERR_AOK ? (uint32_t)fmt_len : 0);
 
-        for (idx = 0; idx < tbl_cunt && used < (uint32_t)sizeof(list); idx = idx + 0x1)
+        for (idx = 0; idx < tbl_cunt && used < (uint32_t)sizeof(list); idx++)
         {
             if (tbl[idx].help == 0x0) { continue; }
 
@@ -13526,7 +13526,7 @@ static void crosstalk_script_help(crosstalk_ctx_t *ctx, const char *arg)
 
     if (strcmp(arg, CROSSTALK_CORE_SCRIPT_HELP_NAME) == 0) { crosstalk_script_help_push(ctx, CROSSTALK_CORE_SCRIPT_HELP_HELP); return; }
 
-    for (idx = 0; idx < tbl_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < tbl_cunt; idx++)
     {
         if (tbl[idx].help == 0x0 || strcmp(tbl[idx].name, arg) != 0) { continue; }
 
@@ -13587,7 +13587,7 @@ static uint32_t crosstalk_complete_put(char (*out)[CROSSTALK_CORE_CMDLINE_CANDID
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    *out_cunt = *out_cunt + 0x1;
+    (*out_cunt)++;
 
     return LDG_ERR_AOK;
 }
@@ -13606,13 +13606,13 @@ static uint32_t crosstalk_complete_tok_get(const char *text, uint32_t idx, char 
 
     while (text[at] != LDG_STR_TERM)
     {
-        while (text[at] == sep) { at = at + 0x1; }
+        while (text[at] == sep) { at++; }
 
         if (text[at] == LDG_STR_TERM) { break; }
 
         len = 0;
 
-        while (text[at + len] != LDG_STR_TERM && text[at + len] != sep) { len = len + 0x1; }
+        while (text[at + len] != LDG_STR_TERM && text[at + len] != sep) { len++; }
 
         if (tok == idx)
         {
@@ -13624,7 +13624,7 @@ static uint32_t crosstalk_complete_tok_get(const char *text, uint32_t idx, char 
             return LDG_ERR_AOK;
         }
 
-        tok = tok + 0x1;
+        tok++;
         at = at + len;
     }
 
@@ -13651,7 +13651,7 @@ static uint32_t crosstalk_complete_design_put(crosstalk_ctx_t *ctx, uint32_t kin
         ret = crosstalk_complete_put(out, out_cap, out_cunt, ctx->eda.fpga.slot[CROSSTALK_CORE_TERM_SLOT].top, word);
         if (ret != LDG_ERR_AOK) { return ret; }
 
-        for (idx = 0; idx < ir_ctx->inst_cunt; idx = idx + 0x1)
+        for (idx = 0; idx < ir_ctx->inst_cunt; idx++)
         {
             len = ir_ctx->insts[idx].module_name.len;
             if (len == 0 || len + (uint32_t)LDG_STR_TERM_SIZE > (uint32_t)sizeof(name)) { continue; }
@@ -13666,7 +13666,7 @@ static uint32_t crosstalk_complete_design_put(crosstalk_ctx_t *ctx, uint32_t kin
         return LDG_ERR_AOK;
     }
 
-    for (idx = 0; idx < ir_ctx->sig_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ir_ctx->sig_cunt; idx++)
     {
         if (kind == (uint32_t)CROSSTALK_CORE_COMPLETE_DESIGN_MEM && ir_ctx->sigs[idx].kind != (uint32_t)CROSSTALK_HDL_IR_SIG_MEM) { continue; }
 
@@ -13779,7 +13779,7 @@ static uint32_t crosstalk_complete_alt_put(crosstalk_ctx_t *ctx, const char *alt
 
     if (strcmp(alt, CROSSTALK_CORE_COMPLETE_KIND_GUIDE) == 0)
     {
-        for (idx = 0; crosstalk_ui_guide_name_get(&ctx->guide, idx, &name) == LDG_ERR_AOK; idx = idx + 0x1)
+        for (idx = 0; crosstalk_ui_guide_name_get(&ctx->guide, idx, &name) == LDG_ERR_AOK; idx++)
         {
             ret = crosstalk_complete_put(out, out_cap, out_cunt, name, word);
             if (ret != LDG_ERR_AOK) { return ret; }
@@ -13790,7 +13790,7 @@ static uint32_t crosstalk_complete_alt_put(crosstalk_ctx_t *ctx, const char *alt
 
     if (strcmp(alt, CROSSTALK_CORE_COMPLETE_KIND_VERB) == 0)
     {
-        for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CMDLINE_VERB_CUNT && ldg_shell_cmd_get(ctx->cmdline.shell, idx, &cmd) == LDG_ERR_AOK && cmd != 0x0 && cmd->name != 0x0; idx = idx + 0x1)
+        for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CMDLINE_VERB_CUNT && ldg_shell_cmd_get(ctx->cmdline.shell, idx, &cmd) == LDG_ERR_AOK && cmd != 0x0 && cmd->name != 0x0; idx++)
         {
             ret = crosstalk_complete_put(out, out_cap, out_cunt, cmd->name, word);
             if (ret != LDG_ERR_AOK) { return ret; }
@@ -13832,9 +13832,9 @@ static uint32_t crosstalk_cmdline_candidate_cb(void *user, const char *text, uin
     line[len] = LDG_STR_TERM;
 
     word_at = len;
-    while (word_at > 0 && line[word_at - 0x1] != CROSSTALK_CORE_COMPLETE_POS_SEP) { word_at = word_at - 0x1; }
+    while (word_at > 0 && line[word_at - 1] != CROSSTALK_CORE_COMPLETE_POS_SEP) { word_at--; }
 
-    for (idx = 0; idx < word_at; idx = idx + 0x1)
+    for (idx = 0; idx < word_at; idx++)
     {
         if (line[idx] == CROSSTALK_CORE_COMPLETE_POS_SEP)
         {
@@ -13846,12 +13846,12 @@ static uint32_t crosstalk_cmdline_candidate_cb(void *user, const char *text, uin
         if (in_word == LDG_TRUTH_TRUE) { continue; }
 
         in_word = LDG_TRUTH_TRUE;
-        words_before = words_before + 0x1;
+        words_before++;
     }
 
     if (words_before == 0) { return LDG_ERR_AOK; }
 
-    arg_idx = words_before - 0x1;
+    arg_idx = words_before - 1;
     word = &line[word_at];
     *out_at = word_at;
 
@@ -13864,14 +13864,14 @@ static uint32_t crosstalk_cmdline_candidate_cb(void *user, const char *text, uin
         ret = crosstalk_script_verb_tbl_get(&tbl, &tbl_cunt);
         if (ret != LDG_ERR_AOK) { return ret; }
 
-        for (idx = 0; idx < tbl_cunt; idx = idx + 0x1) { if (strcmp(tbl[idx].name, verb) == 0) { spec = tbl[idx].arg; break; } }
+        for (idx = 0; idx < tbl_cunt; idx++) { if (strcmp(tbl[idx].name, verb) == 0) { spec = tbl[idx].arg; break; } }
     }
 
     if (spec == 0x0) { return LDG_ERR_AOK; }
 
     if (crosstalk_complete_tok_get(spec, arg_idx, CROSSTALK_CORE_COMPLETE_POS_SEP, pos, (uint32_t)sizeof(pos)) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
 
-    for (idx = 0; crosstalk_complete_tok_get(pos, idx, CROSSTALK_CORE_COMPLETE_ALT_SEP, alt, (uint32_t)sizeof(alt)) == LDG_ERR_AOK; idx = idx + 0x1)
+    for (idx = 0; crosstalk_complete_tok_get(pos, idx, CROSSTALK_CORE_COMPLETE_ALT_SEP, alt, (uint32_t)sizeof(alt)) == LDG_ERR_AOK; idx++)
     {
         ret = crosstalk_complete_alt_put(ctx, alt, line, word, out, out_cap, out_cunt);
         if (ret == LDG_ERR_FULL) { break; }
@@ -13879,9 +13879,9 @@ static uint32_t crosstalk_cmdline_candidate_cb(void *user, const char *text, uin
         if (ret != LDG_ERR_AOK) { return ret; }
     }
 
-    if (crosstalk_complete_tok_get(spec, arg_idx + 0x1, CROSSTALK_CORE_COMPLETE_POS_SEP, pos, (uint32_t)sizeof(pos)) == LDG_ERR_AOK) { return LDG_ERR_AOK; }
+    if (crosstalk_complete_tok_get(spec, arg_idx + 1, CROSSTALK_CORE_COMPLETE_POS_SEP, pos, (uint32_t)sizeof(pos)) == LDG_ERR_AOK) { return LDG_ERR_AOK; }
 
-    for (idx = 0; idx < *out_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < *out_cunt; idx++)
     {
         uint64_t len = (uint64_t)strlen(out[idx]);
 
@@ -13937,7 +13937,7 @@ static uint32_t crosstalk_script_verb_cb(void *user, const char *name, uint32_t 
     ret = crosstalk_script_verb_tbl_get(&tbl, &tbl_cunt);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (idx = 0; idx < tbl_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < tbl_cunt; idx++)
     {
         if (crosstalk_script_name_len_get(tbl[idx].name) != name_len) { continue; }
 
@@ -14048,7 +14048,7 @@ static uint8_t crosstalk_script_repl_word_is(const char *word)
     {
         if (strcmp(name, word) == 0) { return LDG_TRUTH_TRUE; }
 
-        idx = idx + 0x1;
+        idx++;
     }
 
     return LDG_TRUTH_FALSE;
@@ -14082,7 +14082,7 @@ static uint32_t crosstalk_script_cmd_limits_get(const char *word, uint32_t *out_
 
     if (crosstalk_script_verb_tbl_get(&tbl, &tbl_cunt) != LDG_ERR_AOK) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < tbl_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < tbl_cunt; idx++)
     {
         if (strcmp(tbl[idx].name, word) != 0) { continue; }
 
@@ -14109,7 +14109,7 @@ static uint32_t crosstalk_ext_cmd_find(const crosstalk_ctx_t *ctx, const char *w
     mod = (const libresteam_mod_host_t *)ctx->libresteam_set.mods;
     if (mod == 0x0) { return LDG_ERR_NOT_FOUND; }
 
-    for (idx = 0; idx < mod->cmd_cunt && idx < (uint32_t)LIBRESTEAM_MOD_CMD_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < mod->cmd_cunt && idx < (uint32_t)LIBRESTEAM_MOD_CMD_MAX; idx++)
     {
         if (mod->cmd[idx].name == 0x0 || mod->cmd[idx].cb == 0x0) { continue; }
 
@@ -14148,7 +14148,7 @@ static uint32_t crosstalk_script_ext_run(crosstalk_ctx_t *ctx, const libresteam_
         if (res != LDG_ERR_AOK) { return res; }
     }
 
-    for (at = 0; joined[at] != LDG_STR_TERM; at = at + 0x1)
+    for (at = 0; joined[at] != LDG_STR_TERM; at++)
     {
         if (joined[at] == ' ')
         {
@@ -14163,14 +14163,14 @@ static uint32_t crosstalk_script_ext_run(crosstalk_ctx_t *ctx, const libresteam_
         if (argc == (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX) { return LDG_ERR_FULL; }
 
         args[argc] = &joined[at];
-        argc = argc + 0x1;
+        argc++;
         in_word = LDG_TRUTH_TRUE;
     }
 
     if (argc == 0)
     {
         args[0] = help;
-        argc = argc + 0x1;
+        argc++;
     }
 
     res = cmd->cb(cmd->user, argc, args, crosstalk_ext_emit_cb, ctx);
@@ -14258,7 +14258,7 @@ static uint32_t crosstalk_script_win_reg(crosstalk_ctx_t *ctx)
         res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
         if (res != LDG_ERR_AOK && res != LDG_ERR_EXISTS) { return res; }
 
-        idx = idx + 0x1;
+        idx++;
     }
 
     idx = 0;
@@ -14268,7 +14268,7 @@ static uint32_t crosstalk_script_win_reg(crosstalk_ctx_t *ctx)
         res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
         if (res != LDG_ERR_AOK && res != LDG_ERR_EXISTS) { return res; }
 
-        idx = idx + 0x1;
+        idx++;
     }
 
     res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, "." CROSSTALK_CORE_SCRIPT_WIN_CMDLINE_NAME, crosstalk_script_win_cb, 0x0, 0x0, 0x0);
@@ -14292,7 +14292,7 @@ static uint32_t crosstalk_script_builtins_reg(crosstalk_ctx_t *ctx)
     ret = crosstalk_script_verb_tbl_get(&tbl, &tbl_cunt);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (idx = 0; idx < tbl_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < tbl_cunt; idx++)
     {
         ret = crosstalk_eda_script_builtin_reg(&ctx->eda.script, tbl[idx].name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -14355,7 +14355,7 @@ static void crosstalk_script_line_exec(crosstalk_ctx_t *ctx, const char *line)
         return;
     }
 
-    while (line[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (line[len] != LDG_STR_TERM) { len++; }
 
     ctx->console_exec_is = LDG_TRUTH_TRUE;
 
@@ -14391,7 +14391,7 @@ static void crosstalk_ext_cmds_reg(crosstalk_ctx_t *ctx)
     mod = (const libresteam_mod_host_t *)ctx->libresteam_set.mods;
     if (mod == 0x0) { return; }
 
-    for (idx = 0; idx < mod->cmd_cunt && idx < (uint32_t)LIBRESTEAM_MOD_CMD_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < mod->cmd_cunt && idx < (uint32_t)LIBRESTEAM_MOD_CMD_MAX; idx++)
     {
         if (mod->cmd[idx].name == 0x0) { continue; }
 
@@ -14429,7 +14429,7 @@ static uint32_t crosstalk_repl_script_exec_cb(void *user, const char *line)
     {
         if (crosstalk_re_repl_emit(&ctx->repl, CROSSTALK_CORE_REPL_OUT_FMT, text) != LDG_ERR_AOK) { return LDG_ERR_IO_WR; }
 
-        seq = at + 0x1;
+        seq = at + 1;
     }
 
     return LDG_ERR_AOK;
@@ -14471,8 +14471,8 @@ static void crosstalk_remote_cmdline_tick(crosstalk_ctx_t *ctx)
     while (ctx->remote_cmd_cunt != 0)
     {
         ret = ldg_str_rbrcpy(line, ctx->remote_cmd[ctx->remote_cmd_hd], (uint64_t)sizeof(line));
-        ctx->remote_cmd_hd = (ctx->remote_cmd_hd + 0x1) % (uint32_t)CROSSTALK_CORE_REMOTE_CMD_MAX;
-        ctx->remote_cmd_cunt = ctx->remote_cmd_cunt - 0x1;
+        ctx->remote_cmd_hd = (ctx->remote_cmd_hd + 1) % (uint32_t)CROSSTALK_CORE_REMOTE_CMD_MAX;
+        ctx->remote_cmd_cunt--;
 
         if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { continue; }
 
@@ -14487,7 +14487,7 @@ static void crosstalk_remote_cmdline_tick(crosstalk_ctx_t *ctx)
         ret = crosstalk_core_cmdline_out_get(&ctx->cmdline, ctx->remote_cmdline_seq, line, (uint32_t)sizeof(line), &seq);
         if (ret != LDG_ERR_AOK) { break; }
 
-        ctx->remote_cmdline_seq = seq + 0x1;
+        ctx->remote_cmdline_seq = seq + 1;
 
         ret = crosstalk_remote_cmdline_send(ctx, CROSSTALK_NET_WIRE_KIND_REMOTE_CMDLINE_OUT, line);
         if (ret != LDG_ERR_AOK)
@@ -14554,7 +14554,7 @@ static void crosstalk_cpuset_reserve(crosstalk_ctx_t *ctx)
     for (uint64_t at = 0; at < cunt; at++) { if ((uint32_t)set[at].cache_idx != cache_pick)
         {
             rest[rest_cunt] = set[at].id;
-            rest_cunt = rest_cunt + 0x1;
+            rest_cunt++;
         }
     }
 
@@ -14563,7 +14563,7 @@ static void crosstalk_cpuset_reserve(crosstalk_ctx_t *ctx)
             if ((uint32_t)set[at].core_idx == core_pick) { continue; }
 
             rest[rest_cunt] = set[at].id;
-            rest_cunt = rest_cunt + 0x1;
+            rest_cunt++;
         }
     }
 
@@ -14574,7 +14574,7 @@ static void crosstalk_cpuset_reserve(crosstalk_ctx_t *ctx)
         if (ctx->cpuset_cunt >= (uint32_t)CROSSTALK_CORE_CPUSET_SIBLING_CAP) { continue; }
 
         ctx->cpuset_id[ctx->cpuset_cunt] = set[at].id;
-        ctx->cpuset_cunt = ctx->cpuset_cunt + 0x1;
+        ctx->cpuset_cunt++;
     }
 
     if (ctx->cpuset_cunt == 0 || rest_cunt == 0)
@@ -15068,7 +15068,7 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
         {
             if (crosstalk_re_repl_sesh_verb_reg(&ctx->repl_sesh, repl_word) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: word not registered; name: %.31s", repl_word); }
 
-            repl_word_idx = repl_word_idx + 0x1;
+            repl_word_idx++;
         }
     }
 
@@ -15519,7 +15519,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_LAYOUT;
             editor_sect[editor_sect_cunt].blob = layout_buff;
             editor_sect[editor_sect_cunt].blob_len = layout_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_rtl_sect_build(ctx, &rtl_buff, &rtl_len) == LDG_ERR_AOK && rtl_buff != 0x0)
@@ -15527,7 +15527,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_RTL;
             editor_sect[editor_sect_cunt].blob = rtl_buff;
             editor_sect[editor_sect_cunt].blob_len = rtl_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_script_sect_build(ctx, &script_buff, &script_len) == LDG_ERR_AOK && script_buff != 0x0)
@@ -15535,7 +15535,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_SCRIPT;
             editor_sect[editor_sect_cunt].blob = script_buff;
             editor_sect[editor_sect_cunt].blob_len = script_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_calc_sect_build(ctx, &calc_buff, &calc_len) == LDG_ERR_AOK && calc_buff != 0x0)
@@ -15543,7 +15543,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_CALC;
             editor_sect[editor_sect_cunt].blob = calc_buff;
             editor_sect[editor_sect_cunt].blob_len = calc_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_reng_sect_build(ctx) == LDG_ERR_AOK && ctx->reng_sect_buff != 0x0)
@@ -15551,7 +15551,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_RENG;
             editor_sect[editor_sect_cunt].blob = ctx->reng_sect_buff;
             editor_sect[editor_sect_cunt].blob_len = ctx->reng_sect_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_term_sect_build(ctx, &term_buff, &term_len) == LDG_ERR_AOK && term_buff != 0x0)
@@ -15559,7 +15559,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_TERM;
             editor_sect[editor_sect_cunt].blob = term_buff;
             editor_sect[editor_sect_cunt].blob_len = term_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_crt_sect_build(ctx, &crt_buff, &crt_len) == LDG_ERR_AOK && crt_buff != 0x0)
@@ -15567,7 +15567,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_CRT;
             editor_sect[editor_sect_cunt].blob = crt_buff;
             editor_sect[editor_sect_cunt].blob_len = crt_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_emu_sect_build(ctx, &emu_buff, &emu_len) == LDG_ERR_AOK && emu_buff != 0x0)
@@ -15575,7 +15575,7 @@ uint32_t crosstalk_core_save_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_EMU;
             editor_sect[editor_sect_cunt].blob = emu_buff;
             editor_sect[editor_sect_cunt].blob_len = emu_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (ctx->save_dir[0] != LDG_STR_TERM)
@@ -15671,7 +15671,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_LAYOUT;
             editor_sect[editor_sect_cunt].blob = layout_buff;
             editor_sect[editor_sect_cunt].blob_len = layout_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_rtl_sect_build(ctx, &rtl_buff, &rtl_len) == LDG_ERR_AOK && rtl_buff != 0x0)
@@ -15679,7 +15679,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_RTL;
             editor_sect[editor_sect_cunt].blob = rtl_buff;
             editor_sect[editor_sect_cunt].blob_len = rtl_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_script_sect_build(ctx, &script_buff, &script_len) == LDG_ERR_AOK && script_buff != 0x0)
@@ -15687,7 +15687,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_SCRIPT;
             editor_sect[editor_sect_cunt].blob = script_buff;
             editor_sect[editor_sect_cunt].blob_len = script_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_calc_sect_build(ctx, &calc_buff, &calc_len) == LDG_ERR_AOK && calc_buff != 0x0)
@@ -15695,7 +15695,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_CALC;
             editor_sect[editor_sect_cunt].blob = calc_buff;
             editor_sect[editor_sect_cunt].blob_len = calc_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_reng_sect_build(ctx) == LDG_ERR_AOK && ctx->reng_sect_buff != 0x0)
@@ -15703,7 +15703,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_RENG;
             editor_sect[editor_sect_cunt].blob = ctx->reng_sect_buff;
             editor_sect[editor_sect_cunt].blob_len = ctx->reng_sect_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_term_sect_build(ctx, &term_buff, &term_len) == LDG_ERR_AOK && term_buff != 0x0)
@@ -15711,7 +15711,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_TERM;
             editor_sect[editor_sect_cunt].blob = term_buff;
             editor_sect[editor_sect_cunt].blob_len = term_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_crt_sect_build(ctx, &crt_buff, &crt_len) == LDG_ERR_AOK && crt_buff != 0x0)
@@ -15719,7 +15719,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_CRT;
             editor_sect[editor_sect_cunt].blob = crt_buff;
             editor_sect[editor_sect_cunt].blob_len = crt_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         if (crosstalk_emu_sect_build(ctx, &emu_buff, &emu_len) == LDG_ERR_AOK && emu_buff != 0x0)
@@ -15727,7 +15727,7 @@ static uint32_t crosstalk_autosave_wr(crosstalk_ctx_t *ctx)
             editor_sect[editor_sect_cunt].name = CROSSTALK_GAME_SAVE_SECT_EMU;
             editor_sect[editor_sect_cunt].blob = emu_buff;
             editor_sect[editor_sect_cunt].blob_len = emu_len;
-            editor_sect_cunt = editor_sect_cunt + 0x1;
+            editor_sect_cunt++;
         }
 
         ret = crosstalk_game_save_wr(&ctx->game.settings, &ctx->game.last_state, &ctx->game.credit, ctx->game.author_steam_id, ctx->game.author_name, ctx->game.created_epoch_ms, ctx->game.bench_ms_total, ctx->game.sim_ms_total, editor_sect, editor_sect_cunt, autosave_path);
@@ -15833,7 +15833,7 @@ static uint32_t crosstalk_lobby_wave_draw(crosstalk_ctx_t *ctx, ldg_term_render_
     seg_w = wave_w / (double)CROSSTALK_LOBBY_WAVE_SEG_CUNT;
     seg_phase = CROSSTALK_LOBBY_WAVE_CYCLES * CROSSTALK_CORE_CARD_TURN * LDG_MATH_PI / (double)CROSSTALK_LOBBY_WAVE_SEG_CUNT;
 
-    for (field_idx = 0; field_idx < CROSSTALK_LOBBY_WAVE_FIELD_CUNT; field_idx = field_idx + 1)
+    for (field_idx = 0; field_idx < CROSSTALK_LOBBY_WAVE_FIELD_CUNT; field_idx++)
     {
         double amp_now = wave_amp * (field_idx == 0 ? cos(wave_phase) : sin(wave_phase));
 
@@ -15841,7 +15841,7 @@ static uint32_t crosstalk_lobby_wave_draw(crosstalk_ctx_t *ctx, ldg_term_render_
         prev_x = wave_x0;
         prev_y = wave_cy;
 
-        for (seg_idx = 1; seg_idx <= CROSSTALK_LOBBY_WAVE_SEG_CUNT; seg_idx = seg_idx + 1)
+        for (seg_idx = 1; seg_idx <= CROSSTALK_LOBBY_WAVE_SEG_CUNT; seg_idx++)
         {
             double cur_x = wave_x0 + (double)seg_idx * seg_w;
             double cur_y = wave_cy + amp_now * sin((double)seg_idx * seg_phase);
@@ -15896,7 +15896,7 @@ static uint32_t crosstalk_menu_switch_draw(ldg_term_render_t *render, const ldg_
 
         if (panel_col + panel_w > rect->col + rect->col_cunt) { panel_w = rect->col + rect->col_cunt - panel_col; }
 
-        for (idx = panel_row; idx < panel_end; idx = idx + 0x1)
+        for (idx = panel_row; idx < panel_end; idx++)
         {
             ret = crosstalk_row_fill(render, panel_col, idx, panel_w, (uint32_t)CROSSTALK_UI_CELL_PANE_RGBA);
             if (ret != LDG_ERR_AOK) { return ret; }
@@ -15906,7 +15906,7 @@ static uint32_t crosstalk_menu_switch_draw(ldg_term_render_t *render, const ldg_
     ret = crosstalk_text_clip_put(render, left, top, (uint32_t)CROSSTALK_MENU_SWITCH_COL_CUNT, caption, (uint32_t)CROSSTALK_UI_THEME_LIT_RGBA, (uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &drawn);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (idx = 0; idx < item_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < item_cunt; idx++)
     {
         const char *label = (item_hide != 0x0 && item_hide[idx] == LDG_TRUTH_TRUE) ? CROSSTALK_MENU_SOON_TEXT : item[idx];
         uint32_t row = top + (uint32_t)CROSSTALK_MENU_SWITCH_HD_ROWS + idx;
@@ -15936,19 +15936,19 @@ static uint32_t crosstalk_menu_switch_key_isr(crosstalk_ctx_t *ctx, const ldg_te
 
     if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE || item_cunt == 0) { return LDG_ERR_AOK; }
 
-    if (ctx->menu_sel >= item_cunt) { ctx->menu_sel = item_cunt - 0x1; }
+    if (ctx->menu_sel >= item_cunt) { ctx->menu_sel = item_cunt - 1; }
 
     sel_prev = ctx->menu_sel;
 
     if (irq->key == (uint8_t)LDG_TERM_KEY_UP || irq->key == (uint8_t)LDG_TERM_KEY_LHS)
     {
         *consumed = LDG_TRUTH_TRUE;
-        if (ctx->menu_sel > 0) { ctx->menu_sel = ctx->menu_sel - 0x1; }
+        if (ctx->menu_sel > 0) { ctx->menu_sel--; }
     }
     else if (irq->key == (uint8_t)LDG_TERM_KEY_DOWN || irq->key == (uint8_t)LDG_TERM_KEY_RHS)
     {
         *consumed = LDG_TRUTH_TRUE;
-        if (ctx->menu_sel + 0x1 < item_cunt) { ctx->menu_sel = ctx->menu_sel + 0x1; }
+        if (ctx->menu_sel + 1 < item_cunt) { ctx->menu_sel++; }
     }
     else if (irq->key == (uint8_t)LDG_TERM_KEY_ENTER)
     {
@@ -16232,7 +16232,7 @@ static uint32_t crosstalk_statusline_draw(ldg_term_render_t *render, uint32_t ro
     ret = crosstalk_row_fill(render, col, row, col_cunt, (uint32_t)CROSSTALK_STATUSLINE_BG_COL);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (idx = 0; idx < cell_cunt && col < col_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < cell_cunt && col < col_cunt; idx++)
     {
         if (cell[idx] == 0x0 || cell[idx][0] == LDG_STR_TERM) { continue; }
 
@@ -16274,7 +16274,7 @@ static uint32_t crosstalk_busy_draw(ldg_term_render_t *render, const ldg_term_re
     top = rect->row + (rect->row_cunt - box_h) / (uint32_t)CROSSTALK_MENU_SWITCH_CENTER_DIV;
     left = rect->col + (rect->col_cunt - box_w) / (uint32_t)CROSSTALK_MENU_SWITCH_CENTER_DIV;
 
-    for (idx = 0; idx < box_h; idx = idx + 0x1)
+    for (idx = 0; idx < box_h; idx++)
     {
         ret = crosstalk_row_fill(render, left, top + idx, box_w, (uint32_t)CROSSTALK_UI_THEME_SEL_BG_RGBA);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -17320,14 +17320,14 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 member_cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
                 if (ctx->lobby_member_prev_cunt > 0)
                 {
-                    for (idx = 0; idx < member_cunt; idx = idx + 1)
+                    for (idx = 0; idx < member_cunt; idx++)
                     {
                         const crosstalk_net_libresteam_lobby_member_t *member_now = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
 
                         if (member_now == 0x0 || member_now->user_id == self_id) { continue; }
 
                         found = LDG_TRUTH_FALSE;
-                        for (jdx = 0; jdx < ctx->lobby_member_prev_cunt; jdx = jdx + 1) { if (ctx->lobby_member_prev[jdx].user_id == member_now->user_id) { found = LDG_TRUTH_TRUE; break; } }
+                        for (jdx = 0; jdx < ctx->lobby_member_prev_cunt; jdx++) { if (ctx->lobby_member_prev[jdx].user_id == member_now->user_id) { found = LDG_TRUTH_TRUE; break; } }
 
                         if (found == LDG_TRUTH_FALSE)
                         {
@@ -17337,12 +17337,12 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                         }
                     }
 
-                    for (idx = 0; idx < ctx->lobby_member_prev_cunt; idx = idx + 1)
+                    for (idx = 0; idx < ctx->lobby_member_prev_cunt; idx++)
                     {
                         if (ctx->lobby_member_prev[idx].user_id == self_id) { continue; }
 
                         found = LDG_TRUTH_FALSE;
-                        for (jdx = 0; jdx < member_cunt; jdx = jdx + 1)
+                        for (jdx = 0; jdx < member_cunt; jdx++)
                         {
                             const crosstalk_net_libresteam_lobby_member_t *member_now = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, jdx);
 
@@ -17359,7 +17359,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 }
 
                 ctx->lobby_member_prev_cunt = 0;
-                for (idx = 0; idx < member_cunt && ctx->lobby_member_prev_cunt < CROSSTALK_NET_LOBBY_MEMBER_MAX; idx = idx + 1)
+                for (idx = 0; idx < member_cunt && ctx->lobby_member_prev_cunt < CROSSTALK_NET_LOBBY_MEMBER_MAX; idx++)
                 {
                     const crosstalk_net_libresteam_lobby_member_t *member_now = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, idx);
 
@@ -17436,7 +17436,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             ctx->tick_period = (double)(tick_now - ctx->tick_prev) / (double)LDG_NS_PER_MS;
             ctx->perf_delta_sum = ctx->perf_delta_sum + ctx->tick_period;
             ctx->perf_window_elapsed = ctx->perf_window_elapsed + ctx->tick_period;
-            ctx->perf_delta_cunt = ctx->perf_delta_cunt + 1;
+            ctx->perf_delta_cunt++;
             if (ctx->perf_window_elapsed >= CROSSTALK_PERF_WINDOW)
             {
                 if (ctx->perf_delta_cunt != 0) { ctx->perf_delta_average = ctx->perf_delta_sum / (double)ctx->perf_delta_cunt; }
@@ -17679,7 +17679,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
             if (ctx->re_diff_pending != 0)
             {
-                ctx->re_diff_pending = ctx->re_diff_pending - 0x1;
+                ctx->re_diff_pending--;
 
                 if (ctx->re_diff_pending == 0) { crosstalk_re_diff_run(ctx); }
             }
@@ -17781,9 +17781,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
         if (ctx->eda.memview.io_on == LDG_TRUTH_TRUE && ctx->eda.memview.io_cunt != 0)
         {
-            for (seg = 0; seg < ctx->eda.memview.io_cunt; seg = seg + 0x1) { if (ctx->eda.memview.base >= ctx->eda.memview.io_base[seg] && ctx->eda.memview.base < ctx->eda.memview.io_base[seg] + ctx->eda.memview.io_span[seg]) { ctx->ach_io_seen = ctx->ach_io_seen | ((uint32_t)0x1 << seg); } }
+            for (seg = 0; seg < ctx->eda.memview.io_cunt; seg++) { if (ctx->eda.memview.base >= ctx->eda.memview.io_base[seg] && ctx->eda.memview.base < ctx->eda.memview.io_base[seg] + ctx->eda.memview.io_span[seg]) { ctx->ach_io_seen = ctx->ach_io_seen | ((uint32_t)1 << seg); } }
 
-            if (ctx->ach_io_seen == ((uint32_t)0x1 << ctx->eda.memview.io_cunt) - (uint32_t)0x1) { crosstalk_ach_once(ctx, CROSSTALK_GAME_PROGRESSION_IO_ALL_SEEN); }
+            if (ctx->ach_io_seen == ((uint32_t)1 << ctx->eda.memview.io_cunt) - (uint32_t)1) { crosstalk_ach_once(ctx, CROSSTALK_GAME_PROGRESSION_IO_ALL_SEEN); }
         }
     }
 
@@ -17886,7 +17886,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
     if (ctx->game.screen == CROSSTALK_GAME_SCREEN_LD)
     {
-        if (ctx->ld_frames < UINT8_MAX) { ctx->ld_frames = ctx->ld_frames + 0x1; }
+        if (ctx->ld_frames < UINT8_MAX) { ctx->ld_frames++; }
 
         crosstalk_card_kind_resolve(ctx);
         ret = crosstalk_game_fx_sfx_tone_start(&ctx->game.sfx_sound);
@@ -18034,7 +18034,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 if (ret == LDG_ERR_AOK) { ctx->mp_host_pending = LDG_TRUTH_FALSE; }
                 else if (ctx->mp_host_retry > 0)
                 {
-                    ctx->mp_host_retry = (uint8_t)(ctx->mp_host_retry - 0x1);
+                    ctx->mp_host_retry = (uint8_t)(ctx->mp_host_retry - 1);
                     ctx->mp_host_retry_next = ctx->time + CROSSTALK_CORE_MP_HOST_RETRY_SECS;
                 }
                 else
@@ -18255,7 +18255,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             uint32_t drawn = 0;
             uint32_t line_idx = 0;
 
-            for (line_idx = 0; line_idx < CROSSTALK_CORE_BOARD_PREVIEW_LINE_CUNT && text_col < screen_rect.col_cunt; line_idx = line_idx + 1)
+            for (line_idx = 0; line_idx < CROSSTALK_CORE_BOARD_PREVIEW_LINE_CUNT && text_col < screen_rect.col_cunt; line_idx++)
             {
                 if (ctx->board_preview_line[line_idx][0] == LDG_STR_TERM) { continue; }
 
@@ -18291,10 +18291,10 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crosstalk: save editors; path: %.255s; mask: 0x%02X32; cunt: %u32", ctx->save_path, (uint32_t)ctx->editorpick_mask, ctx->editorpick_cunt);
             }
 
-            if (ret == LDG_ERR_AOK && ctx->editorpick_cunt > 0x1) { ctx->game.screen = CROSSTALK_GAME_SCREEN_EDITORPICK; }
+            if (ret == LDG_ERR_AOK && ctx->editorpick_cunt > 1) { ctx->game.screen = CROSSTALK_GAME_SCREEN_EDITORPICK; }
             else
             {
-                if (ret == LDG_ERR_AOK && ctx->editorpick_cunt == 0x1) { ctx->editor_kind = ctx->editorpick_kind[0]; }
+                if (ret == LDG_ERR_AOK && ctx->editorpick_cunt == 1) { ctx->editor_kind = ctx->editorpick_kind[0]; }
 
                 if (ret == LDG_ERR_AOK) { ret = ld_begin(ctx, CROSSTALK_LD_FILE, CROSSTALK_GAME_SCREEN_EDITOR); }
             }
@@ -18321,7 +18321,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
                 if (ctx->board_sel.cunt > 0)
                 {
-                    ctx->menu_nav.row = sel_row < ctx->board_sel.cunt ? sel_row : ctx->board_sel.cunt - 0x1;
+                    ctx->menu_nav.row = sel_row < ctx->board_sel.cunt ? sel_row : ctx->board_sel.cunt - 1;
                     ctx->board_sel_active = ctx->menu_nav.row;
                 }
             }
@@ -18434,7 +18434,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             if (ctx->newproject_pick == CROSSTALK_CORE_NEWPROJECT_PICK_NEW) { ret = ld_begin(ctx, CROSSTALK_LD_BARE, CROSSTALK_GAME_SCREEN_EDITOR); }
             else
             {
-                pick_row = ctx->newproject_row[ctx->newproject_pick - 0x1];
+                pick_row = ctx->newproject_row[ctx->newproject_pick - 1];
                 ret = crosstalk_game_board_path_build(&ctx->board_sel, pick_row, pick_path, (uint64_t)sizeof(pick_path));
                 if (ret == LDG_ERR_AOK) { ret = ldg_str_rbrcpy(ctx->save_path, pick_path, (uint64_t)sizeof(ctx->save_path)); }
 
@@ -18492,7 +18492,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
                 uint32_t mp_member_cunt = crosstalk_net_libresteam_lobby_member_cunt_get(&ctx->libresteam_net);
                 const char *mp_peer = "";
                 uint32_t mp_i = 0;
-                for (mp_i = 0; mp_i < mp_member_cunt; mp_i = mp_i + 1)
+                for (mp_i = 0; mp_i < mp_member_cunt; mp_i++)
                 {
                     const crosstalk_net_libresteam_lobby_member_t *mp_member = crosstalk_net_libresteam_lobby_member_get(&ctx->libresteam_net, mp_i);
                     if (mp_member != 0x0 && mp_member->user_id != mp_local_id) { mp_peer = mp_member->name; break; }

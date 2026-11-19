@@ -73,7 +73,7 @@ uint8_t crosstalk_mngr_conf_name_ok_is(const char *name)
 
     if (name[0] == LDG_STR_TERM) { return LDG_TRUTH_FALSE; }
 
-    for (at = 0; name[at] != LDG_STR_TERM; at = at + MNGR_CONF_STEP)
+    for (at = 0; name[at] != LDG_STR_TERM; at++)
     {
         if (name[at] == MNGR_CONF_SLASH || name[at] == LDG_ASCII_BSLASH) { return LDG_TRUTH_FALSE; }
 
@@ -171,7 +171,7 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
     mngr_conf_u32_put(out + at, machine->ld_cunt);
     at = at + (uint32_t)LDG_WORD_BYTES;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EMU_LD_MAX; idx = idx + MNGR_CONF_STEP)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EMU_LD_MAX; idx++)
     {
         memcpy(out + at, machine->ld_path[idx], sizeof(machine->ld_path[idx]));
         at = at + (uint32_t)sizeof(machine->ld_path[idx]);
@@ -188,7 +188,7 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
 
     if (cap < at + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX * (uint32_t)LDG_IO_PATH_MAX) { return CROSSTALK_MNGR_ERR_FULL; }
 
-    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MNGR_CONF_STEP)
+    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
     {
         memcpy(out + at, machine->disk_path[drive], sizeof(machine->disk_path[drive]));
         at = at + (uint32_t)sizeof(machine->disk_path[drive]);
@@ -237,7 +237,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
     if (blks > (len - at) / (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES) { return CROSSTALK_MNGR_ERR_TRUNC; }
 
-    for (seen = 0; seen < blks; seen = seen + MNGR_CONF_STEP)
+    for (seen = 0; seen < blks; seen++)
     {
         uint32_t kind = 0;
         uint32_t span = 0;
@@ -308,7 +308,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
             if (out->ld_cunt > (uint32_t)CROSSTALK_EMU_LD_MAX) { out->ld_cunt = (uint32_t)CROSSTALK_EMU_LD_MAX; }
 
-            for (idx = 0; idx < (uint32_t)CROSSTALK_EMU_LD_MAX; idx = idx + MNGR_CONF_STEP)
+            for (idx = 0; idx < (uint32_t)CROSSTALK_EMU_LD_MAX; idx++)
             {
                 memcpy(&out->ld_path[idx][0], buff + body, sizeof(out->ld_path[idx]));
                 out->ld_path[idx][sizeof(out->ld_path[idx]) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
@@ -322,7 +322,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
         {
             if (span < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX * (uint32_t)LDG_IO_PATH_MAX) { return CROSSTALK_MNGR_ERR_BLK; }
 
-            for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MNGR_CONF_STEP)
+            for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
             {
                 memcpy(&out->disk_path[drive][0], buff + body, sizeof(out->disk_path[drive]));
                 out->disk_path[drive][sizeof(out->disk_path[drive]) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;

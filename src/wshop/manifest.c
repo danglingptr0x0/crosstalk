@@ -32,7 +32,7 @@ static uint8_t manifest_key_is(const char *key, uint64_t key_len, const char *wa
 
         if (key[idx] != want[idx]) { return LDG_TRUTH_FALSE; }
 
-        idx = idx + MANIFEST_STEP;
+        idx++;
     }
 
     if (want[key_len] != LDG_STR_TERM) { return LDG_TRUTH_FALSE; }
@@ -88,7 +88,7 @@ static uint32_t manifest_u64_parse(const char *val, uint64_t val_len, uint64_t *
         ret = ldg_arith_uint64_add(acc, dig, &acc);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        idx = idx + MANIFEST_STEP;
+        idx++;
     }
 
     *out = acc;
@@ -182,14 +182,14 @@ static uint32_t manifest_idx_key_split(const char *key, uint64_t key_len, const 
 
         if (key[pos] != prefix[pos]) { return LDG_ERR_NOT_FOUND; }
 
-        pos = pos + MANIFEST_STEP;
+        pos++;
     }
 
     while (pos < key_len && ldg_char_digit_is((uint8_t)key[pos]) == LDG_TRUTH_TRUE && dig_cunt < MANIFEST_IDX_DIG_MAX)
     {
         acc = acc * LDG_BASE_DEC + (uint64_t)(key[pos] - LDG_ASCII_DIGIT_ZERO);
-        dig_cunt = dig_cunt + MANIFEST_STEP;
-        pos = pos + MANIFEST_STEP;
+        dig_cunt++;
+        pos++;
     }
 
     if (dig_cunt == 0) { return LDG_ERR_NOT_FOUND; }
@@ -198,7 +198,7 @@ static uint32_t manifest_idx_key_split(const char *key, uint64_t key_len, const 
 
     if (key[pos] != MANIFEST_DOT) { return LDG_ERR_NOT_FOUND; }
 
-    pos = pos + MANIFEST_STEP;
+    pos++;
 
     *out_idx = acc;
     *out_tail = &key[pos];
@@ -374,7 +374,7 @@ static uint32_t manifest_validate(const crosstalk_wshop_manifest_t *out)
 
         if (out->isa[0] == LDG_STR_TERM) { return CROSSTALK_WSHOP_MANIFEST_ERR_FIELD; }
 
-        for (idx = 0; idx < out->mem_cunt; idx = idx + MANIFEST_STEP) { if (out->mem[idx].sig[0] == LDG_STR_TERM) { return CROSSTALK_WSHOP_MANIFEST_ERR_FIELD; } }
+        for (idx = 0; idx < out->mem_cunt; idx++) { if (out->mem[idx].sig[0] == LDG_STR_TERM) { return CROSSTALK_WSHOP_MANIFEST_ERR_FIELD; } }
 
         return LDG_ERR_AOK;
     }
@@ -385,7 +385,7 @@ static uint32_t manifest_validate(const crosstalk_wshop_manifest_t *out)
 
         if (out->img_cunt == 0) { return CROSSTALK_WSHOP_MANIFEST_ERR_FIELD; }
 
-        for (idx = 0; idx < out->img_cunt; idx = idx + MANIFEST_STEP)
+        for (idx = 0; idx < out->img_cunt; idx++)
         {
             if (out->img[idx].path[0] == LDG_STR_TERM) { return CROSSTALK_WSHOP_MANIFEST_ERR_FIELD; }
 
@@ -430,29 +430,29 @@ uint32_t crosstalk_wshop_manifest_parse(const char *src, uint64_t len, crosstalk
     {
         line_end = pos;
 
-        while (line_end < len && src[line_end] != LDG_ASCII_LF) { line_end = line_end + MANIFEST_STEP; }
+        while (line_end < len && src[line_end] != LDG_ASCII_LF) { line_end++; }
 
         key_beg = pos;
         val_end = line_end;
 
-        while (val_end > key_beg && (src[val_end - MANIFEST_STEP] == LDG_ASCII_CR || src[val_end - MANIFEST_STEP] == LDG_ASCII_SPACE || src[val_end - MANIFEST_STEP] == LDG_ASCII_TAB)) { val_end = val_end - MANIFEST_STEP; }
-        while (key_beg < val_end && (src[key_beg] == LDG_ASCII_SPACE || src[key_beg] == LDG_ASCII_TAB)) { key_beg = key_beg + MANIFEST_STEP; }
+        while (val_end > key_beg && (src[val_end - MANIFEST_STEP] == LDG_ASCII_CR || src[val_end - MANIFEST_STEP] == LDG_ASCII_SPACE || src[val_end - MANIFEST_STEP] == LDG_ASCII_TAB)) { val_end--; }
+        while (key_beg < val_end && (src[key_beg] == LDG_ASCII_SPACE || src[key_beg] == LDG_ASCII_TAB)) { key_beg++; }
 
         if (key_beg < val_end && src[key_beg] != MANIFEST_COMMENT)
         {
             sep = key_beg;
 
-            while (sep < val_end && src[sep] != MANIFEST_SEP) { sep = sep + MANIFEST_STEP; }
+            while (sep < val_end && src[sep] != MANIFEST_SEP) { sep++; }
 
             if (sep < val_end)
             {
                 key_end = sep;
 
-                while (key_end > key_beg && (src[key_end - MANIFEST_STEP] == LDG_ASCII_SPACE || src[key_end - MANIFEST_STEP] == LDG_ASCII_TAB)) { key_end = key_end - MANIFEST_STEP; }
+                while (key_end > key_beg && (src[key_end - MANIFEST_STEP] == LDG_ASCII_SPACE || src[key_end - MANIFEST_STEP] == LDG_ASCII_TAB)) { key_end--; }
 
                 val_beg = sep + MANIFEST_STEP;
 
-                while (val_beg < val_end && (src[val_beg] == LDG_ASCII_SPACE || src[val_beg] == LDG_ASCII_TAB)) { val_beg = val_beg + MANIFEST_STEP; }
+                while (val_beg < val_end && (src[val_beg] == LDG_ASCII_SPACE || src[val_beg] == LDG_ASCII_TAB)) { val_beg++; }
 
                 if (key_end > key_beg)
                 {

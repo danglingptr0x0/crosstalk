@@ -153,7 +153,7 @@ static void crosstalk_net_discord_str_copy(const Discord_String *src, char *dst,
         if (byte > NET_DISCORD_STR_ASCII_MAX) { continue; }
 
         dst[out] = (char)byte;
-        out = out + NET_DISCORD_STR_STEP;
+        out++;
     }
 
     dst[out] = LDG_STR_TERM;
@@ -486,7 +486,7 @@ static void crosstalk_net_discord_guilds_cb(Discord_ClientResult *res, Discord_G
     span_cunt = (uint64_t)guilds.size;
     ctx->guild_member = LDG_TRUTH_FALSE;
 
-    for (idx = 0; idx < span_cunt; idx = idx + 1)
+    for (idx = 0; idx < span_cunt; idx++)
     {
         if (Discord_GuildMinimal_Id(&guilds.ptr[idx]) != CROSSTALK_NET_DISCORD_GUILD_ID) { continue; }
 
@@ -596,7 +596,7 @@ static void crosstalk_net_discord_msg_handle_ingest(crosstalk_net_discord_ctx_t 
     slot = (ctx->msg_hd + ctx->msg_cunt) % CROSSTALK_NET_DISCORD_MSG_RING;
 
     if (ctx->msg_cunt == CROSSTALK_NET_DISCORD_MSG_RING) { ctx->msg_hd = (ctx->msg_hd + CROSSTALK_NET_DISCORD_RING_STEP) % CROSSTALK_NET_DISCORD_MSG_RING; }
-    else { ctx->msg_cunt = ctx->msg_cunt + CROSSTALK_NET_DISCORD_RING_STEP; }
+    else { ctx->msg_cunt++; }
 
     Discord_MessageHandle_Content(handle, &text);
     crosstalk_net_discord_str_copy(&text, ctx->msg[slot].text, (uint32_t)sizeof(ctx->msg[slot].text));
@@ -2187,7 +2187,7 @@ uint32_t crosstalk_net_discord_chat_get(crosstalk_net_discord_ctx_t *ctx, const 
 
     slot = ctx->msg_hd;
     ctx->msg_hd = (ctx->msg_hd + CROSSTALK_NET_DISCORD_RING_STEP) % CROSSTALK_NET_DISCORD_MSG_RING;
-    ctx->msg_cunt = ctx->msg_cunt - CROSSTALK_NET_DISCORD_RING_STEP;
+    ctx->msg_cunt--;
 
     *out_name = ctx->msg[slot].name;
     *out_text = ctx->msg[slot].text;

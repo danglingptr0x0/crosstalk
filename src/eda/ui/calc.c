@@ -94,7 +94,7 @@ typedef struct calc_env
 
 static void calc_space_skip(calc_cursor_t *cur)
 {
-    while (cur->text[cur->at] == ' ' || cur->text[cur->at] == '\t') { cur->at = cur->at + 0x1; }
+    while (cur->text[cur->at] == ' ' || cur->text[cur->at] == '\t') { cur->at++; }
 }
 
 static uint8_t calc_digit_zero_is(char ch)
@@ -133,8 +133,8 @@ static uint32_t calc_ident_parse(calc_cursor_t *cur, char *out, uint32_t cap)
         if (len + LDG_STR_TERM_SIZE >= cap) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
         out[len] = cur->text[cur->at];
-        len = len + 0x1;
-        cur->at = cur->at + 0x1;
+        len++;
+        cur->at++;
     }
 
     out[len] = LDG_STR_TERM;
@@ -145,7 +145,7 @@ static uint8_t calc_var_find(const crosstalk_eda_ui_calc_ctx_t *calc, const char
 {
     uint32_t idx = 0;
 
-    for (idx = 0; idx < calc->var_cunt; idx = idx + 0x1) { if (strcmp(calc->var[idx].name, name) == 0x0)
+    for (idx = 0; idx < calc->var_cunt; idx++) { if (strcmp(calc->var[idx].name, name) == 0x0)
         {
             *out_idx = idx;
             return LDG_TRUTH_TRUE;
@@ -197,7 +197,7 @@ static void calc_group_skip(calc_cursor_t *cur, uint32_t mode)
 {
     uint32_t at = cur->at;
 
-    while (cur->text[at] == CALC_GROUP_SEP_BAR || (cur->text[at] == LDG_ASCII_SPACE && mode != (uint32_t)CALC_GROUP_DEC)) { at = at + 0x1; }
+    while (cur->text[at] == CALC_GROUP_SEP_BAR || (cur->text[at] == LDG_ASCII_SPACE && mode != (uint32_t)CALC_GROUP_DEC)) { at++; }
 
     if (at == cur->at) { return; }
 
@@ -215,7 +215,7 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
 
     *out = 0;
 
-    if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 0x1] == 'x' || cur->text[cur->at + 0x1] == 'X'))
+    if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 1] == 'x' || cur->text[cur->at + 1] == 'X'))
     {
         cur->at = cur->at + 0x2;
         while (LDG_TRUTH_TRUE)
@@ -229,11 +229,11 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
             if (ldg_hex_to_nipple(cur->text[cur->at], &nibble) != LDG_ERR_AOK) { break; }
 
             val = (val << CALC_NIBBLE_GROUP) | (uint64_t)nibble;
-            cur->at = cur->at + 0x1;
-            digits = digits + 0x1;
+            cur->at++;
+            digits++;
         }
     }
-    else if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 0x1] == 'b' || cur->text[cur->at + 0x1] == 'B'))
+    else if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 1] == 'b' || cur->text[cur->at + 1] == 'B'))
     {
         cur->at = cur->at + 0x2;
         while (LDG_TRUTH_TRUE)
@@ -246,11 +246,11 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
 
             if (ldg_hex_to_nipple(cur->text[cur->at], &bit) != LDG_ERR_AOK) { break; }
 
-            if (bit > 0x1) { break; }
+            if (bit > 1) { break; }
 
-            val = (val << 0x1) | (uint64_t)bit;
-            cur->at = cur->at + 0x1;
-            digits = digits + 0x1;
+            val = (val << 1) | (uint64_t)bit;
+            cur->at++;
+            digits++;
         }
     }
     else
@@ -267,16 +267,16 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
             if (ldg_hex_to_nipple(cur->text[cur->at], &digit) != LDG_ERR_AOK) { break; }
 
             val = val * (uint64_t)LDG_BASE_DEC + (uint64_t)digit;
-            cur->at = cur->at + 0x1;
-            digits = digits + 0x1;
+            cur->at++;
+            digits++;
         }
     }
 
     if (digits == 0) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-    if (dec_is == LDG_TRUTH_TRUE && cur->text[cur->at] == '.' && ldg_char_digit_is((uint8_t)cur->text[cur->at + 0x1]) == LDG_TRUTH_TRUE)
+    if (dec_is == LDG_TRUTH_TRUE && cur->text[cur->at] == '.' && ldg_char_digit_is((uint8_t)cur->text[cur->at + 1]) == LDG_TRUTH_TRUE)
     {
-        cur->at = cur->at + 0x1;
+        cur->at++;
         while (ldg_char_digit_is((uint8_t)cur->text[cur->at]) == LDG_TRUTH_TRUE)
         {
             uint8_t digit = 0;
@@ -285,16 +285,16 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
 
             frac_div = frac_div * CALC_FRAC_BASE;
             frac = frac + (double)digit / frac_div;
-            cur->at = cur->at + 0x1;
+            cur->at++;
         }
 
         if (cur->text[cur->at] != 'n' && cur->text[cur->at] != 'u' && cur->text[cur->at] != 'm' && cur->text[cur->at] != 's') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
     }
 
-    if (dec_is == LDG_TRUTH_TRUE) { if (cur->text[cur->at] == 'n' && cur->text[cur->at + 0x1] == 's') { scale_ns = 1.0; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 'u' && cur->text[cur->at + 0x1] == 's') { scale_ns = CALC_TIME_US_NS; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 'm' && cur->text[cur->at + 0x1] == 's') { scale_ns = CALC_TIME_MS_NS; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 's' && calc_ident_rest_is(cur->text[cur->at + 0x1]) != LDG_TRUTH_TRUE) { scale_ns = CALC_TIME_S_NS; cur->at = cur->at + 0x1; } }
+    if (dec_is == LDG_TRUTH_TRUE) { if (cur->text[cur->at] == 'n' && cur->text[cur->at + 1] == 's') { scale_ns = 1.0; cur->at = cur->at + 0x2; }
+        else if (cur->text[cur->at] == 'u' && cur->text[cur->at + 1] == 's') { scale_ns = CALC_TIME_US_NS; cur->at = cur->at + 0x2; }
+        else if (cur->text[cur->at] == 'm' && cur->text[cur->at + 1] == 's') { scale_ns = CALC_TIME_MS_NS; cur->at = cur->at + 0x2; }
+        else if (cur->text[cur->at] == 's' && calc_ident_rest_is(cur->text[cur->at + 1]) != LDG_TRUTH_TRUE) { scale_ns = CALC_TIME_S_NS; cur->at++; } }
 
     if (scale_ns > 0.0)
     {
@@ -312,14 +312,14 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
 
 static uint32_t calc_pow_get(uint64_t base, uint64_t exp, uint64_t *out)
 {
-    uint64_t res = 0x1;
+    uint64_t res = 1;
     uint64_t at = 0;
 
     *out = 0;
 
     if (exp > (uint64_t)CALC_POW_EXP_MAX) { return LDG_ERR_RANGE; }
 
-    for (at = 0; at < exp; at = at + 0x1) { res = res * base; }
+    for (at = 0; at < exp; at++) { res = res * base; }
 
     *out = res;
 
@@ -329,7 +329,7 @@ static uint32_t calc_pow_get(uint64_t base, uint64_t exp, uint64_t *out)
 static uint32_t calc_op_peek(const calc_cursor_t *cur, uint32_t *out_prec, uint32_t *out_len, char *out_op)
 {
     char first = cur->text[cur->at];
-    char second = cur->text[cur->at + 0x1];
+    char second = cur->text[cur->at + 1];
 
     *out_prec = 0;
     *out_len = 0;
@@ -350,15 +350,15 @@ static uint32_t calc_op_peek(const calc_cursor_t *cur, uint32_t *out_prec, uint3
 
     if (first == '>' && second == '>') { *out_prec = CALC_PREC_SHIFT; *out_len = 0x2; return LDG_ERR_AOK; }
 
-    if (first == '|') { *out_prec = CALC_PREC_LOR; *out_len = 0x1; return LDG_ERR_AOK; }
+    if (first == '|') { *out_prec = CALC_PREC_LOR; *out_len = 1; return LDG_ERR_AOK; }
 
-    if (first == '^') { *out_prec = CALC_PREC_POW; *out_len = 0x1; return LDG_ERR_AOK; }
+    if (first == '^') { *out_prec = CALC_PREC_POW; *out_len = 1; return LDG_ERR_AOK; }
 
-    if (first == '&') { *out_prec = CALC_PREC_LAND; *out_len = 0x1; return LDG_ERR_AOK; }
+    if (first == '&') { *out_prec = CALC_PREC_LAND; *out_len = 1; return LDG_ERR_AOK; }
 
-    if (first == '+' || first == '-') { *out_prec = CALC_PREC_ADD; *out_len = 0x1; return LDG_ERR_AOK; }
+    if (first == '+' || first == '-') { *out_prec = CALC_PREC_ADD; *out_len = 1; return LDG_ERR_AOK; }
 
-    if (first == '*' || first == '/' || first == '%') { *out_prec = CALC_PREC_MUL; *out_len = 0x1; return LDG_ERR_AOK; }
+    if (first == '*' || first == '/' || first == '%') { *out_prec = CALC_PREC_MUL; *out_len = 1; return LDG_ERR_AOK; }
 
     return LDG_ERR_NOT_FOUND;
 }
@@ -373,7 +373,7 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
     calc_space_skip(cur);
     if (cur->text[cur->at] == '~')
     {
-        cur->at = cur->at + 0x1;
+        cur->at++;
         ret = calc_expr_parse(env, cur, CALC_PREC_UNARY, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -381,22 +381,22 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
     }
     else if (cur->text[cur->at] == '-')
     {
-        cur->at = cur->at + 0x1;
+        cur->at++;
         ret = calc_expr_parse(env, cur, CALC_PREC_UNARY, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        lhs = ~lhs + 0x1;
+        lhs = ~lhs + 1;
     }
     else if (cur->text[cur->at] == '(')
     {
-        cur->at = cur->at + 0x1;
+        cur->at++;
         ret = calc_expr_parse(env, cur, CALC_PREC_LOR, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         calc_space_skip(cur);
         if (cur->text[cur->at] != ')') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-        cur->at = cur->at + 0x1;
+        cur->at++;
     }
     else if (calc_ident_first_is(cur->text[cur->at]) == LDG_TRUTH_TRUE)
     {
@@ -410,7 +410,7 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
         {
             uint64_t first_idx = 0;
 
-            cur->at = cur->at + 0x1;
+            cur->at++;
             ret = calc_expr_parse(env, cur, CALC_PREC_LOR, &first_idx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -421,14 +421,14 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
                 uint64_t hi = first_idx;
                 uint64_t span = 0;
 
-                cur->at = cur->at + 0x1;
+                cur->at++;
                 ret = calc_expr_parse(env, cur, CALC_PREC_LOR, &lo);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                 calc_space_skip(cur);
                 if (cur->text[cur->at] != ']') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-                cur->at = cur->at + 0x1;
+                cur->at++;
 
                 if (hi > (uint64_t)CALC_BIT_MAX) { hi = CALC_BIT_MAX; }
 
@@ -437,8 +437,8 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
                 ret = calc_ident_val_get(env, name, &lhs);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                span = hi - lo + 0x1;
-                lhs = span >= (uint64_t)CALC_SHIFT_BITS_MAX ? lhs >> lo : (lhs >> lo) & (((uint64_t)0x1 << span) - 0x1);
+                span = hi - lo + 1;
+                lhs = span >= (uint64_t)CALC_SHIFT_BITS_MAX ? lhs >> lo : (lhs >> lo) & (((uint64_t)1 << span) - 1);
             }
             else
             {
@@ -447,15 +447,15 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
 
                 if (cur->text[cur->at] != ']') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-                cur->at = cur->at + 0x1;
+                cur->at++;
 
-                if (env->calc->fpga != 0x0 && crosstalk_eda_ic_fpga_mem_rd(env->calc->fpga, env->calc->slot, name, first_idx, &word, 0x1, &got) == LDG_ERR_AOK && got == 0x1) { lhs = word; }
+                if (env->calc->fpga != 0x0 && crosstalk_eda_ic_fpga_mem_rd(env->calc->fpga, env->calc->slot, name, first_idx, &word, 1, &got) == LDG_ERR_AOK && got == 1) { lhs = word; }
                 else
                 {
                     ret = calc_ident_val_get(env, name, &lhs);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                    lhs = (lhs >> (first_idx & (uint64_t)CALC_BIT_MAX)) & 0x1;
+                    lhs = (lhs >> (first_idx & (uint64_t)CALC_BIT_MAX)) & 1;
                 }
             }
         }
@@ -485,7 +485,7 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
         if (prec < min_prec) { break; }
 
         cur->at = cur->at + op_len;
-        ret = calc_expr_parse(env, cur, op == CALC_OP_POW ? prec : prec + 0x1, &rhs);
+        ret = calc_expr_parse(env, cur, op == CALC_OP_POW ? prec : prec + 1, &rhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (op == '|') { lhs = lhs | rhs; }
@@ -559,30 +559,30 @@ static uint32_t calc_eval(const crosstalk_eda_ui_calc_ctx_t *ctx, const char *ex
 static uint32_t calc_bin_fmt(uint64_t val, char *out, uint32_t cap)
 {
     char bit_hex[3] = LDG_ARR_ZERO_INIT;
-    uint32_t nibble_cunt = 0x1;
+    uint32_t nibble_cunt = 1;
     uint32_t used = 0;
     uint32_t idx = 0;
 
-    while (nibble_cunt < (uint32_t)(sizeof(uint64_t) * 0x2) && (val >> (nibble_cunt * CALC_NIBBLE_GROUP)) != 0) { nibble_cunt = nibble_cunt + 0x1; }
+    while (nibble_cunt < (uint32_t)(sizeof(uint64_t) * 0x2) && (val >> (nibble_cunt * CALC_NIBBLE_GROUP)) != 0) { nibble_cunt++; }
 
-    for (idx = 0; idx < nibble_cunt * CALC_NIBBLE_GROUP; idx = idx + 0x1)
+    for (idx = 0; idx < nibble_cunt * CALC_NIBBLE_GROUP; idx++)
     {
-        uint32_t bit = nibble_cunt * CALC_NIBBLE_GROUP - 0x1 - idx;
+        uint32_t bit = nibble_cunt * CALC_NIBBLE_GROUP - 1 - idx;
 
         if (idx != 0 && bit % CALC_NIBBLE_GROUP == 0x3)
         {
             if (used + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
 
             out[used] = ' ';
-            used = used + 0x1;
+            used++;
         }
 
         if (used + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
 
-        if (ldg_byte_to_hex((byte_t)((val >> bit) & 0x1), bit_hex) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
+        if (ldg_byte_to_hex((byte_t)((val >> bit) & 1), bit_hex) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
-        out[used] = bit_hex[0x1];
-        used = used + 0x1;
+        out[used] = bit_hex[1];
+        used++;
     }
 
     out[used] = LDG_STR_TERM;
@@ -591,9 +591,9 @@ static uint32_t calc_bin_fmt(uint64_t val, char *out, uint32_t cap)
 
 static uint32_t calc_width_get(uint64_t val)
 {
-    uint32_t width = 0x1;
+    uint32_t width = 1;
 
-    while (width < (uint32_t)CALC_SHIFT_BITS_MAX && (val >> width) != 0) { width = width + 0x1; }
+    while (width < (uint32_t)CALC_SHIFT_BITS_MAX && (val >> width) != 0) { width++; }
 
     return width;
 }
@@ -604,7 +604,7 @@ static uint64_t calc_align_get(uint64_t val)
 
     if (val == 0) { return align; }
 
-    align = val & (~val + 0x1);
+    align = val & (~val + 1);
 
     return align;
 }
@@ -615,8 +615,8 @@ static uint32_t calc_ones_get(uint64_t val)
 
     while (val != 0)
     {
-        ones = ones + (uint32_t)(val & 0x1);
-        val = val >> 0x1;
+        ones = ones + (uint32_t)(val & 1);
+        val = val >> 1;
     }
 
     return ones;
@@ -624,16 +624,16 @@ static uint32_t calc_ones_get(uint64_t val)
 
 static void calc_ascii_fmt(uint64_t val, char *out, uint32_t cap)
 {
-    uint32_t byte_cunt = (calc_width_get(val) + (uint32_t)LDG_BYTE_BITS - 0x1) / (uint32_t)LDG_BYTE_BITS;
+    uint32_t byte_cunt = (calc_width_get(val) + (uint32_t)LDG_BYTE_BITS - 1) / (uint32_t)LDG_BYTE_BITS;
     uint32_t idx = 0;
     uint32_t used = 0;
 
-    for (idx = 0; idx < byte_cunt && used + LDG_STR_TERM_SIZE < cap; idx = idx + 0x1)
+    for (idx = 0; idx < byte_cunt && used + LDG_STR_TERM_SIZE < cap; idx++)
     {
         uint8_t by = (uint8_t)(val >> (idx * (uint32_t)LDG_BYTE_BITS));
 
         out[used] = by >= (uint8_t)LDG_ASCII_PRINTABLE_MIN && by <= (uint8_t)LDG_ASCII_PRINTABLE_MAX ? (char)by : '.';
-        used = used + 0x1;
+        used++;
     }
 
     out[used] = LDG_STR_TERM;
@@ -647,9 +647,9 @@ static uint32_t calc_bytes_fmt(uint64_t val, uint32_t byte_cunt, uint8_t rev, ch
 
     out[0] = LDG_STR_TERM;
 
-    for (idx = 0; idx < byte_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < byte_cunt; idx++)
     {
-        uint32_t take = rev == LDG_TRUTH_TRUE ? byte_cunt - 0x1 - idx : idx;
+        uint32_t take = rev == LDG_TRUTH_TRUE ? byte_cunt - 1 - idx : idx;
         uint8_t by = (uint8_t)(val >> (take * (uint32_t)LDG_BYTE_BITS));
         int32_t wrote = ldg_str_fmt(out + used, (uint64_t)(cap - used), &fmt_len, idx == 0 ? CALC_BYTE_FMT : CALC_BYTE_GAP_FMT, (uint32_t)by) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
@@ -671,8 +671,8 @@ static uint32_t calc_text_parse(const char *expr, uint8_t *out, uint32_t cap, ui
     while (expr[at] != LDG_STR_TERM && expr[at] != LDG_ASCII_QUOTE && used < cap)
     {
         out[used] = (uint8_t)expr[at];
-        used = used + 0x1;
-        at = at + 0x1;
+        used++;
+        at++;
     }
 
     if (used == 0) { return LDG_ERR_EMPTY; }
@@ -690,9 +690,9 @@ static uint32_t calc_text_hex_fmt(const uint8_t *bytes, uint32_t len, uint8_t re
 
     out[0] = LDG_STR_TERM;
 
-    for (idx = 0; idx < len; idx = idx + 0x1)
+    for (idx = 0; idx < len; idx++)
     {
-        uint32_t take = rev == LDG_TRUTH_TRUE ? len - 0x1 - idx : idx;
+        uint32_t take = rev == LDG_TRUTH_TRUE ? len - 1 - idx : idx;
         int32_t wrote = ldg_str_fmt(out + used, (uint64_t)(cap - used), &fmt_len, idx == 0 ? CALC_BYTE_FMT : CALC_BYTE_GAP_FMT, (uint32_t)bytes[take]) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
 
         if (wrote < 0 || (uint32_t)wrote >= cap - used) { return LDG_ERR_STR_TRUNC; }
@@ -708,7 +708,7 @@ static void calc_whole_mark(char *out, uint32_t cap)
     uint32_t len = (uint32_t)strnlen(out, (uint64_t)cap);
     uint32_t at = 0;
 
-    for (at = 0; at < len; at = at + 0x1) { if (out[at] == '.' || out[at] == 'e' || out[at] == 'n' || out[at] == 'i') { return; } }
+    for (at = 0; at < len; at++) { if (out[at] == '.' || out[at] == 'e' || out[at] == 'n' || out[at] == 'i') { return; } }
 
     if (len + (uint32_t)CALC_FP_FRAC_CHARS + LDG_STR_TERM_SIZE > cap) { return; }
 
@@ -721,7 +721,7 @@ static uint32_t calc_fp32_fmt(uint64_t val, char *out, uint32_t cap)
     uint64_t bits = val & (uint64_t)CALC_FP32_MASK;
     uint32_t mant = (uint32_t)(bits & (uint64_t)CALC_FP32_MANT_MASK);
     uint32_t expo = (uint32_t)((bits >> (uint32_t)CALC_FP32_EXP_SHIFT) & (uint64_t)CALC_FP32_EXP_MASK);
-    uint8_t neg_is = ((bits >> (uint32_t)CALC_FP32_SIGN_SHIFT) & 0x1) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    uint8_t neg_is = ((bits >> (uint32_t)CALC_FP32_SIGN_SHIFT) & 1) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     double num = 0.0;
 
     if (expo == (uint32_t)CALC_FP32_EXP_MASK)
@@ -804,7 +804,7 @@ static void calc_map_fmt(const crosstalk_eda_ui_calc_ctx_t *ctx, uint64_t val, c
 
     if (crosstalk_eda_ic_fpga_slot_ir_get(ctx->fpga, ctx->slot, &ir, &src) != LDG_ERR_AOK || ir == 0x0 || src == 0x0) { return; }
 
-    for (idx = 0; idx < ir->sig_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ir->sig_cunt; idx++)
     {
         char name[CALC_NAME_CAP] = LDG_ARR_ZERO_INIT;
         uint64_t base = 0;
@@ -852,8 +852,8 @@ static void calc_hist_push(crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, c
 
     if (ctx->hist_cunt >= (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP)
     {
-        memmove(&ctx->hist[0], &ctx->hist[0x1], sizeof(ctx->hist) - sizeof(ctx->hist[0]));
-        ctx->hist_cunt = (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP - 0x1;
+        memmove(&ctx->hist[0], &ctx->hist[1], sizeof(ctx->hist) - sizeof(ctx->hist[0]));
+        ctx->hist_cunt = (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP - 1;
     }
 
     rec = &ctx->hist[ctx->hist_cunt];
@@ -865,7 +865,7 @@ static void calc_hist_push(crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, c
 
     rec->val = val;
     rec->text_is = text_is;
-    ctx->hist_cunt = ctx->hist_cunt + 0x1;
+    ctx->hist_cunt++;
 }
 
 static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
@@ -901,9 +901,9 @@ static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
     if (calc_ident_first_is(cur.text[cur.at]) == LDG_TRUTH_TRUE && calc_ident_parse(&cur, name, (uint32_t)sizeof(name)) == LDG_ERR_AOK)
     {
         calc_space_skip(&cur);
-        if (cur.text[cur.at] == '=' && cur.text[cur.at + 0x1] != '=' && strcmp(name, CALC_RES_NAME) != 0x0)
+        if (cur.text[cur.at] == '=' && cur.text[cur.at + 1] != '=' && strcmp(name, CALC_RES_NAME) != 0x0)
         {
-            cur.at = cur.at + 0x1;
+            cur.at++;
             ret = calc_eval(ctx, cur.text + cur.at, &val);
             if (ret != LDG_ERR_AOK) { return; }
 
@@ -912,7 +912,7 @@ static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
                 if (ctx->var_cunt >= (uint32_t)CROSSTALK_EDA_UI_CALC_VAR_CAP) { return; }
 
                 idx = ctx->var_cunt;
-                ctx->var_cunt = ctx->var_cunt + 0x1;
+                ctx->var_cunt++;
                 if (ldg_str_fmt(ctx->var[idx].name, (uint64_t)sizeof(ctx->var[idx].name), &fmt_len, "%.23s", name) != LDG_ERR_AOK) { ctx->var[idx].name[0] = LDG_STR_TERM; }
             }
 
@@ -1021,7 +1021,7 @@ uint32_t crosstalk_eda_ui_calc_var_at_get(const crosstalk_eda_ui_calc_ctx_t *ctx
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < ctx->var_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->var_cunt; idx++)
     {
         if (ctx->var[idx].val != addr) { continue; }
 
@@ -1087,9 +1087,9 @@ uint32_t crosstalk_eda_ui_calc_state_deserialize(crosstalk_eda_ui_calc_ctx_t *ct
 
     if (ctx->hist_cunt > (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP) { ctx->hist_cunt = CROSSTALK_EDA_UI_CALC_HIST_CAP; }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_CALC_VAR_CAP; idx = idx + 0x1) { ctx->var[idx].name[sizeof(ctx->var[idx].name) - LDG_STR_TERM_SIZE] = LDG_STR_TERM; }
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_CALC_VAR_CAP; idx++) { ctx->var[idx].name[sizeof(ctx->var[idx].name) - LDG_STR_TERM_SIZE] = LDG_STR_TERM; }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_UI_CALC_HIST_CAP; idx++)
     {
         ctx->hist[idx].expr[sizeof(ctx->hist[idx].expr) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
         ctx->hist[idx].text[sizeof(ctx->hist[idx].text) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
@@ -1124,14 +1124,14 @@ static uint32_t calc_key_isr(uint64_t win_id, void *user, const ldg_term_key_eve
 
     if (key->key == (uint8_t)LDG_TERM_KEY_BACKSPACE)
     {
-        if (len != 0) { ctx->expr[len - (uint64_t)CALC_STEP] = LDG_STR_TERM; }
+        if (len != 0) { ctx->expr[len - (uint64_t)1] = LDG_STR_TERM; }
 
         *consumed = LDG_TRUTH_TRUE;
 
         return LDG_ERR_AOK;
     }
 
-    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + (uint32_t)CALC_STEP)
+    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + (uint32_t)1)
     {
         if (key->text[at] < (uint32_t)LDG_ASCII_PRINTABLE_MIN || key->text[at] > (uint32_t)LDG_ASCII_PRINTABLE_MAX) { continue; }
 
@@ -1140,7 +1140,7 @@ static uint32_t calc_key_isr(uint64_t win_id, void *user, const ldg_term_key_eve
         if (len + (uint64_t)LDG_STR_TERM_SIZE >= (uint64_t)sizeof(ctx->expr)) { break; }
 
         ctx->expr[len] = (char)key->text[at];
-        len = len + (uint64_t)CALC_STEP;
+        len = len + (uint64_t)1;
         ctx->expr[len] = LDG_STR_TERM;
     }
 
@@ -1156,7 +1156,7 @@ static uint32_t calc_line_put(ldg_term_render_t *render, uint32_t *row, const ch
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)CALC_ORIG_COL, *row, text, (uint64_t)CROSSTALK_EDA_UI_CALC_LINE_CAP, rgba, 0x0);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    *row = *row + (uint32_t)CALC_STEP;
+    *row = *row + (uint32_t)1;
 
     return LDG_ERR_AOK;
 }
@@ -1190,7 +1190,7 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)CALC_STEP;
+    row = row + (uint32_t)1;
 
     if (ctx->expr[0] == LDG_ASCII_QUOTE)
     {
@@ -1223,7 +1223,7 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
 
     if (memcmp(ctx->expr, CALC_DIS_TOK, CALC_DIS_TOK_LEN) == 0x0) { live_is = LDG_TRUTH_FALSE; }
 
-    for (idx = 0; ctx->expr[idx] != LDG_STR_TERM; idx = idx + 0x1) { if (ctx->expr[idx] == '=') { live_is = LDG_TRUTH_FALSE; break; } }
+    for (idx = 0; ctx->expr[idx] != LDG_STR_TERM; idx++) { if (ctx->expr[idx] == '=') { live_is = LDG_TRUTH_FALSE; break; } }
 
     ctx->res_ok = LDG_TRUTH_FALSE;
     if (ctx->expr[0] != LDG_STR_TERM && live_is == LDG_TRUTH_TRUE)
@@ -1247,7 +1247,7 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         {
-            uint32_t byte_cunt = (calc_width_get(ctx->res) + (uint32_t)LDG_BYTE_BITS - 0x1) / (uint32_t)LDG_BYTE_BITS;
+            uint32_t byte_cunt = (calc_width_get(ctx->res) + (uint32_t)LDG_BYTE_BITS - 1) / (uint32_t)LDG_BYTE_BITS;
 
             if (byte_cunt == 0) { byte_cunt = LDG_STR_TERM_SIZE; }
 
@@ -1341,9 +1341,9 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    for (idx = ctx->hist_cunt; idx > 0 && shown < (uint32_t)CALC_HIST_SHOWN_MAX; idx = idx - 0x1)
+    for (idx = ctx->hist_cunt; idx > 0 && shown < (uint32_t)CALC_HIST_SHOWN_MAX; idx--)
     {
-        const crosstalk_eda_ui_calc_hist_t *rec = &ctx->hist[idx - 0x1];
+        const crosstalk_eda_ui_calc_hist_t *rec = &ctx->hist[idx - 1];
 
         if (rec->text_is == LDG_TRUTH_TRUE) { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%.40s: %.79s", rec->expr, rec->text) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
         else { ret = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%.56s = 0x%X64 (%u64)", rec->expr, rec->val, rec->val) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
@@ -1353,7 +1353,7 @@ static uint32_t calc_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         ret = calc_line_put(render, &row, line, hist_col);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        shown = shown + (uint32_t)CALC_STEP;
+        shown = shown + (uint32_t)1;
     }
 
     ret = calc_line_put(render, &row, CALC_HINT_TEXT, label_col);

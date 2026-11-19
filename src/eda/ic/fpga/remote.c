@@ -187,7 +187,7 @@ static uint32_t remote_entry_new(crosstalk_eda_ic_fpga_remote_t *remote, uint64_
         if (remote->arena_used + need > (uint64_t)CROSSTALK_EDA_IC_FPGA_REMOTE_ARENA_SIZE) { return LDG_ERR_FULL; }
 
         idx = remote->entry_cunt;
-        remote->entry_cunt = remote->entry_cunt + REMOTE_STEP;
+        remote->entry_cunt++;
         remote->entry[idx].val_off = remote->arena_used;
         remote->entry[idx].val_cap = val_cap;
         remote->arena_used = remote->arena_used + need;
@@ -379,7 +379,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_wr(crosstalk_eda_ic_fpga_remote_t *remote,
 
     if (args_len > 0) { memcpy(wr->args, args, args_len); }
 
-    remote->wr_cunt = remote->wr_cunt + REMOTE_STEP;
+    remote->wr_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -409,7 +409,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_out_next(crosstalk_eda_ic_fpga_remote_t *r
         *out_len = (uint32_t)sizeof(hdr) + wr->args_len;
         *out_kind = (uint32_t)CROSSTALK_EDA_IC_FPGA_REMOTE_KIND_WR;
         remote->wr_hd = (remote->wr_hd + REMOTE_STEP) % CROSSTALK_EDA_IC_FPGA_REMOTE_WR_CAP;
-        remote->wr_cunt = remote->wr_cunt - REMOTE_STEP;
+        remote->wr_cunt--;
 
         return LDG_ERR_AOK;
     }

@@ -48,7 +48,7 @@ static void domain_step(crosstalk_eda_clk_domain_t *domain, uint64_t step_hz, ui
 
     if (domain->en != LDG_TRUTH_TRUE || domain->f_hz == 0) { return; }
 
-    for (idx = 0; idx < steps; idx = idx + 0x1)
+    for (idx = 0; idx < steps; idx++)
     {
         domain->phase = domain->phase + domain->f_hz;
         run = domain->phase / step_hz;
@@ -91,7 +91,7 @@ uint32_t crosstalk_eda_clk_domain_add(crosstalk_eda_clk_ctx_t *ctx, uint32_t net
 
     if (f_hz == 0) { return CROSSTALK_EDA_CLK_ERR_FREQ; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_CLK_DOMAIN_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_CLK_DOMAIN_MAX; idx++)
     {
         if (ctx->domain[idx].live == LDG_TRUTH_TRUE) { continue; }
 
@@ -100,7 +100,7 @@ uint32_t crosstalk_eda_clk_domain_add(crosstalk_eda_clk_ctx_t *ctx, uint32_t net
         ctx->domain[idx].net = net;
         ctx->domain[idx].en = LDG_TRUTH_TRUE;
         ctx->domain[idx].live = LDG_TRUTH_TRUE;
-        ctx->domain_cunt = ctx->domain_cunt + 0x1;
+        ctx->domain_cunt++;
         *out = idx;
         return LDG_ERR_AOK;
     }
@@ -118,7 +118,7 @@ uint32_t crosstalk_eda_clk_domain_drop(crosstalk_eda_clk_ctx_t *ctx, uint32_t id
 
     ctx->domain[idx] = (crosstalk_eda_clk_domain_t)LDG_STRUCT_ZERO_INIT;
     ctx->domain[idx].net = UINT32_MAX;
-    ctx->domain_cunt = ctx->domain_cunt - 0x1;
+    ctx->domain_cunt--;
     return LDG_ERR_AOK;
 }
 
@@ -130,7 +130,7 @@ uint32_t crosstalk_eda_clk_domain_find(const crosstalk_eda_clk_ctx_t *ctx, uint3
 
     *out = UINT32_MAX;
 
-    for (idx = 0; idx < CROSSTALK_EDA_CLK_DOMAIN_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_CLK_DOMAIN_MAX; idx++)
     {
         if (ctx->domain[idx].live != LDG_TRUTH_TRUE) { continue; }
 
@@ -206,7 +206,7 @@ uint32_t crosstalk_eda_clk_advance(crosstalk_eda_clk_ctx_t *ctx, double dt_secs,
         steps = CROSSTALK_EDA_CLK_STEP_MAX;
     }
 
-    for (idx = 0; idx < CROSSTALK_EDA_CLK_DOMAIN_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_CLK_DOMAIN_MAX; idx++)
     {
         if (ctx->domain[idx].live != LDG_TRUTH_TRUE) { continue; }
 

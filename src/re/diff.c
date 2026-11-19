@@ -19,7 +19,7 @@ static uint64_t diff_fnv_word(uint64_t hash, uint64_t word)
 {
     uint32_t at = 0;
 
-    for (at = 0; at < (uint32_t)LDG_WORD_BYTES * 0x2; at = at + 0x1)
+    for (at = 0; at < (uint32_t)LDG_WORD_BYTES * 0x2; at++)
     {
         hash = hash ^ (word & (uint64_t)LDG_BYTE_MASK);
         hash = hash * (uint64_t)CROSSTALK_RE_DIFF_FNV64_PRIME;
@@ -42,14 +42,14 @@ static uint8_t diff_node_masked_is(const crosstalk_re_diff_ctx_t *ctx, uint32_t 
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (at = 0; at < ctx->mask_cunt; at = at + 0x1) { if (ctx->mask_idx[at] == idx) { return LDG_TRUTH_TRUE; } }
+    for (at = 0; at < ctx->mask_cunt; at++) { if (ctx->mask_idx[at] == idx) { return LDG_TRUTH_TRUE; } }
 
     return LDG_TRUTH_FALSE;
 }
 
 static uint32_t diff_ram_word_get(const uint8_t *ram, uint64_t at)
 {
-    return (uint32_t)ram[at] | ((uint32_t)ram[at + 0x1] << LDG_BYTE_SHIFT_1) | ((uint32_t)ram[at + 0x2] << LDG_BYTE_SHIFT_2) | ((uint32_t)ram[at + 0x3] << LDG_BYTE_SHIFT_3);
+    return (uint32_t)ram[at] | ((uint32_t)ram[at + 1] << LDG_BYTE_SHIFT_1) | ((uint32_t)ram[at + 0x2] << LDG_BYTE_SHIFT_2) | ((uint32_t)ram[at + 0x3] << LDG_BYTE_SHIFT_3);
 }
 
 uint32_t crosstalk_re_diff_init(crosstalk_re_diff_ctx_t *ctx)
@@ -71,7 +71,7 @@ uint32_t crosstalk_re_diff_init(crosstalk_re_diff_ctx_t *ctx)
     ret = ldg_mem_pool_create((uint64_t)DIFF_POOL_ITEM_VAR, need, &ctx->pool);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side = side + 0x1)
+    for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side++)
     {
         ret = ldg_mem_pool_alloc(ctx->pool, node_bytes, (void **)&ctx->side[side].node);
         if (ret != LDG_ERR_AOK) { return ret; }
@@ -92,7 +92,7 @@ uint32_t crosstalk_re_diff_clear(crosstalk_re_diff_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side = side + 0x1)
+    for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side++)
     {
         crosstalk_re_diff_side_t *at = &ctx->side[side];
 
@@ -133,7 +133,7 @@ uint32_t crosstalk_re_diff_func_clear(crosstalk_re_diff_ctx_t *ctx)
 
     ctx->func[0] = LDG_STR_TERM;
 
-    for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side = side + 0x1) { ctx->entry[side] = (uint64_t)UINT64_MAX; }
+    for (side = 0; side < (uint32_t)CROSSTALK_RE_DIFF_SIDE_CUNT; side++) { ctx->entry[side] = (uint64_t)UINT64_MAX; }
 
     memset(&ctx->arg[0], 0x0, sizeof(ctx->arg));
 
@@ -170,7 +170,7 @@ uint32_t crosstalk_re_diff_arg_set(crosstalk_re_diff_ctx_t *ctx, uint32_t idx, u
 
     ctx->arg[idx] = val;
 
-    if (idx + 0x1 > ctx->arg_cunt) { ctx->arg_cunt = idx + 0x1; }
+    if (idx + 1 > ctx->arg_cunt) { ctx->arg_cunt = idx + 1; }
 
     return LDG_ERR_AOK;
 }
@@ -263,7 +263,7 @@ uint32_t crosstalk_re_diff_mask_add(crosstalk_re_diff_ctx_t *ctx, const char *si
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ctx->mask_idx[ctx->mask_cunt] = (uint32_t)UINT32_MAX;
-    ctx->mask_cunt = ctx->mask_cunt + 0x1;
+    ctx->mask_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -325,7 +325,7 @@ uint32_t crosstalk_re_diff_snap_take(crosstalk_re_diff_ctx_t *ctx, uint32_t side
 
     hash = (uint64_t)CROSSTALK_RE_DIFF_FNV64_INIT;
 
-    for (idx = 0; idx < node_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < node_cunt; idx++)
     {
         uint64_t val = 0;
 
@@ -342,7 +342,7 @@ uint32_t crosstalk_re_diff_snap_take(crosstalk_re_diff_ctx_t *ctx, uint32_t side
 
     hash = (uint64_t)CROSSTALK_RE_DIFF_FNV64_INIT;
 
-    for (idx = 0; mem != 0x0 && idx < mem_words; idx = idx + 0x1) { hash = diff_fnv_word(hash, diff_val_transform(mem[idx], base, span)); }
+    for (idx = 0; mem != 0x0 && idx < mem_words; idx++) { hash = diff_fnv_word(hash, diff_val_transform(mem[idx], base, span)); }
 
     at->mem_hash = hash;
 
@@ -356,7 +356,7 @@ uint32_t crosstalk_re_diff_snap_take(crosstalk_re_diff_ctx_t *ctx, uint32_t side
         for (word_at = 0; word_at < (uint64_t)CROSSTALK_RE_DIFF_PAGE_BYTES; word_at = word_at + (uint64_t)CROSSTALK_RE_DIFF_RAM_WORD_BYTES) { page_hash = diff_fnv_word(page_hash, diff_val_transform((uint64_t)diff_ram_word_get(ram, page_at + word_at), base, span)); }
 
         at->page_hash[at->page_cunt] = page_hash;
-        at->page_cunt = at->page_cunt + 0x1;
+        at->page_cunt++;
         hash = diff_fnv_word(hash, page_hash);
     }
 
@@ -391,26 +391,26 @@ uint32_t crosstalk_re_diff_verdict_compute(crosstalk_re_diff_ctx_t *ctx)
 
     cunt = ref->node_cunt < cand->node_cunt ? ref->node_cunt : cand->node_cunt;
 
-    for (idx = 0; idx < cunt; idx = idx + 0x1)
+    for (idx = 0; idx < cunt; idx++)
     {
         if (ref->node[idx] == cand->node[idx]) { continue; }
 
         if (ctx->node_first == UINT32_MAX) { ctx->node_first = idx; }
 
-        ctx->node_diff_cunt = ctx->node_diff_cunt + 0x1;
+        ctx->node_diff_cunt++;
     }
 
     if (ref->node_cunt != cand->node_cunt) { ctx->node_diff_cunt = ctx->node_diff_cunt + (ref->node_cunt > cand->node_cunt ? ref->node_cunt - cand->node_cunt : cand->node_cunt - ref->node_cunt); }
 
     cunt = ref->page_cunt < cand->page_cunt ? ref->page_cunt : cand->page_cunt;
 
-    for (idx = 0; idx < cunt; idx = idx + 0x1)
+    for (idx = 0; idx < cunt; idx++)
     {
         if (ref->page_hash[idx] == cand->page_hash[idx]) { continue; }
 
         if (ctx->page_first == UINT32_MAX) { ctx->page_first = idx; }
 
-        ctx->page_diff_cunt = ctx->page_diff_cunt + 0x1;
+        ctx->page_diff_cunt++;
     }
 
     if (ref->page_cunt != cand->page_cunt) { ctx->page_diff_cunt = ctx->page_diff_cunt + (ref->page_cunt > cand->page_cunt ? ref->page_cunt - cand->page_cunt : cand->page_cunt - ref->page_cunt); }

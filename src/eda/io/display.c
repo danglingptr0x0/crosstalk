@@ -55,7 +55,7 @@ uint32_t crosstalk_eda_io_display_abi_rst(crosstalk_eda_io_display_ctx_t *ctx, u
 
     if (ctx->slot_idx != slot_idx) { return LDG_ERR_AOK; }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_IO_DISPLAY_PIN_CUNT; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_IO_DISPLAY_PIN_CUNT; idx++)
     {
         ctx->pin[idx].abi_vals = 0x0;
         ctx->pin[idx].abi_sig = UINT32_MAX;
@@ -142,7 +142,7 @@ uint32_t crosstalk_eda_io_display_cycle_sample(crosstalk_eda_io_display_ctx_t *c
 
     if (packed != LDG_TRUTH_TRUE && exec == 0x0) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_IO_DISPLAY_PIN_CUNT; idx = idx + DISPLAY_STEP)
+    for (idx = 0; idx < CROSSTALK_EDA_IO_DISPLAY_PIN_CUNT; idx++)
     {
         pin = &ctx->pin[idx];
 
@@ -185,13 +185,13 @@ uint32_t crosstalk_eda_io_display_cycle_sample(crosstalk_eda_io_display_ctx_t *c
         if (ctx->h_pos > ctx->w_seen) { ctx->w_seen = ctx->h_pos; }
 
         ctx->h_pos = 0;
-        ctx->v_pos = ctx->v_pos + DISPLAY_STEP;
+        ctx->v_pos++;
     }
     else if (hs_act != LDG_TRUTH_TRUE && vs_act != LDG_TRUTH_TRUE)
     {
         if (ctx->h_pos < CROSSTALK_EDA_IO_DISPLAY_W_MAX && ctx->v_pos < CROSSTALK_EDA_IO_DISPLAY_H_MAX) { ctx->px[ctx->front ^ DISPLAY_STEP][ctx->v_pos * CROSSTALK_EDA_IO_DISPLAY_W_MAX + ctx->h_pos] = px_val; }
 
-        ctx->h_pos = ctx->h_pos + DISPLAY_STEP;
+        ctx->h_pos++;
     }
 
     if (vs_act == LDG_TRUTH_TRUE && ctx->prev_vs != LDG_TRUTH_TRUE)
@@ -199,7 +199,7 @@ uint32_t crosstalk_eda_io_display_cycle_sample(crosstalk_eda_io_display_ctx_t *c
         if (ctx->v_pos > ctx->h_seen) { ctx->h_seen = ctx->v_pos; }
 
         ctx->v_pos = 0;
-        ctx->frames = ctx->frames + DISPLAY_STEP;
+        ctx->frames++;
         LDG_ST_RELEASE(ctx->front, ctx->front ^ DISPLAY_STEP);
 
         if ((ctx->frames & DISPLAY_LOG_MASK) == 0) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: frame; cunt: %u64; w: %u32; h: %u32", ctx->frames, ctx->w_seen, ctx->h_seen); }

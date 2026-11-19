@@ -21,7 +21,7 @@ static uint32_t stream_drain(ldg_sys_proc_t *proc, ldg_byte_t *dst, uint32_t *io
 
     if (*io_eof == LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    for (pass = 0; pass < CROSSTALK_HDL_PROC_DRAIN_MAX; pass = pass + 0x1)
+    for (pass = 0; pass < CROSSTALK_HDL_PROC_DRAIN_MAX; pass++)
     {
         room = (uint64_t)(cap - *io_len);
         if (room == 0) { return LDG_ERR_AOK; }
@@ -63,7 +63,7 @@ static uint32_t stdin_flush(crosstalk_hdl_proc_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (pass = 0; pass < CROSSTALK_HDL_PROC_DRAIN_MAX; pass = pass + 0x1)
+    for (pass = 0; pass < CROSSTALK_HDL_PROC_DRAIN_MAX; pass++)
     {
         if (ctx->in_pos >= ctx->in_len)
         {

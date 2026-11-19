@@ -123,7 +123,7 @@ static uint32_t save_sect_find(const ldg_byte_t *payload, ldg_dword_t payload_le
     if (LDG_UNLIKELY(payload_len < (ldg_dword_t)sizeof(hdr))) { return LDG_ERR_IO_FMT; }
 
     memcpy(&hdr, payload, sizeof(hdr));
-    for (idx = 0; idx < hdr.sect_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < hdr.sect_cunt; idx++)
     {
         uint64_t desc_at = (uint64_t)hdr.sect_table_off + (uint64_t)idx * (uint64_t)sizeof(desc);
 
@@ -153,7 +153,7 @@ static uint32_t save_sect_add(game_save_sect_t *sects, uint32_t *cunt, const cha
     sects[*cunt].name = name;
     sects[*cunt].buff = buff;
     sects[*cunt].len = len;
-    *cunt = *cunt + 0x1;
+    (*cunt)++;
     return LDG_ERR_AOK;
 }
 
@@ -325,7 +325,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
 
     if (ret == LDG_ERR_AOK && editor_sects != 0x0)
     {
-        for (idx = 0; idx < editor_sect_cunt; idx = idx + 0x1)
+        for (idx = 0; idx < editor_sect_cunt; idx++)
         {
             game_save_sect_stats_t stats = LDG_STRUCT_ZERO_INIT;
             ldg_byte_t *editor_buff = 0x0;
@@ -370,7 +370,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
         hdr.created_epoch_ms = created_epoch_ms;
         hdr.work_ms_total = bench_ms_total;
         hdr.sect_table_off = (uint32_t)sizeof(hdr);
-        for (idx = 0; idx < sect_cunt; idx = idx + 0x1) { hdr.sect_table_off = hdr.sect_table_off + sects[idx].len; }
+        for (idx = 0; idx < sect_cunt; idx++) { hdr.sect_table_off = hdr.sect_table_off + sects[idx].len; }
 
         payload_len = hdr.sect_table_off + sect_cunt * (uint32_t)sizeof(game_save_sect_desc_t);
         ret = ldg_mem_alloc((uint64_t)payload_len, (void **)&payload);
@@ -381,7 +381,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
         uint32_t at = (uint32_t)sizeof(hdr);
         uint32_t table_at = hdr.sect_table_off;
         memcpy(payload, &hdr, sizeof(hdr));
-        for (idx = 0; idx < sect_cunt; idx = idx + 0x1)
+        for (idx = 0; idx < sect_cunt; idx++)
         {
             game_save_sect_desc_t desc = LDG_STRUCT_ZERO_INIT;
             uint64_t name_len = strlen(sects[idx].name);
@@ -396,7 +396,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
         }
     }
 
-    for (idx = 0; idx < sect_cunt; idx = idx + 0x1) { if (sects[idx].buff != 0x0)
+    for (idx = 0; idx < sect_cunt; idx++) { if (sects[idx].buff != 0x0)
         {
             ldg_mem_dealloc(sects[idx].buff);
             sects[idx].buff = 0x0;
@@ -560,11 +560,11 @@ static uint32_t save_editors_append(char *out, uint32_t cap, const char *name)
         if (LDG_UNLIKELY(used + LDG_STR_TERM_SIZE >= (uint64_t)cap)) { return LDG_ERR_STR_TRUNC; }
 
         out[used] = ' ';
-        used = used + LDG_STR_TERM_SIZE;
+        used++;
         out[used] = LDG_STR_TERM;
     }
 
-    for (at = 0; at < (uint32_t)GAME_SAVE_SECT_NAME_CAP && name[at] != LDG_STR_TERM; at = at + 0x1)
+    for (at = 0; at < (uint32_t)GAME_SAVE_SECT_NAME_CAP && name[at] != LDG_STR_TERM; at++)
     {
         char low = name[at];
 
@@ -573,7 +573,7 @@ static uint32_t save_editors_append(char *out, uint32_t cap, const char *name)
         if (LDG_UNLIKELY(used + LDG_STR_TERM_SIZE >= (uint64_t)cap)) { break; }
 
         out[used] = low;
-        used = used + LDG_STR_TERM_SIZE;
+        used++;
     }
 
     out[used] = LDG_STR_TERM;
@@ -632,7 +632,7 @@ uint32_t crosstalk_game_save_meta_rd(const char *path, char *out_author_name, ui
 
         if (ret == LDG_ERR_AOK)
         {
-            for (idx = 0; idx < hdr.sect_cunt; idx = idx + 0x1)
+            for (idx = 0; idx < hdr.sect_cunt; idx++)
             {
                 uint8_t game_hit = LDG_TRUTH_FALSE;
 
@@ -733,7 +733,7 @@ uint32_t crosstalk_game_save_editor_sect_rd(const char *path, const char *name, 
 
     if (ret == LDG_ERR_AOK)
     {
-        for (idx = 0; idx < hdr.sect_cunt; idx = idx + 0x1)
+        for (idx = 0; idx < hdr.sect_cunt; idx++)
         {
             if (memcmp(descs[idx].name, key, sizeof(key)) != 0x0) { continue; }
 

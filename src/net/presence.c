@@ -36,7 +36,7 @@ uint32_t crosstalk_net_presence_reg(crosstalk_net_presence_ctx_t *ctx, void *bac
 
     ctx->backend[ctx->backend_cunt].backend_ctx = backend_ctx;
     ctx->backend[ctx->backend_cunt].push = push;
-    ctx->backend_cunt = ctx->backend_cunt + NET_PRESENCE_STEP;
+    ctx->backend_cunt++;
 
     return LDG_ERR_AOK;
 }

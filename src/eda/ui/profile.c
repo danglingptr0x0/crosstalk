@@ -141,8 +141,8 @@ static void profile_fn_tally(crosstalk_eda_ui_profile_ctx_t *ctx, uint64_t sym_a
     {
         if (ctx->fn_addr[at] != sym_addr) { continue; }
 
-        ctx->fn_hits[at] = ctx->fn_hits[at] + 0x1;
-        ctx->fn_total = ctx->fn_total + 0x1;
+        ctx->fn_hits[at]++;
+        ctx->fn_total++;
 
         return;
     }
@@ -150,9 +150,9 @@ static void profile_fn_tally(crosstalk_eda_ui_profile_ctx_t *ctx, uint64_t sym_a
     if (ctx->fn_cunt >= (uint32_t)CROSSTALK_EDA_UI_PROFILE_FN_CAP) { return; }
 
     ctx->fn_addr[ctx->fn_cunt] = sym_addr;
-    ctx->fn_hits[ctx->fn_cunt] = 0x1;
-    ctx->fn_cunt = ctx->fn_cunt + 0x1;
-    ctx->fn_total = ctx->fn_total + 0x1;
+    ctx->fn_hits[ctx->fn_cunt] = 1;
+    ctx->fn_cunt++;
+    ctx->fn_total++;
 }
 
 static uint32_t profile_fn_scan(crosstalk_eda_ui_profile_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx)
@@ -194,7 +194,7 @@ static uint32_t profile_fn_scan(crosstalk_eda_ui_profile_ctx_t *ctx, const cross
 
     for (at = 0; at + (uint32_t)sizeof(uint32_t) <= rd; at++)
     {
-        val = (bytes[at] & (uint64_t)LDG_BYTE_MASK) | ((bytes[at + 0x1] & (uint64_t)LDG_BYTE_MASK) << 8) | ((bytes[at + 0x2] & (uint64_t)LDG_BYTE_MASK) << 16) | ((bytes[at + 0x3] & (uint64_t)LDG_BYTE_MASK) << 24);
+        val = (bytes[at] & (uint64_t)LDG_BYTE_MASK) | ((bytes[at + 1] & (uint64_t)LDG_BYTE_MASK) << 8) | ((bytes[at + 0x2] & (uint64_t)LDG_BYTE_MASK) << 16) | ((bytes[at + 0x3] & (uint64_t)LDG_BYTE_MASK) << 24);
 
         if (crosstalk_hdl_elf_sym_get(ctx->elf, val, &sym, &off) != LDG_ERR_AOK) { continue; }
 
@@ -221,7 +221,7 @@ uint32_t crosstalk_eda_ui_profile_init(crosstalk_eda_ui_profile_ctx_t *ctx)
 
     ctx->win.scroll_on = LDG_TRUTH_TRUE;
     ctx->agg_sel_slot = UINT32_MAX;
-    ctx->strip_step = (uint64_t)PROFILE_STEP;
+    ctx->strip_step = (uint64_t)1;
     ctx->sel_cyc = UINT64_MAX;
     ctx->view_evt = UINT32_MAX;
 
@@ -326,7 +326,7 @@ static void profile_pending_apply(crosstalk_eda_ui_profile_ctx_t *ctx)
             memcpy(&evt->name[0], ctx->snap_name, sizeof(evt->name));
             evt->used = LDG_TRUTH_TRUE;
             ctx->view_evt = ctx->evt_next;
-            ctx->evt_next = (ctx->evt_next + 0x1) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP;
+            ctx->evt_next = (ctx->evt_next + 1) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP;
             ctx->evt_run = LDG_TRUTH_FALSE;
         }
 
@@ -351,23 +351,23 @@ static void profile_prog_pull(crosstalk_eda_ui_profile_ctx_t *ctx, crosstalk_eda
         {
             uint64_t addr = prog_buff[at];
             uint64_t frame = addr >> PROFILE_PROG_FRAME_SHIFT;
-            uint32_t hash = (uint32_t)((addr * (uint64_t)PROFILE_PROG_HASH_MUL) >> 32) & ((uint32_t)CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP - 0x1);
+            uint32_t hash = (uint32_t)((addr * (uint64_t)PROFILE_PROG_HASH_MUL) >> 32) & ((uint32_t)CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP - 1);
             uint32_t probe = 0;
 
-            ctx->prog_total = ctx->prog_total + 0x1;
+            ctx->prog_total++;
 
-            if (frame < (uint64_t)CROSSTALK_EDA_UI_PROFILE_PROG_FRAME_CAP) { ctx->prog_frame[frame] = ctx->prog_frame[frame] + 0x1; }
+            if (frame < (uint64_t)CROSSTALK_EDA_UI_PROFILE_PROG_FRAME_CAP) { ctx->prog_frame[frame]++; }
 
             for (probe = 0; probe < (uint32_t)PROFILE_PROG_PROBE_MAX; probe++)
             {
-                uint32_t slot = (hash + probe) & ((uint32_t)CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP - 0x1);
+                uint32_t slot = (hash + probe) & ((uint32_t)CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP - 1);
 
-                if (ctx->prog_hits[slot] == 0) { ctx->prog_addr[slot] = addr; ctx->prog_hits[slot] = 0x1; break; }
+                if (ctx->prog_hits[slot] == 0) { ctx->prog_addr[slot] = addr; ctx->prog_hits[slot] = 1; break; }
 
-                if (ctx->prog_addr[slot] == addr) { ctx->prog_hits[slot] = ctx->prog_hits[slot] + 0x1; break; }
+                if (ctx->prog_addr[slot] == addr) { ctx->prog_hits[slot]++; break; }
             }
 
-            if (probe >= (uint32_t)PROFILE_PROG_PROBE_MAX) { ctx->prog_drop = ctx->prog_drop + 0x1; }
+            if (probe >= (uint32_t)PROFILE_PROG_PROBE_MAX) { ctx->prog_drop++; }
         }
     }
 }
@@ -429,7 +429,7 @@ uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, cros
     ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_NM, (uint64_t *)(void *)ctx->nm, (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP * (uint32_t)CROSSTALK_EDA_UI_PROFILE_NM_BYTES / (uint32_t)sizeof(uint64_t));
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
 
-    for (slot = 0; slot < (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP; slot++) { ctx->nm[slot][CROSSTALK_EDA_UI_PROFILE_NM_BYTES - 0x1] = LDG_STR_TERM; }
+    for (slot = 0; slot < (uint32_t)CROSSTALK_EDA_UI_PROFILE_SLOT_CAP; slot++) { ctx->nm[slot][CROSSTALK_EDA_UI_PROFILE_NM_BYTES - 1] = LDG_STR_TERM; }
 
     ret = profile_state_pull(fpga, slot_idx, (uint32_t)CROSSTALK_HDL_ABI_STATE_PF_RING_TOT, ctx->ring_tot, (uint32_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP);
     if (ret != LDG_ERR_AOK) { ctx->bound = LDG_TRUTH_FALSE; return LDG_ERR_AOK; }
@@ -498,7 +498,7 @@ static uint32_t profile_line_put(ldg_term_render_t *render, uint32_t col, uint32
     ret = crosstalk_ui_cell_rgba_put(render, col, *row, text, (uint64_t)PROFILE_TEXT_CAP, rgba, 0x0);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    *row = *row + (uint32_t)PROFILE_STEP;
+    *row = *row + (uint32_t)1;
 
     return LDG_ERR_AOK;
 }
@@ -552,20 +552,20 @@ static uint32_t profile_sub_rows_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_t
     if (LDG_UNLIKELY(ctx == 0x0 || render == 0x0 || row == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (slot == ctx->blk_cunt) { line_cunt = 0x4; }
-    else if (slot == ctx->blk_cunt + 0x1) { line_cunt = 0x2; }
-    else { line_cunt = 0x1; }
+    else if (slot == ctx->blk_cunt + 1) { line_cunt = 0x2; }
+    else { line_cunt = 1; }
 
     for (line = 0; line < line_cunt; line++)
     {
         if (slot == ctx->blk_cunt) { if (line == 0) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_ORDER_FMT, eff_sub[PROFILE_SUB_ORDER_AT], profile_pct_get(eff_sub[PROFILE_SUB_ORDER_AT], eff_t[slot]), ctx->meta[PROFILE_META_ORDER_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
-            else if (line == 0x1) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_HD_FMT, eff_sub[PROFILE_SUB_HD_AT], profile_pct_get(eff_sub[PROFILE_SUB_HD_AT], eff_t[slot]), ctx->meta[PROFILE_META_RES_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
+            else if (line == 1) { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_HD_FMT, eff_sub[PROFILE_SUB_HD_AT], profile_pct_get(eff_sub[PROFILE_SUB_HD_AT], eff_t[slot]), ctx->meta[PROFILE_META_RES_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
             else if (line == 0x2)
             {
                 avg = eff_c[slot] == 0 ? 0.0 : (double)eff_sub[PROFILE_SUB_PASS_AT] / (double)eff_c[slot];
                 if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_CORE_FMT, eff_sub[PROFILE_SUB_CORE_AT], profile_pct_get(eff_sub[PROFILE_SUB_CORE_AT], eff_t[slot]), avg, ctx->meta[PROFILE_META_CORE_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
             }
             else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_TAILS_FMT, eff_sub[PROFILE_SUB_TAILS_AT], profile_pct_get(eff_sub[PROFILE_SUB_TAILS_AT], eff_t[slot])) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } } }
-        else if (slot == ctx->blk_cunt + 0x1) { if (line == 0)
+        else if (slot == ctx->blk_cunt + 1) { if (line == 0)
             {
                 avg = eff_c[slot] == 0 ? 0.0 : (double)eff_sub[PROFILE_SUB_REGWR_AT] / (double)eff_c[slot];
                 if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SUB_REGWR_FMT, eff_sub[PROFILE_SUB_REGWR_AT], avg, ctx->meta[PROFILE_META_STAGED_AT]) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
@@ -664,7 +664,7 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
         used[best_slot] = LDG_TRUTH_TRUE;
 
         if (best_slot == ctx->blk_cunt) { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_COMB_TEXT) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
-        else if (best_slot == ctx->blk_cunt + 0x1) { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_CMT_TEXT) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
+        else if (best_slot == ctx->blk_cunt + 1) { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_CMT_TEXT) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
         else { if (ldg_str_fmt(label, (uint64_t)sizeof(label), &fmt_len, PROFILE_LBL_BLK_FMT, best_slot, ctx->nm[best_slot]) != LDG_ERR_AOK) { *(label) = LDG_STR_TERM; } }
 
         share = profile_pct_get(best, grand);
@@ -677,7 +677,7 @@ static uint32_t profile_agg_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
         ret = profile_bar_row_put(render, *row_at, text, bar_cells, row == ctx->agg_sel ? (uint32_t)CROSSTALK_UI_THEME_WHITE_RGBA : (uint32_t)PROFILE_TEXT_COL, (uint32_t)PROFILE_BAR_DIM_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row_at = *row_at + (uint32_t)PROFILE_STEP;
+        *row_at = *row_at + (uint32_t)1;
 
         if (ctx->expand[best_slot] != 0)
         {
@@ -795,12 +795,12 @@ static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, text, (uint32_t)PROFILE_TEXT_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *row_at = *row_at + (uint32_t)PROFILE_STEP;
+    *row_at = *row_at + (uint32_t)1;
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, PROFILE_EMU_TRAP_HDR_TEXT, (uint32_t)PROFILE_DIM_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_HDL_ABI_TRAP_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_HDL_ABI_TRAP_CUNT; at++)
     {
         if (ctx->emu_trap[at] == 0) { continue; }
 
@@ -818,19 +818,19 @@ static uint32_t profile_emu_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_r
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    *row_at = *row_at + (uint32_t)PROFILE_STEP;
+    *row_at = *row_at + (uint32_t)1;
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, PROFILE_EMU_OP_HDR_TEXT, (uint32_t)PROFILE_DIM_COL);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_HDL_ABI_OP_CUNT; at = at + 0x1) { total = total + ctx->emu_op[at]; }
+    for (at = 0; at < (uint32_t)CROSSTALK_HDL_ABI_OP_CUNT; at++) { total = total + ctx->emu_op[at]; }
 
-    for (row = 0; row < (uint32_t)PROFILE_EMU_OP_ROWS; row = row + 0x1)
+    for (row = 0; row < (uint32_t)PROFILE_EMU_OP_ROWS; row++)
     {
         uint64_t best = 0;
         uint32_t best_at = UINT32_MAX;
 
-        for (at = 0; at < (uint32_t)CROSSTALK_HDL_ABI_OP_CUNT; at = at + 0x1)
+        for (at = 0; at < (uint32_t)CROSSTALK_HDL_ABI_OP_CUNT; at++)
         {
             if (used[at] != 0 || ctx->emu_op[at] <= best) { continue; }
 
@@ -941,7 +941,7 @@ static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_
         ret = profile_bar_row_put(render, *row_at, text, bar_cells, (uint32_t)PROFILE_TEXT_COL, (uint32_t)PROFILE_BAR_DIM_COL);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row_at = *row_at + (uint32_t)PROFILE_STEP;
+        *row_at = *row_at + (uint32_t)1;
     }
 
     ret = profile_line_put(render, (uint32_t)PROFILE_ORIG_COL, row_at, PROFILE_PROG_FRAME_HDR_TEXT, (uint32_t)PROFILE_DIM_COL);
@@ -962,7 +962,7 @@ static uint32_t profile_prog_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term_
         {
             skip = 0;
 
-            for (pu = 0; pu < frame_used_cunt; pu++) { if (frame_used[pu] == at) { skip = 0x1; break; } }
+            for (pu = 0; pu < frame_used_cunt; pu++) { if (frame_used[pu] == at) { skip = LDG_TRUTH_TRUE; break; } }
 
             if (skip != 0 || ctx->prog_frame[at] == 0) { continue; }
 
@@ -1008,32 +1008,32 @@ static uint32_t profile_strip_draw(crosstalk_eda_ui_profile_ctx_t *ctx, ldg_term
     strip_y = strip_row * cell_h;
     ctx->strip_step = have / (uint64_t)col_cunt;
 
-    if (ctx->strip_step == 0) { ctx->strip_step = (uint64_t)PROFILE_STEP; }
+    if (ctx->strip_step == 0) { ctx->strip_step = (uint64_t)1; }
 
     for (at = 0; at < (uint32_t)have; at++)
     {
-        uint64_t sample = ctx->ring_tot[(first_cyc + (uint64_t)at) & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 0x1)];
+        uint64_t sample = ctx->ring_tot[(first_cyc + (uint64_t)at) & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 1)];
 
         if (sample > peak) { peak = sample; }
     }
 
-    if (peak == 0) { peak = 0x1; }
+    if (peak == 0) { peak = 1; }
 
     for (col = 0; col < col_cunt; col++)
     {
         uint64_t lo = ((uint64_t)col * have) / (uint64_t)col_cunt;
-        uint64_t hi = (((uint64_t)col + 0x1) * have) / (uint64_t)col_cunt;
+        uint64_t hi = (((uint64_t)col + 1) * have) / (uint64_t)col_cunt;
         uint64_t tot_max = 0;
         uint64_t comb_max = 0;
         uint64_t walk = 0;
         uint32_t bar_h = 0;
         uint32_t comb_h = 0;
 
-        if (hi <= lo) { hi = lo + 0x1; }
+        if (hi <= lo) { hi = lo + 1; }
 
         for (walk = lo; walk < hi && walk < have; walk++)
         {
-            uint64_t ring_at = (first_cyc + walk) & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 0x1);
+            uint64_t ring_at = (first_cyc + walk) & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 1);
 
             if (ctx->ring_tot[ring_at] > tot_max) { tot_max = ctx->ring_tot[ring_at]; comb_max = ctx->ring_comb[ring_at]; }
         }
@@ -1079,14 +1079,14 @@ static uint32_t profile_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
     ret = profile_tab_draw(ctx, render, row);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)PROFILE_STEP;
+    row = row + (uint32_t)1;
 
     if (ctx->tab == (uint8_t)CROSSTALK_EDA_UI_PROFILE_TAB_PROG)
     {
         ret = profile_controls_draw(ctx, render, row);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)PROFILE_STEP + (uint32_t)PROFILE_STEP;
+        row = row + (uint32_t)1 + (uint32_t)1;
 
         ret = profile_prog_draw(ctx, render, &row, col_cunt);
         ctx->win.content_row_cunt = row;
@@ -1096,7 +1096,7 @@ static uint32_t profile_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
 
     if (ctx->tab == (uint8_t)CROSSTALK_EDA_UI_PROFILE_TAB_EMU)
     {
-        row = row + (uint32_t)PROFILE_STEP;
+        row = row + (uint32_t)1;
 
         ret = profile_emu_draw(ctx, render, &row);
         ctx->win.content_row_cunt = row;
@@ -1118,16 +1118,16 @@ static uint32_t profile_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
     ret = profile_controls_draw(ctx, render, row);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)PROFILE_STEP + (uint32_t)PROFILE_STEP;
+    row = row + (uint32_t)1 + (uint32_t)1;
 
     ret = profile_strip_draw(ctx, render, row, col_cunt, have, first_cyc);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)PROFILE_STRIP_ROW_CUNT + (uint32_t)PROFILE_STEP;
+    row = row + (uint32_t)PROFILE_STRIP_ROW_CUNT + (uint32_t)1;
 
     if (ctx->sel_cyc != UINT64_MAX && ctx->sel_cyc >= first_cyc && ctx->sel_cyc < ctx->meta[PROFILE_META_CYC_AT])
     {
-        sel_at = ctx->sel_cyc & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 0x1);
+        sel_at = ctx->sel_cyc & ((uint64_t)CROSSTALK_EDA_UI_PROFILE_RING_CAP - 1);
         if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SEL_FMT, ctx->sel_cyc, ctx->ring_tot[sel_at], ctx->ring_comb[sel_at], profile_pct_get(ctx->ring_comb[sel_at], ctx->ring_tot[sel_at]), ctx->ring_blk[sel_at], profile_pct_get(ctx->ring_blk[sel_at], ctx->ring_tot[sel_at]), ctx->ring_cmt[sel_at], profile_pct_get(ctx->ring_cmt[sel_at], ctx->ring_tot[sel_at])) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; }
     }
     else { if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, PROFILE_SEL_NONE_TEXT) != LDG_ERR_AOK) { *(text) = LDG_STR_TERM; } }
@@ -1138,7 +1138,7 @@ static uint32_t profile_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
     ret = profile_evt_row_draw(ctx, render, row);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)PROFILE_STEP + (uint32_t)PROFILE_STEP;
+    row = row + (uint32_t)1 + (uint32_t)1;
 
     ret = profile_agg_draw(ctx, render, &row, col_cunt);
     ctx->win.content_row_cunt = row;
@@ -1158,7 +1158,7 @@ static uint32_t profile_sel_mov(crosstalk_eda_ui_profile_ctx_t *ctx, uint8_t bac
     if (have == 0) { return LDG_ERR_EMPTY; }
 
     first_cyc = ctx->meta[PROFILE_META_CYC_AT] - have;
-    last_cyc = ctx->meta[PROFILE_META_CYC_AT] - (uint64_t)PROFILE_STEP;
+    last_cyc = ctx->meta[PROFILE_META_CYC_AT] - (uint64_t)1;
 
     if (ctx->sel_cyc == UINT64_MAX || ctx->sel_cyc < first_cyc || ctx->sel_cyc > last_cyc) { ctx->sel_cyc = last_cyc; return LDG_ERR_AOK; }
 
@@ -1175,9 +1175,9 @@ static void profile_evt_cycle(crosstalk_eda_ui_profile_ctx_t *ctx, uint8_t back)
 
     for (step = 0; step < (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP; step++)
     {
-        if (at == UINT32_MAX) { at = back == LDG_TRUTH_TRUE ? (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP - (uint32_t)PROFILE_STEP : (uint32_t)PROFILE_EVT_FIRST; }
-        else if (back == LDG_TRUTH_TRUE) { at = at == 0 ? (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP - (uint32_t)PROFILE_STEP : at - (uint32_t)PROFILE_STEP; }
-        else { at = (at + (uint32_t)PROFILE_STEP) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP; }
+        if (at == UINT32_MAX) { at = back == LDG_TRUTH_TRUE ? (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP - (uint32_t)1 : (uint32_t)PROFILE_EVT_FIRST; }
+        else if (back == LDG_TRUTH_TRUE) { at = at == 0 ? (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP - (uint32_t)1 : at - (uint32_t)1; }
+        else { at = (at + (uint32_t)1) % (uint32_t)CROSSTALK_EDA_UI_PROFILE_EVT_CAP; }
 
         if (ctx->evt[at].used != 0) { ctx->view_evt = at; return; }
     }
@@ -1207,14 +1207,14 @@ static uint32_t profile_key_isr(uint64_t win_id, void *user, const ldg_term_key_
 
     if (key->key == (uint8_t)LDG_TERM_KEY_UP)
     {
-        if (ctx->agg_sel != 0) { ctx->agg_sel = ctx->agg_sel - (uint32_t)PROFILE_STEP; }
+        if (ctx->agg_sel != 0) { ctx->agg_sel = ctx->agg_sel - (uint32_t)1; }
 
         return LDG_ERR_AOK;
     }
 
     if (key->key == (uint8_t)LDG_TERM_KEY_DOWN)
     {
-        if (ctx->agg_sel + (uint32_t)PROFILE_STEP < (uint32_t)PROFILE_TOP_ROWS) { ctx->agg_sel = ctx->agg_sel + (uint32_t)PROFILE_STEP; }
+        if (ctx->agg_sel + (uint32_t)1 < (uint32_t)PROFILE_TOP_ROWS) { ctx->agg_sel = ctx->agg_sel + (uint32_t)1; }
 
         return LDG_ERR_AOK;
     }

@@ -32,11 +32,11 @@ static uint32_t spawn_argv_split(char *line, const char **argv, uint32_t cap, ui
             if (in_word == LDG_TRUTH_TRUE)
             {
                 line[wr] = LDG_STR_TERM;
-                wr = wr + 0x1;
+                wr++;
                 in_word = LDG_TRUTH_FALSE;
             }
 
-            at = at + 0x1;
+            at++;
             continue;
         }
 
@@ -49,11 +49,11 @@ static uint32_t spawn_argv_split(char *line, const char **argv, uint32_t cap, ui
                 if (cunt >= cap - LDG_STR_TERM_SIZE) { return CROSSTALK_RE_SPAWN_ERR_ARG; }
 
                 argv[cunt] = &line[wr];
-                cunt = cunt + 0x1;
+                cunt++;
                 in_word = LDG_TRUTH_TRUE;
             }
 
-            at = at + 0x1;
+            at++;
             continue;
         }
 
@@ -62,13 +62,13 @@ static uint32_t spawn_argv_split(char *line, const char **argv, uint32_t cap, ui
             if (cunt >= cap - LDG_STR_TERM_SIZE) { return CROSSTALK_RE_SPAWN_ERR_ARG; }
 
             argv[cunt] = &line[wr];
-            cunt = cunt + 0x1;
+            cunt++;
             in_word = LDG_TRUTH_TRUE;
         }
 
         line[wr] = ch;
-        wr = wr + 0x1;
-        at = at + 0x1;
+        wr++;
+        at++;
     }
 
     if (quoted == LDG_TRUTH_TRUE) { return CROSSTALK_RE_SPAWN_ERR_ARG; }
@@ -96,7 +96,7 @@ uint32_t crosstalk_re_spawn_run(const char *line, uint32_t *out_exit)
 
     *out_exit = (uint32_t)CROSSTALK_RE_SPAWN_ERR_EXIT;
 
-    while (line[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (line[len] != LDG_STR_TERM) { len++; }
 
     if (len == 0 || len + LDG_STR_TERM_SIZE > (uint32_t)sizeof(buff)) { return CROSSTALK_RE_SPAWN_ERR_ARG; }
 

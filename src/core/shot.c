@@ -46,12 +46,12 @@ static void shot_cell_raster(uint8_t *rgb, uint64_t stride, uint32_t px_x, uint3
     if (ch == SHOT_CH_EMPTY) { ch = LDG_TERM_RENDER_GLYPH_FIRST; }
     else if (ch < LDG_TERM_RENDER_GLYPH_FIRST || ch >= SHOT_GLYPH_END) { ch = (uint32_t)LDG_ASCII_NONPRINTABLE_CHAR; }
 
-    for (row = 0; row < LDG_TERM_RENDER_GLYPH_ROW_CUNT; row = row + SHOT_STEP)
+    for (row = 0; row < LDG_TERM_RENDER_GLYPH_ROW_CUNT; row++)
     {
         bits = LDG_TERM_RENDER_GLYPH_MASK[ch - LDG_TERM_RENDER_GLYPH_FIRST][row];
         at = rgb + (uint64_t)(px_y + row) * stride + (uint64_t)px_x * LDG_FMT_BMP_SRC_CHANNEL_CUNT;
 
-        for (col = 0; col < LDG_TERM_RENDER_GLYPH_COL_CUNT; col = col + SHOT_STEP)
+        for (col = 0; col < LDG_TERM_RENDER_GLYPH_COL_CUNT; col++)
         {
             ink = (bits & (SHOT_GLYPH_MSB >> col)) != 0 ? fg : bg;
             memcpy(at, ink, LDG_FMT_BMP_SRC_CHANNEL_CUNT);
@@ -170,7 +170,7 @@ uint32_t crosstalk_core_shot_capture(crosstalk_core_shot_t *shot, const ldg_term
     height = rect->row_cunt * LDG_TERM_RENDER_GLYPH_ROW_CUNT;
     stride = (uint64_t)width * LDG_FMT_BMP_SRC_CHANNEL_CUNT;
 
-    for (row = 0; row < rect->row_cunt; row = row + SHOT_STEP) { for (col = 0; col < rect->col_cunt; col = col + SHOT_STEP)
+    for (row = 0; row < rect->row_cunt; row++) { for (col = 0; col < rect->col_cunt; col++)
         {
             ret = ldg_term_render_cell_get(render, rect->col + col, rect->row + row, &cell);
             if (ret != LDG_ERR_AOK) { return ret; }

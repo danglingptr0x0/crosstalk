@@ -35,7 +35,7 @@ static uint32_t wire_frame_send(crosstalk_net_libresteam_ctx_t *ctx, uint8_t kin
     hdr.len = len;
     hdr.seq = ctx->wire_seq;
     hdr.sender = crosstalk_net_libresteam_local_steam_id_get(ctx);
-    ctx->wire_seq = ctx->wire_seq + CROSSTALK_NET_WIRE_SEQ_STEP;
+    ctx->wire_seq++;
 
     memcpy(ctx->wire_buff, &hdr, sizeof(hdr));
     if (hd_len > 0) { memcpy(ctx->wire_buff + sizeof(hdr), hd, hd_len); }

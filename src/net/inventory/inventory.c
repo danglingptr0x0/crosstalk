@@ -144,7 +144,7 @@ uint8_t crosstalk_net_inventory_owned_is(const crosstalk_net_inventory_ctx_t *ct
 
     if (ctx->fetched != LDG_TRUTH_TRUE) { return LDG_ERR_AGAIN; }
 
-    for (idx = 0; idx < ctx->item_cunt; idx = idx + INVENTORY_STEP)
+    for (idx = 0; idx < ctx->item_cunt; idx++)
     {
         if (ctx->item[idx].def != (uint32_t)def) { continue; }
 

@@ -62,7 +62,7 @@ uint32_t crosstalk_re_db_path_build(const char *img_path, char *out, uint32_t ca
 
     if (LDG_UNLIKELY(img_path == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    while (img_path[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (img_path[len] != LDG_STR_TERM) { len++; }
 
     if ((uint64_t)len + sizeof(CROSSTALK_RE_DB_SIBLING_EXT) > (uint64_t)cap) { return LDG_ERR_STR_TRUNC; }
 
@@ -82,9 +82,9 @@ uint32_t crosstalk_re_leaf_get(const char *path, char *out, uint32_t cap)
 
     while (path[at] != LDG_STR_TERM)
     {
-        if (path[at] == '/' || path[at] == '\\') { start = at + 0x1; }
+        if (path[at] == '/' || path[at] == '\\') { start = at + 1; }
 
-        at = at + 0x1;
+        at++;
     }
 
     len = at - start;

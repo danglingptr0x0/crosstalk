@@ -176,9 +176,9 @@ static uint32_t audio_start(crosstalk_emu_audio_ctx_t *ctx, uint32_t rate)
 uint32_t crosstalk_emu_audio_tick(crosstalk_emu_audio_ctx_t *ctx, const crosstalk_hdl_abi_t *abi)
 {
     uint8_t pcm[CROSSTALK_EMU_AUDIO_DRAIN_CAP] = LDG_ARR_ZERO_INIT;
-    uint64_t got = 0x0;
-    uint64_t drained = 0x0;
-    uint32_t ret = 0x0;
+    uint64_t got = 0;
+    uint64_t drained = 0;
+    uint32_t ret = 0;
     uint64_t *dsu = 0x0;
     uint64_t *mem = 0x0;
     const ldg_byte_t *ram = 0x0;

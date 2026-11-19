@@ -79,7 +79,7 @@ void crosstalk_net_libresteam_notice_push(crosstalk_net_libresteam_ctx_t *ctx, c
     if (ctx->notice_cunt < CROSSTALK_NET_NOTICE_RING)
     {
         idx = (ctx->notice_hd + ctx->notice_cunt) % CROSSTALK_NET_NOTICE_RING;
-        ctx->notice_cunt = ctx->notice_cunt + 1;
+        ctx->notice_cunt++;
     }
     else
     {
@@ -133,7 +133,7 @@ static void net_libresteam_notice_tick(crosstalk_net_libresteam_ctx_t *ctx, doub
         slot->ttl = 0.0;
         slot->text[0] = 0;
         ctx->notice_hd = (ctx->notice_hd + 1) % CROSSTALK_NET_NOTICE_RING;
-        ctx->notice_cunt = ctx->notice_cunt - 1;
+        ctx->notice_cunt--;
     }
 }
 
@@ -190,7 +190,7 @@ static uint32_t net_libresteam_client_find(const crosstalk_net_libresteam_ctx_t 
 {
     uint32_t idx = 0;
 
-    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX; idx = idx + NET_LIBRESTEAM_STEP) { if (ctx->client[idx].live == LDG_TRUTH_TRUE && ctx->client[idx].conn == conn) { return idx; } }
+    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX; idx++) { if (ctx->client[idx].live == LDG_TRUTH_TRUE && ctx->client[idx].conn == conn) { return idx; } }
 
     return CROSSTALK_NET_CLIENT_ID_NONE;
 }
@@ -213,7 +213,7 @@ static void net_libresteam_client_admit(crosstalk_net_libresteam_ctx_t *ctx, uin
     uint32_t eres = 0;
     uint32_t idx = 0;
 
-    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX && ctx->client[idx].live == LDG_TRUTH_TRUE; idx = idx + NET_LIBRESTEAM_STEP) {}
+    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX && ctx->client[idx].live == LDG_TRUTH_TRUE; idx++) {}
 
     if (idx >= CROSSTALK_NET_CLIENT_MAX || libresteam_net_socks_conn_accept(ctx->set, conn, &eres) != LDG_ERR_AOK || eres != NET_LIBRESTEAM_ERES_OK)
     {
@@ -228,7 +228,7 @@ static void net_libresteam_client_admit(crosstalk_net_libresteam_ctx_t *ctx, uin
     ctx->client[idx].steam_id = steam_id;
     ctx->client[idx].live = LDG_TRUTH_TRUE;
     net_libresteam_persona_copy(ctx, ctx->client[idx].steam_id, ctx->client[idx].name, (uint64_t)sizeof(ctx->client[idx].name));
-    ctx->client_cunt = ctx->client_cunt + NET_LIBRESTEAM_STEP;
+    ctx->client_cunt++;
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: player joined; name: %.63s; conn: %u32", ctx->client[idx].name, idx);
 
@@ -244,7 +244,7 @@ static void net_libresteam_srv_conn_status(crosstalk_net_libresteam_ctx_t *ctx, 
     {
         if (ctx->join_ask_live == LDG_TRUTH_TRUE && conn == ctx->join_ask_conn) { return; }
 
-        for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX && ctx->client[idx].live == LDG_TRUTH_TRUE; idx = idx + NET_LIBRESTEAM_STEP) {}
+        for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX && ctx->client[idx].live == LDG_TRUTH_TRUE; idx++) {}
 
         if (idx >= CROSSTALK_NET_CLIENT_MAX || ctx->join_ask_live == LDG_TRUTH_TRUE)
         {
@@ -282,7 +282,7 @@ static void net_libresteam_srv_conn_status(crosstalk_net_libresteam_ctx_t *ctx, 
 
     net_libresteam_conn_drop(ctx, conn);
     memset(&ctx->client[slot], 0x0, sizeof(ctx->client[slot]));
-    ctx->client_cunt = ctx->client_cunt - NET_LIBRESTEAM_STEP;
+    ctx->client_cunt--;
 }
 
 static void net_libresteam_client_conn_status(crosstalk_net_libresteam_ctx_t *ctx, uint32_t conn, const libresteam_net_conn_info_t *info)
@@ -352,14 +352,14 @@ static void net_libresteam_cb_msg(void *content, uint32_t user, uint32_t cb_id, 
     {
         if (ctx->friend_msg_cunt >= CROSSTALK_NET_FRIEND_MSG_RING)
         {
-            ctx->friend_msg_drop = ctx->friend_msg_drop + NET_LIBRESTEAM_STEP;
+            ctx->friend_msg_drop++;
             return;
         }
 
         slot = (ctx->friend_msg_hd + ctx->friend_msg_cunt) % CROSSTALK_NET_FRIEND_MSG_RING;
         ctx->friend_msg_ring[slot].steam_id = net_libresteam_u64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
         ctx->friend_msg_ring[slot].msg_id = net_libresteam_u32_rd(param + NET_LIBRESTEAM_OFF_SECOND_ID);
-        ctx->friend_msg_cunt = ctx->friend_msg_cunt + NET_LIBRESTEAM_STEP;
+        ctx->friend_msg_cunt++;
     }
     else if (cb_id == NET_LIBRESTEAM_CB_CONN_STATUS && param_size >= (uint32_t)sizeof(uint32_t))
     {
@@ -427,7 +427,7 @@ uint32_t crosstalk_net_libresteam_friend_msg_get(crosstalk_net_libresteam_ctx_t 
 
     entry = ctx->friend_msg_ring[ctx->friend_msg_hd];
     ctx->friend_msg_hd = (ctx->friend_msg_hd + NET_LIBRESTEAM_STEP) % CROSSTALK_NET_FRIEND_MSG_RING;
-    ctx->friend_msg_cunt = ctx->friend_msg_cunt - NET_LIBRESTEAM_STEP;
+    ctx->friend_msg_cunt--;
 
     ret = libresteam_friends_msg_get(ctx->set, net_libresteam_id_make(entry.steam_id), entry.msg_id, ctx->friend_msg_text, (uint32_t)(sizeof(ctx->friend_msg_text) - LDG_STR_TERM_SIZE), &type, &len);
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -725,7 +725,7 @@ static void net_libresteam_lobby_list_fill(crosstalk_net_libresteam_ctx_t *ctx, 
 
     ctx->lobby_list_cunt = 0;
 
-    for (idx = 0; idx < cunt && ctx->lobby_list_cunt < CROSSTALK_NET_LOBBY_LIST_MAX; idx = idx + NET_LIBRESTEAM_STEP)
+    for (idx = 0; idx < cunt && ctx->lobby_list_cunt < CROSSTALK_NET_LOBBY_LIST_MAX; idx++)
     {
         if (libresteam_lobby_list_lobby_get(ctx->set, idx, &lobby) != LDG_ERR_AOK) { continue; }
 
@@ -741,7 +741,7 @@ static void net_libresteam_lobby_list_fill(crosstalk_net_libresteam_ctx_t *ctx, 
 
         if (libresteam_lobby_member_limit_get(ctx->set, lobby, &limit) == LDG_ERR_AOK) { info->player_max = (uint8_t)limit; }
 
-        ctx->lobby_list_cunt = ctx->lobby_list_cunt + NET_LIBRESTEAM_STEP;
+        ctx->lobby_list_cunt++;
     }
 }
 
@@ -850,7 +850,7 @@ static void net_libresteam_lobby_members_refresh(crosstalk_net_libresteam_ctx_t 
 
     ctx->lobby_member_cunt = 0;
 
-    for (idx = 0; idx < cunt && ctx->lobby_member_cunt < CROSSTALK_NET_LOBBY_MEMBER_MAX; idx = idx + NET_LIBRESTEAM_STEP)
+    for (idx = 0; idx < cunt && ctx->lobby_member_cunt < CROSSTALK_NET_LOBBY_MEMBER_MAX; idx++)
     {
         if (libresteam_lobby_member_get(ctx->set, lobby, idx, &user) != LDG_ERR_AOK) { continue; }
 
@@ -860,7 +860,7 @@ static void net_libresteam_lobby_members_refresh(crosstalk_net_libresteam_ctx_t 
         net_libresteam_persona_copy(ctx, user.all, member->name, (uint64_t)sizeof(member->name));
         member->rdy = net_libresteam_member_flag_get(ctx, lobby, user, CROSSTALK_NET_LOBBY_MEMBER_KEY_RDY);
         member->team = net_libresteam_member_flag_get(ctx, lobby, user, CROSSTALK_NET_LOBBY_MEMBER_KEY_TEAM);
-        ctx->lobby_member_cunt = ctx->lobby_member_cunt + NET_LIBRESTEAM_STEP;
+        ctx->lobby_member_cunt++;
     }
 
     if (ctx->lobby_state != (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_JOINED) { return; }
@@ -889,7 +889,7 @@ static void net_libresteam_msgs_drain(crosstalk_net_libresteam_ctx_t *ctx)
 
     if (cunt > CROSSTALK_NET_MSG_BATCH) { cunt = CROSSTALK_NET_MSG_BATCH; }
 
-    for (idx = 0; idx < cunt; idx = idx + NET_LIBRESTEAM_STEP)
+    for (idx = 0; idx < cunt; idx++)
     {
         if (msg[idx] == 0x0) { continue; }
 
@@ -1145,7 +1145,7 @@ void crosstalk_net_libresteam_sesh_stop(crosstalk_net_libresteam_ctx_t *ctx)
 
     if (ctx->sesh_live == LDG_TRUTH_FALSE && ctx->mode == (uint32_t)CROSSTALK_NET_LIBRESTEAM_MODE_NONE) { return; }
 
-    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX; idx = idx + NET_LIBRESTEAM_STEP)
+    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX; idx++)
     {
         if (ctx->client[idx].live != LDG_TRUTH_TRUE) { continue; }
 
@@ -1293,7 +1293,7 @@ uint32_t crosstalk_net_libresteam_bcast(crosstalk_net_libresteam_ctx_t *ctx, con
 
     if (ctx->mode != (uint32_t)CROSSTALK_NET_LIBRESTEAM_MODE_SRV) { return crosstalk_net_libresteam_send(ctx, NET_LIBRESTEAM_HOST_CONN_ID, data, len, reliable); }
 
-    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX; idx = idx + NET_LIBRESTEAM_STEP)
+    for (idx = 0; idx < CROSSTALK_NET_CLIENT_MAX; idx++)
     {
         if (ctx->client[idx].live != LDG_TRUTH_TRUE) { continue; }
 

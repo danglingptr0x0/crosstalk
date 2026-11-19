@@ -85,7 +85,7 @@ static uint32_t cast_payload_build(const crosstalk_eda_io_cast_ctx_t *ctx, const
         {
             avg = sum[cx] / (cell_w * cell_h);
             idx = avg * CAST_RAMP_CUNT / CAST_LUMA_SPAN;
-            if (idx >= CAST_RAMP_CUNT) { idx = CAST_RAMP_CUNT - 0x1; }
+            if (idx >= CAST_RAMP_CUNT) { idx = CAST_RAMP_CUNT - 1; }
 
             payload[cy * (uint32_t)CROSSTALK_EDA_IO_CAST_COLS + cx] = ramp[idx];
         }
@@ -205,7 +205,7 @@ uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const cros
     ctx->frame_len = (uint32_t)CROSSTALK_EDA_IO_CAST_PAYLOAD + (uint32_t)LDG_EMIEMI_HDR_LEN + (uint32_t)LDG_EMIEMI_END_MARKER_LEN;
     ctx->frame_at = 0;
     ctx->prev_hash = (uint64_t)hash;
-    ctx->frame_cunt = ctx->frame_cunt + 0x1;
+    ctx->frame_cunt++;
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cast: frame queued; cunt: %u64; checksum: %08X32", ctx->frame_cunt, checksum);
 

@@ -858,7 +858,7 @@ uint32_t crosstalk_re_repl_native_search_tick(crosstalk_re_repl_ctx_t *ctx)
 static uint32_t native_fp32_encode(double real, uint64_t *out)
 {
     double mag = fabs(real);
-    double mant = 0x0;
+    double mant = 0;
     uint64_t bits = real < NATIVE_REAL_NONE ? NATIVE_FP32_SIGN_BIT : NATIVE_FP32_SIGN_CLEAR;
     uint64_t rounded = 0;
     int32_t exponent = 0;
@@ -868,7 +868,7 @@ static uint32_t native_fp32_encode(double real, uint64_t *out)
     if (mag == NATIVE_REAL_NONE) { return LDG_ERR_AOK; }
 
     mant = frexp(mag, &exponent);
-    exponent = exponent - NATIVE_STEP;
+    exponent--;
 
     if (exponent < NATIVE_FP32_EXPONENT_MIN)
     {
@@ -880,7 +880,7 @@ static uint32_t native_fp32_encode(double real, uint64_t *out)
     if (rounded == NATIVE_FP32_MANT_END)
     {
         rounded = NATIVE_FP32_IMPLICIT_BIT;
-        exponent = exponent + NATIVE_STEP;
+        exponent++;
     }
 
     if (exponent > NATIVE_FP32_EXPONENT_MAX) { return LDG_ERR_RANGE; }
@@ -894,7 +894,7 @@ static uint32_t native_real_parse(native_ctx_t *native, const char *text, uint32
 {
     crosstalk_re_repl_expr_env_t env = LDG_STRUCT_ZERO_INIT;
     crosstalk_re_repl_expr_val_t val = LDG_STRUCT_ZERO_INIT;
-    double real = 0x0;
+    double real = 0;
     uint32_t at = 0;
     uint32_t ret = 0;
 

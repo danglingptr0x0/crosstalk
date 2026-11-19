@@ -420,10 +420,10 @@ static uint8_t crt_fb_drawable_is(const crt_fb_t *fb)
 static uint32_t crt_native_text_get(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx)
 {
     uint8_t text[CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_BYTE_CUNT] = LDG_ARR_ZERO_INIT;
-    uint32_t cols = 0x0;
-    uint32_t rows = 0x0;
-    uint32_t at = 0x0;
-    uint32_t ret = 0x0;
+    uint32_t cols = 0;
+    uint32_t rows = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
 
     ret = crosstalk_eda_ic_fpga_ddu_text_get(fpga, slot_idx, text, (uint64_t)sizeof(text), &cols, &rows);
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -444,14 +444,14 @@ static uint32_t crt_native_text_get(crosstalk_eda_ui_display_crt_ctx_t *ctx, con
 static uint32_t crt_native_frame_get(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx)
 {
     uint8_t *rgba = (uint8_t *)(void *)ctx->gfx_px;
-    uint32_t width = 0x0;
-    uint32_t height = 0x0;
-    uint64_t ctrl = 0x0;
-    uint32_t ctrl_width = 0x0;
-    uint32_t top = 0x0;
-    uint32_t idx = 0x0;
-    uint32_t at = 0x0;
-    uint32_t ret = 0x0;
+    uint32_t width = 0;
+    uint32_t height = 0;
+    uint64_t ctrl = 0;
+    uint32_t ctrl_width = 0;
+    uint32_t top = 0;
+    uint32_t idx = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
 
     if (crosstalk_eda_ic_fpga_sig_peek(fpga, slot_idx, CROSSTALK_EDA_UI_DISPLAY_CRT_DDU_CTRL_SIG, &ctrl, &ctrl_width) == LDG_ERR_AOK && (ctrl & CROSSTALK_EDA_UI_DISPLAY_CRT_CTRL_GFX_BIT) == 0x0)
     {

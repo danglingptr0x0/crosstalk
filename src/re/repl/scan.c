@@ -361,7 +361,7 @@ static uint32_t scan_base_step(crosstalk_re_repl_ctx_t *ctx, scan_ctx_t *scan)
 
 static uint32_t scan_score_put(scan_item_t *item, const crosstalk_re_repl_expr_val_t *val)
 {
-    double score = 0x0;
+    double score = 0;
     uint32_t ret = 0;
 
     ret = crosstalk_re_repl_expr_real_get(val, &score);

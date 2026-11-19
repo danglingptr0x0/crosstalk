@@ -14,7 +14,7 @@ static uint32_t stream_sinks_feed(crosstalk_eda_logic_stream_t *stream, const ui
 
     if (len == 0x0) { return LDG_ERR_AOK; }
 
-    for (idx = 0; idx < stream->sink_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < stream->sink_cunt; idx++)
     {
         if (stream->sink[idx].cb == 0x0) { continue; }
 
@@ -59,7 +59,7 @@ uint32_t crosstalk_eda_logic_stream_open(crosstalk_eda_logic_stream_ctx_t *ctx, 
 
     if (probe_handle >= CROSSTALK_EDA_LOGIC_PROBE_MAX) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_STREAM_MAX; idx = idx + 0x1) { if (ctx->stream[idx].live != LDG_TRUTH_TRUE) { break; } }
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_STREAM_MAX; idx++) { if (ctx->stream[idx].live != LDG_TRUTH_TRUE) { break; } }
 
     if (idx >= CROSSTALK_EDA_LOGIC_STREAM_MAX) { return CROSSTALK_EDA_LOGIC_STREAM_ERR_FULL; }
 
@@ -102,7 +102,7 @@ uint32_t crosstalk_eda_logic_stream_sink_add(crosstalk_eda_logic_stream_ctx_t *c
 
     stream->sink[stream->sink_cunt].cb = cb;
     stream->sink[stream->sink_cunt].user = user;
-    stream->sink_cunt = stream->sink_cunt + 0x1;
+    stream->sink_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -138,7 +138,7 @@ uint32_t crosstalk_eda_logic_stream_pump(crosstalk_eda_logic_stream_ctx_t *ctx, 
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_STREAM_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_LOGIC_STREAM_MAX; idx++)
     {
         crosstalk_eda_logic_stream_t *stream = &ctx->stream[idx];
         uint32_t cunt = 0;
@@ -158,8 +158,8 @@ uint32_t crosstalk_eda_logic_stream_pump(crosstalk_eda_logic_stream_ctx_t *ctx, 
 
             if (stream->decode == (uint32_t)CROSSTALK_EDA_LOGIC_STREAM_DECODE_LEVEL)
             {
-                stream->level_val = ctx->drain[cunt - 0x1].val;
-                stream->level_cycle = ctx->drain[cunt - 0x1].cycle;
+                stream->level_val = ctx->drain[cunt - 1].val;
+                stream->level_cycle = ctx->drain[cunt - 1].cycle;
                 continue;
             }
 
@@ -167,19 +167,19 @@ uint32_t crosstalk_eda_logic_stream_pump(crosstalk_eda_logic_stream_ctx_t *ctx, 
             {
                 uint32_t width = stream->width != 0 ? stream->width : (uint32_t)CROSSTALK_EDA_LOGIC_STREAM_SAMPLE_BITS;
 
-                for (pos = 0; pos < cunt; pos = pos + 0x1)
+                for (pos = 0; pos < cunt; pos++)
                 {
                     uint32_t at = pos * (uint32_t)CROSSTALK_EDA_LOGIC_STREAM_SAMPLE_BYTES;
                     uint16_t norm = stream_sample_norm_get(ctx->drain[pos].val, width);
 
                     ctx->byte[at] = (uint8_t)(norm & (uint16_t)CROSSTALK_EDA_LOGIC_STREAM_BYTE_MASK);
-                    ctx->byte[at + 0x1] = (uint8_t)((norm >> (uint16_t)LDG_BYTE_BITS) & (uint16_t)CROSSTALK_EDA_LOGIC_STREAM_BYTE_MASK);
+                    ctx->byte[at + 1] = (uint8_t)((norm >> (uint16_t)LDG_BYTE_BITS) & (uint16_t)CROSSTALK_EDA_LOGIC_STREAM_BYTE_MASK);
                 }
             }
-            else { for (pos = 0; pos < cunt; pos = pos + 0x1) { ctx->byte[pos] = (uint8_t)(ctx->drain[pos].val & (uint64_t)CROSSTALK_EDA_LOGIC_STREAM_BYTE_MASK); } }
+            else { for (pos = 0; pos < cunt; pos++) { ctx->byte[pos] = (uint8_t)(ctx->drain[pos].val & (uint64_t)CROSSTALK_EDA_LOGIC_STREAM_BYTE_MASK); } }
 
-            stream->level_val = ctx->drain[cunt - 0x1].val;
-            stream->level_cycle = ctx->drain[cunt - 0x1].cycle;
+            stream->level_val = ctx->drain[cunt - 1].val;
+            stream->level_cycle = ctx->drain[cunt - 1].cycle;
 
             ret = stream_sinks_feed(stream, ctx->byte, stream->decode == (uint32_t)CROSSTALK_EDA_LOGIC_STREAM_DECODE_SAMPLE ? cunt * (uint32_t)CROSSTALK_EDA_LOGIC_STREAM_SAMPLE_BYTES : cunt);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

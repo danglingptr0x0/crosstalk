@@ -35,7 +35,7 @@ static uint8_t crosstalk_hdl_preproc_active_is(const crosstalk_hdl_preproc_ctx_t
 
     if (ctx->cond_depth == 0) { return LDG_TRUTH_TRUE; }
 
-    if (ctx->cond[ctx->cond_depth - 0x1].live == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
+    if (ctx->cond[ctx->cond_depth - 1].live == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
 
     return LDG_TRUTH_FALSE;
 }
@@ -71,7 +71,7 @@ static uint32_t crosstalk_hdl_preproc_out_wr(crosstalk_hdl_preproc_ctx_t *ctx, c
 
 static uint32_t crosstalk_hdl_preproc_out_ch_wr(crosstalk_hdl_preproc_ctx_t *ctx, char ch)
 {
-    return crosstalk_hdl_preproc_out_wr(ctx, &ch, 0x1);
+    return crosstalk_hdl_preproc_out_wr(ctx, &ch, 1);
 }
 
 static void crosstalk_hdl_preproc_space_skip(const char *src, uint32_t len, uint32_t *pos)
@@ -82,7 +82,7 @@ static void crosstalk_hdl_preproc_space_skip(const char *src, uint32_t len, uint
 
         if (ch != ' ' && ch != '\t' && ch != '\r') { break; }
 
-        *pos = *pos + 0x1;
+        (*pos)++;
     }
 }
 
@@ -103,7 +103,7 @@ static uint32_t crosstalk_hdl_preproc_name_scan(const char *src, uint32_t len, u
 
     start = *pos;
 
-    while (*pos < len && crosstalk_hdl_preproc_ident_char_is(src[*pos]) == LDG_TRUTH_TRUE) { *pos = *pos + 0x1; }
+    while (*pos < len && crosstalk_hdl_preproc_ident_char_is(src[*pos]) == LDG_TRUTH_TRUE) { (*pos)++; }
 
     *out_ptr = src + start;
     *out_len = *pos - start;
@@ -137,7 +137,7 @@ static uint32_t crosstalk_hdl_preproc_line_skip(crosstalk_hdl_preproc_ctx_t *ctx
     {
         char ch = src[*pos];
 
-        if (ch == '\\' && *pos + 0x1 < len && src[*pos + 0x1] == '\n')
+        if (ch == '\\' && *pos + 1 < len && src[*pos + 1] == '\n')
         {
             ret = crosstalk_hdl_preproc_out_ch_wr(ctx, '\n');
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -148,7 +148,7 @@ static uint32_t crosstalk_hdl_preproc_line_skip(crosstalk_hdl_preproc_ctx_t *ctx
 
         if (ch == '\n') { break; }
 
-        *pos = *pos + 0x1;
+        (*pos)++;
     }
 
     return LDG_ERR_AOK;
@@ -173,7 +173,7 @@ static uint32_t crosstalk_hdl_preproc_cond_push(crosstalk_hdl_preproc_ctx_t *ctx
 
     if (parent == LDG_TRUTH_TRUE && cond_val == LDG_TRUTH_TRUE) { frame->live = LDG_TRUTH_TRUE; }
 
-    ctx->cond_depth = ctx->cond_depth + 0x1;
+    ctx->cond_depth++;
 
     return LDG_ERR_AOK;
 }
@@ -186,7 +186,7 @@ static uint32_t crosstalk_hdl_preproc_cond_elsif(crosstalk_hdl_preproc_ctx_t *ct
 
     if (ctx->cond_depth == 0) { return CROSSTALK_HDL_ERR_PREPROC_COND; }
 
-    frame = &ctx->cond[ctx->cond_depth - 0x1];
+    frame = &ctx->cond[ctx->cond_depth - 1];
 
     if (frame->else_seen == LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_PREPROC_COND; }
 
@@ -207,7 +207,7 @@ static uint32_t crosstalk_hdl_preproc_cond_else(crosstalk_hdl_preproc_ctx_t *ctx
 
     if (ctx->cond_depth == 0) { return CROSSTALK_HDL_ERR_PREPROC_COND; }
 
-    frame = &ctx->cond[ctx->cond_depth - 0x1];
+    frame = &ctx->cond[ctx->cond_depth - 1];
 
     if (frame->else_seen == LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_PREPROC_COND; }
 
@@ -227,7 +227,7 @@ static uint32_t crosstalk_hdl_preproc_cond_pop(crosstalk_hdl_preproc_ctx_t *ctx)
 
     if (ctx->cond_depth == 0) { return CROSSTALK_HDL_ERR_PREPROC_COND; }
 
-    ctx->cond_depth = ctx->cond_depth - 0x1;
+    ctx->cond_depth--;
 
     return LDG_ERR_AOK;
 }
@@ -260,7 +260,7 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
         if (ctx->macro_cunt >= CROSSTALK_HDL_PREPROC_MACRO_MAX) { return LDG_ERR_FULL; }
 
         idx = ctx->macro_cunt;
-        ctx->macro_cunt = ctx->macro_cunt + 0x1;
+        ctx->macro_cunt++;
     }
 
     macro = &ctx->macros[idx];
@@ -274,11 +274,11 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
     if (*pos < len && src[*pos] == '(')
     {
         macro->func_is = LDG_TRUTH_TRUE;
-        *pos = *pos + 0x1;
+        (*pos)++;
 
         crosstalk_hdl_preproc_space_skip(src, len, pos);
 
-        if (*pos < len && src[*pos] == ')') { *pos = *pos + 0x1; }
+        if (*pos < len && src[*pos] == ')') { (*pos)++; }
         else
         {
             while (*pos < len)
@@ -290,19 +290,19 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
 
                 macro->param[macro->param_cunt] = param_ptr;
                 macro->param_len[macro->param_cunt] = param_len;
-                macro->param_cunt = macro->param_cunt + 0x1;
+                macro->param_cunt++;
 
                 crosstalk_hdl_preproc_space_skip(src, len, pos);
 
                 if (*pos < len && src[*pos] == ',')
                 {
-                    *pos = *pos + 0x1;
+                    (*pos)++;
                     continue;
                 }
 
                 if (*pos < len && src[*pos] == ')')
                 {
-                    *pos = *pos + 0x1;
+                    (*pos)++;
                     break;
                 }
 
@@ -317,7 +317,7 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
 
     while (walk < len)
     {
-        if (src[walk] == '\\' && walk + 0x1 < len && src[walk + 0x1] == '\n')
+        if (src[walk] == '\\' && walk + 1 < len && src[walk + 1] == '\n')
         {
             walk = walk + 0x2;
             continue;
@@ -325,9 +325,9 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
 
         if (src[walk] == '\n') { break; }
 
-        if (src[walk] == '/' && walk + 0x1 < len && src[walk + 0x1] == '/') { break; }
+        if (src[walk] == '/' && walk + 1 < len && src[walk + 1] == '/') { break; }
 
-        walk = walk + 0x1;
+        walk++;
     }
 
     body_end = walk;
@@ -343,10 +343,10 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
 
         while (walk < body_end)
         {
-            if (src[walk] == '\\' && walk + 0x1 < len && src[walk + 0x1] == '\n')
+            if (src[walk] == '\\' && walk + 1 < len && src[walk + 1] == '\n')
             {
                 body_copy[fill] = ' ';
-                fill = fill + 0x1;
+                fill++;
                 walk = walk + 0x2;
 
                 ret = crosstalk_hdl_preproc_out_ch_wr(ctx, '\n');
@@ -356,17 +356,17 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
             }
 
             body_copy[fill] = src[walk];
-            fill = fill + 0x1;
-            walk = walk + 0x1;
+            fill++;
+            walk++;
         }
 
         while (fill > 0)
         {
-            char tail = body_copy[fill - 0x1];
+            char tail = body_copy[fill - 1];
 
             if (tail != ' ' && tail != '\t' && tail != '\r') { break; }
 
-            fill = fill - 0x1;
+            fill--;
         }
 
         macro->body = body_copy;
@@ -375,7 +375,7 @@ static uint32_t crosstalk_hdl_preproc_define_rd(crosstalk_hdl_preproc_ctx_t *ctx
 
     *pos = body_end;
 
-    while (*pos < len && src[*pos] != '\n') { *pos = *pos + 0x1; }
+    while (*pos < len && src[*pos] != '\n') { (*pos)++; }
 
     return LDG_ERR_AOK;
 }
@@ -399,16 +399,16 @@ static uint32_t crosstalk_hdl_preproc_include_rd(crosstalk_hdl_preproc_ctx_t *ct
     if (src[*pos] == '<') { close_ch = '>'; }
     else if (src[*pos] != '"') { return CROSSTALK_HDL_ERR_PREPROC_INCLUDE; }
 
-    *pos = *pos + 0x1;
+    (*pos)++;
     start = *pos;
 
-    while (*pos < len && src[*pos] != close_ch && src[*pos] != '\n') { *pos = *pos + 0x1; }
+    while (*pos < len && src[*pos] != close_ch && src[*pos] != '\n') { (*pos)++; }
 
     if (*pos >= len || src[*pos] != close_ch) { return CROSSTALK_HDL_ERR_PREPROC_INCLUDE; }
 
     name = src + start;
     name_len = *pos - start;
-    *pos = *pos + 0x1;
+    (*pos)++;
 
     if (ctx->include_cb == 0x0) { return CROSSTALK_HDL_ERR_PREPROC_INCLUDE; }
 
@@ -419,9 +419,9 @@ static uint32_t crosstalk_hdl_preproc_include_rd(crosstalk_hdl_preproc_ctx_t *ct
 
     if (LDG_UNLIKELY(text == 0x0)) { return CROSSTALK_HDL_ERR_PREPROC_INCLUDE; }
 
-    ctx->include_depth = ctx->include_depth + 0x1;
+    ctx->include_depth++;
     ret = crosstalk_hdl_preproc_scan(ctx, text, text_len);
-    ctx->include_depth = ctx->include_depth - 0x1;
+    ctx->include_depth--;
 
     return ret;
 }
@@ -458,7 +458,7 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
 
         if (*pos >= len || src[*pos] != '(') { return CROSSTALK_HDL_ERR_PREPROC_MACRO; }
 
-        *pos = *pos + 0x1;
+        (*pos)++;
         start = *pos;
 
         while (*pos < len && done != LDG_TRUTH_TRUE)
@@ -467,11 +467,11 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
 
             if (ch == '"')
             {
-                *pos = *pos + 0x1;
+                (*pos)++;
 
                 while (*pos < len)
                 {
-                    if (src[*pos] == '\\' && *pos + 0x1 < len)
+                    if (src[*pos] == '\\' && *pos + 1 < len)
                     {
                         *pos = *pos + 0x2;
                         continue;
@@ -479,11 +479,11 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
 
                     if (src[*pos] == '"')
                     {
-                        *pos = *pos + 0x1;
+                        (*pos)++;
                         break;
                     }
 
-                    *pos = *pos + 0x1;
+                    (*pos)++;
                 }
 
                 continue;
@@ -491,23 +491,23 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
 
             if (ch == '(' || ch == '[' || ch == '{')
             {
-                nest = nest + 0x1;
-                *pos = *pos + 0x1;
+                nest++;
+                (*pos)++;
                 continue;
             }
 
             if (ch == ']' || ch == '}')
             {
-                if (nest > 0) { nest = nest - 0x1; }
+                if (nest > 0) { nest--; }
 
-                *pos = *pos + 0x1;
+                (*pos)++;
                 continue;
             }
 
             if (ch == ')' && nest > 0)
             {
-                nest = nest - 0x1;
-                *pos = *pos + 0x1;
+                nest--;
+                (*pos)++;
                 continue;
             }
 
@@ -516,7 +516,7 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
                 ret = crosstalk_hdl_preproc_out_ch_wr(ctx, '\n');
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                *pos = *pos + 0x1;
+                (*pos)++;
                 continue;
             }
 
@@ -524,29 +524,29 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
             {
                 end = *pos;
 
-                while (start < end && (src[start] == ' ' || src[start] == '\t' || src[start] == '\r' || src[start] == '\n')) { start = start + 0x1; }
+                while (start < end && (src[start] == ' ' || src[start] == '\t' || src[start] == '\r' || src[start] == '\n')) { start++; }
 
-                while (end > start && (src[end - 0x1] == ' ' || src[end - 0x1] == '\t' || src[end - 0x1] == '\r' || src[end - 0x1] == '\n')) { end = end - 0x1; }
+                while (end > start && (src[end - 1] == ' ' || src[end - 1] == '\t' || src[end - 1] == '\r' || src[end - 1] == '\n')) { end--; }
 
                 if (arg_cunt >= CROSSTALK_HDL_PREPROC_PARAM_MAX) { return LDG_ERR_FULL; }
 
                 arg[arg_cunt] = src + start;
                 arg_len[arg_cunt] = end - start;
-                arg_cunt = arg_cunt + 0x1;
+                arg_cunt++;
 
                 if (ch == ')') { done = LDG_TRUTH_TRUE; }
 
-                *pos = *pos + 0x1;
+                (*pos)++;
                 start = *pos;
                 continue;
             }
 
-            *pos = *pos + 0x1;
+            (*pos)++;
         }
 
         if (done != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_PREPROC_MACRO; }
 
-        if (macro.param_cunt == 0 && arg_cunt == 0x1 && arg_len[0] == 0) { arg_cunt = 0; }
+        if (macro.param_cunt == 0 && arg_cunt == 1 && arg_len[0] == 0) { arg_cunt = 0; }
 
         if (arg_cunt != macro.param_cunt) { return CROSSTALK_HDL_ERR_PREPROC_MACRO; }
     }
@@ -556,9 +556,9 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
 
     if (macro.param_cunt == 0)
     {
-        ctx->expand_depth = ctx->expand_depth + 0x1;
+        ctx->expand_depth++;
         ret = crosstalk_hdl_preproc_scan(ctx, macro.body, macro.body_len);
-        ctx->expand_depth = ctx->expand_depth - 0x1;
+        ctx->expand_depth--;
 
         return ret;
     }
@@ -572,7 +572,7 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
         {
             start = walk;
 
-            while (walk < macro.body_len && crosstalk_hdl_preproc_ident_char_is(macro.body[walk]) == LDG_TRUTH_TRUE) { walk = walk + 0x1; }
+            while (walk < macro.body_len && crosstalk_hdl_preproc_ident_char_is(macro.body[walk]) == LDG_TRUTH_TRUE) { walk++; }
 
             ident_len = walk - start;
             hit = UINT32_MAX;
@@ -594,8 +594,8 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
             continue;
         }
 
-        need = need + 0x1;
-        walk = walk + 0x1;
+        need++;
+        walk++;
     }
 
     if (need == 0) { return LDG_ERR_AOK; }
@@ -613,7 +613,7 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
         {
             start = walk;
 
-            while (walk < macro.body_len && crosstalk_hdl_preproc_ident_char_is(macro.body[walk]) == LDG_TRUTH_TRUE) { walk = walk + 0x1; }
+            while (walk < macro.body_len && crosstalk_hdl_preproc_ident_char_is(macro.body[walk]) == LDG_TRUTH_TRUE) { walk++; }
 
             ident_len = walk - start;
             hit = UINT32_MAX;
@@ -644,13 +644,13 @@ static uint32_t crosstalk_hdl_preproc_expand(crosstalk_hdl_preproc_ctx_t *ctx, c
         }
 
         buff[fill] = macro.body[walk];
-        fill = fill + 0x1;
-        walk = walk + 0x1;
+        fill++;
+        walk++;
     }
 
-    ctx->expand_depth = ctx->expand_depth + 0x1;
+    ctx->expand_depth++;
     ret = crosstalk_hdl_preproc_scan(ctx, buff, fill);
-    ctx->expand_depth = ctx->expand_depth - 0x1;
+    ctx->expand_depth--;
 
     return ret;
 }
@@ -669,13 +669,13 @@ static uint32_t crosstalk_hdl_preproc_directive(crosstalk_hdl_preproc_ctx_t *ctx
 
     if (LDG_UNLIKELY(ctx == 0x0 || src == 0x0 || pos == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *pos = *pos + 0x1;
+    (*pos)++;
 
     if (*pos >= len || crosstalk_hdl_preproc_ident_start_is(src[*pos]) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_PREPROC_DIRECTIVE; }
 
     start = *pos;
 
-    while (*pos < len && crosstalk_hdl_preproc_ident_char_is(src[*pos]) == LDG_TRUTH_TRUE) { *pos = *pos + 0x1; }
+    while (*pos < len && crosstalk_hdl_preproc_ident_char_is(src[*pos]) == LDG_TRUTH_TRUE) { (*pos)++; }
 
     name = src + start;
     name_len = *pos - start;
@@ -729,8 +729,8 @@ static uint32_t crosstalk_hdl_preproc_directive(crosstalk_hdl_preproc_ctx_t *ctx
 
         if (macro_idx != UINT32_MAX)
         {
-            ctx->macros[macro_idx] = ctx->macros[ctx->macro_cunt - 0x1];
-            ctx->macro_cunt = ctx->macro_cunt - 0x1;
+            ctx->macros[macro_idx] = ctx->macros[ctx->macro_cunt - 1];
+            ctx->macro_cunt--;
         }
 
         return LDG_ERR_AOK;
@@ -770,14 +770,14 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
     {
         char ch = src[pos];
 
-        if (ch == '/' && pos + 0x1 < len && src[pos + 0x1] == '/')
+        if (ch == '/' && pos + 1 < len && src[pos + 1] == '/')
         {
-            while (pos < len && src[pos] != '\n') { pos = pos + 0x1; }
+            while (pos < len && src[pos] != '\n') { pos++; }
 
             continue;
         }
 
-        if (ch == '/' && pos + 0x1 < len && src[pos + 0x1] == '*')
+        if (ch == '/' && pos + 1 < len && src[pos + 1] == '*')
         {
             uint8_t term_is = LDG_TRUTH_FALSE;
 
@@ -785,7 +785,7 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
 
             while (pos < len)
             {
-                if (src[pos] == '*' && pos + 0x1 < len && src[pos + 0x1] == '/')
+                if (src[pos] == '*' && pos + 1 < len && src[pos + 1] == '/')
                 {
                     pos = pos + 0x2;
                     term_is = LDG_TRUTH_TRUE;
@@ -798,7 +798,7 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
                 }
 
-                pos = pos + 0x1;
+                pos++;
             }
 
             if (term_is != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_COMMENT_UNTERM; }
@@ -811,11 +811,11 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
             uint32_t start = pos;
             uint8_t term_is = LDG_TRUTH_FALSE;
 
-            pos = pos + 0x1;
+            pos++;
 
             while (pos < len)
             {
-                if (src[pos] == '\\' && pos + 0x1 < len)
+                if (src[pos] == '\\' && pos + 1 < len)
                 {
                     pos = pos + 0x2;
                     continue;
@@ -823,12 +823,12 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
 
                 if (src[pos] == '"')
                 {
-                    pos = pos + 0x1;
+                    pos++;
                     term_is = LDG_TRUTH_TRUE;
                     break;
                 }
 
-                pos = pos + 0x1;
+                pos++;
             }
 
             if (term_is != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_STR_UNTERM; }
@@ -854,9 +854,9 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
         {
             uint32_t start = pos;
 
-            pos = pos + 0x1;
+            pos++;
 
-            while (pos < len && crosstalk_hdl_preproc_ident_char_is(src[pos]) == LDG_TRUTH_TRUE) { pos = pos + 0x1; }
+            while (pos < len && crosstalk_hdl_preproc_ident_char_is(src[pos]) == LDG_TRUTH_TRUE) { pos++; }
 
             if (crosstalk_hdl_preproc_active_is(ctx) == LDG_TRUTH_TRUE)
             {
@@ -872,7 +872,7 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
             ret = crosstalk_hdl_preproc_out_ch_wr(ctx, '\n');
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            pos = pos + 0x1;
+            pos++;
             continue;
         }
 
@@ -882,7 +882,7 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
-        pos = pos + 0x1;
+        pos++;
     }
 
     return LDG_ERR_AOK;
@@ -905,7 +905,7 @@ uint32_t crosstalk_hdl_preproc_init(crosstalk_hdl_preproc_ctx_t *ctx, void *pool
     ctx->include_cb = include_cb;
     ctx->include_user = include_user;
 
-    return crosstalk_hdl_preproc_define_set(ctx, "CROSSTALK_HDL", 0xD, "\x31", 0x1);
+    return crosstalk_hdl_preproc_define_set(ctx, "CROSSTALK_HDL", 0xD, "\x31", 1);
 }
 
 uint32_t crosstalk_hdl_preproc_define_set(crosstalk_hdl_preproc_ctx_t *ctx, const char *name, uint32_t name_len, const char *body, uint32_t body_len)
@@ -922,7 +922,7 @@ uint32_t crosstalk_hdl_preproc_define_set(crosstalk_hdl_preproc_ctx_t *ctx, cons
         if (ctx->macro_cunt >= CROSSTALK_HDL_PREPROC_MACRO_MAX) { return LDG_ERR_FULL; }
 
         idx = ctx->macro_cunt;
-        ctx->macro_cunt = ctx->macro_cunt + 0x1;
+        ctx->macro_cunt++;
     }
 
     macro = &ctx->macros[idx];

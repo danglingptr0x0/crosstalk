@@ -148,7 +148,7 @@ uint32_t crosstalk_game_hub_row_add(crosstalk_game_hub_ctx_t *ctx, uint64_t user
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
     }
 
-    ctx->row_cunt = ctx->row_cunt + CROSSTALK_GAME_HUB_ROW_STEP;
+    ctx->row_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -262,7 +262,7 @@ static uint32_t crosstalk_game_hub_section_draw(crosstalk_game_hub_ctx_t *ctx, l
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)CROSSTALK_GAME_HUB_ORIG_COL, *row, hd, (uint64_t)CROSSTALK_GAME_HUB_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_STATUS_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *row = *row + CROSSTALK_GAME_HUB_ROW_STEP;
+    (*row)++;
 
     for (uint32_t idx = 0; idx < ctx->row_cunt && shown < (uint32_t)CROSSTALK_GAME_HUB_COL_CAP; idx++)
     {
@@ -275,14 +275,14 @@ static uint32_t crosstalk_game_hub_section_draw(crosstalk_game_hub_ctx_t *ctx, l
         ret = crosstalk_game_hub_row_draw(&ctx->row[idx], render, *row, col_cunt, sel_is, shown);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row = *row + CROSSTALK_GAME_HUB_ROW_STEP;
+        (*row)++;
         shown++;
     }
 
     if (shown != 0) { return LDG_ERR_AOK; }
 
     ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)CROSSTALK_GAME_HUB_ORIG_COL, *row, CROSSTALK_GAME_HUB_EMPTY_TEXT, (uint64_t)CROSSTALK_GAME_HUB_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
-    *row = *row + CROSSTALK_GAME_HUB_ROW_STEP;
+    (*row)++;
 
     return ret;
 }
@@ -407,8 +407,8 @@ static uint32_t hub_key_isr(uint64_t win_id, void *user, const ldg_term_key_even
     if (key->key == (uint8_t)LDG_TERM_KEY_UP || key->key == (uint8_t)LDG_TERM_KEY_DOWN)
     {
         if (pos == UINT32_MAX) { pos = 0; }
-        else if (key->key == (uint8_t)LDG_TERM_KEY_UP) { if (pos != 0) { pos = pos - CROSSTALK_GAME_HUB_ROW_STEP; } }
-        else if (pos + CROSSTALK_GAME_HUB_ROW_STEP < vis_cunt) { pos = pos + CROSSTALK_GAME_HUB_ROW_STEP; }
+        else if (key->key == (uint8_t)LDG_TERM_KEY_UP) { if (pos != 0) { pos--; } }
+        else if (pos + CROSSTALK_GAME_HUB_ROW_STEP < vis_cunt) { pos++; }
 
         ctx->sel_on = LDG_TRUTH_TRUE;
         ctx->sel_user_id = ctx->row[vis[pos]].user_id;

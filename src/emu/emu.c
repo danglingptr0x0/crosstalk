@@ -315,7 +315,7 @@ uint32_t crosstalk_emu_init(crosstalk_emu_ctx_t *ctx, const crosstalk_emu_conf_t
 
     if (crosstalk_emu_net_init(&ctx->net, conf->net_path) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: network stays detached; path: %.127s", conf->net_path); }
 
-    if (conf->net_path != 0x0 && (abi->net_drain == 0x0 || abi->net_feed == 0x0)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the core has no network exports; drain: %u32; feed: %u32", abi->net_drain != 0x0 ? 0x1 : 0x0, abi->net_feed != 0x0 ? 0x1 : 0x0); }
+    if (conf->net_path != 0x0 && (abi->net_drain == 0x0 || abi->net_feed == 0x0)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the core has no network exports; drain: %u32; feed: %u32", abi->net_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, abi->net_feed != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
 
     ctx->ok = LDG_TRUTH_TRUE;
 
@@ -352,7 +352,7 @@ static uint32_t emu_run_worker(uint32_t worker_id, void *arg)
     ret = crosstalk_eda_ic_fpga_emu_abi_get(&ctx->emu, &abi);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    alive_now = LDG_ADD_FETCH(ctx->alive, 0x1);
+    alive_now = LDG_ADD_FETCH(ctx->alive, 1);
 
     for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + (uint32_t)CROSSTALK_EMU_STEP)
     {
@@ -434,7 +434,7 @@ static uint32_t emu_run_worker(uint32_t worker_id, void *arg)
         }
     }
 
-    alive_now = LDG_SUB_FETCH(ctx->alive, 0x1);
+    alive_now = LDG_SUB_FETCH(ctx->alive, 1);
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu run: worker exit; id: %u32; alive: %u32; cycles: %u64", worker_id, alive_now, LDG_LD_ACQUIRE(ctx->cycles_total));
 

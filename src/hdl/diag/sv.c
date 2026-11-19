@@ -66,17 +66,17 @@ uint32_t crosstalk_hdl_diag_sv_entry_find(const crosstalk_hdl_parse_ctx_t *parse
 
     out->line_at = pos;
 
-    while (out->line_at > 0 && src[out->line_at - (uint32_t)LDG_STR_TERM_SIZE] != LDG_ASCII_LF) { out->line_at = out->line_at - 0x1; }
+    while (out->line_at > 0 && src[out->line_at - (uint32_t)LDG_STR_TERM_SIZE] != LDG_ASCII_LF) { out->line_at--; }
 
     end = pos;
 
-    while (end < src_len && src[end] != LDG_ASCII_LF) { end = end + 0x1; }
+    while (end < src_len && src[end] != LDG_ASCII_LF) { end++; }
 
-    while (end > out->line_at && src[end - (uint32_t)LDG_STR_TERM_SIZE] == LDG_ASCII_CR) { end = end - 0x1; }
+    while (end > out->line_at && src[end - (uint32_t)LDG_STR_TERM_SIZE] == LDG_ASCII_CR) { end--; }
 
     out->line_len = end - out->line_at;
 
-    for (idx = 0; idx < (uint32_t)(sizeof(entry) / sizeof(entry[0])) && entry[idx].msg != 0x0; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)(sizeof(entry) / sizeof(entry[0])) && entry[idx].msg != 0x0; idx++)
     {
         if (entry[idx].err != (uint32_t)CROSSTALK_HDL_DIAG_ERR_ANY && entry[idx].err != err) { continue; }
 

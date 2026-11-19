@@ -526,8 +526,8 @@ uint32_t crosstalk_re_repl_expr_compile(crosstalk_re_repl_expr_t *expr, const ch
 
 static uint32_t expr_cmp(const crosstalk_re_repl_expr_val_t *lhs, const crosstalk_re_repl_expr_val_t *rhs, uint32_t *out)
 {
-    double lhs_real = 0x0;
-    double rhs_real = 0x0;
+    double lhs_real = 0;
+    double rhs_real = 0;
     uint32_t ret = 0;
 
     *out = LDG_ARITH_ORD_EQ;
@@ -554,8 +554,8 @@ static uint32_t expr_cmp(const crosstalk_re_repl_expr_val_t *lhs, const crosstal
 
 static uint32_t expr_real_arith(uint32_t op, const crosstalk_re_repl_expr_val_t *lhs, const crosstalk_re_repl_expr_val_t *rhs, crosstalk_re_repl_expr_val_t *out)
 {
-    double lhs_real = 0x0;
-    double rhs_real = 0x0;
+    double lhs_real = 0;
+    double rhs_real = 0;
     uint32_t ret = 0;
 
     ret = crosstalk_re_repl_expr_real_get(lhs, &lhs_real);
@@ -630,7 +630,7 @@ static void expr_truth_put(crosstalk_re_repl_expr_val_t *out, uint8_t truth)
 
 static uint32_t expr_func_eval(uint32_t op, const crosstalk_re_repl_expr_val_t *lhs, crosstalk_re_repl_expr_val_t *out)
 {
-    double real = 0x0;
+    double real = 0;
     uint32_t ret = 0;
 
     ret = crosstalk_re_repl_expr_real_get(lhs, &real);

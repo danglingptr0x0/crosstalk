@@ -404,7 +404,7 @@ static uint32_t scope_trace_col_get(uint32_t idx)
 {
     if (idx == 0) { return (uint32_t)CROSSTALK_UI_THEME_LIVE_RGBA; }
 
-    if (idx == 0x1) { return (uint32_t)CROSSTALK_EDA_UI_SCOPE_TRACE_B_COL; }
+    if (idx == 1) { return (uint32_t)CROSSTALK_EDA_UI_SCOPE_TRACE_B_COL; }
 
     if (idx == 0x2) { return (uint32_t)CROSSTALK_UI_THEME_FOCUS_RGBA; }
 

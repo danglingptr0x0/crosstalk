@@ -44,7 +44,7 @@ static uint32_t serial_event_push(crosstalk_eda_io_serial_ctx_t *ctx, const ldg_
     ret = ldg_str_rbrcpy(ev->id, port->id, (uint64_t)sizeof(ev->id));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
-    ctx->event_cunt = ctx->event_cunt + 0x1;
+    ctx->event_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -449,9 +449,9 @@ uint32_t crosstalk_eda_io_serial_id_tail_get(const char *id, const char **out)
 
     while (at < (uint32_t)LDG_IO_SERIAL_ID_MAX && id[at] != LDG_STR_TERM)
     {
-        if (id[at] == CROSSTALK_EDA_IO_SERIAL_SEP) { last = at + 0x1; }
+        if (id[at] == CROSSTALK_EDA_IO_SERIAL_SEP) { last = at + 1; }
 
-        at = at + 0x1;
+        at++;
     }
 
     *out = &id[last];

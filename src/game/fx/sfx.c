@@ -105,7 +105,7 @@ static void crosstalk_game_fx_sfx_stream_render(crosstalk_game_fx_sfx_ctx_t *ctx
     double gate = 1.0;
     uint32_t idx = 0;
 
-    for (idx = 0; idx < frame_cunt; idx = idx + 1)
+    for (idx = 0; idx < frame_cunt; idx++)
     {
         if (ctx->tone_cw == LDG_TRUTH_TRUE)
         {
@@ -187,7 +187,7 @@ static void crosstalk_game_fx_sfx_rotary_render(int16_t *out, uint32_t frame_cun
     double sample = 0.0;
     uint32_t idx = 0;
 
-    for (idx = 0; idx < frame_cunt; idx = idx + 1)
+    for (idx = 0; idx < frame_cunt; idx++)
     {
         time_s = (double)idx / (double)CROSSTALK_GAME_FX_SFX_RATE;
         tick_env = exp(-time_s / CROSSTALK_GAME_FX_SFX_ROTARY_TICK_DECAY);
@@ -227,7 +227,7 @@ static void crosstalk_game_fx_sfx_chirp_render(int16_t *out, uint32_t frame_cunt
     dur_s = (double)frame_cunt / (double)CROSSTALK_GAME_FX_SFX_RATE;
     sweep = (CROSSTALK_GAME_FX_SFX_CHIRP_HZ_HI - CROSSTALK_GAME_FX_SFX_CHIRP_HZ_LO) / dur_s;
 
-    for (idx = 0; idx < frame_cunt; idx = idx + 1)
+    for (idx = 0; idx < frame_cunt; idx++)
     {
         time_s = (double)idx / (double)CROSSTALK_GAME_FX_SFX_RATE;
         phase = CROSSTALK_GAME_FX_SFX_CHIRP_HZ_LO * time_s + 0.5 * sweep * time_s * time_s;
@@ -254,7 +254,7 @@ static void crosstalk_game_fx_sfx_ping_render(int16_t *out, uint32_t frame_cunt)
 
     dur_s = (double)frame_cunt / (double)CROSSTALK_GAME_FX_SFX_RATE;
 
-    for (idx = 0; idx < frame_cunt; idx = idx + 1)
+    for (idx = 0; idx < frame_cunt; idx++)
     {
         time_s = (double)idx / (double)CROSSTALK_GAME_FX_SFX_RATE;
         phase = CROSSTALK_GAME_FX_SFX_PING_HZ * time_s - 0.5 * CROSSTALK_GAME_FX_SFX_PING_GLIDE_HZ * time_s * time_s / dur_s;

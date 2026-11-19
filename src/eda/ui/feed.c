@@ -92,7 +92,7 @@ static uint32_t feed_pump(crosstalk_eda_ui_feed_ctx_t *ctx)
 
     if (ctx->probes == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    for (lane_idx = 0; lane_idx < ctx->lane_cunt; lane_idx = lane_idx + 0x1)
+    for (lane_idx = 0; lane_idx < ctx->lane_cunt; lane_idx++)
     {
         if (ctx->lane[lane_idx].live != LDG_TRUTH_TRUE) { continue; }
 
@@ -100,17 +100,17 @@ static uint32_t feed_pump(crosstalk_eda_ui_feed_ctx_t *ctx)
 
         if (crosstalk_eda_logic_probe_drain(ctx->probes, ctx->lane[lane_idx].probe_handle, drain, (uint32_t)FEED_DRAIN_CAP, &got) != LDG_ERR_AOK) { continue; }
 
-        for (idx = 0; idx < got; idx = idx + 0x1)
+        for (idx = 0; idx < got; idx++)
         {
             if (ctx->event_cunt < (uint32_t)CROSSTALK_EDA_UI_FEED_EVENT_CAP)
             {
                 at = (ctx->event_hd + ctx->event_cunt) % (uint32_t)CROSSTALK_EDA_UI_FEED_EVENT_CAP;
-                ctx->event_cunt = ctx->event_cunt + 0x1;
+                ctx->event_cunt++;
             }
             else
             {
                 at = ctx->event_hd;
-                ctx->event_hd = (ctx->event_hd + 0x1) % (uint32_t)CROSSTALK_EDA_UI_FEED_EVENT_CAP;
+                ctx->event_hd = (ctx->event_hd + 1) % (uint32_t)CROSSTALK_EDA_UI_FEED_EVENT_CAP;
             }
 
             ctx->event[at].cycle = drain[idx].cycle;
@@ -152,7 +152,7 @@ uint32_t crosstalk_eda_ui_feed_lane_add(crosstalk_eda_ui_feed_ctx_t *ctx, const 
 
     if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (at = 0; at < ctx->lane_cunt; at = at + 0x1) { if (strcmp(ctx->lane[at].name, name) == 0) { return LDG_ERR_EXISTS; } }
+    for (at = 0; at < ctx->lane_cunt; at++) { if (strcmp(ctx->lane[at].name, name) == 0) { return LDG_ERR_EXISTS; } }
 
     if (ctx->lane_cunt >= (uint32_t)CROSSTALK_EDA_UI_FEED_LANE_CAP) { return LDG_ERR_FULL; }
 
@@ -164,7 +164,7 @@ uint32_t crosstalk_eda_ui_feed_lane_add(crosstalk_eda_ui_feed_ctx_t *ctx, const 
     lane->probe_handle = probe_handle;
     lane->width = width;
     lane->live = LDG_TRUTH_TRUE;
-    ctx->lane_cunt = ctx->lane_cunt + 0x1;
+    ctx->lane_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -270,7 +270,7 @@ static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_rende
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *row = *row + (uint32_t)FEED_STEP;
+    *row = *row + (uint32_t)1;
     pos_col = FEED_ORIG_COL;
 
     if (cause == (uint64_t)FEED_EXC_VAL_UNALIGNED || cause == (uint64_t)FEED_EXC_VAL_STACK_OVER)
@@ -304,7 +304,7 @@ static uint32_t feed_fault_draw(crosstalk_eda_ui_feed_ctx_t *ctx, ldg_term_rende
     ret = feed_seg_draw(render, line, &pos_col, *row, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *row = *row + (uint32_t)FEED_STEP;
+    *row = *row + (uint32_t)1;
 
     return LDG_ERR_AOK;
 }
@@ -335,16 +335,16 @@ static uint32_t feed_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)FEED_ORIG_COL, row, FEED_HINT_TEXT, (uint64_t)sizeof(FEED_HINT_TEXT), (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ctx->win.content_row_cunt = row + (uint32_t)FEED_STEP;
+        ctx->win.content_row_cunt = row + (uint32_t)1;
 
         return LDG_ERR_AOK;
     }
 
     if (feed_pump(ctx) != LDG_ERR_AOK) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = ctx->event_cunt; idx != 0; idx = idx - (uint32_t)FEED_STEP)
+    for (idx = ctx->event_cunt; idx != 0; idx = idx - (uint32_t)1)
     {
-        uint32_t at = (ctx->event_hd + idx - (uint32_t)FEED_STEP) % (uint32_t)CROSSTALK_EDA_UI_FEED_EVENT_CAP;
+        uint32_t at = (ctx->event_hd + idx - (uint32_t)1) % (uint32_t)CROSSTALK_EDA_UI_FEED_EVENT_CAP;
         const crosstalk_eda_ui_feed_lane_t *lane = &ctx->lane[ctx->event[at].lane_idx];
         const char *note = feed_exc_note_get(lane, ctx->event[at].val);
 
@@ -353,7 +353,7 @@ static uint32_t feed_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)FEED_ORIG_COL, row, line, (uint64_t)sizeof(line), note[0] != LDG_STR_TERM ? (uint32_t)CROSSTALK_UI_THEME_HOT_RGBA : (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, 0x0);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)FEED_STEP;
+        row = row + (uint32_t)1;
     }
 
     ctx->win.content_row_cunt = row;

@@ -332,7 +332,7 @@ static uint32_t main_edit_commit(main_edit_t *edit, crosstalk_mngr_ctx_t *mngr)
 
     edit->machine.ld_cunt = 0;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_EMU_LD_MAX; at = at + MAIN_STEP)
+    for (at = 0; at < (uint32_t)CROSSTALK_EMU_LD_MAX; at++)
     {
         if (edit->machine.ld_path[at][0] == LDG_STR_TERM) { continue; }
 
@@ -417,7 +417,7 @@ static uint32_t main_fields_build(main_edit_t *edit, main_field_t *out, uint32_t
     }
     else if (edit->cat == (uint32_t)MAIN_CAT_STORAGE)
     {
-        for (at = 0; at < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX && ret == LDG_ERR_AOK; at = at + MAIN_STEP)
+        for (at = 0; at < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX && ret == LDG_ERR_AOK; at++)
         {
             ret = ldg_str_fmt(label, (uint64_t)sizeof(label), &len, MAIN_DRIVE_FMT, at);
             if (ret != LDG_ERR_AOK) { return ret; }
@@ -427,7 +427,7 @@ static uint32_t main_fields_build(main_edit_t *edit, main_field_t *out, uint32_t
 
         if (ret == LDG_ERR_AOK) { ret = main_field_set(&out[cunt++], MAIN_LBL_PERSIST, (uint32_t)MAIN_KIND_FLAG, 0x0, (uint32_t)MAIN_CAP_NONE, &machine->disk_persist); }
     }
-    else if (edit->cat == (uint32_t)MAIN_CAT_BOOT) { for (at = 0; at < (uint32_t)CROSSTALK_EMU_LD_MAX && ret == LDG_ERR_AOK; at = at + MAIN_STEP)
+    else if (edit->cat == (uint32_t)MAIN_CAT_BOOT) { for (at = 0; at < (uint32_t)CROSSTALK_EMU_LD_MAX && ret == LDG_ERR_AOK; at++)
         {
             ret = ldg_str_fmt(label, (uint64_t)sizeof(label), &len, MAIN_IMG_FMT, at);
             if (ret != LDG_ERR_AOK) { return ret; }
@@ -486,7 +486,7 @@ static uint32_t main_field_key_apply(main_field_t *field, const ldg_term_key_eve
         return LDG_ERR_AOK;
     }
 
-    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + MAIN_STEP)
+    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at++)
     {
         if (main_ch_fits_is(field->kind, key->text[at]) != LDG_TRUTH_TRUE) { continue; }
 
@@ -513,7 +513,7 @@ static uint32_t main_list_key_isr(main_state_t *state, const ldg_term_key_event_
 
     if (key->key == (uint8_t)LDG_TERM_KEY_UP)
     {
-        if (crosstalk_mngr_sel_ok_is(mngr) == LDG_TRUTH_TRUE && mngr->sel != 0) { mngr->sel = mngr->sel - MAIN_STEP; }
+        if (crosstalk_mngr_sel_ok_is(mngr) == LDG_TRUTH_TRUE && mngr->sel != 0) { mngr->sel--; }
         else if (mngr->cunt != 0 && crosstalk_mngr_sel_ok_is(mngr) != LDG_TRUTH_TRUE) { mngr->sel = 0; }
 
         return LDG_ERR_AOK;
@@ -521,7 +521,7 @@ static uint32_t main_list_key_isr(main_state_t *state, const ldg_term_key_event_
 
     if (key->key == (uint8_t)LDG_TERM_KEY_DOWN)
     {
-        if (crosstalk_mngr_sel_ok_is(mngr) == LDG_TRUTH_TRUE && mngr->sel + MAIN_STEP < mngr->cunt) { mngr->sel = mngr->sel + MAIN_STEP; }
+        if (crosstalk_mngr_sel_ok_is(mngr) == LDG_TRUTH_TRUE && mngr->sel + MAIN_STEP < mngr->cunt) { mngr->sel++; }
         else if (mngr->cunt != 0 && crosstalk_mngr_sel_ok_is(mngr) != LDG_TRUTH_TRUE) { mngr->sel = 0; }
 
         return LDG_ERR_AOK;
@@ -643,27 +643,27 @@ static uint32_t main_summary_draw(ldg_term_render_t *render, const crosstalk_mng
 
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_FMT, MAIN_LBL_CORE, machine->core_path[0] != LDG_STR_TERM ? machine->core_path : MAIN_EMPTY) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
-    row = row + MAIN_STEP;
+    row++;
 
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_HZ_FMT, machine->f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
-    row = row + MAIN_STEP;
+    row++;
 
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_RAM_FMT, machine->ram_bytes / (uint64_t)LDG_MIB) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
-    row = row + MAIN_STEP;
+    row++;
 
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_IMGS_FMT, machine->ld_cunt) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
-    row = row + MAIN_STEP;
+    row++;
 
-    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MAIN_STEP)
+    for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
     {
         if (machine->disk_path[drive][0] == LDG_STR_TERM) { continue; }
 
         if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_DRIVE_FMT, drive, machine->disk_path[drive]) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
-        row = row + MAIN_STEP;
+        row++;
     }
 
     if (machine->net_path[0] != LDG_STR_TERM) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_NET_FMT, machine->net_path) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } } }
@@ -695,7 +695,7 @@ static uint32_t main_list_draw(main_state_t *state, ldg_term_render_t *render, c
 
     if (state->list_top >= mngr->cunt) { state->list_top = 0; }
 
-    for (row = 0; row < body_cunt && state->list_top + row < mngr->cunt; row = row + MAIN_STEP)
+    for (row = 0; row < body_cunt && state->list_top + row < mngr->cunt; row++)
     {
         uint32_t idx = state->list_top + row;
         uint8_t sel = idx == mngr->sel ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -727,7 +727,7 @@ static uint32_t main_settings_draw(main_edit_t *edit, ldg_term_render_t *render,
 
     if (LDG_UNLIKELY(edit == 0x0 || render == 0x0 || pal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (at = 0; at < (uint32_t)MAIN_CAT_CUNT; at = at + MAIN_STEP)
+    for (at = 0; at < (uint32_t)MAIN_CAT_CUNT; at++)
     {
         const char *name = 0x0;
         uint8_t sel = at == edit->cat ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -748,7 +748,7 @@ static uint32_t main_settings_draw(main_edit_t *edit, ldg_term_render_t *render,
     ret = main_fields_build(edit, &field[0], &field_cunt);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (at = 0; at < field_cunt; at = at + MAIN_STEP)
+    for (at = 0; at < field_cunt; at++)
     {
         uint32_t row = (uint32_t)MAIN_BODY_ROW + at;
         uint8_t sel = at == edit->field ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;

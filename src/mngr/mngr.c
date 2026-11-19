@@ -52,7 +52,7 @@ static uint32_t mngr_argv_push(mngr_argv_t *argv, const char *arg)
     if (argv->cunt + MNGR_STEP >= (uint32_t)LDG_SYS_PROC_ARG_MAX) { return LDG_ERR_FULL; }
 
     argv->arg[argv->cunt] = arg;
-    argv->cunt = argv->cunt + MNGR_STEP;
+    argv->cunt++;
     argv->arg[argv->cunt] = 0x0;
 
     return LDG_ERR_AOK;
@@ -120,7 +120,7 @@ static uint32_t mngr_data_dir_resolve(char *out, uint64_t out_size)
     seg[1] = CROSSTALK_MNGR_CONF_APP;
     seg[2] = CROSSTALK_MNGR_CONF_DIR_REL;
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_MNGR_CONF_SEG_CUNT; idx = idx + MNGR_STEP)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_MNGR_CONF_SEG_CUNT; idx++)
     {
         ret = ldg_io_path_join(out, seg[idx], nxt, (uint64_t)sizeof(nxt));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -209,7 +209,7 @@ uint32_t crosstalk_mngr_scan(crosstalk_mngr_ctx_t *ctx)
             continue;
         }
 
-        ctx->cunt = ctx->cunt + MNGR_STEP;
+        ctx->cunt++;
     }
 
     if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr dir close failed"); }
@@ -245,7 +245,7 @@ uint32_t crosstalk_mngr_machine_add(crosstalk_mngr_ctx_t *ctx, const char *name)
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ctx->sel = ctx->cunt;
-    ctx->cunt = ctx->cunt + MNGR_STEP;
+    ctx->cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -269,13 +269,13 @@ uint32_t crosstalk_mngr_machine_drop(crosstalk_mngr_ctx_t *ctx, uint32_t idx)
 
     if (ldg_io_path_destroy(ctx->path[idx]) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine file not removed; path: %.191s", ctx->path[idx]); }
 
-    for (at = idx; at + MNGR_STEP < ctx->cunt; at = at + MNGR_STEP)
+    for (at = idx; at + MNGR_STEP < ctx->cunt; at++)
     {
         memcpy(&ctx->machine[at], &ctx->machine[at + MNGR_STEP], sizeof(ctx->machine[at]));
         memcpy(&ctx->path[at][0], ctx->path[at + MNGR_STEP], sizeof(ctx->path[at]));
     }
 
-    ctx->cunt = ctx->cunt - MNGR_STEP;
+    ctx->cunt--;
 
     if (ctx->cunt == 0) { ctx->sel = (uint32_t)UINT32_MAX; }
     else if (ctx->sel >= ctx->cunt) { ctx->sel = ctx->cunt - MNGR_STEP; }
@@ -296,7 +296,7 @@ static uint32_t mngr_argv_build(const crosstalk_mngr_machine_t *machine, const c
 
     if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, machine->core_path); }
 
-    for (at = 0; ret == LDG_ERR_AOK && at < (uint32_t)CROSSTALK_EMU_LD_MAX; at = at + MNGR_STEP)
+    for (at = 0; ret == LDG_ERR_AOK && at < (uint32_t)CROSSTALK_EMU_LD_MAX; at++)
     {
         if (machine->ld_path[at][0] == LDG_STR_TERM) { continue; }
 
@@ -307,7 +307,7 @@ static uint32_t mngr_argv_build(const crosstalk_mngr_machine_t *machine, const c
         else { ret = mngr_argv_push(argv, machine->ld_path[at]); }
     }
 
-    for (drive = 0; ret == LDG_ERR_AOK && drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive = drive + MNGR_STEP)
+    for (drive = 0; ret == LDG_ERR_AOK && drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
     {
         if (machine->disk_path[drive][0] == LDG_STR_TERM) { continue; }
 

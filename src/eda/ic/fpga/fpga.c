@@ -35,7 +35,7 @@ static void name_set(char *dst, uint32_t cap, const char *src)
     while (src[idx] != LDG_STR_TERM && idx < cap - LDG_STR_TERM_SIZE)
     {
         dst[idx] = src[idx];
-        idx = idx + 0x1;
+        idx++;
     }
 
     dst[idx] = LDG_STR_TERM;
@@ -86,7 +86,7 @@ static uint64_t lut_est_get(const crosstalk_hdl_ir_t *ir)
 
     if (LDG_UNLIKELY(ir == 0x0)) { return 0x0; }
 
-    for (idx = 0; idx < ir->comb_cunt; idx = idx + 0x1) { total = total + op_cost_get(&ir->comb_ops[idx]); }
+    for (idx = 0; idx < ir->comb_cunt; idx++) { total = total + op_cost_get(&ir->comb_ops[idx]); }
 
     return total;
 }
@@ -98,7 +98,7 @@ static uint64_t ff_bits_get(const crosstalk_hdl_ir_t *ir)
 
     if (LDG_UNLIKELY(ir == 0x0)) { return 0x0; }
 
-    for (idx = 0; idx < ir->seq_op_cunt; idx = idx + 0x1) { if (ir->seq_ops[idx].kind == CROSSTALK_HDL_IR_OP_REG_NEXT) { total = total + (uint64_t)ir->seq_ops[idx].width; } }
+    for (idx = 0; idx < ir->seq_op_cunt; idx++) { if (ir->seq_ops[idx].kind == CROSSTALK_HDL_IR_OP_REG_NEXT) { total = total + (uint64_t)ir->seq_ops[idx].width; } }
 
     return total;
 }
@@ -110,7 +110,7 @@ static uint64_t mem_bits_get(const crosstalk_hdl_ir_t *ir)
 
     if (LDG_UNLIKELY(ir == 0x0)) { return 0x0; }
 
-    for (idx = 0; idx < ir->sig_cunt; idx = idx + 0x1) { if (ir->sigs[idx].kind == CROSSTALK_HDL_IR_SIG_MEM) { total = total + (uint64_t)ir->sigs[idx].depth * (uint64_t)ir->sigs[idx].width; } }
+    for (idx = 0; idx < ir->sig_cunt; idx++) { if (ir->sigs[idx].kind == CROSSTALK_HDL_IR_SIG_MEM) { total = total + (uint64_t)ir->sigs[idx].depth * (uint64_t)ir->sigs[idx].width; } }
 
     return total;
 }
@@ -125,7 +125,7 @@ static uint8_t tok_name_match_is(const char *src, const crosstalk_hdl_tok_t *tok
     {
         if (src[tok->off + at] != name[at]) { return LDG_TRUTH_FALSE; }
 
-        at = at + 0x1;
+        at++;
     }
 
     return (at == tok->len && name[at] == LDG_STR_TERM) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -137,7 +137,7 @@ static uint32_t sig_width_by_tok_get(const crosstalk_hdl_ir_t *ir, const char *s
 
     *out_width = 0x0;
 
-    for (idx = 0; idx < ir->sig_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ir->sig_cunt; idx++)
     {
         if (ir->sigs[idx].name.len != tok->len) { continue; }
 
@@ -162,11 +162,11 @@ static uint32_t io_bits_get(const crosstalk_hdl_ir_t *ir, const crosstalk_hdl_as
 
     *out_bits = 0x0;
 
-    for (idx = 0; idx < ir->sig_cunt; idx = idx + 0x1) { if (ir->sigs[idx].port == CROSSTALK_HDL_IR_PORT_INOUT) { return CROSSTALK_EDA_IC_FPGA_ERR_INOUT; } }
+    for (idx = 0; idx < ir->sig_cunt; idx++) { if (ir->sigs[idx].port == CROSSTALK_HDL_IR_PORT_INOUT) { return CROSSTALK_EDA_IC_FPGA_ERR_INOUT; } }
 
     if (ast == 0x0 || src == 0x0 || top == 0x0 || ast->nodes == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    for (mod = 0; mod < ast->cunt; mod = mod + 0x1)
+    for (mod = 0; mod < ast->cunt; mod++)
     {
         uint32_t port = 0;
 
@@ -313,7 +313,7 @@ static uint32_t include_resolve_cb(void *user, const char *name, uint32_t name_l
     {
         char ch = files[pos];
 
-        pos = pos + 0x1;
+        pos++;
 
         if (ch != CROSSTALK_EDA_IC_FPGA_FILESET_SEP && ch != LDG_STR_TERM)
         {
@@ -322,7 +322,7 @@ static uint32_t include_resolve_cb(void *user, const char *name, uint32_t name_l
                 if (ch == '/' || ch == '\\') { sep_at = rel_len; }
 
                 rel[rel_len] = ch;
-                rel_len = rel_len + 0x1;
+                rel_len++;
             }
 
             continue;
@@ -453,7 +453,7 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
 
         if (line_start > slot->elab_src_len) { line_start = slot->elab_src_len; line_end = slot->elab_src_len; }
 
-        while (line_start > 0 && slot->elab_src[line_start - 0x1] != '\n' && elab->err_tok.off - line_start < CROSSTALK_EDA_IC_FPGA_ELAB_ERR_LINE_LOG_MAX) { line_start--; }
+        while (line_start > 0 && slot->elab_src[line_start - 1] != '\n' && elab->err_tok.off - line_start < CROSSTALK_EDA_IC_FPGA_ELAB_ERR_LINE_LOG_MAX) { line_start--; }
 
         while (line_end < slot->elab_src_len && slot->elab_src[line_end] != '\n' && line_end - line_start < CROSSTALK_EDA_IC_FPGA_ELAB_ERR_LINE_LOG_MAX) { line_end++; }
 
@@ -466,7 +466,7 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
     {
         uint32_t unknown_at = 0;
 
-        for (unknown_at = 0; unknown_at < elab->unknown_mod_cunt; unknown_at = unknown_at + 0x1) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: unknown module tied off; name: %.*s; line: %u32; col: %u32; top: %.63s", (uint32_t)(elab->unknown_mod[unknown_at].len < (uint32_t)CROSSTALK_EDA_IC_FPGA_ELAB_ERR_TOK_LOG_MAX ? elab->unknown_mod[unknown_at].len : (uint32_t)CROSSTALK_EDA_IC_FPGA_ELAB_ERR_TOK_LOG_MAX), slot->elab_src + elab->unknown_mod[unknown_at].off, elab->unknown_mod[unknown_at].line, elab->unknown_mod[unknown_at].col, slot->top); }
+        for (unknown_at = 0; unknown_at < elab->unknown_mod_cunt; unknown_at++) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: unknown module tied off; name: %.*s; line: %u32; col: %u32; top: %.63s", (uint32_t)(elab->unknown_mod[unknown_at].len < (uint32_t)CROSSTALK_EDA_IC_FPGA_ELAB_ERR_TOK_LOG_MAX ? elab->unknown_mod[unknown_at].len : (uint32_t)CROSSTALK_EDA_IC_FPGA_ELAB_ERR_TOK_LOG_MAX), slot->elab_src + elab->unknown_mod[unknown_at].off, elab->unknown_mod[unknown_at].line, elab->unknown_mod[unknown_at].col, slot->top); }
     }
 
     ret = verdict_build(&slot->ir, &slot->ast, slot->elab_src, slot->top, &slot->comp, &slot->verdict);
@@ -510,10 +510,10 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
         {
             if (crosstalk_hdl_exec_sig_sub_find(&slot->exec, CROSSTALK_EDA_IC_FPGA_PROG_SIG, from, &hit) != LDG_ERR_AOK) { break; }
 
-            if (crosstalk_hdl_exec_sig_name_get(&slot->exec, hit, pc_name, (uint32_t)sizeof(pc_name)) == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: loc candidate; sig: %u32; name: %.63s; width: %u32; picked: %u32", hit, pc_name, slot->ir.sigs[hit].width, hit == slot->prog_exec_sig ? 0x1 : 0x0); }
+            if (crosstalk_hdl_exec_sig_name_get(&slot->exec, hit, pc_name, (uint32_t)sizeof(pc_name)) == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: loc candidate; sig: %u32; name: %.63s; width: %u32; picked: %u32", hit, pc_name, slot->ir.sigs[hit].width, hit == slot->prog_exec_sig ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
 
-            from = hit + 0x1;
-            seen = seen + 0x1;
+            from = hit + 1;
+            seen++;
         }
     }
 
@@ -540,9 +540,9 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
         {
             ret = crosstalk_hdl_exec_fast_set(&slot->exec, slot->clk_sig, fast_alias, fast_alias_cunt);
             if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: fast set failed; top: %s; err: %u32", slot->top, ret); }
-            else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: fast on; top: %s; aliases: %u32; narrow: %u32", slot->top, fast_alias_cunt, slot->exec.nrw != 0x0 ? 0x1 : 0x0); }
+            else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: fast on; top: %s; aliases: %u32; narrow: %u32", slot->top, fast_alias_cunt, slot->exec.nrw != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
         }
-        else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: fast off; top: %s; narrow: %u32", slot->top, slot->exec.nrw != 0x0 ? 0x1 : 0x0); }
+        else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga: fast off; top: %s; narrow: %u32", slot->top, slot->exec.nrw != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE); }
     }
 
     ret = crosstalk_hdl_exec_eval(&slot->exec);
@@ -556,7 +556,7 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
         uint32_t sig_at = 0;
         uint32_t wide_cunt = 0;
 
-        for (sig_at = 0; sig_at < slot->ir.sig_cunt; sig_at = sig_at + 0x1) { if (slot->ir.sigs[sig_at].width > (uint32_t)CROSSTALK_HDL_AIG_WIDTH_MAX) { wide_cunt = wide_cunt + 0x1; } }
+        for (sig_at = 0; sig_at < slot->ir.sig_cunt; sig_at++) { if (slot->ir.sigs[sig_at].width > (uint32_t)CROSSTALK_HDL_AIG_WIDTH_MAX) { wide_cunt++; } }
 
         if (wide_cunt > 0)
         {
@@ -674,19 +674,19 @@ static void refused_log_wr(crosstalk_eda_ic_fpga_refused_log_t *log, uint32_t sl
 
     if (log->prog_gen[slot_idx] != prog_gen)
     {
-        for (at = 0; at < log->cunt; at = at + 0x1)
+        for (at = 0; at < log->cunt; at++)
         {
             if (log->entry[at].slot_idx == slot_idx) { continue; }
 
             log->entry[kept] = log->entry[at];
-            kept = kept + 0x1;
+            kept++;
         }
 
         log->cunt = kept;
         log->prog_gen[slot_idx] = prog_gen;
     }
 
-    for (at = 0; at < log->cunt; at = at + 0x1)
+    for (at = 0; at < log->cunt; at++)
     {
         entry = &log->entry[at];
 
@@ -699,7 +699,7 @@ static void refused_log_wr(crosstalk_eda_ic_fpga_refused_log_t *log, uint32_t sl
     entry->slot_idx = slot_idx;
     entry->cause = cause;
     name_set(entry->sig, CROSSTALK_EDA_IC_FPGA_TOP_CAP, sig_name);
-    log->cunt = log->cunt + 0x1;
+    log->cunt++;
 
     if (cause == (uint32_t)CROSSTALK_EDA_IC_FPGA_REFUSED_SIG_ABSENT) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: mem access refused; no such signal in the design; sig: %.63s", sig_name); }
     else if (cause == (uint32_t)CROSSTALK_EDA_IC_FPGA_REFUSED_SIG_NOT_MEM) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: mem access refused; the signal is not a memory; sig: %.63s", sig_name); }
@@ -802,7 +802,7 @@ static uint32_t src_pool_grow(crosstalk_eda_ic_fpga_ctx_t *ctx, uint64_t need)
         return CROSSTALK_EDA_IC_FPGA_ERR_SRC_CAP;
     }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_IC_FPGA_SRC_POOL_CAP; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_IC_FPGA_SRC_POOL_CAP; idx++)
     {
         held = idx < (uint32_t)CROSSTALK_EDA_IC_FPGA_SLOT_MAX ? &ctx->slot[idx] : &ctx->trial;
 
@@ -824,7 +824,7 @@ static uint32_t src_pool_grow(crosstalk_eda_ic_fpga_ctx_t *ctx, uint64_t need)
         return CROSSTALK_EDA_IC_FPGA_ERR_SRC_CAP;
     }
 
-    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_IC_FPGA_SRC_POOL_CAP; idx = idx + 0x1)
+    for (idx = 0; idx < (uint32_t)CROSSTALK_EDA_IC_FPGA_SRC_POOL_CAP; idx++)
     {
         held = idx < (uint32_t)CROSSTALK_EDA_IC_FPGA_SLOT_MAX ? &ctx->slot[idx] : &ctx->trial;
 
@@ -849,11 +849,11 @@ static uint32_t slot_all_rebuild(crosstalk_eda_ic_fpga_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++)
     {
         slot_final_run(&ctx->slot[idx], idx);
 
-        ctx->slot[idx].prog_gen = ctx->slot[idx].prog_gen + 0x1;
+        ctx->slot[idx].prog_gen++;
         ctx->slot[idx].build_res = LDG_ERR_AOK;
 
         if (ctx->probes == 0x0) { continue; }
@@ -873,7 +873,7 @@ static uint32_t slot_all_rebuild(crosstalk_eda_ic_fpga_ctx_t *ctx)
 
         ctx->live_cunt = 0x0;
 
-        for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx = idx + 0x1)
+        for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++)
         {
             if (ctx->slot[idx].live != LDG_TRUTH_TRUE) { continue; }
 
@@ -888,7 +888,7 @@ static uint32_t slot_all_rebuild(crosstalk_eda_ic_fpga_ctx_t *ctx)
 
             if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: slot rebuild failed; slot: %u32; err: %u32; pool used: %u64; pool cap: %u64", idx, ret, ldg_mem_pool_used_get(ctx->elab_pool), ldg_mem_pool_cap_get(ctx->elab_pool)); }
 
-            if (ctx->slot[idx].runnable == LDG_TRUTH_TRUE) { ctx->live_cunt = ctx->live_cunt + 0x1; }
+            if (ctx->slot[idx].runnable == LDG_TRUTH_TRUE) { ctx->live_cunt++; }
         }
 
         if (starved == LDG_TRUTH_TRUE && pool_grow(&ctx->elab_pool) == LDG_ERR_AOK) { rerun = LDG_TRUTH_TRUE; }
@@ -955,7 +955,7 @@ uint32_t crosstalk_eda_ic_fpga_systask_cb_set(crosstalk_eda_ic_fpga_ctx_t *ctx, 
     ctx->systask_cb = cb;
     ctx->systask_user = user;
 
-    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx = idx + 0x1) { if (ctx->slot[idx].systask != 0x0 && crosstalk_hdl_systask_out_cb_set(ctx->slot[idx].systask, cb, user) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: systask cb set failed; slot: %u32", idx); } }
+    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++) { if (ctx->slot[idx].systask != 0x0 && crosstalk_hdl_systask_out_cb_set(ctx->slot[idx].systask, cb, user) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: systask cb set failed; slot: %u32", idx); } }
 
     return LDG_ERR_AOK;
 }
@@ -969,7 +969,7 @@ uint32_t crosstalk_eda_ic_fpga_shutdown(crosstalk_eda_ic_fpga_ctx_t *ctx)
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx = idx + 0x1) { slot_final_run(&ctx->slot[idx], idx); }
+    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++) { slot_final_run(&ctx->slot[idx], idx); }
 
     if (ctx->elab_pool != 0x0) { ret = ldg_mem_pool_destroy(&ctx->elab_pool); }
 
@@ -1297,7 +1297,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_engage(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
     slot->live = LDG_TRUTH_TRUE;
     slot->hlt = LDG_TRUTH_TRUE;
     slot->runnable = LDG_TRUTH_TRUE;
-    ctx->live_cunt = ctx->live_cunt + 0x1;
+    ctx->live_cunt++;
 
     if (ctx->probes != 0x0) { if (crosstalk_eda_logic_probe_abi_rst(ctx->probes, slot_idx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "probe abi reset failed"); } }
 
@@ -1331,7 +1331,7 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
     dt_ns = (uint64_t)(dt_secs * (double)LDG_NS_PER_SEC);
     share = budget_cycles / (uint64_t)ctx->live_cunt;
 
-    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx = idx + 0x1)
+    for (idx = 0; idx < CROSSTALK_EDA_IC_FPGA_SLOT_MAX; idx++)
     {
         crosstalk_eda_ic_fpga_slot_t *slot = &ctx->slot[idx];
         uint64_t want = 0;
@@ -1356,7 +1356,7 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
                 continue;
             }
 
-            slot->cycles_run = slot->cycles_run + 0x1;
+            slot->cycles_run++;
 
             if (probes_on == LDG_TRUTH_TRUE) { crosstalk_eda_logic_probe_cycle_sample(ctx->probes, idx, &slot->exec, slot->abi, slot->cycles_run); }
 
@@ -1379,7 +1379,7 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
 
             if (chunk > (uint64_t)CROSSTALK_EDA_IC_FPGA_PROG_STRIDE) { chunk = (uint64_t)CROSSTALK_EDA_IC_FPGA_PROG_STRIDE; }
 
-            for (step = 0; step < chunk; step = step + 0x1)
+            for (step = 0; step < chunk; step++)
             {
                 if (packed == LDG_TRUTH_TRUE) { ret = abi_step_once(slot); }
                 else if (slot->clk_sig == UINT32_MAX) { ret = crosstalk_hdl_exec_step(&slot->exec); }
@@ -1392,7 +1392,7 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
                     break;
                 }
 
-                done = done + 0x1;
+                done++;
 
                 slot_finish_apply(slot, idx);
 
@@ -1416,7 +1416,7 @@ uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double 
 
                 if (prog_got == LDG_TRUTH_TRUE)
                 {
-                    uint32_t prog_next = (slot->prog_wr + 0x1) & ((uint32_t)CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP - 0x1);
+                    uint32_t prog_next = (slot->prog_wr + 1) & ((uint32_t)CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP - 1);
 
                     if (prog_next != LDG_RD_ONCE(slot->prog_rd))
                     {
@@ -1479,7 +1479,7 @@ uint32_t crosstalk_eda_ic_fpga_abi_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_
             slot->runnable = LDG_TRUTH_FALSE;
             slot->live = LDG_TRUTH_FALSE;
 
-            if (ctx->live_cunt != 0) { ctx->live_cunt = ctx->live_cunt - 0x1; }
+            if (ctx->live_cunt != 0) { ctx->live_cunt--; }
 
             if (crosstalk_eda_ic_fpga_mem_watch_clear(ctx, slot_idx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "mem watch clear failed"); }
 
@@ -1529,7 +1529,7 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_done == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out_done = 0x0;
+    *out_done = 0;
 
     if (slot_idx >= CROSSTALK_EDA_IC_FPGA_SLOT_MAX) { return CROSSTALK_EDA_IC_FPGA_ERR_SLOT; }
 
@@ -1562,8 +1562,8 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
             return ret;
         }
 
-        slot->cycles_run = slot->cycles_run + 0x1;
-        *out_done = 0x1;
+        slot->cycles_run++;
+        (*out_done)++;
 
         if (probes_on == LDG_TRUTH_TRUE) { crosstalk_eda_logic_probe_cycle_sample(ctx->probes, slot_idx, &slot->exec, slot->abi, slot->cycles_run); }
 
@@ -1667,7 +1667,7 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
             }
             else
             {
-                took = 0x1;
+                took = LDG_TRUTH_TRUE;
 
                 if (packed == LDG_TRUTH_TRUE) { ret = abi_step_once(slot); }
                 else if (slot->clk_sig == UINT32_MAX) { ret = crosstalk_hdl_exec_step(&slot->exec); }
@@ -1680,7 +1680,7 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
                     break;
                 }
 
-                done = done + 0x1;
+                done++;
 
                 slot_finish_apply(slot, slot_idx);
 
@@ -1709,7 +1709,7 @@ uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
 
             if (prog_got == LDG_TRUTH_TRUE)
             {
-                uint32_t prog_next = (slot->prog_wr + 0x1) & ((uint32_t)CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP - 0x1);
+                uint32_t prog_next = (slot->prog_wr + 1) & ((uint32_t)CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP - 1);
 
                 if (prog_next != LDG_RD_ONCE(slot->prog_rd))
                 {
@@ -2061,7 +2061,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_offset_get(const crosstalk_eda_ic_fpga_ctx_t 
 
     if (slot->ir.sigs[sig_idx].kind != CROSSTALK_HDL_IR_SIG_MEM) { return CROSSTALK_EDA_IC_FPGA_ERR_MEM_SIG; }
 
-    for (at = 0; at < sig_idx; at = at + 0x1) { if (slot->ir.sigs[at].depth > 0) { words = words + (uint64_t)slot->ir.sigs[at].depth; } }
+    for (at = 0; at < sig_idx; at++) { if (slot->ir.sigs[at].depth > 0) { words = words + (uint64_t)slot->ir.sigs[at].depth; } }
 
     *out = words;
 
@@ -2132,7 +2132,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_rd(const crosstalk_eda_ic_fpga_ctx_t *ctx, ui
 
     if (addr >= width) { return CROSSTALK_EDA_IC_FPGA_ERR_MEM_ROOM; }
 
-    for (at = 0; at < cunt; at = at + 0x1)
+    for (at = 0; at < cunt; at++)
     {
         uint64_t at_addr = addr + (uint64_t)at;
 
@@ -2223,20 +2223,20 @@ uint32_t crosstalk_eda_ic_fpga_mem_byte_rd(const crosstalk_eda_ic_fpga_ctx_t *ct
     if (ret != LDG_ERR_AOK) { return ret; }
 
     elem_bytes = elem_width / (uint32_t)LDG_BYTE_BITS;
-    if (elem_bytes == 0) { elem_bytes = 0x1; }
+    if (elem_bytes == 0) { elem_bytes = 1; }
 
-    if (elem_bytes == 0x1) { return crosstalk_eda_ic_fpga_mem_rd(ctx, slot_idx, sig_name, byte_at, out, cunt, out_rd); }
+    if (elem_bytes == 1) { return crosstalk_eda_ic_fpga_mem_rd(ctx, slot_idx, sig_name, byte_at, out, cunt, out_rd); }
 
     elem_at = byte_at / (uint64_t)elem_bytes;
     lead = (uint32_t)(byte_at % (uint64_t)elem_bytes);
-    elem_want = (lead + cunt + elem_bytes - 0x1) / elem_bytes;
+    elem_want = (lead + cunt + elem_bytes - 1) / elem_bytes;
 
     if (elem_want > (uint32_t)CROSSTALK_EDA_IC_FPGA_MEM_BYTE_CHUNK) { elem_want = (uint32_t)CROSSTALK_EDA_IC_FPGA_MEM_BYTE_CHUNK; }
 
     ret = crosstalk_eda_ic_fpga_mem_rd(ctx, slot_idx, sig_name, elem_at, elems, elem_want, &elem_got);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    for (at = 0; at < cunt; at = at + 0x1)
+    for (at = 0; at < cunt; at++)
     {
         uint32_t src = (lead + at) / elem_bytes;
         uint64_t shift = (uint64_t)((lead + at) % elem_bytes) * (uint64_t)LDG_BYTE_BITS;
@@ -2245,7 +2245,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_byte_rd(const crosstalk_eda_ic_fpga_ctx_t *ct
 
         out[at] = (elems[src] >> shift) & (uint64_t)LDG_BYTE_MASK;
 
-        *out_rd = at + 0x1;
+        *out_rd = at + 1;
     }
 
     return LDG_ERR_AOK;
@@ -2329,7 +2329,7 @@ uint32_t crosstalk_eda_ic_fpga_prof_en_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uin
 
     if (slot->abi == 0x0 || slot->abi->ok != LDG_TRUTH_TRUE || slot->abi->prof_en == 0x0) { return LDG_ERR_AOK; }
 
-    return slot->abi->prof_en(on == LDG_TRUTH_TRUE ? 0x1 : 0x0);
+    return slot->abi->prof_en(on == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
 }
 
 uint32_t crosstalk_eda_ic_fpga_audio_drain(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint8_t *dst, uint64_t cap, uint64_t *out_got)
@@ -2382,7 +2382,7 @@ static void mem_watch_note(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, 
 
     if (LDG_UNLIKELY(ctx == 0x0 || sig_name == 0x0 || path == 0x0)) { return; }
 
-    for (at = 0; at < ctx->mem_watch_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->mem_watch_cunt; at++)
     {
         crosstalk_eda_ic_fpga_mem_watch_t *cur = &ctx->mem_watch[at];
 
@@ -2399,7 +2399,7 @@ static void mem_watch_note(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, 
         if (ctx->mem_watch_cunt >= (uint32_t)CROSSTALK_EDA_IC_FPGA_MEM_WATCH_MAX) { return; }
 
         watch = &ctx->mem_watch[ctx->mem_watch_cunt];
-        ctx->mem_watch_cunt = ctx->mem_watch_cunt + 0x1;
+        ctx->mem_watch_cunt++;
     }
 
     if (ldg_str_rbrcpy(watch->sig, sig_name, (uint64_t)sizeof(watch->sig)) != LDG_ERR_AOK) { return; }
@@ -2445,13 +2445,13 @@ uint32_t crosstalk_eda_ic_fpga_mem_watch_clear(crosstalk_eda_ic_fpga_ctx_t *ctx,
 
     if (crosstalk_eda_ic_fpga_remote_active_is(ctx) == LDG_TRUTH_TRUE) { return crosstalk_eda_ic_fpga_remote_mem_watch_clear(ctx, slot_idx); }
 
-    for (at = 0; at < ctx->mem_watch_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->mem_watch_cunt; at++)
     {
         if (ctx->mem_watch[at].slot_idx == slot_idx) { continue; }
 
         if (keep != at) { memcpy(&ctx->mem_watch[keep], &ctx->mem_watch[at], sizeof(ctx->mem_watch[keep])); }
 
-        keep = keep + 0x1;
+        keep++;
     }
 
     memset(&ctx->mem_watch[keep], 0x0, ((uint64_t)ctx->mem_watch_cunt - (uint64_t)keep) * sizeof(ctx->mem_watch[0]));
@@ -2475,7 +2475,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_watch_stale_get(crosstalk_eda_ic_fpga_ctx_t *
 
     ctx->mem_watch_next = now + CROSSTALK_EDA_IC_FPGA_MEM_WATCH_CK_SECS;
 
-    for (at = 0; at < ctx->mem_watch_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->mem_watch_cunt; at++)
     {
         crosstalk_eda_ic_fpga_mem_watch_t *watch = &ctx->mem_watch[at];
 
@@ -2529,7 +2529,7 @@ uint32_t crosstalk_eda_ic_fpga_fault_get(const crosstalk_eda_ic_fpga_ctx_t *ctx,
 
     memcpy(out, base, (uint64_t)cunt * sizeof(uint64_t));
 
-    if (out[CROSSTALK_HDL_ABI_FAULT_VALID_AT] != 0 && out[CROSSTALK_HDL_ABI_FAULT_CAUSE_AT] == (uint64_t)CROSSTALK_HDL_ABI_CAUSE_UNALIGNED && (slot->hlt_mask & ((uint32_t)0x1 << (uint32_t)CROSSTALK_HDL_ABI_CAUSE_UNALIGNED)) == 0) { memset(out, 0x0, (uint64_t)cap * sizeof(uint64_t)); }
+    if (out[CROSSTALK_HDL_ABI_FAULT_VALID_AT] != 0 && out[CROSSTALK_HDL_ABI_FAULT_CAUSE_AT] == (uint64_t)CROSSTALK_HDL_ABI_CAUSE_UNALIGNED && (slot->hlt_mask & ((uint32_t)1 << (uint32_t)CROSSTALK_HDL_ABI_CAUSE_UNALIGNED)) == 0) { memset(out, 0x0, (uint64_t)cap * sizeof(uint64_t)); }
 
     return LDG_ERR_AOK;
 }
@@ -2671,8 +2671,8 @@ uint32_t crosstalk_eda_ic_fpga_io_wr(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t 
 uint32_t crosstalk_eda_ic_fpga_io_map_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint32_t idx, uint64_t *out_base, uint64_t *out_span, const char **out_name)
 {
     const crosstalk_eda_ic_fpga_slot_t *slot = 0x0;
-    uint64_t base = 0x0;
-    uint64_t span = 0x0;
+    uint64_t base = 0;
+    uint64_t span = 0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_base == 0x0 || out_span == 0x0 || out_name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -2840,8 +2840,8 @@ uint32_t crosstalk_eda_ic_fpga_prog_drain(crosstalk_eda_ic_fpga_ctx_t *ctx, uint
     while (rd != wr && take < cap)
     {
         out[take] = slot->prog_ring[rd];
-        rd = (rd + 0x1) & ((uint32_t)CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP - 0x1);
-        take = take + 0x1;
+        rd = (rd + 1) & ((uint32_t)CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP - 1);
+        take++;
     }
 
     LDG_ST_RELEASE(slot->prog_rd, rd);
@@ -2931,7 +2931,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_wr(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
 
     if (addr >= width) { return CROSSTALK_EDA_IC_FPGA_ERR_MEM_ROOM; }
 
-    for (at = 0; at < cunt; at = at + 0x1)
+    for (at = 0; at < cunt; at++)
     {
         uint64_t at_addr = addr + (uint64_t)at;
 
@@ -2953,7 +2953,7 @@ static uint8_t mem_hex_path_is(const char *path)
 
     if (LDG_UNLIKELY(path == 0x0)) { return LDG_TRUTH_FALSE; }
 
-    while (path[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (path[len] != LDG_STR_TERM) { len++; }
 
     if (len < (uint32_t)CROSSTALK_EDA_IC_FPGA_MEM_HEX_EXT_LEN) { return LDG_TRUTH_FALSE; }
 
@@ -3090,7 +3090,7 @@ uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
                     if (ldg_hex_to_nipple((char)chunk[at], &nib) != LDG_ERR_AOK) { continue; }
 
                     pack = pack * (uint64_t)LDG_BASE_HEX + (uint64_t)nib;
-                    held = held + 0x1;
+                    held++;
                     continue;
                 }
 
@@ -3108,17 +3108,17 @@ uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
                     ret = fpga_mem_word_st(slot, sig_idx, abi_sig, addr, pack);
                     if (ret != LDG_ERR_AOK) { break; }
 
-                    addr = addr + 0x1;
-                    words = words + 0x1;
+                    addr++;
+                    words++;
                 }
 
-                pack = 0x0;
+                pack = 0;
                 held = 0x0;
                 continue;
             }
 
             pack = pack | ((uint64_t)chunk[at] << (uint64_t)((uint32_t)LDG_BYTE_BITS * held));
-            held = held + 0x1;
+            held++;
 
             if (held < elem_bytes) { continue; }
 
@@ -3127,9 +3127,9 @@ uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
             ret = fpga_mem_word_st(slot, sig_idx, abi_sig, addr, pack);
             if (ret != LDG_ERR_AOK) { break; }
 
-            addr = addr + 0x1;
-            words = words + 0x1;
-            pack = 0x0;
+            addr++;
+            words++;
+            pack = 0;
             held = 0x0;
         }
 
@@ -3147,11 +3147,11 @@ uint32_t crosstalk_eda_ic_fpga_mem_ld(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t
         if (hex_is != LDG_TRUTH_TRUE) { while (held < elem_bytes)
             {
                 pack = pack | ((uint64_t)CROSSTALK_EDA_IC_FPGA_MEM_PAD << (uint64_t)((uint32_t)LDG_BYTE_BITS * held));
-                held = held + 0x1;
+                held++;
             }
         }
 
-        if (fpga_mem_word_st(slot, sig_idx, abi_sig, addr, pack) == LDG_ERR_AOK) { words = words + 0x1; }
+        if (fpga_mem_word_st(slot, sig_idx, abi_sig, addr, pack) == LDG_ERR_AOK) { words++; }
     }
 
     if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga mem ld close failed"); }
@@ -3227,14 +3227,14 @@ static uint32_t fileset_size_get(const char *dir, const char *files, uint64_t *o
 
     *out_need = 0;
 
-    for (pos = 0; pos <= files_len; pos = pos + 0x1)
+    for (pos = 0; pos <= files_len; pos++)
     {
         if (files[pos] != CROSSTALK_EDA_IC_FPGA_FILESET_SEP && files[pos] != LDG_STR_TERM)
         {
             if (name_len >= CROSSTALK_EDA_IC_FPGA_FILESET_NAME_CAP - LDG_STR_TERM_SIZE) { return LDG_ERR_FUNC_ARG_INVALID; }
 
             name[name_len] = files[pos];
-            name_len = name_len + 0x1;
+            name_len++;
             continue;
         }
 
@@ -3286,7 +3286,7 @@ static uint32_t fileset_rd(const char *dir, const char *files, char *dst, uint64
                     return ret;
                 }
 
-                file_cunt = file_cunt + 0x1;
+                file_cunt++;
                 name_len = 0x0;
             }
         }
@@ -3295,10 +3295,10 @@ static uint32_t fileset_rd(const char *dir, const char *files, char *dst, uint64
             if (name_len >= CROSSTALK_EDA_IC_FPGA_FILESET_NAME_CAP - LDG_STR_TERM_SIZE) { return LDG_ERR_FUNC_ARG_INVALID; }
 
             name[name_len] = files[pos];
-            name_len = name_len + 0x1;
+            name_len++;
         }
 
-        pos = pos + 0x1;
+        pos++;
     }
 
     if (file_cunt == 0) { return LDG_ERR_EMPTY; }

@@ -23,7 +23,7 @@ static uint32_t db_str_cmp(const char *lhs, const char *rhs)
 {
     uint32_t at = 0;
 
-    while (lhs[at] != LDG_STR_TERM && lhs[at] == rhs[at]) { at = at + 0x1; }
+    while (lhs[at] != LDG_STR_TERM && lhs[at] == rhs[at]) { at++; }
 
     if (lhs[at] == rhs[at]) { return DB_CMP_EQ; }
 
@@ -70,7 +70,7 @@ static uint32_t db_slot_find(const crosstalk_re_db_ctx_t *ctx, uint32_t kind, ui
         }
 
         if (order == DB_CMP_LT) { hi = mid; }
-        else { lo = mid + 0x1; }
+        else { lo = mid + 1; }
     }
 
     *out_idx = lo;
@@ -88,7 +88,7 @@ static uint32_t db_text_ck(const char *text)
     {
         if (text[at] == LDG_ASCII_QUOTE || text[at] == '\n' || text[at] == '\r' || text[at] == ';') { return CROSSTALK_RE_DB_ERR_TEXT; }
 
-        at = at + 0x1;
+        at++;
     }
 
     return LDG_ERR_AOK;
@@ -105,7 +105,7 @@ static uint32_t db_word_ck(const char *word)
     {
         if (word[at] == ' ' || word[at] == '\t') { return CROSSTALK_RE_DB_ERR_TEXT; }
 
-        at = at + 0x1;
+        at++;
     }
 
     return LDG_ERR_AOK;
@@ -145,8 +145,8 @@ static void db_undo_push(crosstalk_re_db_ctx_t *ctx, uint8_t op, const crosstalk
 
     at = (ctx->undo_hd + ctx->undo_cunt) % (uint32_t)CROSSTALK_RE_DB_UNDO_MAX;
 
-    if (ctx->undo_cunt < (uint32_t)CROSSTALK_RE_DB_UNDO_MAX) { ctx->undo_cunt = ctx->undo_cunt + 0x1; }
-    else { ctx->undo_hd = (ctx->undo_hd + 0x1) % (uint32_t)CROSSTALK_RE_DB_UNDO_MAX; }
+    if (ctx->undo_cunt < (uint32_t)CROSSTALK_RE_DB_UNDO_MAX) { ctx->undo_cunt++; }
+    else { ctx->undo_hd = (ctx->undo_hd + 1) % (uint32_t)CROSSTALK_RE_DB_UNDO_MAX; }
 
     slot = &ctx->undo[at];
 
@@ -170,10 +170,10 @@ static uint32_t db_insert_at(crosstalk_re_db_ctx_t *ctx, uint32_t idx, const cro
 
     if (idx > ctx->rec_cunt) { return LDG_ERR_BOUNDS; }
 
-    if (idx < ctx->rec_cunt) { memmove(&ctx->rec[idx + 0x1], &ctx->rec[idx], (uint64_t)(ctx->rec_cunt - idx) * sizeof(*rec)); }
+    if (idx < ctx->rec_cunt) { memmove(&ctx->rec[idx + 1], &ctx->rec[idx], (uint64_t)(ctx->rec_cunt - idx) * sizeof(*rec)); }
 
     ctx->rec[idx] = *rec;
-    ctx->rec_cunt = ctx->rec_cunt + 0x1;
+    ctx->rec_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -184,9 +184,9 @@ static uint32_t db_remove_at(crosstalk_re_db_ctx_t *ctx, uint32_t idx)
 
     if (idx >= ctx->rec_cunt) { return LDG_ERR_BOUNDS; }
 
-    if (idx + 0x1 < ctx->rec_cunt) { memmove(&ctx->rec[idx], &ctx->rec[idx + 0x1], (uint64_t)(ctx->rec_cunt - idx - 0x1) * sizeof(ctx->rec[0])); }
+    if (idx + 1 < ctx->rec_cunt) { memmove(&ctx->rec[idx], &ctx->rec[idx + 1], (uint64_t)(ctx->rec_cunt - idx - 1) * sizeof(ctx->rec[0])); }
 
-    ctx->rec_cunt = ctx->rec_cunt - 0x1;
+    ctx->rec_cunt--;
 
     return LDG_ERR_AOK;
 }
@@ -216,7 +216,7 @@ static uint32_t db_apply(crosstalk_re_db_ctx_t *ctx, const crosstalk_re_db_rec_t
 
     if (journal == LDG_TRUTH_TRUE) { db_undo_push(ctx, (uint8_t)CROSSTALK_RE_DB_OP_ADD, rec, hit == LDG_TRUTH_TRUE ? &prev : 0x0); }
 
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_TRUE;
 
     return LDG_ERR_AOK;
@@ -230,7 +230,7 @@ static uint32_t db_line_wr(ldg_io_file_t *fh, const char *line)
 
     if (LDG_UNLIKELY(fh == 0x0 || line == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    while (line[len] != LDG_STR_TERM) { len = len + 0x1; }
+    while (line[len] != LDG_STR_TERM) { len++; }
 
     ret = ldg_io_file_wr(fh, line, len, &wrote);
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -269,7 +269,7 @@ uint32_t crosstalk_re_db_clear(crosstalk_re_db_ctx_t *ctx)
     ctx->rec_cunt = 0;
     ctx->undo_hd = 0;
     ctx->undo_cunt = 0;
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->img_hash = 0;
     ctx->img_set = LDG_TRUTH_FALSE;
     ctx->dirty = LDG_TRUTH_FALSE;
@@ -375,7 +375,7 @@ uint32_t crosstalk_re_db_rec_remove(crosstalk_re_db_ctx_t *ctx, uint32_t kind, u
 
     db_undo_push(ctx, (uint8_t)CROSSTALK_RE_DB_OP_REMOVE, &gone, 0x0);
 
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_TRUE;
 
     return LDG_ERR_AOK;
@@ -393,9 +393,9 @@ uint32_t crosstalk_re_db_undo(crosstalk_re_db_ctx_t *ctx)
 
     if (ctx->undo_cunt == 0) { return LDG_ERR_EMPTY; }
 
-    at = (ctx->undo_hd + ctx->undo_cunt - 0x1) % (uint32_t)CROSSTALK_RE_DB_UNDO_MAX;
+    at = (ctx->undo_hd + ctx->undo_cunt - 1) % (uint32_t)CROSSTALK_RE_DB_UNDO_MAX;
     entry = ctx->undo[at];
-    ctx->undo_cunt = ctx->undo_cunt - 0x1;
+    ctx->undo_cunt--;
 
     if (entry.op == (uint8_t)CROSSTALK_RE_DB_OP_REMOVE) { return db_apply(ctx, &entry.rec, LDG_TRUTH_FALSE); }
 
@@ -409,7 +409,7 @@ uint32_t crosstalk_re_db_undo(crosstalk_re_db_ctx_t *ctx)
             if (ret != LDG_ERR_AOK) { return ret; }
         } }
 
-    ctx->gen = ctx->gen + 0x1;
+    ctx->gen++;
     ctx->dirty = LDG_TRUTH_TRUE;
 
     return LDG_ERR_AOK;
@@ -442,7 +442,7 @@ uint32_t crosstalk_re_db_addr_get(const crosstalk_re_db_ctx_t *ctx, const char *
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < ctx->rec_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->rec_cunt; idx++)
     {
         if (ctx->rec[idx].kind != (uint32_t)CROSSTALK_RE_DB_KIND_NAME) { continue; }
 
@@ -466,7 +466,7 @@ uint32_t crosstalk_re_db_func_find(const crosstalk_re_db_ctx_t *ctx, uint64_t ad
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < ctx->rec_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->rec_cunt; idx++)
     {
         const crosstalk_re_db_rec_t *rec = &ctx->rec[idx];
 
@@ -514,7 +514,7 @@ uint32_t crosstalk_re_db_kind_parse(const char *name, uint32_t *out)
 
     *out = (uint32_t)CROSSTALK_RE_DB_KIND_NONE;
 
-    for (kind = (uint32_t)CROSSTALK_RE_DB_KIND_NAME; kind < (uint32_t)CROSSTALK_RE_DB_KIND_CUNT; kind = kind + 0x1)
+    for (kind = (uint32_t)CROSSTALK_RE_DB_KIND_NAME; kind < (uint32_t)CROSSTALK_RE_DB_KIND_CUNT; kind++)
     {
         if (crosstalk_re_db_kind_name_get(kind, &known) != LDG_ERR_AOK) { continue; }
 
@@ -552,7 +552,7 @@ uint32_t crosstalk_re_db_by_parse(const char *name, uint32_t *out)
 
     *out = (uint32_t)CROSSTALK_RE_DB_BY_HAND;
 
-    for (by = (uint32_t)CROSSTALK_RE_DB_BY_HAND; by < (uint32_t)CROSSTALK_RE_DB_BY_CUNT; by = by + 0x1)
+    for (by = (uint32_t)CROSSTALK_RE_DB_BY_HAND; by < (uint32_t)CROSSTALK_RE_DB_BY_CUNT; by++)
     {
         if (crosstalk_re_db_by_name_get(by, &known) != LDG_ERR_AOK) { continue; }
 
@@ -638,7 +638,7 @@ uint32_t crosstalk_re_db_st(crosstalk_re_db_ctx_t *ctx, const char *path)
     if (ctx->img_set == LDG_TRUTH_TRUE) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CROSSTALK_RE_DB_IMG_LINE_FMT, ctx->img_hash, ctx->img_leaf) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; }
         else { ret = db_line_wr(fh, line); } }
 
-    for (idx = 0; ret == LDG_ERR_AOK && idx < ctx->rec_cunt; idx = idx + 0x1)
+    for (idx = 0; ret == LDG_ERR_AOK && idx < ctx->rec_cunt; idx++)
     {
         ret = crosstalk_re_db_line_fmt(&ctx->rec[idx], line, (uint32_t)sizeof(line));
         if (ret != LDG_ERR_AOK) { break; }

@@ -69,12 +69,12 @@ static void stackview_ring_push(crosstalk_eda_ui_stackview_lane_t *lane, uint64_
     if (lane->cunt < (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_HIST_CAP)
     {
         at = (lane->hd + lane->cunt) % (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_HIST_CAP;
-        lane->cunt = lane->cunt + 0x1;
+        lane->cunt++;
     }
     else
     {
         at = lane->hd;
-        lane->hd = (lane->hd + 0x1) % (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_HIST_CAP;
+        lane->hd = (lane->hd + 1) % (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_HIST_CAP;
     }
 
     lane->cycle[at] = cycle;
@@ -90,7 +90,7 @@ static void stackview_pump(crosstalk_eda_ui_stackview_ctx_t *ctx)
 
     if (ctx->probes == 0x0) { return; }
 
-    for (lane_idx = 0; lane_idx < ctx->lane_cunt; lane_idx = lane_idx + 0x1)
+    for (lane_idx = 0; lane_idx < ctx->lane_cunt; lane_idx++)
     {
         if (ctx->lane[lane_idx].live != LDG_TRUTH_TRUE) { continue; }
 
@@ -98,7 +98,7 @@ static void stackview_pump(crosstalk_eda_ui_stackview_ctx_t *ctx)
 
         if (crosstalk_eda_logic_probe_drain(ctx->probes, ctx->lane[lane_idx].probe_handle, drain, (uint32_t)STACKVIEW_DRAIN_CAP, &got) != LDG_ERR_AOK) { continue; }
 
-        for (idx = 0; idx < got; idx = idx + 0x1) { stackview_ring_push(&ctx->lane[lane_idx], drain[idx].cycle, drain[idx].val); }
+        for (idx = 0; idx < got; idx++) { stackview_ring_push(&ctx->lane[lane_idx], drain[idx].cycle, drain[idx].val); }
     }
 }
 
@@ -122,7 +122,7 @@ static void stackview_refresh(crosstalk_eda_ui_stackview_ctx_t *ctx)
         uint32_t entries = ctx->ring_cunt / (uint32_t)CROSSTALK_HDL_ABI_RING_STRIDE;
         uint32_t at = 0;
 
-        for (at = 0; at < entries; at = at + 0x1)
+        for (at = 0; at < entries; at++)
         {
             uint64_t entry_from = ctx->ring[at * (uint32_t)CROSSTALK_HDL_ABI_RING_STRIDE + (uint32_t)CROSSTALK_HDL_ABI_RING_FROM_AT];
             uint64_t entry_instr = ctx->ring[at * (uint32_t)CROSSTALK_HDL_ABI_RING_STRIDE + (uint32_t)CROSSTALK_HDL_ABI_RING_INSTR_AT];
@@ -131,11 +131,11 @@ static void stackview_refresh(crosstalk_eda_ui_stackview_ctx_t *ctx)
 
             if (ctx->run_cunt != 0)
             {
-                crosstalk_eda_ui_stackview_run_t *tail = &ctx->run[ctx->run_cunt - 0x1];
+                crosstalk_eda_ui_stackview_run_t *tail = &ctx->run[ctx->run_cunt - 1];
 
                 if (tail->from == entry_from && tail->to == entry_to && tail->instr == entry_instr && tail->sp == entry_sp)
                 {
-                    tail->cunt = tail->cunt + 0x1;
+                    tail->cunt++;
 
                     continue;
                 }
@@ -147,8 +147,8 @@ static void stackview_refresh(crosstalk_eda_ui_stackview_ctx_t *ctx)
             ctx->run[ctx->run_cunt].to = entry_to;
             ctx->run[ctx->run_cunt].instr = entry_instr;
             ctx->run[ctx->run_cunt].sp = entry_sp;
-            ctx->run[ctx->run_cunt].cunt = 0x1;
-            ctx->run_cunt = ctx->run_cunt + 0x1;
+            ctx->run[ctx->run_cunt].cunt = 1;
+            ctx->run_cunt++;
         }
     }
 
@@ -169,7 +169,7 @@ static void stackview_refresh(crosstalk_eda_ui_stackview_ctx_t *ctx)
 
     ctx->word_cunt = got;
 
-    for (idx = 0; idx < got; idx = idx + 0x1)
+    for (idx = 0; idx < got; idx++)
     {
         ldg_dangcsa_decoded_t decoded = LDG_STRUCT_ZERO_INIT;
         uint64_t caller = 0;
@@ -181,7 +181,7 @@ static void stackview_refresh(crosstalk_eda_ui_stackview_ctx_t *ctx)
 
         if (ctx->word[idx] % (uint64_t)STACKVIEW_WORD_BYTES != 0) { continue; }
 
-        if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, (ctx->word[idx] - (uint64_t)STACKVIEW_WORD_BYTES) / (uint64_t)STACKVIEW_WORD_BYTES, &caller, 0x1, &caller_got) != LDG_ERR_AOK || caller_got == 0) { continue; }
+        if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, (ctx->word[idx] - (uint64_t)STACKVIEW_WORD_BYTES) / (uint64_t)STACKVIEW_WORD_BYTES, &caller, 1, &caller_got) != LDG_ERR_AOK || caller_got == 0) { continue; }
 
         if (ldg_dangcsa_decode(caller, &decoded) != LDG_ERR_AOK) { continue; }
 
@@ -224,7 +224,7 @@ static uint32_t stackview_key_isr(uint64_t win_id, void *user, const ldg_term_ke
     {
         if (ctx->query_len != 0)
         {
-            ctx->query_len = ctx->query_len - (uint32_t)STACKVIEW_STEP;
+            ctx->query_len = ctx->query_len - (uint32_t)1;
             ctx->query[ctx->query_len] = LDG_STR_TERM;
         }
 
@@ -244,7 +244,7 @@ static uint32_t stackview_key_isr(uint64_t win_id, void *user, const ldg_term_ke
         return LDG_ERR_AOK;
     }
 
-    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + (uint32_t)STACKVIEW_STEP)
+    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + (uint32_t)1)
     {
         if (key->text[at] < (uint32_t)LDG_ASCII_PRINTABLE_MIN || key->text[at] > (uint32_t)LDG_ASCII_PRINTABLE_MAX) { continue; }
 
@@ -253,7 +253,7 @@ static uint32_t stackview_key_isr(uint64_t win_id, void *user, const ldg_term_ke
         if (ctx->query_len + LDG_STR_TERM_SIZE >= (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_QUERY_CAP) { break; }
 
         ctx->query[ctx->query_len] = (char)key->text[at];
-        ctx->query_len = ctx->query_len + (uint32_t)STACKVIEW_STEP;
+        ctx->query_len = ctx->query_len + (uint32_t)1;
         ctx->query[ctx->query_len] = LDG_STR_TERM;
     }
 
@@ -389,7 +389,7 @@ uint32_t crosstalk_eda_ui_stackview_lane_add(crosstalk_eda_ui_stackview_ctx_t *c
 
     if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (at = 0; at < ctx->lane_cunt; at = at + 0x1) { if (strcmp(ctx->lane[at].name, name) == 0) { return LDG_ERR_EXISTS; } }
+    for (at = 0; at < ctx->lane_cunt; at++) { if (strcmp(ctx->lane[at].name, name) == 0) { return LDG_ERR_EXISTS; } }
 
     if (ctx->lane_cunt >= (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_CAP) { return LDG_ERR_FULL; }
 
@@ -400,7 +400,7 @@ uint32_t crosstalk_eda_ui_stackview_lane_add(crosstalk_eda_ui_stackview_ctx_t *c
 
     lane->probe_handle = probe_handle;
     lane->live = LDG_TRUTH_TRUE;
-    ctx->lane_cunt = ctx->lane_cunt + 0x1;
+    ctx->lane_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -413,7 +413,7 @@ uint32_t crosstalk_eda_ui_stackview_lane_handle_get(const crosstalk_eda_ui_stack
 
     *out = UINT32_MAX;
 
-    for (at = 0; at < ctx->lane_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->lane_cunt; at++)
     {
         if (strcmp(ctx->lane[at].name, name) != 0) { continue; }
 
@@ -432,13 +432,13 @@ uint32_t crosstalk_eda_ui_stackview_lane_remove(crosstalk_eda_ui_stackview_ctx_t
 
     if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (at = 0; at < ctx->lane_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->lane_cunt; at++)
     {
         if (strcmp(ctx->lane[at].name, name) != 0) { continue; }
 
-        for (tail = at; tail + 0x1 < ctx->lane_cunt; tail = tail + 0x1) { ctx->lane[tail] = ctx->lane[tail + 0x1]; }
+        for (tail = at; tail + 1 < ctx->lane_cunt; tail++) { ctx->lane[tail] = ctx->lane[tail + 1]; }
 
-        ctx->lane_cunt = ctx->lane_cunt - 0x1;
+        ctx->lane_cunt--;
         memset(&ctx->lane[ctx->lane_cunt], 0x0, sizeof(ctx->lane[ctx->lane_cunt]));
 
         return LDG_ERR_AOK;
@@ -480,7 +480,7 @@ static uint32_t stackview_note_build(crosstalk_eda_ui_stackview_ctx_t *ctx, uint
 
     if (val % (uint64_t)STACKVIEW_WORD_BYTES != 0 || val >= CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP) { return LDG_ERR_AOK; }
 
-    if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, val / (uint64_t)STACKVIEW_WORD_BYTES, &tgt, 0x1, &got) != LDG_ERR_AOK || got == 0) { return LDG_ERR_AOK; }
+    if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, val / (uint64_t)STACKVIEW_WORD_BYTES, &tgt, 1, &got) != LDG_ERR_AOK || got == 0) { return LDG_ERR_AOK; }
 
     {
         uint64_t text_words[STACKVIEW_NOTE_TEXT_WORDS] = LDG_ARR_ZERO_INIT;
@@ -489,14 +489,14 @@ static uint32_t stackview_note_build(crosstalk_eda_ui_stackview_ctx_t *ctx, uint
 
         if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, val / (uint64_t)STACKVIEW_WORD_BYTES, text_words, (uint32_t)STACKVIEW_NOTE_TEXT_WORDS, &got) == LDG_ERR_AOK)
         {
-            for (at = 0; at < got * (uint32_t)STACKVIEW_WORD_BYTES; at = at + 0x1)
+            for (at = 0; at < got * (uint32_t)STACKVIEW_WORD_BYTES; at++)
             {
                 char ch = (char)((text_words[at / (uint32_t)STACKVIEW_WORD_BYTES] >> ((at % (uint32_t)STACKVIEW_WORD_BYTES) * (uint32_t)LDG_BYTE_BITS)) & (uint64_t)LDG_BYTE_MASK);
 
                 if (ch < (char)LDG_ASCII_PRINTABLE_MIN || ch > (char)LDG_ASCII_PRINTABLE_MAX) { break; }
 
                 text[printable] = ch;
-                printable = printable + 0x1;
+                printable++;
             }
 
             text[printable] = LDG_STR_TERM;
@@ -517,7 +517,7 @@ static uint32_t stackview_note_build(crosstalk_eda_ui_stackview_ctx_t *ctx, uint
     pos = (uint32_t)wrote;
     *out_col = CROSSTALK_UI_THEME_STATUS_RGBA;
 
-    if (tgt != 0 && tgt % (uint64_t)STACKVIEW_WORD_BYTES == 0 && tgt < CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP) { if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, tgt / (uint64_t)STACKVIEW_WORD_BYTES, &chain, 0x1, &got) == LDG_ERR_AOK && got != 0) { if (ldg_str_fmt(&out[pos], (uint64_t)(cap - pos), &fmt_len, STACKVIEW_NOTE_PTR_FMT, chain) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; } } }
+    if (tgt != 0 && tgt % (uint64_t)STACKVIEW_WORD_BYTES == 0 && tgt < CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP) { if (crosstalk_eda_ic_fpga_mem_rd(ctx->fpga, ctx->slot, ctx->mem_sig, tgt / (uint64_t)STACKVIEW_WORD_BYTES, &chain, 1, &got) == LDG_ERR_AOK && got != 0) { if (ldg_str_fmt(&out[pos], (uint64_t)(cap - pos), &fmt_len, STACKVIEW_NOTE_PTR_FMT, chain) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; } } }
 
     return LDG_ERR_AOK;
 }
@@ -581,7 +581,7 @@ static uint32_t stackview_ring_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_t
     ret = stackview_seg_put(render, &pos_col, *row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *row = *row + (uint32_t)STACKVIEW_STEP;
+    *row = *row + (uint32_t)1;
 
     if (entries == 0)
     {
@@ -590,10 +590,10 @@ static uint32_t stackview_ring_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_t
         ret = stackview_seg_put(render, &pos_col, *row, STACKVIEW_RING_DEAD_TEXT, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row = *row + (uint32_t)STACKVIEW_STEP;
+        *row = *row + (uint32_t)1;
     }
 
-    for (shown = 0; shown < ctx->run_cunt; shown = shown + (uint32_t)STACKVIEW_STEP)
+    for (shown = 0; shown < ctx->run_cunt; shown = shown + (uint32_t)1)
     {
         const crosstalk_eda_ui_stackview_run_t *run = &ctx->run[shown];
         ldg_dangcsa_decoded_t decoded = LDG_STRUCT_ZERO_INIT;
@@ -606,7 +606,7 @@ static uint32_t stackview_ring_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_t
         ret = stackview_seg_put(render, &pos_col, *row, line, shown == 0 ? (uint32_t)CROSSTALK_UI_THEME_ACCENT_RGBA : (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (run->cunt != (uint32_t)STACKVIEW_STEP)
+        if (run->cunt != (uint32_t)1)
         {
             if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, STACKVIEW_RING_RUN_FMT, run->cunt) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
@@ -626,7 +626,7 @@ static uint32_t stackview_ring_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_t
         ret = stackview_seg_put(render, &pos_col, *row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row = *row + (uint32_t)STACKVIEW_STEP;
+        *row = *row + (uint32_t)1;
     }
 
     return LDG_ERR_AOK;
@@ -641,7 +641,7 @@ static uint32_t stackview_words_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_
 
     if (LDG_UNLIKELY(ctx == 0x0 || render == 0x0 || row == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < ctx->word_cunt; idx = idx + (uint32_t)STACKVIEW_STEP)
+    for (idx = 0; idx < ctx->word_cunt; idx = idx + (uint32_t)1)
     {
         uint32_t pos_col = STACKVIEW_ORIG_COL;
         uint32_t note_col = CROSSTALK_UI_THEME_DIM_RGBA;
@@ -661,7 +661,7 @@ static uint32_t stackview_words_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row = *row + (uint32_t)STACKVIEW_STEP;
+        *row = *row + (uint32_t)1;
     }
 
     return LDG_ERR_AOK;
@@ -676,7 +676,7 @@ static uint32_t stackview_lanes_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_
 
     if (LDG_UNLIKELY(ctx == 0x0 || render == 0x0 || row == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (lane_idx = 0; lane_idx < ctx->lane_cunt; lane_idx = lane_idx + (uint32_t)STACKVIEW_STEP)
+    for (lane_idx = 0; lane_idx < ctx->lane_cunt; lane_idx = lane_idx + (uint32_t)1)
     {
         const crosstalk_eda_ui_stackview_lane_t *lane = &ctx->lane[lane_idx];
         uint32_t pos_col = STACKVIEW_ORIG_COL;
@@ -690,11 +690,11 @@ static uint32_t stackview_lanes_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_
         ret = stackview_seg_put(render, &pos_col, *row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *row = *row + (uint32_t)STACKVIEW_STEP;
+        *row = *row + (uint32_t)1;
 
-        for (shown = 0; shown < show_cunt; shown = shown + (uint32_t)STACKVIEW_STEP)
+        for (shown = 0; shown < show_cunt; shown = shown + (uint32_t)1)
         {
-            uint32_t at = (lane->hd + lane->cunt - (uint32_t)STACKVIEW_STEP - shown) % (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_HIST_CAP;
+            uint32_t at = (lane->hd + lane->cunt - (uint32_t)1 - shown) % (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_LANE_HIST_CAP;
 
             pos_col = STACKVIEW_ORIG_COL;
 
@@ -708,7 +708,7 @@ static uint32_t stackview_lanes_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg_
             ret = stackview_seg_put(render, &pos_col, *row, line, (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            *row = *row + (uint32_t)STACKVIEW_STEP;
+            *row = *row + (uint32_t)1;
         }
     }
 
@@ -778,7 +778,7 @@ static uint32_t stackview_thread_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg
     {
         if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, STACKVIEW_THREAD_WAIT_FMT, thread->sel, thread->last_err) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 
-        ctx->win.content_row_cunt = (uint32_t)STACKVIEW_STEP;
+        ctx->win.content_row_cunt = (uint32_t)1;
 
         return stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA);
     }
@@ -788,9 +788,9 @@ static uint32_t stackview_thread_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg
     ret = stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)STACKVIEW_STEP;
+    row = row + (uint32_t)1;
 
-    for (at = 0; at < thread->stack_cunt; at = at + (uint32_t)STACKVIEW_STEP)
+    for (at = 0; at < thread->stack_cunt; at = at + (uint32_t)1)
     {
         pos_col = STACKVIEW_ORIG_COL;
 
@@ -807,7 +807,7 @@ static uint32_t stackview_thread_draw(crosstalk_eda_ui_stackview_ctx_t *ctx, ldg
         ret = stackview_thread_note_put(thread, render, &pos_col, row, at);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)STACKVIEW_STEP;
+        row = row + (uint32_t)1;
     }
 
     ctx->win.content_row_cunt = row;
@@ -843,7 +843,7 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
 
     if (ctx->fpga == 0x0 || ctx->sp == 0)
     {
-        ctx->win.content_row_cunt = (uint32_t)STACKVIEW_STEP;
+        ctx->win.content_row_cunt = (uint32_t)1;
 
         return stackview_seg_put(render, &pos_col, row, STACKVIEW_DEAD_TEXT, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA);
     }
@@ -851,7 +851,7 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
     ret = stackview_hdr_draw(ctx, render, row);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + (uint32_t)STACKVIEW_STEP;
+    row = row + (uint32_t)1;
 
     if (ctx->frozen == LDG_TRUTH_TRUE && ctx->fault_has == LDG_TRUTH_TRUE)
     {
@@ -860,18 +860,18 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
         ret = stackview_frame_draw(render, frame, ctx->fault[CROSSTALK_HDL_ABI_FAULT_LOC_AT], row);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)STACKVIEW_STEP;
+        row = row + (uint32_t)1;
 
-        for (idx = 0; idx < ctx->word_cunt; idx = idx + (uint32_t)STACKVIEW_STEP)
+        for (idx = 0; idx < ctx->word_cunt; idx = idx + (uint32_t)1)
         {
             if (ctx->call_mark[idx] != LDG_TRUTH_TRUE) { continue; }
 
-            frame = frame + (uint32_t)STACKVIEW_STEP;
+            frame = frame + (uint32_t)1;
 
             ret = stackview_frame_draw(render, frame, ctx->word[idx], row);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            row = row + (uint32_t)STACKVIEW_STEP;
+            row = row + (uint32_t)1;
         }
     }
 
@@ -882,7 +882,7 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
         ret = stackview_seg_put(render, &pos_col, row, STACKVIEW_EMPTY_TEXT, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)STACKVIEW_STEP;
+        row = row + (uint32_t)1;
     }
 
     ret = stackview_ring_draw(ctx, render, &row);
@@ -899,7 +899,7 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
         ret = stackview_seg_put(render, &pos_col, row, STACKVIEW_HINT_TEXT, (uint32_t)CROSSTALK_UI_THEME_DEAD_RGBA);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + (uint32_t)STACKVIEW_STEP;
+        row = row + (uint32_t)1;
     }
 
     if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, STACKVIEW_PROMPT_FMT, ctx->query) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
@@ -909,7 +909,7 @@ static uint32_t stackview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t
     ret = stackview_seg_put(render, &pos_col, row, line, (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ctx->win.content_row_cunt = row + (uint32_t)STACKVIEW_STEP;
+    ctx->win.content_row_cunt = row + (uint32_t)1;
 
     return LDG_ERR_AOK;
 }

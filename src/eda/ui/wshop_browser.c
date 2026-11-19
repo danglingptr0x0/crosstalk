@@ -75,7 +75,7 @@ static uint32_t items_refresh(crosstalk_eda_ui_wshop_browser_ctx_t *ctx, const c
 
     ctx->rows_cunt = 0;
 
-    for (idx = 0; idx < list->cunt && ctx->rows_cunt < CROSSTALK_WSHOP_ITEM_MAX; idx = idx + WSHOP_BROWSER_STEP)
+    for (idx = 0; idx < list->cunt && ctx->rows_cunt < CROSSTALK_WSHOP_ITEM_MAX; idx++)
     {
         char *label = ctx->row_label[ctx->rows_cunt];
 
@@ -89,7 +89,7 @@ static uint32_t items_refresh(crosstalk_eda_ui_wshop_browser_ctx_t *ctx, const c
         if (written < 0) { break; }
 
         ctx->row_item[ctx->rows_cunt] = idx;
-        ctx->rows_cunt = ctx->rows_cunt + WSHOP_BROWSER_STEP;
+        ctx->rows_cunt++;
     }
 
     if (ctx->active != UINT32_MAX && ctx->active >= ctx->rows_cunt) { ctx->active = ctx->rows_cunt == 0 ? UINT32_MAX : ctx->rows_cunt - WSHOP_BROWSER_STEP; }
@@ -189,7 +189,7 @@ static uint32_t wshop_browser_draw_cb(uint64_t win_id, void *user, ldg_term_rend
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (row = 0; row < ctx->rows_cunt; row = row + WSHOP_BROWSER_STEP)
+    for (row = 0; row < ctx->rows_cunt; row++)
     {
         if (row == ctx->active)
         {
@@ -237,8 +237,8 @@ static uint32_t wshop_browser_key_isr(uint64_t win_id, void *user, const ldg_ter
         if (ctx->rows_cunt == 0) { return LDG_ERR_AOK; }
 
         if (ctx->active == UINT32_MAX) { ctx->active = (uint32_t)WSHOP_BROWSER_ACTIVE_FIRST; }
-        else if (key->key == (uint8_t)LDG_TERM_KEY_UP) { if (ctx->active != 0) { ctx->active = ctx->active - WSHOP_BROWSER_STEP; } }
-        else if (ctx->active + WSHOP_BROWSER_STEP < ctx->rows_cunt) { ctx->active = ctx->active + WSHOP_BROWSER_STEP; }
+        else if (key->key == (uint8_t)LDG_TERM_KEY_UP) { if (ctx->active != 0) { ctx->active--; } }
+        else if (ctx->active + WSHOP_BROWSER_STEP < ctx->rows_cunt) { ctx->active++; }
 
         return crosstalk_ui_window_row_show(&ctx->win, (uint32_t)WSHOP_BROWSER_ROW_LIST + ctx->active);
     }

@@ -69,7 +69,7 @@ uint32_t crosstalk_game_pack_blob_add(crosstalk_game_pack_ctx_t *ctx, const char
     if (LDG_UNLIKELY(ctx->len + frame_len + inner_len > ctx->cap)) { return LDG_ERR_FULL; }
 
     inner_buff = ctx->buff + ctx->cap - inner_len;
-    for (shift_i = 0; shift_i < CROSSTALK_GAME_PACK_NAME_LEN_SIZE; shift_i = shift_i + 1) { inner_buff[shift_i] = (uint8_t)((name_len >> (shift_i * LDG_BYTE_BITS)) & LDG_BYTE_MASK); }
+    for (shift_i = 0; shift_i < CROSSTALK_GAME_PACK_NAME_LEN_SIZE; shift_i++) { inner_buff[shift_i] = (uint8_t)((name_len >> (shift_i * LDG_BYTE_BITS)) & LDG_BYTE_MASK); }
 
     memcpy(inner_buff + CROSSTALK_GAME_PACK_NAME_LEN_SIZE, name, (uint64_t)name_len);
     if (data_len > 0) { memmove(inner_buff + CROSSTALK_GAME_PACK_NAME_LEN_SIZE + name_len, data, data_len); }
@@ -78,7 +78,7 @@ uint32_t crosstalk_game_pack_blob_add(crosstalk_game_pack_ctx_t *ctx, const char
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ctx->len = ctx->len + frame_len;
-    ctx->entry_cunt = ctx->entry_cunt + CROSSTALK_GAME_PACK_ENTRY_STEP;
+    ctx->entry_cunt++;
 
     return LDG_ERR_AOK;
 }

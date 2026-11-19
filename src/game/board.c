@@ -37,7 +37,7 @@ static uint32_t crosstalk_game_board_src_dir_reg(crosstalk_game_board_ctx_t *ctx
 
     *out_idx = 0;
 
-    for (idx = 0; idx < ctx->src_cunt; idx = idx + 1) { if (strcmp(ctx->src_dir[idx], dir) == 0)
+    for (idx = 0; idx < ctx->src_cunt; idx++) { if (strcmp(ctx->src_dir[idx], dir) == 0)
         {
             *out_idx = idx;
             return LDG_ERR_AOK;
@@ -81,20 +81,20 @@ uint32_t crosstalk_game_board_file_parse(const char *file, char *out_name, uint3
     len = (uint32_t)strlen(stem);
     dot = len;
 
-    for (idx = 0; idx < len; idx = idx + 1) { if (stem[idx] == '.') { dot = idx; } }
+    for (idx = 0; idx < len; idx++) { if (stem[idx] == '.') { dot = idx; } }
 
     stem[dot] = LDG_STR_TERM;
     len = dot;
     sep = len;
 
-    for (idx = 0; idx < len; idx = idx + 1) { if (stem[idx] == '_') { sep = idx; } }
+    for (idx = 0; idx < len; idx++) { if (stem[idx] == '_') { sep = idx; } }
 
     if (sep < len)
     {
         epoch_pos = sep;
         epoch_pos++;
 
-        for (idx = epoch_pos; idx < len; idx = idx + 1)
+        for (idx = epoch_pos; idx < len; idx++)
         {
             if (ldg_char_digit_is((uint8_t)stem[idx]) != LDG_TRUTH_TRUE)
             {
@@ -205,7 +205,7 @@ uint32_t crosstalk_game_board_sort(crosstalk_game_board_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < ctx->cunt; idx = idx + 1)
+    for (idx = 0; idx < ctx->cunt; idx++)
     {
         tmp = ctx->entry[idx];
         pos = idx;
@@ -276,7 +276,7 @@ uint32_t crosstalk_game_board_name_sanitize(const char *name, char *out, uint32_
 
     out[0] = LDG_STR_TERM;
 
-    for (idx = 0; name[idx] != LDG_STR_TERM; idx = idx + 1)
+    for (idx = 0; name[idx] != LDG_STR_TERM; idx++)
     {
         if (kept >= out_cap - LDG_STR_TERM_SIZE) { break; }
 
@@ -348,7 +348,7 @@ uint32_t crosstalk_game_board_ext_swap(const char *file, const char *ext, char *
     len = (uint32_t)strlen(stem);
     dot = len;
 
-    for (idx = 0; idx < len; idx = idx + 1) { if (stem[idx] == '.') { dot = idx; } }
+    for (idx = 0; idx < len; idx++) { if (stem[idx] == '.') { dot = idx; } }
 
     stem[dot] = LDG_STR_TERM;
 
@@ -375,11 +375,11 @@ uint32_t crosstalk_game_board_names_build(crosstalk_game_board_ctx_t *ctx)
 
     ctx->names[0] = LDG_STR_TERM;
 
-    for (idx = 0; idx < ctx->cunt; idx = idx + 1)
+    for (idx = 0; idx < ctx->cunt; idx++)
     {
         if (ldg_str_rbrcpy(safe_name, ctx->entry[idx].name, (uint64_t)sizeof(safe_name)) != LDG_ERR_AOK) { continue; }
 
-        for (col = 0; safe_name[col] != LDG_STR_TERM; col = col + 1) { if (safe_name[col] == ';') { safe_name[col] = '_'; } }
+        for (col = 0; safe_name[col] != LDG_STR_TERM; col++) { if (safe_name[col] == ';') { safe_name[col] = '_'; } }
 
         sep = (idx > 0) ? ";" : "";
         room = (uint64_t)sizeof(ctx->names) - used;
@@ -470,17 +470,17 @@ uint32_t crosstalk_game_board_items_build(crosstalk_game_board_ctx_t *ctx)
     ctx->items[0] = LDG_STR_TERM;
     memset(&ctx->lock[0], 0x0, sizeof(ctx->lock));
 
-    for (idx = 0; idx < ctx->cunt; idx = idx + 1)
+    for (idx = 0; idx < ctx->cunt; idx++)
     {
         if (ldg_str_rbrcpy(safe_name, ctx->entry[idx].name, (uint64_t)sizeof(safe_name)) != LDG_ERR_AOK) { continue; }
 
-        for (col = 0; safe_name[col] != LDG_STR_TERM; col = col + 1) { if (safe_name[col] == ';') { safe_name[col] = '_'; } }
+        for (col = 0; safe_name[col] != LDG_STR_TERM; col++) { if (safe_name[col] == ';') { safe_name[col] = '_'; } }
 
         author = "-";
 
         if (ctx->entry[idx].author_ok == LDG_TRUTH_TRUE && ldg_str_rbrcpy(safe_author, ctx->entry[idx].author, (uint64_t)sizeof(safe_author)) == LDG_ERR_AOK)
         {
-            for (col = 0; safe_author[col] != LDG_STR_TERM; col = col + 1) { if (safe_author[col] == ';') { safe_author[col] = '_'; } }
+            for (col = 0; safe_author[col] != LDG_STR_TERM; col++) { if (safe_author[col] == ';') { safe_author[col] = '_'; } }
 
             author = safe_author;
         }
@@ -491,7 +491,7 @@ uint32_t crosstalk_game_board_items_build(crosstalk_game_board_ctx_t *ctx)
         {
             if (ctx->entry[idx].tag[0] != LDG_STR_TERM && ldg_str_rbrcpy(safe_tag, ctx->entry[idx].tag, (uint64_t)sizeof(safe_tag)) == LDG_ERR_AOK)
             {
-                for (col = 0; safe_tag[col] != LDG_STR_TERM; col = col + 1) { if (safe_tag[col] == ';') { safe_tag[col] = '_'; } }
+                for (col = 0; safe_tag[col] != LDG_STR_TERM; col++) { if (safe_tag[col] == ';') { safe_tag[col] = '_'; } }
 
                 written = ldg_str_fmt(mark_text, (uint64_t)sizeof(mark_text), &fmt_len, "[%.31s] ", safe_tag) == LDG_ERR_AOK ? (int32_t)fmt_len : -1;
                 if (written <= 0) { mark_text[0] = LDG_STR_TERM; }

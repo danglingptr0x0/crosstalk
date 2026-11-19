@@ -42,7 +42,7 @@ static uint32_t crosstalk_hdl_lutmap_arr_alloc(void *pool, uint64_t cunt, uint64
     if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out = 0x0;
-    if (cunt == 0) { cunt = 0x1; }
+    if (cunt == 0) { cunt = 1; }
 
     ret = ldg_mem_pool_alloc((ldg_mem_pool_t *)pool, cunt * item_size, out);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -67,30 +67,30 @@ static uint32_t crosstalk_hdl_lutmap_cut_merge(const crosstalk_hdl_lutmap_cut_t 
         if (lhs_idx < lhs->leaf_cunt && rhs_idx < rhs->leaf_cunt && lhs->leaf[lhs_idx] == rhs->leaf[rhs_idx])
         {
             leaf_val = lhs->leaf[lhs_idx];
-            lhs_idx = lhs_idx + 0x1;
-            rhs_idx = rhs_idx + 0x1;
+            lhs_idx++;
+            rhs_idx++;
         }
         else if (rhs_idx >= rhs->leaf_cunt || (lhs_idx < lhs->leaf_cunt && lhs->leaf[lhs_idx] < rhs->leaf[rhs_idx]))
         {
             leaf_val = lhs->leaf[lhs_idx];
-            lhs_idx = lhs_idx + 0x1;
+            lhs_idx++;
         }
         else
         {
             leaf_val = rhs->leaf[rhs_idx];
-            rhs_idx = rhs_idx + 0x1;
+            rhs_idx++;
         }
 
         if (out_cut->leaf_cunt >= lut_k) { return LDG_ERR_FULL; }
 
         out_cut->leaf[out_cut->leaf_cunt] = leaf_val;
-        out_cut->leaf_cunt = out_cut->leaf_cunt + 0x1;
+        out_cut->leaf_cunt++;
     }
 
     deep = 0;
-    for (idx = 0; idx < out_cut->leaf_cunt; idx = idx + 1) { if (arrival[out_cut->leaf[idx]] > deep) { deep = arrival[out_cut->leaf[idx]]; } }
+    for (idx = 0; idx < out_cut->leaf_cunt; idx++) { if (arrival[out_cut->leaf[idx]] > deep) { deep = arrival[out_cut->leaf[idx]]; } }
 
-    out_cut->depth = deep + 0x1;
+    out_cut->depth = deep + 1;
     return LDG_ERR_AOK;
 }
 
@@ -101,7 +101,7 @@ static uint32_t crosstalk_hdl_lutmap_cut_af_get(const crosstalk_hdl_lutmap_ctx_t
 
     if (LDG_UNLIKELY(ctx == 0x0 || cut == 0x0)) { return UINT32_MAX; }
 
-    for (idx = 0; idx < cut->leaf_cunt; idx = idx + 1) { flow = flow + ctx->af_node[cut->leaf[idx]]; }
+    for (idx = 0; idx < cut->leaf_cunt; idx++) { flow = flow + ctx->af_node[cut->leaf[idx]]; }
 
     if (flow > UINT32_MAX) { flow = UINT32_MAX; }
 
@@ -118,7 +118,7 @@ static uint32_t crosstalk_hdl_lutmap_cut_keep(crosstalk_hdl_lutmap_cut_t *slot_a
 
     cunt = *slot_cunt;
     put_idx = cunt;
-    for (idx = 0; idx < cunt; idx = idx + 1) { if (cand->depth < slot_arr[idx].depth || (cand->depth == slot_arr[idx].depth && cand->leaf_cunt < slot_arr[idx].leaf_cunt))
+    for (idx = 0; idx < cunt; idx++) { if (cand->depth < slot_arr[idx].depth || (cand->depth == slot_arr[idx].depth && cand->leaf_cunt < slot_arr[idx].leaf_cunt))
         {
             put_idx = idx;
             break;
@@ -127,9 +127,9 @@ static uint32_t crosstalk_hdl_lutmap_cut_keep(crosstalk_hdl_lutmap_cut_t *slot_a
 
     if (put_idx >= CROSSTALK_HDL_LUTMAP_CUT_MAX) { return LDG_ERR_AOK; }
 
-    if (cunt < CROSSTALK_HDL_LUTMAP_CUT_MAX) { cunt = cunt + 0x1; }
+    if (cunt < CROSSTALK_HDL_LUTMAP_CUT_MAX) { cunt++; }
 
-    for (idx = cunt - 0x1; idx > put_idx; idx = idx - 1) { slot_arr[idx] = slot_arr[idx - 0x1]; }
+    for (idx = cunt - 1; idx > put_idx; idx--) { slot_arr[idx] = slot_arr[idx - 1]; }
 
     slot_arr[put_idx] = *cand;
     *slot_cunt = (uint8_t)cunt;
@@ -155,21 +155,21 @@ static uint32_t crosstalk_hdl_lutmap_node_cuts_build(crosstalk_hdl_lutmap_ctx_t 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     node = &ctx->aig_ctx->nodes[node_idx];
-    lhs_node = node->fanin0 >> 0x1;
-    rhs_node = node->fanin1 >> 0x1;
+    lhs_node = node->fanin0 >> 1;
+    rhs_node = node->fanin1 >> 1;
     lhs_triv.leaf[0] = lhs_node;
-    lhs_triv.leaf_cunt = 0x1;
+    lhs_triv.leaf_cunt = 1;
     lhs_triv.depth = ctx->arrival[lhs_node];
     rhs_triv.leaf[0] = rhs_node;
-    rhs_triv.leaf_cunt = 0x1;
+    rhs_triv.leaf_cunt = 1;
     rhs_triv.depth = ctx->arrival[rhs_node];
 
     lhs_cunt = ctx->cut_cunt[lhs_node];
     rhs_cunt = ctx->cut_cunt[rhs_node];
-    for (lhs_idx = 0; lhs_idx <= lhs_cunt; lhs_idx = lhs_idx + 1)
+    for (lhs_idx = 0; lhs_idx <= lhs_cunt; lhs_idx++)
     {
         lhs_cut = lhs_idx < lhs_cunt ? &ctx->cuts[(uint64_t)lhs_node * CROSSTALK_HDL_LUTMAP_CUT_MAX + lhs_idx] : &lhs_triv;
-        for (rhs_idx = 0; rhs_idx <= rhs_cunt; rhs_idx = rhs_idx + 1)
+        for (rhs_idx = 0; rhs_idx <= rhs_cunt; rhs_idx++)
         {
             rhs_cut = rhs_idx < rhs_cunt ? &ctx->cuts[(uint64_t)rhs_node * CROSSTALK_HDL_LUTMAP_CUT_MAX + rhs_idx] : &rhs_triv;
             ret = crosstalk_hdl_lutmap_cut_merge(lhs_cut, rhs_cut, ctx->arrival, ctx->lut_k, &cand);
@@ -190,9 +190,9 @@ static uint32_t crosstalk_hdl_lutmap_node_cuts_build(crosstalk_hdl_lutmap_ctx_t 
         uint32_t best_af = UINT32_MAX;
         uint32_t cut_idx = 0;
 
-        for (cut_idx = 0; cut_idx < ctx->cut_cunt[node_idx]; cut_idx = cut_idx + 1) { if (ctx->cuts[(uint64_t)node_idx * CROSSTALK_HDL_LUTMAP_CUT_MAX + cut_idx].area_flow < best_af) { best_af = ctx->cuts[(uint64_t)node_idx * CROSSTALK_HDL_LUTMAP_CUT_MAX + cut_idx].area_flow; } }
+        for (cut_idx = 0; cut_idx < ctx->cut_cunt[node_idx]; cut_idx++) { if (ctx->cuts[(uint64_t)node_idx * CROSSTALK_HDL_LUTMAP_CUT_MAX + cut_idx].area_flow < best_af) { best_af = ctx->cuts[(uint64_t)node_idx * CROSSTALK_HDL_LUTMAP_CUT_MAX + cut_idx].area_flow; } }
 
-        ctx->af_node[node_idx] = best_af / (ctx->fanout[node_idx] != 0 ? ctx->fanout[node_idx] : 0x1);
+        ctx->af_node[node_idx] = best_af / (ctx->fanout[node_idx] != 0 ? ctx->fanout[node_idx] : 1);
     }
 
     return LDG_ERR_AOK;
@@ -203,7 +203,7 @@ static uint64_t crosstalk_hdl_lutmap_var_mask_get(uint32_t var_idx)
     uint64_t mask = 0;
     uint32_t bit_at = 0;
 
-    for (bit_at = 0; bit_at < (uint32_t)CROSSTALK_HDL_NETARR_MASK_BITS; bit_at = bit_at + 0x1) { if (((bit_at >> var_idx) & 0x1) != 0x0) { mask = mask | ((uint64_t)0x1 << bit_at); } }
+    for (bit_at = 0; bit_at < (uint32_t)CROSSTALK_HDL_NETARR_MASK_BITS; bit_at++) { if (((bit_at >> var_idx) & 1) != 0x0) { mask = mask | ((uint64_t)1 << bit_at); } }
 
     return mask;
 }
@@ -218,7 +218,7 @@ static uint32_t crosstalk_hdl_lutmap_lut_mask_get(const crosstalk_hdl_aig_ctx_t 
     *out_mask = 0x0;
     vals[0] = 0x0;
     gen_arr[0] = gen;
-    for (leaf_idx = 0; leaf_idx < cut->leaf_cunt; leaf_idx = leaf_idx + 0x1)
+    for (leaf_idx = 0; leaf_idx < cut->leaf_cunt; leaf_idx++)
     {
         if (cut->leaf[leaf_idx] == 0x0) { continue; }
 
@@ -233,27 +233,27 @@ static uint32_t crosstalk_hdl_lutmap_lut_mask_get(const crosstalk_hdl_aig_ctx_t 
     }
 
     stack[sp] = node_idx;
-    sp = sp + 0x1;
+    sp++;
     while (sp != 0)
     {
         const crosstalk_hdl_aig_node_t *node = 0x0;
         uint64_t lhs_val = 0;
         uint64_t rhs_val = 0;
-        uint32_t at = stack[sp - 0x1];
+        uint32_t at = stack[sp - 1];
         uint32_t lhs_node = 0;
         uint32_t rhs_node = 0;
 
         if (gen_arr[at] == gen)
         {
-            sp = sp - 0x1;
+            sp--;
             continue;
         }
 
         node = &aig_ctx->nodes[at];
         if (node->fanin0 == UINT32_MAX) { return CROSSTALK_HDL_ERR_LUTMAP_CONE; }
 
-        lhs_node = node->fanin0 >> 0x1;
-        rhs_node = node->fanin1 >> 0x1;
+        lhs_node = node->fanin0 >> 1;
+        rhs_node = node->fanin1 >> 1;
         if (gen_arr[lhs_node] != gen || gen_arr[rhs_node] != gen)
         {
             if (sp + 0x2 > stack_cap) { return CROSSTALK_HDL_ERR_LUTMAP_CONE; }
@@ -261,23 +261,23 @@ static uint32_t crosstalk_hdl_lutmap_lut_mask_get(const crosstalk_hdl_aig_ctx_t 
             if (gen_arr[lhs_node] != gen)
             {
                 stack[sp] = lhs_node;
-                sp = sp + 0x1;
+                sp++;
             }
 
             if (gen_arr[rhs_node] != gen)
             {
                 stack[sp] = rhs_node;
-                sp = sp + 0x1;
+                sp++;
             }
 
             continue;
         }
 
-        lhs_val = (node->fanin0 & 0x1) != 0x0 ? ~vals[lhs_node] : vals[lhs_node];
-        rhs_val = (node->fanin1 & 0x1) != 0x0 ? ~vals[rhs_node] : vals[rhs_node];
+        lhs_val = (node->fanin0 & 1) != 0x0 ? ~vals[lhs_node] : vals[lhs_node];
+        rhs_val = (node->fanin1 & 1) != 0x0 ? ~vals[rhs_node] : vals[rhs_node];
         vals[at] = lhs_val & rhs_val;
         gen_arr[at] = gen;
-        sp = sp - 0x1;
+        sp--;
     }
 
     *out_mask = vals[node_idx];
@@ -333,7 +333,7 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
     ret = crosstalk_hdl_lutmap_arr_alloc(pool, node_total, sizeof(uint8_t), (void **)&ctx.chosen);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (node_idx = 0x1; node_idx < aig_ctx->node_cunt; node_idx = node_idx + 1)
+    for (node_idx = 1; node_idx < aig_ctx->node_cunt; node_idx++)
     {
         if (aig_ctx->nodes[node_idx].fanin0 == UINT32_MAX)
         {
@@ -341,13 +341,13 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
             continue;
         }
 
-        ctx.fanout[aig_ctx->nodes[node_idx].fanin0 >> 0x1] = ctx.fanout[aig_ctx->nodes[node_idx].fanin0 >> 0x1] + 0x1;
-        ctx.fanout[aig_ctx->nodes[node_idx].fanin1 >> 0x1] = ctx.fanout[aig_ctx->nodes[node_idx].fanin1 >> 0x1] + 0x1;
+        ctx.fanout[aig_ctx->nodes[node_idx].fanin0 >> 1]++;
+        ctx.fanout[aig_ctx->nodes[node_idx].fanin1 >> 1]++;
     }
 
-    for (idx = 0; idx < aig_ctx->root_cunt; idx = idx + 1) { ctx.fanout[aig_ctx->roots[idx] >> 0x1] = ctx.fanout[aig_ctx->roots[idx] >> 0x1] + 0x1; }
+    for (idx = 0; idx < aig_ctx->root_cunt; idx++) { ctx.fanout[aig_ctx->roots[idx] >> 1]++; }
 
-    for (node_idx = 0x1; node_idx < aig_ctx->node_cunt; node_idx = node_idx + 1)
+    for (node_idx = 1; node_idx < aig_ctx->node_cunt; node_idx++)
     {
         ctx.req[node_idx] = UINT32_MAX;
         if (ctx.pi_is[node_idx] != LDG_TRUTH_FALSE) { continue; }
@@ -356,9 +356,9 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    for (idx = 0; idx < aig_ctx->root_cunt; idx = idx + 1)
+    for (idx = 0; idx < aig_ctx->root_cunt; idx++)
     {
-        root_node = aig_ctx->roots[idx] >> 0x1;
+        root_node = aig_ctx->roots[idx] >> 1;
         if (root_node == 0 || ctx.pi_is[root_node] == LDG_TRUTH_TRUE) { continue; }
 
         if (ctx.arrival[root_node] > out_res->depth) { out_res->depth = ctx.arrival[root_node]; }
@@ -372,13 +372,13 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
         uint32_t sig_idx = 0;
         uint32_t bit_idx = 0;
 
-        for (sig_idx = 0; sig_idx < aig_ctx->ir_ctx->sig_cunt; sig_idx = sig_idx + 1)
+        for (sig_idx = 0; sig_idx < aig_ctx->ir_ctx->sig_cunt; sig_idx++)
         {
             if (aig_ctx->lit_off[sig_idx] == UINT32_MAX) { continue; }
 
-            for (bit_idx = 0; bit_idx < aig_ctx->ir_ctx->sigs[sig_idx].width; bit_idx = bit_idx + 1)
+            for (bit_idx = 0; bit_idx < aig_ctx->ir_ctx->sigs[sig_idx].width; bit_idx++)
             {
-                root_node = aig_ctx->lit_arena[aig_ctx->lit_off[sig_idx] + bit_idx] >> 0x1;
+                root_node = aig_ctx->lit_arena[aig_ctx->lit_off[sig_idx] + bit_idx] >> 1;
                 if (root_node == 0 || ctx.pi_is[root_node] == LDG_TRUTH_TRUE) { continue; }
 
                 ctx.need[root_node] = LDG_TRUTH_TRUE;
@@ -387,16 +387,16 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
         }
     }
 
-    for (node_idx = aig_ctx->node_cunt; node_idx > 0x1; node_idx = node_idx - 1)
+    for (node_idx = aig_ctx->node_cunt; node_idx > 1; node_idx--)
     {
-        uint32_t sweep_idx = node_idx - 0x1;
+        uint32_t sweep_idx = node_idx - 1;
         uint32_t best_af = UINT32_MAX;
         uint32_t cut_idx = 0;
 
         if (ctx.need[sweep_idx] == LDG_TRUTH_FALSE || ctx.pi_is[sweep_idx] != LDG_TRUTH_FALSE) { continue; }
 
         best_cut = 0x0;
-        for (cut_idx = 0; cut_idx < ctx.cut_cunt[sweep_idx]; cut_idx = cut_idx + 1)
+        for (cut_idx = 0; cut_idx < ctx.cut_cunt[sweep_idx]; cut_idx++)
         {
             const crosstalk_hdl_lutmap_cut_t *cand_cut = &ctx.cuts[(uint64_t)sweep_idx * CROSSTALK_HDL_LUTMAP_CUT_MAX + cut_idx];
 
@@ -413,15 +413,15 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
         if (LDG_UNLIKELY(best_cut == 0x0)) { return CROSSTALK_HDL_ERR_LUTMAP_STARVE; }
 
         ctx.lut_is[sweep_idx] = LDG_TRUTH_TRUE;
-        out_res->lut_cunt = out_res->lut_cunt + 0x1;
-        for (leaf_idx = 0; leaf_idx < best_cut->leaf_cunt; leaf_idx = leaf_idx + 1)
+        out_res->lut_cunt++;
+        for (leaf_idx = 0; leaf_idx < best_cut->leaf_cunt; leaf_idx++)
         {
             uint32_t leaf_node = best_cut->leaf[leaf_idx];
 
             if (leaf_node == 0 || ctx.pi_is[leaf_node] != LDG_TRUTH_FALSE) { continue; }
 
             ctx.need[leaf_node] = LDG_TRUTH_TRUE;
-            if (ctx.req[leaf_node] > ctx.req[sweep_idx] - 0x1) { ctx.req[leaf_node] = ctx.req[sweep_idx] - 0x1; }
+            if (ctx.req[leaf_node] > ctx.req[sweep_idx] - 1) { ctx.req[leaf_node] = ctx.req[sweep_idx] - 1; }
         }
     }
 
@@ -455,7 +455,7 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
         ret = crosstalk_hdl_lutmap_arr_alloc(pool, stack_cap, sizeof(uint32_t), (void **)&stack);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        for (node_idx = 0x1; node_idx < aig_ctx->node_cunt; node_idx = node_idx + 1)
+        for (node_idx = 1; node_idx < aig_ctx->node_cunt; node_idx++)
         {
             const crosstalk_hdl_lutmap_cut_t *pick = 0x0;
             crosstalk_hdl_netarr_lut_t *lut = 0x0;
@@ -468,13 +468,13 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
             lut = &out_netarr->luts[at];
             lut->in_cunt = pick->leaf_cunt;
             lut->out_node = node_idx;
-            for (leaf_idx = 0; leaf_idx < (uint32_t)CROSSTALK_HDL_NETARR_IN_MAX; leaf_idx = leaf_idx + 1) { lut->in_node[leaf_idx] = leaf_idx < pick->leaf_cunt ? pick->leaf[leaf_idx] : (uint32_t)UINT32_MAX; }
+            for (leaf_idx = 0; leaf_idx < (uint32_t)CROSSTALK_HDL_NETARR_IN_MAX; leaf_idx++) { lut->in_node[leaf_idx] = leaf_idx < pick->leaf_cunt ? pick->leaf[leaf_idx] : (uint32_t)UINT32_MAX; }
 
-            gen = gen + 0x1;
+            gen++;
             ret = crosstalk_hdl_lutmap_lut_mask_get(aig_ctx, pick, node_idx, vals, gen_arr, gen, stack, stack_cap, &lut->mask);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            at = at + 0x1;
+            at++;
         }
 
         if (LDG_UNLIKELY(at != out_res->lut_cunt)) { return CROSSTALK_HDL_ERR_LUTMAP_FILL; }

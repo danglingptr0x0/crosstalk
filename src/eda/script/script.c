@@ -202,14 +202,14 @@ static uint8_t script_state_empty_is(const crosstalk_eda_script_ctx_t *ctx)
 
     if (ctx->run_path[0] != LDG_STR_TERM) { return LDG_TRUTH_FALSE; }
 
-    for (at = 0; at < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; at = at + 0x1) { if (ctx->event_path[at][0] != LDG_STR_TERM) { return LDG_TRUTH_FALSE; } }
+    for (at = 0; at < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; at++) { if (ctx->event_path[at][0] != LDG_STR_TERM) { return LDG_TRUTH_FALSE; } }
 
     return LDG_TRUTH_TRUE;
 }
 
 uint32_t crosstalk_eda_script_state_serialize(const crosstalk_eda_script_ctx_t *ctx, uint8_t *out, uint32_t cap, uint32_t *out_len)
 {
-    uint32_t need = (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP * ((uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT + 0x1);
+    uint32_t need = (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP * ((uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT + 1);
     uint32_t at = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_len == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -226,7 +226,7 @@ uint32_t crosstalk_eda_script_state_serialize(const crosstalk_eda_script_ctx_t *
 
     memcpy(out, ctx->run_path, CROSSTALK_EDA_SCRIPT_PATH_CAP);
 
-    for (at = 0; at < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; at = at + 0x1) { memcpy(out + ((uint64_t)at + 0x1) * (uint64_t)CROSSTALK_EDA_SCRIPT_PATH_CAP, ctx->event_path[at], CROSSTALK_EDA_SCRIPT_PATH_CAP); }
+    for (at = 0; at < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; at++) { memcpy(out + ((uint64_t)at + 1) * (uint64_t)CROSSTALK_EDA_SCRIPT_PATH_CAP, ctx->event_path[at], CROSSTALK_EDA_SCRIPT_PATH_CAP); }
 
     return LDG_ERR_AOK;
 }
@@ -245,7 +245,7 @@ uint32_t crosstalk_eda_script_state_deserialize(crosstalk_eda_script_ctx_t *ctx,
         return LDG_ERR_INVALID;
     }
 
-    slot_cunt = len / (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP - 0x1;
+    slot_cunt = len / (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP - 1;
     if (slot_cunt > (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT) { slot_cunt = (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "script: state blob; len: %u32; event slots: %u32", len, slot_cunt);
@@ -253,13 +253,13 @@ uint32_t crosstalk_eda_script_state_deserialize(crosstalk_eda_script_ctx_t *ctx,
     memcpy(ctx->run_path, buff, CROSSTALK_EDA_SCRIPT_PATH_CAP);
     ctx->run_path[CROSSTALK_EDA_SCRIPT_PATH_CAP - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
 
-    for (at = 0; at < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; at = at + 0x1)
+    for (at = 0; at < (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; at++)
     {
         ctx->event_path[at][0] = LDG_STR_TERM;
 
         if (at >= slot_cunt) { continue; }
 
-        memcpy(ctx->event_path[at], buff + ((uint64_t)at + 0x1) * (uint64_t)CROSSTALK_EDA_SCRIPT_PATH_CAP, CROSSTALK_EDA_SCRIPT_PATH_CAP);
+        memcpy(ctx->event_path[at], buff + ((uint64_t)at + 1) * (uint64_t)CROSSTALK_EDA_SCRIPT_PATH_CAP, CROSSTALK_EDA_SCRIPT_PATH_CAP);
         ctx->event_path[at][CROSSTALK_EDA_SCRIPT_PATH_CAP - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
     }
 

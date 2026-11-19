@@ -211,7 +211,7 @@ static uint32_t settings_menu_mnemonic_get(uint32_t *out_pos, uint8_t *out_ch)
     const char *label[SETTINGS_MENU_ITEM_CUNT] = LDG_ARR_ZERO_INIT;
     uint32_t item = 0;
 
-    for (item = 0; item < (uint32_t)SETTINGS_MENU_ITEM_CUNT; item = item + SETTINGS_MENU_STEP) { label[item] = settings_menu_label_get(item); }
+    for (item = 0; item < (uint32_t)SETTINGS_MENU_ITEM_CUNT; item++) { label[item] = settings_menu_label_get(item); }
 
     return crosstalk_ui_key_mnemonic_assign(label, 0x0, (uint32_t)SETTINGS_MENU_ITEM_CUNT, out_pos, out_ch);
 }
@@ -221,7 +221,7 @@ static uint32_t settings_menu_kb_mnemonic_get(uint32_t *out_pos, uint8_t *out_ch
     const char *label[CROSSTALK_GAME_KEYBIND_CUNT] = LDG_ARR_ZERO_INIT;
     uint32_t action = 0;
 
-    for (action = 0; action < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT; action = action + SETTINGS_MENU_STEP) { label[action] = settings_menu_kb_label_get(action); }
+    for (action = 0; action < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT; action++) { label[action] = settings_menu_kb_label_get(action); }
 
     return crosstalk_ui_key_mnemonic_assign(label, 0x0, (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT, out_pos, out_ch);
 }
@@ -353,8 +353,8 @@ static uint32_t settings_menu_kb_key_isr(crosstalk_game_settings_menu_ctx_t *ctx
         }
     }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_UP && ctx->kb_sel != 0) { ctx->kb_sel = ctx->kb_sel - SETTINGS_MENU_STEP; }
-    else if (key->key == (uint8_t)LDG_TERM_KEY_DOWN && ctx->kb_sel + SETTINGS_MENU_STEP < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT) { ctx->kb_sel = ctx->kb_sel + SETTINGS_MENU_STEP; }
+    if (key->key == (uint8_t)LDG_TERM_KEY_UP && ctx->kb_sel != 0) { ctx->kb_sel--; }
+    else if (key->key == (uint8_t)LDG_TERM_KEY_DOWN && ctx->kb_sel + SETTINGS_MENU_STEP < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT) { ctx->kb_sel++; }
 
     return LDG_ERR_AOK;
 }
@@ -430,7 +430,7 @@ static uint32_t settings_menu_tip_draw(ldg_term_render_t *render, const char *ti
 
     while (at < len && line < (uint32_t)SETTINGS_MENU_TIP_ROW_MAX)
     {
-        while (at < len && tip[at] == (char)LDG_ASCII_SPACE) { at = at + SETTINGS_MENU_STEP; }
+        while (at < len && tip[at] == (char)LDG_ASCII_SPACE) { at++; }
 
         if (at >= len) { break; }
 
@@ -439,7 +439,7 @@ static uint32_t settings_menu_tip_draw(ldg_term_render_t *render, const char *ti
         if (span > (uint64_t)width)
         {
             cut = (uint64_t)width;
-            while (cut > 0 && tip[at + cut] != (char)LDG_ASCII_SPACE) { cut = cut - SETTINGS_MENU_STEP; }
+            while (cut > 0 && tip[at + cut] != (char)LDG_ASCII_SPACE) { cut--; }
 
             span = cut > 0 ? cut : (uint64_t)width;
         }
@@ -448,7 +448,7 @@ static uint32_t settings_menu_tip_draw(ldg_term_render_t *render, const char *ti
         if (ret != LDG_ERR_AOK) { return ret; }
 
         at = at + span;
-        line = line + SETTINGS_MENU_STEP;
+        line++;
     }
 
     return LDG_ERR_AOK;
@@ -530,7 +530,7 @@ static uint32_t settings_menu_kb_draw(const crosstalk_game_settings_menu_ctx_t *
     ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, &box_fg);
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &box_bg); }
 
-    for (row = box_row; ret == LDG_ERR_AOK && row < box_row + box_h; row = row + SETTINGS_MENU_STEP) { ret = crosstalk_ui_cell_span_fill(render, box_col, row, box_w, &box_fg, &box_bg); }
+    for (row = box_row; ret == LDG_ERR_AOK && row < box_row + box_h; row++) { ret = crosstalk_ui_cell_span_fill(render, box_col, row, box_w, &box_fg, &box_bg); }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -544,12 +544,12 @@ static uint32_t settings_menu_kb_draw(const crosstalk_game_settings_menu_ctx_t *
 
     row = row + SETTINGS_MENU_STEP + (uint32_t)SETTINGS_MENU_TIP_GAP;
 
-    for (action = 0; action < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT; action = action + SETTINGS_MENU_STEP)
+    for (action = 0; action < (uint32_t)CROSSTALK_GAME_KEYBIND_CUNT; action++)
     {
         ret = settings_menu_kb_row_draw(ctx, settings, render, action, mnemonic_pos[action], now_ms, inner_col, row, inner_w);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + SETTINGS_MENU_STEP;
+        row++;
     }
 
     if (ctx->kb_armed == LDG_TRUTH_TRUE) { tip = SETTINGS_MENU_KB_TIP_ARMED; }
@@ -598,7 +598,7 @@ uint32_t crosstalk_game_settings_menu_draw(const crosstalk_game_settings_menu_ct
     ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, &box_fg);
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &box_bg); }
 
-    for (row = box_row; ret == LDG_ERR_AOK && row < box_row + box_h; row = row + SETTINGS_MENU_STEP) { ret = crosstalk_ui_cell_span_fill(render, box_col, row, box_w, &box_fg, &box_bg); }
+    for (row = box_row; ret == LDG_ERR_AOK && row < box_row + box_h; row++) { ret = crosstalk_ui_cell_span_fill(render, box_col, row, box_w, &box_fg, &box_bg); }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -607,7 +607,7 @@ uint32_t crosstalk_game_settings_menu_draw(const crosstalk_game_settings_menu_ct
     ret = crosstalk_ui_cell_rgba_put(render, inner_col, row, SETTINGS_MENU_TITLE, (uint64_t)SETTINGS_MENU_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_LIT_RGBA, 0x0);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    row = row + SETTINGS_MENU_STEP;
+    row++;
 
     for (uint32_t item = 0; item < (uint32_t)SETTINGS_MENU_ITEM_CUNT; item++)
     {
@@ -615,18 +615,18 @@ uint32_t crosstalk_game_settings_menu_draw(const crosstalk_game_settings_menu_ct
 
         if (section != 0x0)
         {
-            row = row + SETTINGS_MENU_STEP;
+            row++;
 
             ret = crosstalk_ui_cell_rgba_put(render, inner_col, row, section, (uint64_t)SETTINGS_MENU_LINE_CAP, (uint32_t)SETTINGS_MENU_SECTION_COL, 0x0);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            row = row + SETTINGS_MENU_STEP;
+            row++;
         }
 
         ret = settings_menu_row_draw(ctx, settings, discord_linked, render, item, mnemonic_pos[item], inner_col, row, inner_w);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        row = row + SETTINGS_MENU_STEP;
+        row++;
     }
 
     if (ctx->sel >= (uint32_t)SETTINGS_MENU_ITEM_CUNT) { return LDG_ERR_AOK; }
@@ -693,14 +693,14 @@ uint32_t crosstalk_game_settings_menu_key_isr(crosstalk_game_settings_menu_ctx_t
 
     if (key->key == (uint8_t)LDG_TERM_KEY_UP)
     {
-        if (ctx->sel != 0) { ctx->sel = ctx->sel - SETTINGS_MENU_STEP; }
+        if (ctx->sel != 0) { ctx->sel--; }
 
         return LDG_ERR_AOK;
     }
 
     if (key->key == (uint8_t)LDG_TERM_KEY_DOWN)
     {
-        if (ctx->sel + SETTINGS_MENU_STEP < (uint32_t)SETTINGS_MENU_ITEM_CUNT) { ctx->sel = ctx->sel + SETTINGS_MENU_STEP; }
+        if (ctx->sel + SETTINGS_MENU_STEP < (uint32_t)SETTINGS_MENU_ITEM_CUNT) { ctx->sel++; }
 
         return LDG_ERR_AOK;
     }

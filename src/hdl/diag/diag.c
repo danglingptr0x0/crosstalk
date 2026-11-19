@@ -28,7 +28,7 @@ uint32_t crosstalk_hdl_diag_text_fmt(const crosstalk_hdl_diag_t *diag, char *out
     at = diag->line_at;
     end = diag->line_at + diag->line_len;
 
-    while (at < end && (diag->src[at] == LDG_ASCII_SPACE || diag->src[at] == LDG_ASCII_TAB)) { at = at + 0x1; }
+    while (at < end && (diag->src[at] == LDG_ASCII_SPACE || diag->src[at] == LDG_ASCII_TAB)) { at++; }
 
     take = end - at;
 

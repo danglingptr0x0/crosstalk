@@ -59,7 +59,7 @@
 
 static uint16_t img_u16_get(const uint8_t *at)
 {
-    return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[0x1] << LDG_BYTE_BITS));
+    return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[1] << LDG_BYTE_BITS));
 }
 
 static uint32_t img_u32_get(const uint8_t *at)
@@ -148,7 +148,7 @@ static uint32_t img_seg_push(crosstalk_re_img_ctx_t *ctx, const char *name, uint
 
     if (addr + span > ctx->hi) { ctx->hi = addr + span; }
 
-    ctx->seg_cunt = ctx->seg_cunt + 0x1;
+    ctx->seg_cunt++;
 
     return LDG_ERR_AOK;
 }
@@ -261,7 +261,7 @@ static uint32_t img_elf_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *fi
 
     if (phoff > span || (uint64_t)phnum * ent_len > span - phoff) { return CROSSTALK_RE_IMG_ERR_TRUNC; }
 
-    for (at = 0; at < phnum; at = at + 0x1)
+    for (at = 0; at < phnum; at++)
     {
         const uint8_t *ent = file + phoff + (uint64_t)at * ent_len;
         uint64_t off = 0;
@@ -348,7 +348,7 @@ static uint32_t img_place(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *file)
 
     memset(ctx->bytes, 0x0, span);
 
-    for (idx = 0; idx < ctx->seg_cunt; idx = idx + 0x1)
+    for (idx = 0; idx < ctx->seg_cunt; idx++)
     {
         const crosstalk_re_img_seg_t *seg = &ctx->seg[idx];
 
@@ -375,7 +375,7 @@ static uint32_t img_syms_path_build(const char *path, char *out, uint32_t cap)
         if (path[at] == CROSSTALK_RE_IMG_SYMS_SEP_POSIX || path[at] == CROSSTALK_RE_IMG_SYMS_SEP_WIN) { sep_at = at; }
 
         out[at] = path[at];
-        at = at + 0x1;
+        at++;
     }
 
     out[at] = LDG_STR_TERM;
@@ -508,7 +508,7 @@ uint32_t crosstalk_re_img_ld(crosstalk_re_img_ctx_t *ctx, const char *path, uint
     ctx->base = base;
 
     if (span >= (uint64_t)LDG_EMIRU_MAGIC_LEN && memcmp(file, LDG_EMIRU_MAGIC, (uint64_t)LDG_EMIRU_MAGIC_LEN) == 0) { ret = img_emiru_layout(ctx, file, span, base); }
-    else if (span >= (uint64_t)IMG_ELF_IDENT_LEN && file[0] == IMG_ELF_MAG0 && file[0x1] == IMG_ELF_MAG1 && file[0x2] == IMG_ELF_MAG2 && file[0x3] == IMG_ELF_MAG3) { ret = img_elf_layout(ctx, file, span, base); }
+    else if (span >= (uint64_t)IMG_ELF_IDENT_LEN && file[0] == IMG_ELF_MAG0 && file[1] == IMG_ELF_MAG1 && file[2] == IMG_ELF_MAG2 && file[3] == IMG_ELF_MAG3) { ret = img_elf_layout(ctx, file, span, base); }
     else { ret = img_raw_layout(ctx, span, base, isa_hint); }
 
     if (ret == LDG_ERR_AOK) { ret = img_place(ctx, file); }
@@ -555,7 +555,7 @@ uint32_t crosstalk_re_img_seg_find(const crosstalk_re_img_ctx_t *ctx, uint64_t a
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    for (idx = 0; idx < ctx->seg_cunt; idx = idx + 0x1) { if (addr >= ctx->seg[idx].addr && addr < ctx->seg[idx].addr + ctx->seg[idx].span)
+    for (idx = 0; idx < ctx->seg_cunt; idx++) { if (addr >= ctx->seg[idx].addr && addr < ctx->seg[idx].addr + ctx->seg[idx].span)
         {
             *out = idx;
             return LDG_ERR_AOK;
@@ -635,7 +635,7 @@ uint32_t crosstalk_re_img_word_get(const crosstalk_re_img_ctx_t *ctx, uint64_t a
 
     if (got != (uint64_t)CROSSTALK_RE_IMG_WORD_BYTES) { return LDG_ERR_BOUNDS; }
 
-    *out = (uint32_t)raw[0] | ((uint32_t)raw[0x1] << LDG_BYTE_SHIFT_1) | ((uint32_t)raw[0x2] << LDG_BYTE_SHIFT_2) | ((uint32_t)raw[0x3] << LDG_BYTE_SHIFT_3);
+    *out = (uint32_t)raw[0] | ((uint32_t)raw[1] << LDG_BYTE_SHIFT_1) | ((uint32_t)raw[2] << LDG_BYTE_SHIFT_2) | ((uint32_t)raw[3] << LDG_BYTE_SHIFT_3);
 
     return LDG_ERR_AOK;
 }
@@ -671,12 +671,12 @@ uint32_t crosstalk_re_img_isa_parse(const char *name, uint32_t *out)
 
     *out = (uint32_t)CROSSTALK_RE_IMG_ISA_NONE;
 
-    for (isa = (uint32_t)CROSSTALK_RE_IMG_ISA_DANGCSA; isa < (uint32_t)CROSSTALK_RE_IMG_ISA_CUNT; isa = isa + 0x1)
+    for (isa = (uint32_t)CROSSTALK_RE_IMG_ISA_DANGCSA; isa < (uint32_t)CROSSTALK_RE_IMG_ISA_CUNT; isa++)
     {
         if (crosstalk_re_img_isa_name_get(isa, &known) != LDG_ERR_AOK) { continue; }
 
         at = 0;
-        while (known[at] != LDG_STR_TERM && known[at] == name[at]) { at = at + 0x1; }
+        while (known[at] != LDG_STR_TERM && known[at] == name[at]) { at++; }
 
         if (known[at] != name[at]) { continue; }
 

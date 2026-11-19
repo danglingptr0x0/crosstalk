@@ -91,12 +91,12 @@
 
 static uint16_t elf_u16_get(const uint8_t *at)
 {
-    return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[0x1] << LDG_BYTE_BITS));
+    return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[1] << LDG_BYTE_BITS));
 }
 
 static uint32_t elf_u32_get(const uint8_t *at)
 {
-    return (uint32_t)at[0] | ((uint32_t)at[0x1] << 8) | ((uint32_t)at[0x2] << 16) | ((uint32_t)at[0x3] << 24);
+    return (uint32_t)at[0] | ((uint32_t)at[1] << 8) | ((uint32_t)at[2] << 16) | ((uint32_t)at[3] << 24);
 }
 
 static uint64_t elf_u64_get(const uint8_t *at)
@@ -131,7 +131,7 @@ static void elf_name_cpy(char *dst, const char *src, uint32_t cap)
     while (at + LDG_STR_TERM_SIZE < cap && src[at] != LDG_STR_TERM)
     {
         dst[at] = src[at];
-        at = at + 0x1;
+        at++;
     }
 
     dst[at] = LDG_STR_TERM;
@@ -171,11 +171,11 @@ static void elf_sift(crosstalk_hdl_elf_sym_t *arr, uint32_t root, uint32_t cunt)
     uint32_t top = root;
     uint32_t kid = 0;
 
-    while (top * 0x2 + 0x1 < cunt)
+    while (top * 0x2 + 1 < cunt)
     {
-        kid = top * 0x2 + 0x1;
+        kid = top * 0x2 + 1;
 
-        if (kid + 0x1 < cunt && arr[kid + 0x1].addr > arr[kid].addr) { kid = kid + 0x1; }
+        if (kid + 1 < cunt && arr[kid + 1].addr > arr[kid].addr) { kid++; }
 
         if (arr[top].addr >= arr[kid].addr) { return; }
 
@@ -193,14 +193,14 @@ static void elf_sort(crosstalk_hdl_elf_sym_t *arr, uint32_t cunt)
     at = cunt / 0x2;
     while (at > 0)
     {
-        at = at - 0x1;
+        at--;
         elf_sift(arr, at, cunt);
     }
 
     at = cunt;
-    while (at > 0x1)
+    while (at > 1)
     {
-        at = at - 0x1;
+        at--;
         elf_sym_swap(&arr[0], &arr[at]);
         elf_sift(arr, (uint32_t)ELF_HEAP_ROOT_AT, at);
     }
@@ -263,7 +263,7 @@ static uint32_t elf_sym_scan(const uint8_t *tab, uint64_t tab_len, const char *s
             elf_name_cpy(out[cunt].name, str + name_off, (uint32_t)CROSSTALK_HDL_ELF_NAME_CAP);
         }
 
-        cunt = cunt + 0x1;
+        cunt++;
     }
 
     *out_cunt = cunt;
@@ -368,7 +368,7 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
 
     ret = elf_rd_at(file, (uint64_t)ELF_HDR_AT, ident, (uint64_t)ELF_IDENT_LEN);
 
-    if (ret == LDG_ERR_AOK && (ident[0] != ELF_MAG0 || ident[0x1] != ELF_MAG1 || ident[0x2] != ELF_MAG2 || ident[0x3] != ELF_MAG3)) { ret = LDG_ERR_IO_FMT; }
+    if (ret == LDG_ERR_AOK && (ident[0] != ELF_MAG0 || ident[1] != ELF_MAG1 || ident[2] != ELF_MAG2 || ident[3] != ELF_MAG3)) { ret = LDG_ERR_IO_FMT; }
 
     if (ret == LDG_ERR_AOK && ident[ELF_DATA_AT] != ELF_DATA_LSB) { ret = LDG_ERR_UNSUPPORTED; }
 
@@ -415,7 +415,7 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
 
     if (ret == LDG_ERR_AOK)
     {
-        for (at = 0; at < shnum; at = at + 0x1)
+        for (at = 0; at < shnum; at++)
         {
             const uint8_t *ent = sect + (uint64_t)at * ent_len;
 
@@ -491,7 +491,7 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
         elf_sort(ctx->sym, ctx->sym_cunt);
         elf_arch_fmt(ctx->arch, (uint32_t)CROSSTALK_HDL_ELF_ARCH_CAP, (uint32_t)elf_u16_get(hdr + ELF_MACHINE32_AT), class_is64, ident[ELF_OSABI_AT]);
         elf_name_cpy(ctx->path, path, (uint32_t)CROSSTALK_HDL_ELF_PATH_CAP);
-        ctx->gen = ctx->gen + 0x1;
+        ctx->gen++;
         ctx->ok = LDG_TRUTH_TRUE;
     }
 
@@ -538,7 +538,7 @@ uint32_t crosstalk_hdl_elf_sym_get(const crosstalk_hdl_elf_ctx_t *ctx, uint64_t 
         if (ctx->sym[mid].addr <= addr)
         {
             best = mid;
-            lo = mid + 0x1;
+            lo = mid + 1;
         }
         else { hi = mid; }
     }
@@ -603,7 +603,7 @@ uint32_t crosstalk_hdl_elf_addr_get(const crosstalk_hdl_elf_ctx_t *ctx, const ch
 
     if (ctx->ok != LDG_TRUTH_TRUE || ctx->sym == 0x0 || ctx->sym_cunt == 0) { return LDG_ERR_NOT_INIT; }
 
-    for (at = 0; at < ctx->sym_cunt; at = at + 0x1)
+    for (at = 0; at < ctx->sym_cunt; at++)
     {
         if (strncmp(ctx->sym[at].name, name, (uint64_t)CROSSTALK_HDL_ELF_NAME_CAP) != 0) { continue; }
 
