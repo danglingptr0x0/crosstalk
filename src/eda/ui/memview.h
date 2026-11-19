@@ -7,6 +7,7 @@
 #include <dangling/io/file.h>
 #include <dangling/sys/proc.h>
 
+#include "core/cmdline.h"
 #include "eda/ic/fpga/fpga.h"
 #include "eda/ui/calc.h"
 #include "hdl/elf.h"
@@ -31,7 +32,6 @@
 #define CROSSTALK_EDA_UI_MEMVIEW_PATTERN_CAP 32
 #define CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP 192
 #define CROSSTALK_EDA_UI_MEMVIEW_MOTION_WINDOW 65536
-#define CROSSTALK_EDA_UI_MEMVIEW_HIST_MAX 32
 #define CROSSTALK_EDA_UI_MEMVIEW_STRING_CAP 48
 #define CROSSTALK_EDA_UI_MEMVIEW_HEX_LEAD "0x"
 #define CROSSTALK_EDA_UI_MEMVIEW_FIND_BUDGET 65536
@@ -207,10 +207,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     char heat_sig[CROSSTALK_EDA_UI_MEMVIEW_SIG_CAP];
     uint8_t pattern[CROSSTALK_EDA_UI_MEMVIEW_PATTERN_CAP];
     char query[CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP];
-    char hist[CROSSTALK_EDA_UI_MEMVIEW_HIST_MAX][CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP];
-    char draft[CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP];
-    uint32_t hist_cunt;
-    uint32_t hist_sel;
+    crosstalk_core_cmdline_ctx_t input;
     uint32_t query_len;
     char sig[CROSSTALK_EDA_UI_MEMVIEW_SIG_CAP];
     char follow_sig[CROSSTALK_EDA_UI_MEMVIEW_SIG_CAP];
@@ -250,6 +247,8 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint64_t snap_base;
     ldg_io_file_t *diff_fh;
     uint64_t diff_base;
+    uint32_t (*exec_cb)(void *user, const char *line);
+    void *exec_user;
     uint64_t diff_page[CROSSTALK_EDA_UI_MEMVIEW_PAGE_CAP];
     uint64_t lane[CROSSTALK_EDA_UI_MEMVIEW_PAGE_CAP];
     uint32_t diff_page_cunt;
@@ -305,6 +304,11 @@ typedef struct crosstalk_eda_ui_memview_ctx
 } crosstalk_eda_ui_memview_ctx_t;
 
 uint32_t crosstalk_eda_ui_memview_init(crosstalk_eda_ui_memview_ctx_t *ctx);
+uint32_t crosstalk_eda_ui_memview_shutdown(crosstalk_eda_ui_memview_ctx_t *ctx);
+uint32_t crosstalk_eda_ui_memview_exec_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t (*cb)(void *user, const char *line), void *user);
+uint32_t crosstalk_eda_ui_memview_verb_get(uint32_t idx, const char **out);
+uint8_t crosstalk_eda_ui_memview_verb_is(const char *word);
+uint32_t crosstalk_eda_ui_memview_line_run(crosstalk_eda_ui_memview_ctx_t *ctx, const char *text);
 uint32_t crosstalk_eda_ui_memview_open_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint8_t open);
 uint8_t crosstalk_eda_ui_memview_open_is(const crosstalk_eda_ui_memview_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_memview_bind(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, const char *sig_name);

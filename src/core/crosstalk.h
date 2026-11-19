@@ -29,6 +29,7 @@
 #include <libresteam/backend/backend.h>
 #include <libresteam/steam/steam.h>
 #include <libresteam/friends/friends.h>
+#include <libresteam/mod/mod.h>
 #include <libresteam/timeline/timeline.h>
 #include <libresteam/utils/utils.h>
 
@@ -350,7 +351,6 @@
 #define CROSSTALK_CORE_BIN_SHA_MOD_CAP 256
 #define CROSSTALK_CORE_BIN_SHA_LDG_NAME "dangling"
 #define CROSSTALK_CORE_BIN_SHA_LIBRESTEAM_NAME "libresteam"
-#define CROSSTALK_CORE_BIN_SHA_NONE_TEXT "-"
 #define CROSSTALK_CORE_BIN_SHA_ACCESS_NONE 0
 #define CROSSTALK_CORE_PROFILE_START_TOK "start"
 #define CROSSTALK_CORE_PROFILE_END_TOK "end"
@@ -378,6 +378,15 @@
 #define CROSSTALK_CORE_MIDI_DEV_DEFAULT 0
 #define CROSSTALK_CORE_MIDI_PIN_FMT "%.63s"
 #define CROSSTALK_CORE_SCRIPT_POOL_MIB 4
+#define CROSSTALK_CORE_SCRIPT_WIN_CMDLINE 0
+#define CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW 1
+#define CROSSTALK_CORE_SCRIPT_WIN_REPL 2
+#define CROSSTALK_CORE_SCRIPT_WIN_LEAD '.'
+#define CROSSTALK_CORE_SCRIPT_WIN_CMDLINE_NAME "cmdline"
+#define CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW_NAME "memview"
+#define CROSSTALK_CORE_SCRIPT_WIN_REPL_NAME "repl"
+#define CROSSTALK_CORE_SCRIPT_WIN_CMDLINE_TEXT "command line"
+#define CROSSTALK_CORE_SCRIPT_WIN_DENY_FMT "%.31s is a %.15s command"
 #define CROSSTALK_CORE_SCRIPT_RUN_NAME "run"
 #define CROSSTALK_CORE_SCRIPT_RUN_LEN 3
 #define CROSSTALK_CORE_SCRIPT_QUOTE_BYTES 2
@@ -971,7 +980,8 @@ typedef struct crosstalk_ctx
     uint64_t serial_rx_sample_at;
     uint64_t serial_tx_sample_at;
     uint8_t console_exec_is;
-    uint8_t defer_pudding[7];
+    uint8_t script_win;
+    uint8_t defer_pudding[6];
     crosstalk_core_scan_ctx_t scan;
     uint8_t prof_en_on;
     uint8_t persist_pending;
@@ -1027,7 +1037,11 @@ typedef struct crosstalk_ctx
     uint32_t remote_cmd_cunt;
     char remote_cmd[CROSSTALK_CORE_REMOTE_CMD_MAX][CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP];
     double auto_host_next;
+    void *bin_sha_buff_mem;
+    void *bin_sha_mods_mem;
     char bin_sha[CROSSTALK_CORE_BIN_SHA_CUNT][CROSSTALK_CORE_BIN_SHA_TEXT_CAP];
+    uint8_t bin_sha_rdy[CROSSTALK_CORE_BIN_SHA_CUNT];
+    uint8_t bin_sha_pudding[4];
     double credit_time_seen;
     uint64_t credit_peer_steam[CROSSTALK_NET_CLIENT_MAX];
     uint64_t credit_peer_seq[CROSSTALK_NET_CLIENT_MAX];

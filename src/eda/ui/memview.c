@@ -141,9 +141,8 @@
 #define MEMVIEW_SNAP_IDLE_TEXT "snap"
 #define MEMVIEW_SNAP_WORD_SIZE 8
 #define MEMVIEW_SNAP_FIND_BUDGET 4096
-#define MEMVIEW_REPL_MARK ">"
-#define MEMVIEW_REPL_MARK_W 2
-#define MEMVIEW_REPL_CURSOR_W 1
+#define MEMVIEW_REPL_PROMPT "> "
+#define MEMVIEW_REPL_VERB_HELP ""
 #define MEMVIEW_REPL_VERB_CAP 16
 #define MEMVIEW_REPL_TOK_FIND "find"
 #define MEMVIEW_REPL_TOK_GO "go"
@@ -202,14 +201,40 @@
 
 uint32_t crosstalk_eda_ui_memview_init(crosstalk_eda_ui_memview_ctx_t *ctx)
 {
+    const char *name = 0x0;
+    uint32_t idx = 0;
+    uint32_t ret = 0;
+
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     memset(ctx, 0x0, sizeof(*ctx));
 
     ctx->ptr_bytes = (uint32_t)MEMVIEW_PTR_BYTES_DEFAULT;
-    ctx->hist_sel = (uint32_t)UINT32_MAX;
 
-    return LDG_ERR_AOK;
+    ret = crosstalk_core_cmdline_drawer_init(&ctx->input);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    while (crosstalk_eda_ui_memview_verb_get(idx, &name) == LDG_ERR_AOK)
+    {
+        ret = crosstalk_core_cmdline_verb_reg(&ctx->input, name, MEMVIEW_REPL_VERB_HELP, (uint32_t)LDG_SHELL_ARG_MAX);
+        if (ret != LDG_ERR_AOK) { return ret; }
+
+        idx = idx + (uint32_t)MEMVIEW_STEP;
+    }
+
+    ret = crosstalk_core_cmdline_prompt_set(&ctx->input, MEMVIEW_REPL_PROMPT);
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_core_cmdline_echo_set(&ctx->input, LDG_TRUTH_FALSE); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_core_cmdline_open(&ctx->input); }
+
+    return ret;
+}
+
+uint32_t crosstalk_eda_ui_memview_shutdown(crosstalk_eda_ui_memview_ctx_t *ctx)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    return crosstalk_core_cmdline_drawer_shutdown(&ctx->input);
 }
 
 uint32_t crosstalk_eda_ui_memview_open_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint8_t open)
@@ -2442,7 +2467,7 @@ uint32_t crosstalk_eda_ui_memview_hit_jmp(crosstalk_eda_ui_memview_ctx_t *ctx, u
     return crosstalk_eda_ui_memview_addr_set(ctx, ctx->hit[hit_idx]);
 }
 
-static uint32_t memview_step_rows(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t rows, uint8_t back_is)
+static uint32_t memview_rows_step(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t rows, uint8_t back_is)
 {
     uint64_t delta = (uint64_t)rows * (uint64_t)CROSSTALK_EDA_UI_MEMVIEW_COL_CUNT;
     uint64_t last = 0x0;
@@ -3099,110 +3124,129 @@ static uint32_t memview_repl_exec(crosstalk_eda_ui_memview_ctx_t *ctx)
     return crosstalk_eda_ui_memview_find_start(ctx, ctx->query, LDG_TRUTH_TRUE, 0x0, ctx->width);
 }
 
-static uint32_t memview_hist_push(crosstalk_eda_ui_memview_ctx_t *ctx, const char *text)
+uint32_t crosstalk_eda_ui_memview_exec_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t (*cb)(void *user, const char *line), void *user)
 {
-    uint32_t at = 0;
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->exec_cb = cb;
+    ctx->exec_user = user;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_eda_ui_memview_verb_get(uint32_t idx, const char **out)
+{
+    static const char *const verb[] = { MEMVIEW_REPL_TOK_HELP, MEMVIEW_REPL_TOK_GO, MEMVIEW_REPL_TOK_FIND, MEMVIEW_REPL_TOK_REFS, MEMVIEW_REPL_TOK_WHERE, MEMVIEW_REPL_TOK_PTRS, MEMVIEW_REPL_TOK_DIS, MEMVIEW_REPL_TOK_STRINGS, MEMVIEW_REPL_TOK_LIVE, MEMVIEW_REPL_TOK_DIFF, MEMVIEW_REPL_TOK_WATCH, MEMVIEW_REPL_TOK_BREAK, MEMVIEW_REPL_TOK_STEP, MEMVIEW_REPL_TOK_HLT, MEMVIEW_REPL_TOK_RUN, MEMVIEW_REPL_TOK_POKE, MEMVIEW_REPL_TOK_FREEZE, MEMVIEW_REPL_TOK_SNAP };
+
+    if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = 0x0;
+
+    if (idx >= (uint32_t)(sizeof(verb) / sizeof(verb[0]))) { return LDG_ERR_NOT_FOUND; }
+
+    *out = verb[idx];
+
+    return LDG_ERR_AOK;
+}
+
+uint8_t crosstalk_eda_ui_memview_verb_is(const char *word)
+{
+    const char *name = 0x0;
+    uint32_t idx = 0;
+
+    if (LDG_UNLIKELY(word == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    while (crosstalk_eda_ui_memview_verb_get(idx, &name) == LDG_ERR_AOK)
+    {
+        if (strcmp(name, word) == 0) { return LDG_TRUTH_TRUE; }
+
+        idx = idx + (uint32_t)MEMVIEW_STEP;
+    }
+
+    return LDG_TRUTH_FALSE;
+}
+
+uint32_t crosstalk_eda_ui_memview_line_run(crosstalk_eda_ui_memview_ctx_t *ctx, const char *text)
+{
+    char keep[CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP] = LDG_ARR_ZERO_INIT;
+    uint32_t res = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || text == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (text[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
+    memcpy(&keep[0], ctx->query, sizeof(keep));
 
-    if (ctx->hist_cunt != 0 && strcmp(ctx->hist[ctx->hist_cunt - (uint32_t)MEMVIEW_STEP], text) == 0) { return LDG_ERR_AOK; }
+    res = ldg_str_rbrcpy(ctx->query, text, (uint64_t)sizeof(ctx->query));
+    if (res == LDG_ERR_AOK) { res = memview_repl_exec(ctx); }
 
-    if (ctx->hist_cunt == (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_HIST_MAX)
-    {
-        for (at = 0; at + (uint32_t)MEMVIEW_STEP < (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_HIST_MAX; at = at + (uint32_t)MEMVIEW_STEP) { memcpy(&ctx->hist[at][0], ctx->hist[at + (uint32_t)MEMVIEW_STEP], sizeof(ctx->hist[at])); }
+    memcpy(&ctx->query[0], keep, sizeof(keep));
 
-        ctx->hist_cunt = ctx->hist_cunt - (uint32_t)MEMVIEW_STEP;
-    }
+    return res;
+}
 
-    if (ldg_str_rbrcpy(ctx->hist[ctx->hist_cunt], text, (uint64_t)sizeof(ctx->hist[ctx->hist_cunt])) == LDG_ERR_STR_TRUNC) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview history line truncated"); }
+static uint32_t memview_query_sync(crosstalk_eda_ui_memview_ctx_t *ctx)
+{
+    const char *text = 0x0;
+    uint32_t len = 0;
+    uint32_t ret = 0;
 
-    ctx->hist_cunt = ctx->hist_cunt + (uint32_t)MEMVIEW_STEP;
+    ctx->query[0] = LDG_STR_TERM;
+    ctx->query_len = 0;
+
+    if (ctx->input.edit == 0x0) { return LDG_ERR_NOT_INIT; }
+
+    ret = ldg_term_line_text_get(ctx->input.edit, &text, &len);
+    if (ret != LDG_ERR_AOK || text == 0x0 || len == 0) { return ret; }
+
+    if (len >= (uint32_t)sizeof(ctx->query)) { len = (uint32_t)sizeof(ctx->query) - (uint32_t)LDG_STR_TERM_SIZE; }
+
+    memcpy(ctx->query, text, (uint64_t)len);
+    ctx->query[len] = LDG_STR_TERM;
+    ctx->query_len = len;
 
     return LDG_ERR_AOK;
 }
 
-static uint32_t memview_hist_recall(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t sel)
+static uint32_t memview_query_clear(crosstalk_eda_ui_memview_ctx_t *ctx)
 {
-    const char *line = 0x0;
+    ctx->hit_cunt = 0;
+    ctx->hit_at = 0;
+    ctx->finding = LDG_TRUTH_FALSE;
+    ctx->stringing = LDG_TRUTH_FALSE;
+    ctx->edit = LDG_TRUTH_FALSE;
 
-    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (crosstalk_core_cmdline_open(&ctx->input) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview input reset failed"); }
 
-    line = sel == (uint32_t)UINT32_MAX ? ctx->draft : ctx->hist[sel];
+    return memview_query_sync(ctx);
+}
 
-    if (ldg_str_rbrcpy(ctx->query, line, (uint64_t)sizeof(ctx->query)) == LDG_ERR_STR_TRUNC) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview history recall truncated"); }
+static uint32_t memview_query_run(crosstalk_eda_ui_memview_ctx_t *ctx)
+{
+    char line[CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP] = LDG_ARR_ZERO_INIT;
 
-    ctx->query_len = (uint32_t)strlen(ctx->query);
-    ctx->hist_sel = sel;
+    if (crosstalk_core_cmdline_line_take(&ctx->input, line, (uint32_t)sizeof(line)) != LDG_ERR_AOK || line[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
+
+    if (ctx->exec_cb != 0x0) { if (ctx->exec_cb(ctx->exec_user, line) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview script refused"); } }
+    else if (crosstalk_eda_ui_memview_line_run(ctx, line) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview repl refused"); }
 
     return LDG_ERR_AOK;
 }
 
-static uint32_t memview_hist_step(crosstalk_eda_ui_memview_ctx_t *ctx, uint8_t back_is)
+static uint32_t memview_query_key(crosstalk_eda_ui_memview_ctx_t *ctx, const ldg_term_key_event_t *key, uint8_t *consumed)
 {
-    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    ldg_term_line_view_t view = LDG_STRUCT_ZERO_INIT;
+    uint32_t ret = 0;
+    uint8_t plain = LDG_TRUTH_FALSE;
 
-    if (ctx->hist_cunt == 0) { return LDG_ERR_AOK; }
+    if (ctx->input.edit == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    if (back_is == LDG_TRUTH_TRUE)
-    {
-        if (ctx->hist_sel == (uint32_t)UINT32_MAX)
-        {
-            if (ldg_str_rbrcpy(ctx->draft, ctx->query, (uint64_t)sizeof(ctx->draft)) == LDG_ERR_STR_TRUNC) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview draft truncated"); }
+    ret = ldg_term_line_view_get(ctx->input.edit, &view);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            return memview_hist_recall(ctx, ctx->hist_cunt - (uint32_t)MEMVIEW_STEP);
-        }
+    plain = (view.candidate_on != LDG_TRUTH_TRUE && view.search_on != LDG_TRUTH_TRUE) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-        if (ctx->hist_sel == 0) { return LDG_ERR_AOK; }
+    if (plain == LDG_TRUTH_TRUE && key->key == (uint8_t)LDG_TERM_KEY_ESCAPE) { return memview_query_clear(ctx); }
 
-        return memview_hist_recall(ctx, ctx->hist_sel - (uint32_t)MEMVIEW_STEP);
-    }
-
-    if (ctx->hist_sel == (uint32_t)UINT32_MAX) { return LDG_ERR_AOK; }
-
-    if (ctx->hist_sel + (uint32_t)MEMVIEW_STEP >= ctx->hist_cunt) { return memview_hist_recall(ctx, (uint32_t)UINT32_MAX); }
-
-    return memview_hist_recall(ctx, ctx->hist_sel + (uint32_t)MEMVIEW_STEP);
-}
-
-static uint32_t memview_query_key(crosstalk_eda_ui_memview_ctx_t *ctx, uint8_t key)
-{
-    ctx->query_len = (uint32_t)strnlen(ctx->query, (uint64_t)CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP);
-
-    if (key == (uint8_t)LDG_TERM_KEY_UP) { return memview_hist_step(ctx, LDG_TRUTH_TRUE); }
-
-    if (key == (uint8_t)LDG_TERM_KEY_DOWN) { return memview_hist_step(ctx, LDG_TRUTH_FALSE); }
-
-    if (key == (uint8_t)LDG_TERM_KEY_ESCAPE)
-    {
-        ctx->query_len = 0;
-        ctx->query[0] = LDG_STR_TERM;
-        ctx->draft[0] = LDG_STR_TERM;
-        ctx->hist_sel = (uint32_t)UINT32_MAX;
-        ctx->hit_cunt = 0;
-        ctx->hit_at = 0;
-        ctx->finding = LDG_TRUTH_FALSE;
-        ctx->stringing = LDG_TRUTH_FALSE;
-        ctx->edit = LDG_TRUTH_FALSE;
-
-        return LDG_ERR_AOK;
-    }
-
-    if (key == (uint8_t)LDG_TERM_KEY_BACKSPACE)
-    {
-        if (ctx->query_len != 0)
-        {
-            ctx->query_len = ctx->query_len - (uint32_t)MEMVIEW_STEP;
-            ctx->query[ctx->query_len] = LDG_STR_TERM;
-        }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (key != (uint8_t)LDG_TERM_KEY_ENTER) { return LDG_ERR_AOK; }
-
-    if (ctx->query_len == 0)
+    if (plain == LDG_TRUTH_TRUE && key->key == (uint8_t)LDG_TERM_KEY_ENTER && view.text_len == 0)
     {
         if (ctx->hit_cunt != 0)
         {
@@ -3214,16 +3258,14 @@ static uint32_t memview_query_key(crosstalk_eda_ui_memview_ctx_t *ctx, uint8_t k
         return LDG_ERR_AOK;
     }
 
-    if (memview_hist_push(ctx, ctx->query) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview history push failed"); }
+    ret = crosstalk_core_cmdline_key_isr(&ctx->input, key, consumed);
+    if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (memview_repl_exec(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview repl refused"); }
+    if (memview_query_run(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview line run failed"); }
 
-    ctx->query_len = 0;
-    ctx->query[0] = LDG_STR_TERM;
-    ctx->draft[0] = LDG_STR_TERM;
-    ctx->hist_sel = (uint32_t)UINT32_MAX;
+    if (crosstalk_core_cmdline_open_is(&ctx->input) != LDG_TRUTH_TRUE && crosstalk_core_cmdline_open(&ctx->input) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview input reopen failed"); }
 
-    return LDG_ERR_AOK;
+    return memview_query_sync(ctx);
 }
 
 static uint32_t memview_span_put(ldg_term_render_t *render, uint32_t col, uint32_t row, const char *text, uint64_t len, uint32_t fg_rgba, uint32_t bg_rgba)
@@ -3709,27 +3751,9 @@ static uint32_t memview_hit_list_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_t
     return LDG_ERR_AOK;
 }
 
-static uint32_t memview_repl_draw(const crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t row)
+static uint32_t memview_repl_draw(crosstalk_eda_ui_memview_ctx_t *ctx, ldg_term_render_t *render, uint32_t row, uint32_t col_cunt)
 {
-    ldg_term_render_color_t cursor = LDG_STRUCT_ZERO_INIT;
-    uint64_t len = 0;
-    uint32_t ret = 0;
-
-    ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)MEMVIEW_ORIG_COL, row, MEMVIEW_REPL_MARK, (uint64_t)MEMVIEW_TAB_TEXT_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-
-    ret = ldg_str_len_get(ctx->query, (uint64_t)sizeof(ctx->query), &len);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-
-    ret = memview_span_put(render, (uint32_t)MEMVIEW_REPL_MARK_W, row, ctx->query, len, (uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, (uint32_t)CROSSTALK_UI_CELL_PANE_RGBA);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-
-    if (ctx->focused != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
-
-    ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_DATA_RGBA, &cursor);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-
-    return crosstalk_ui_cell_span_fill(render, (uint32_t)MEMVIEW_REPL_MARK_W + (uint32_t)len, row, (uint32_t)MEMVIEW_REPL_CURSOR_W, &cursor, &cursor);
+    return crosstalk_core_cmdline_draw(&ctx->input, render, (uint32_t)MEMVIEW_ORIG_COL, row, col_cunt);
 }
 
 static uint32_t memview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *render, uint32_t col_cunt, uint32_t row_cunt)
@@ -3781,7 +3805,7 @@ static uint32_t memview_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *
 
     if (ret == LDG_ERR_AOK && ctx->mut_visible == LDG_TRUTH_TRUE) { ret = memview_mut_draw(ctx, render); }
 
-    if (ret == LDG_ERR_AOK) { ret = memview_repl_draw(ctx, render, repl_row); }
+    if (ret == LDG_ERR_AOK) { ret = memview_repl_draw(ctx, render, repl_row, col_cunt); }
 
     ctx->win.content_row_cunt = repl_row + (uint32_t)MEMVIEW_STEP;
 
@@ -3845,7 +3869,6 @@ static uint32_t memview_key_isr(uint64_t win_id, void *user, const ldg_term_key_
 {
     crosstalk_eda_ui_memview_ctx_t *ctx = (crosstalk_eda_ui_memview_ctx_t *)user;
     uint8_t shift_is = LDG_TRUTH_FALSE;
-    uint32_t at = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || key == 0x0 || consumed == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -3855,35 +3878,39 @@ static uint32_t memview_key_isr(uint64_t win_id, void *user, const ldg_term_key_
 
     if (key->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE || ctx->bound != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    if ((key->mods & ((uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_SUPER)) != 0) { return LDG_ERR_AOK; }
+    if ((key->mods & ((uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_SUPER)) != 0) { return LDG_ERR_AOK; }
 
-    if (ctx->tab == (uint8_t)CROSSTALK_EDA_UI_MEMVIEW_TAB_HITS) { return memview_results_key(ctx, key->key, consumed); }
+    if (ctx->tab == (uint8_t)CROSSTALK_EDA_UI_MEMVIEW_TAB_HITS)
+    {
+        if ((key->mods & (uint32_t)LDG_TERM_MOD_CTRL) != 0) { return LDG_ERR_AOK; }
+
+        return memview_results_key(ctx, key->key, consumed);
+    }
 
     shift_is = (key->mods & (uint32_t)LDG_TERM_MOD_SHIFT) != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    ctx->query_len = (uint32_t)strnlen(ctx->query, (uint64_t)CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP);
+
+    if (memview_query_sync(ctx) != LDG_ERR_AOK) { return LDG_ERR_NOT_INIT; }
+
     *consumed = LDG_TRUTH_TRUE;
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_DOWN) { return memview_step_rows(ctx, (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_ROW_CUNT, LDG_TRUTH_FALSE); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_DOWN) { return memview_rows_step(ctx, (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_ROW_CUNT, LDG_TRUTH_FALSE); }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_UP) { return memview_step_rows(ctx, (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_ROW_CUNT, LDG_TRUTH_TRUE); }
+    if (key->key == (uint8_t)LDG_TERM_KEY_PAGE_UP) { return memview_rows_step(ctx, (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_ROW_CUNT, LDG_TRUTH_TRUE); }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_HOME)
+    if (key->key == (uint8_t)LDG_TERM_KEY_HOME && ctx->query_len == 0)
     {
-        if (ctx->query_len == 0)
-        {
-            ctx->base = 0x0;
-            ctx->follow = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_FOLLOW_FIXED;
-            ctx->refresh_next = MEMVIEW_SCROLL_NONE;
-        }
+        ctx->base = 0x0;
+        ctx->follow = (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_FOLLOW_FIXED;
+        ctx->refresh_next = MEMVIEW_SCROLL_NONE;
 
         return LDG_ERR_AOK;
     }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_LHS || key->key == (uint8_t)LDG_TERM_KEY_RHS)
+    if ((key->key == (uint8_t)LDG_TERM_KEY_LHS || key->key == (uint8_t)LDG_TERM_KEY_RHS) && ctx->query_len == 0 && (key->mods & (uint32_t)LDG_TERM_MOD_CTRL) == 0)
     {
         uint8_t back = key->key == (uint8_t)LDG_TERM_KEY_LHS ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-        if (shift_is != LDG_TRUTH_TRUE) { return memview_step_rows(ctx, (uint32_t)MEMVIEW_SCROLL_ROWS, back); }
+        if (shift_is != LDG_TRUTH_TRUE) { return memview_rows_step(ctx, (uint32_t)MEMVIEW_SCROLL_ROWS, back); }
 
         if (back == LDG_TRUTH_TRUE) { ctx->annot_pan = ctx->annot_pan > (uint32_t)MEMVIEW_ANNOT_PAN_STEP ? ctx->annot_pan - (uint32_t)MEMVIEW_ANNOT_PAN_STEP : (uint32_t)MEMVIEW_ANNOT_PAN_NONE; }
         else { ctx->annot_pan = ctx->annot_pan + (uint32_t)MEMVIEW_ANNOT_PAN_STEP < ctx->annot_span ? ctx->annot_pan + (uint32_t)MEMVIEW_ANNOT_PAN_STEP : ctx->annot_span; }
@@ -3891,31 +3918,14 @@ static uint32_t memview_key_isr(uint64_t win_id, void *user, const ldg_term_key_
         return LDG_ERR_AOK;
     }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_TAB)
+    if (key->key == (uint8_t)LDG_TERM_KEY_TAB && ctx->query_len == 0)
     {
         if (memview_io_cycle(ctx, shift_is) == LDG_ERR_EMPTY) { *consumed = LDG_TRUTH_FALSE; }
 
         return LDG_ERR_AOK;
     }
 
-    if (key->key == (uint8_t)LDG_TERM_KEY_UP || key->key == (uint8_t)LDG_TERM_KEY_DOWN || key->key == (uint8_t)LDG_TERM_KEY_ESCAPE || key->key == (uint8_t)LDG_TERM_KEY_BACKSPACE || key->key == (uint8_t)LDG_TERM_KEY_ENTER) { return memview_query_key(ctx, key->key); }
-
-    *consumed = LDG_TRUTH_FALSE;
-
-    for (at = 0; at < key->text_cunt && at < (uint32_t)LDG_TERM_KEY_TEXT_MAX; at = at + (uint32_t)MEMVIEW_STEP)
-    {
-        if (key->text[at] < (uint32_t)LDG_ASCII_PRINTABLE_MIN || key->text[at] > (uint32_t)LDG_ASCII_PRINTABLE_MAX) { continue; }
-
-        *consumed = LDG_TRUTH_TRUE;
-
-        if (ctx->query_len + (uint32_t)LDG_STR_TERM_SIZE >= (uint32_t)CROSSTALK_EDA_UI_MEMVIEW_QUERY_CAP) { break; }
-
-        ctx->query[ctx->query_len] = (char)key->text[at];
-        ctx->query_len = ctx->query_len + (uint32_t)MEMVIEW_STEP;
-        ctx->query[ctx->query_len] = LDG_STR_TERM;
-    }
-
-    return LDG_ERR_AOK;
+    return memview_query_key(ctx, key, consumed);
 }
 
 uint32_t crosstalk_eda_ui_memview_win_reg(crosstalk_eda_ui_memview_ctx_t *ctx, crosstalk_ui_window_ctx_t *win_nav, uint32_t *out_slot)

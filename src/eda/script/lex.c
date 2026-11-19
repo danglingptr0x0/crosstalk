@@ -535,7 +535,7 @@ uint32_t crosstalk_eda_script_lex_word_next(crosstalk_eda_script_lex_t *ctx, con
 
     if (ctx->at >= ctx->src_len) { return LDG_ERR_EOF; }
 
-    if (ctx->src[ctx->at] == ';' || ctx->src[ctx->at] == '\n') { return LDG_ERR_EOF; }
+    if (ctx->src[ctx->at] == ';' || ctx->src[ctx->at] == '\r' || ctx->src[ctx->at] == '\n') { return LDG_ERR_EOF; }
 
     if (ctx->src[ctx->at] == LDG_ASCII_QUOTE)
     {

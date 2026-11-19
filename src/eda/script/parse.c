@@ -31,6 +31,8 @@ typedef struct parse_ctx
     crosstalk_eda_script_ast_t *ast;
     crosstalk_eda_script_diag_t *diag;
     crosstalk_eda_script_tok_t tok;
+    uint32_t prev_line;
+    uint8_t pudding[4];
 } parse_ctx_t;
 
 typedef struct parse_lvl
@@ -60,8 +62,11 @@ static uint32_t parse_diag_set(parse_ctx_t *ctx, const crosstalk_eda_script_tok_
 
 static uint32_t parse_advance(parse_ctx_t *ctx)
 {
-    uint32_t ret = crosstalk_eda_script_lex_next(ctx->lex, &ctx->tok);
+    uint32_t ret = 0;
 
+    ctx->prev_line = ctx->tok.line;
+
+    ret = crosstalk_eda_script_lex_next(ctx->lex, &ctx->tok);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return parse_diag_set(ctx, &ctx->tok, ret, "invalid token", "remove or correct the flagged characters"); }
 
     return LDG_ERR_AOK;
@@ -78,9 +83,11 @@ static uint32_t parse_node_new(parse_ctx_t *ctx, uint32_t kind, const crosstalk_
 
 static uint32_t parse_semi_want(parse_ctx_t *ctx, const crosstalk_eda_script_tok_t *start_tok)
 {
-    if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI)) { return parse_diag_set(ctx, start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "statement is not terminated", "end every statement with a semicolon"); }
+    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI) { return parse_advance(ctx); }
 
-    return parse_advance(ctx);
+    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_EOF || ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACE || ctx->tok.line != ctx->prev_line) { return LDG_ERR_AOK; }
+
+    return parse_diag_set(ctx, start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "statement is not terminated", "end the statement with a new line");
 }
 
 static uint32_t parse_arg_list(parse_ctx_t *ctx, crosstalk_eda_script_list_t *list)
@@ -1282,6 +1289,40 @@ static uint32_t parse_step_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t *s
     return LDG_ERR_AOK;
 }
 
+#define PARSE_WIN_LEAD_LEN 1
+
+static uint32_t parse_win(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
+{
+    crosstalk_eda_script_tok_t start_tok = ctx->tok;
+    crosstalk_eda_script_node_t *call = 0x0;
+    uint32_t res = parse_advance(ctx);
+
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT || ctx->tok.start != start_tok.start + PARSE_WIN_LEAD_LEN)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "window name is missing", "name the window right after the dot"); }
+
+    res = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_CALL, &start_tok, &call);
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    res = crosstalk_eda_script_ast_str_copy(ctx->ast, start_tok.start, ctx->tok.len + (uint32_t)PARSE_WIN_LEAD_LEN, &call->name);
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    call->name_len = ctx->tok.len + (uint32_t)PARSE_WIN_LEAD_LEN;
+
+    res = parse_advance(ctx);
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI)
+    {
+        res = parse_advance(ctx);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+    }
+
+    *out = call;
+
+    return LDG_ERR_AOK;
+}
+
 static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 {
     crosstalk_eda_script_tok_t start_tok = ctx->tok;
@@ -1290,6 +1331,8 @@ static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
     crosstalk_eda_script_node_t *expr = 0x0;
     crosstalk_eda_script_node_t *stmt = 0x0;
     uint32_t ret = 0;
+
+    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_DOT) { return parse_win(ctx, out); }
 
     if (parse_decl_start_is(ctx) == LDG_TRUTH_TRUE) { return parse_decl(ctx, out); }
 
@@ -1360,7 +1403,7 @@ static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
         ret = crosstalk_eda_script_lex_peek(ctx->lex, &after);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return parse_diag_set(ctx, &start_tok, ret, "invalid token", "remove or correct the flagged characters"); }
 
-        if (after.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI) { return parse_step_stmt(ctx, expr, &start_tok, out); }
+        if (after.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI || after.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_EOF || after.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACE || after.line != ctx->tok.line) { return parse_step_stmt(ctx, expr, &start_tok, out); }
     }
 
     *ctx->lex = save_lex;

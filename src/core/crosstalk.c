@@ -358,6 +358,8 @@ static uint32_t crosstalk_script_path_resolve(const crosstalk_ctx_t *ctx, const 
 
     if (LDG_UNLIKELY(ctx == 0x0 || path == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    if (path[0] == '~') { return ldg_io_path_expand(path, out, out_size); }
+
     if (ldg_io_path_absolute_is(path) == LDG_TRUTH_TRUE) { return ldg_str_rbrcpy(out, path, out_size); }
 
     if (ctx->eda.script.run_path[0] == LDG_STR_TERM) { return ldg_str_rbrcpy(out, path, out_size); }
@@ -2138,7 +2140,7 @@ static uint32_t crosstalk_guides_reg(crosstalk_ctx_t *ctx)
 {
     static const crosstalk_ui_guide_step_t tour_step[] = {
         { "Command line", "Pressing `^Shift;`, or in the vim format, `<C-S-;>`, opens the cmdline. Commands are semicolon-terminated. `help;` shows the commands that are available. The `ld` cmd pulls in .sv files explicitly named in the command. Typing the command shows help text to the right of the cmdline text input field. The `memld` cmd then loads into a design-specified memory signal (syntax in cmdline helper). For example, to load a SystemVerilog design: `ld <path_to_sv_dir> <file1.sv,file2.sv,file3.sv> <top_name>;` The files are comma-separated without a whitespace. The `rst;` cmd power-cycles the emulator.", 0x0, 0x0, (uint64_t)UINT64_MAX, (uint64_t)UINT64_MAX, CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE, LDG_ARR_ZERO_INIT },
-        { "Scripting", "Crosstalk reads `.xts` files as scripts. Scripts consist of multiple commands delimited by a semicolon. Strictly speaking, cmdline commands are single-command in-memory scripts. `run <script>.xts;` will load and execute a script serially. If the game is saved after a `run` invocation, then that same script will re-run on the next load of the same project within the same editor.", 0x0, 0x0, (uint64_t)UINT64_MAX, (uint64_t)UINT64_MAX, CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE, LDG_ARR_ZERO_INIT },
+        { "Scripting", "Crosstalk reads `.aww` files as scripts. A script holds one command per line; a semicolon separates several commands on one line. Strictly speaking, cmdline commands are single-command in-memory scripts. `run <script>.aww` will load and execute a script serially. If the game is saved after a `run` invocation, then that same script will re-run on the next load of the same project within the same editor.", 0x0, 0x0, (uint64_t)UINT64_MAX, (uint64_t)UINT64_MAX, CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE, LDG_ARR_ZERO_INIT },
         { "Simulation mode", "Once a SystemVerilog design is loaded, it will run in cycle-level simulation mode by default. It can be switched to gate-level simulation using the `gate;` cmd. Gate-level simulation is excruciatingly slow. For a performance improvement above the cycle-level simulation, the `emit;` cmd can be used, which will transliterate it into C99, invoke the included compiler, and fully compile, assemble, and link the design. Once emitted, a design snapshot can be taken using the `snap;` cmd, which takes an optional snapshot title argument. For example, `snap after_boot;`. Re-running `snap` with no arg will refuse to overwrite a previous invocation without an arg. An invocation using a pre-existing title does overwrite. For resumption, `resume;` can be used. Without an argument, it will restore a snapshot that was created by invoking `snap;` without an argument. It also takes an optional title argument and errors out on failure to find.", 0x0, 0x0, (uint64_t)UINT64_MAX, (uint64_t)UINT64_MAX, CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE, LDG_ARR_ZERO_INIT },
         { "Emulation mode", "The only usable emulator is currently the DANGCSA emulator. Another emulator can be attached, but the ABI is not frozen yet, so this path is not supported right now. The `hlt;` cmd immediately halts emulation for easier state inspection and event detection. `hlt off;` unhalts.", 0x0, 0x0, (uint64_t)UINT64_MAX, (uint64_t)UINT64_MAX, CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE, LDG_ARR_ZERO_INIT },
         { "Terminal", "The terminal allows interfacing with PTY and serial devices, both physical and virtual ones. When in the serial tab of the terminal, the terminal will often be seen empty, since, outside of profiling mode (cmdline: `prof on;`), it will not sample a design's serial port. Copy and paste currently do not work.", 0x0, 0x0, (uint64_t)CROSSTALK_EDA_UI_TERM_WINDOW_ID, (uint64_t)UINT64_MAX, CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE, LDG_ARR_ZERO_INIT },
@@ -4109,6 +4111,10 @@ static void crosstalk_repl_tick(crosstalk_ctx_t *ctx)
 
         if (key_cunt != 0)
         {
+            crosstalk_eda_ui_term_sesh_t *term_sesh = 0x0;
+
+            if (crosstalk_eda_ui_term_sesh_ptr_get(&ctx->eda.term, sesh_idx, &term_sesh) == LDG_ERR_AOK && term_sesh != 0x0 && term_sesh->term != 0x0 && crosstalk_re_repl_sesh_col_cunt_set(&ctx->repl_sesh, term_sesh->term->col_cunt) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "repl: width not set"); }
+
             ret = crosstalk_re_repl_sesh_bytes_put(&ctx->repl_sesh, keys, key_cunt);
             if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "repl: keys failed; err: %u32", ret); }
         }
@@ -4147,6 +4153,12 @@ static uint32_t crosstalk_repl_tab_open(crosstalk_ctx_t *ctx)
     ret = crosstalk_re_repl_sesh_open(&ctx->repl_sesh, &ctx->repl, &ctx->repl_subst, crosstalk_eda_ui_term_sesh_sink_cb, sesh);
     if (ret != LDG_ERR_AOK) { return ret; }
 
+    if (sesh != 0x0 && sesh->term != 0x0)
+    {
+        ret = crosstalk_re_repl_sesh_col_cunt_set(&ctx->repl_sesh, sesh->term->col_cunt);
+        if (ret != LDG_ERR_AOK) { return ret; }
+    }
+
     ret = crosstalk_eda_ui_term_active_set(&ctx->eda.term, sesh_idx);
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -4162,6 +4174,19 @@ static void crosstalk_verb_attach(crosstalk_ctx_t *ctx, const char *arg)
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0)) { return; }
+
+    if (strcmp(arg, CROSSTALK_CORE_SCRIPT_WIN_REPL_NAME) == 0)
+    {
+        if (crosstalk_repl_tab_open(ctx) != LDG_ERR_AOK)
+        {
+            toast_push(ctx, "no free terminal tab");
+            return;
+        }
+
+        if (crosstalk_re_repl_sesh_prompt_put(&ctx->repl_sesh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: prompt failed"); }
+
+        return;
+    }
 
     if (crosstalk_re_repl_num_get(arg, &pid) != LDG_ERR_AOK || pid >= (uint64_t)LDG_SYS_PROC_PID_NONE)
     {
@@ -5511,6 +5536,7 @@ static void crosstalk_defer_drain(crosstalk_ctx_t *ctx)
     }
 
     ctx->defer_cunt = 0;
+    ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_CMDLINE;
 }
 
 static void crosstalk_event_fire(crosstalk_ctx_t *ctx, uint32_t event)
@@ -13397,7 +13423,7 @@ static uint32_t crosstalk_script_verb_tbl_get(const crosstalk_script_verb_t **ou
         { "ident", 0x1, 0x1, crosstalk_verb_ident, "ident 0xADDR|<symbol>[+0xOFF]; name the symbol an address falls inside, with its offset from the symbol's start", 0x0 },
         { "gamma", 0x0, 0x1, crosstalk_verb_gamma, "gamma [val]; monitor gamma curve, 1.0 flat, 1.8 lifts a linear program stream; bare gamma reports", 0x0 },
         { "hlt", 0x0, 0x6, crosstalk_verb_hlt, "hlt [off|causes]; halt the core and hold its state; causes halt it before a fault dispatches; all leaves out unaligned, which the kernel repairs, so name it to watch for it", "off" },
-        { "on", 0x0, 0x2, crosstalk_verb_on, "on [load|save|exit|fault] [path.xts|off]; run a script when the game does something; bare on lists", "load|save|exit|fault @path|off" },
+        { "on", 0x0, 0x2, crosstalk_verb_on, "on [load|save|exit|fault] [path.aww|off]; run a script when the game does something; bare on lists", "load|save|exit|fault @path|off" },
         { "disk", 0x0, 0x2, crosstalk_verb_disk, "disk [path.dsk|sync|off] [drive]; attach media to an emulator drive, 0-7; sync writes the image back; bare disk lists drives", "@path|sync|off" },
         { "dsu", 0x0, 0x1, crosstalk_verb_dsu, "dsu [play|stop]; route the emulator sound card to audio; bare dsu reports buffer, cursor, rate, running", "play|stop" },
         { "delay", 0x1, 0x2, crosstalk_verb_delay, "delay <n> [ns|us|ms|s]; hold the script for a span; a bare number is ns", "@none ns|us|ms|s" },
@@ -13725,8 +13751,8 @@ static uint32_t crosstalk_complete_path_put(crosstalk_ctx_t *ctx, const char *ba
 static uint32_t crosstalk_complete_alt_put(crosstalk_ctx_t *ctx, const char *alt, const char *line, const char *word, char (*out)[CROSSTALK_CORE_CMDLINE_CANDIDATE_CAP], uint32_t out_cap, uint32_t *out_cunt)
 {
     char base[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    const ldg_shell_cmd_t *cmd = 0x0;
     const char *name = 0x0;
-    const char *help = 0x0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
@@ -13764,9 +13790,9 @@ static uint32_t crosstalk_complete_alt_put(crosstalk_ctx_t *ctx, const char *alt
 
     if (strcmp(alt, CROSSTALK_CORE_COMPLETE_KIND_VERB) == 0)
     {
-        for (idx = 0; crosstalk_core_cmdline_verb_get(&ctx->cmdline, idx, &name, &help) == LDG_ERR_AOK; idx = idx + 0x1)
+        for (idx = 0; idx < (uint32_t)CROSSTALK_CORE_CMDLINE_VERB_CUNT && ldg_shell_cmd_get(ctx->cmdline.shell, idx, &cmd) == LDG_ERR_AOK && cmd != 0x0 && cmd->name != 0x0; idx = idx + 0x1)
         {
-            ret = crosstalk_complete_put(out, out_cap, out_cunt, name, word);
+            ret = crosstalk_complete_put(out, out_cap, out_cunt, cmd->name, word);
             if (ret != LDG_ERR_AOK) { return ret; }
         }
 
@@ -13776,21 +13802,58 @@ static uint32_t crosstalk_complete_alt_put(crosstalk_ctx_t *ctx, const char *alt
     return crosstalk_complete_put(out, out_cap, out_cunt, alt, word);
 }
 
-static uint32_t crosstalk_cmdline_candidate_cb(void *user, const char *line, uint32_t arg_idx, const char *word, char (*out)[CROSSTALK_CORE_CMDLINE_CANDIDATE_CAP], uint32_t out_cap, uint32_t *out_cunt)
+static uint32_t crosstalk_cmdline_candidate_cb(void *user, const char *text, uint32_t len, char (*out)[CROSSTALK_CORE_CMDLINE_CANDIDATE_CAP], uint32_t out_cap, uint32_t *out_cunt, uint32_t *out_at, uint8_t *out_more)
 {
     crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
     const crosstalk_script_verb_t *tbl = 0x0;
     const char *spec = 0x0;
-    char verb[CROSSTALK_CORE_CMDLINE_VERB_NAME_CAP] = LDG_ARR_ZERO_INIT;
+    const char *word = 0x0;
+    char line[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    char verb[LDG_SHELL_NAME_CAP] = LDG_ARR_ZERO_INIT;
     char pos[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
     char alt[CROSSTALK_CORE_COMPLETE_ALT_CAP] = LDG_ARR_ZERO_INIT;
+    uint32_t word_at = 0;
+    uint32_t words_before = 0;
+    uint32_t arg_idx = 0;
     uint32_t tbl_cunt = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
+    uint8_t in_word = LDG_TRUTH_FALSE;
 
-    if (LDG_UNLIKELY(ctx == 0x0 || line == 0x0 || word == 0x0 || out == 0x0 || out_cunt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(ctx == 0x0 || text == 0x0 || out == 0x0 || out_cunt == 0x0 || out_at == 0x0 || out_more == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_cunt = 0;
+    *out_at = 0;
+    *out_more = LDG_TRUTH_FALSE;
+
+    if ((uint64_t)len >= (uint64_t)sizeof(line)) { return LDG_ERR_AOK; }
+
+    memcpy(line, text, (uint64_t)len);
+    line[len] = LDG_STR_TERM;
+
+    word_at = len;
+    while (word_at > 0 && line[word_at - 0x1] != CROSSTALK_CORE_COMPLETE_POS_SEP) { word_at = word_at - 0x1; }
+
+    for (idx = 0; idx < word_at; idx = idx + 0x1)
+    {
+        if (line[idx] == CROSSTALK_CORE_COMPLETE_POS_SEP)
+        {
+            in_word = LDG_TRUTH_FALSE;
+
+            continue;
+        }
+
+        if (in_word == LDG_TRUTH_TRUE) { continue; }
+
+        in_word = LDG_TRUTH_TRUE;
+        words_before = words_before + 0x1;
+    }
+
+    if (words_before == 0) { return LDG_ERR_AOK; }
+
+    arg_idx = words_before - 0x1;
+    word = &line[word_at];
+    *out_at = word_at;
 
     if (crosstalk_complete_tok_get(line, (uint32_t)CROSSTALK_CORE_COMPLETE_VERB_TOK, CROSSTALK_CORE_COMPLETE_POS_SEP, verb, (uint32_t)sizeof(verb)) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
 
@@ -13888,6 +13951,335 @@ static uint32_t crosstalk_script_verb_cb(void *user, const char *name, uint32_t 
     return LDG_ERR_NOT_FOUND;
 }
 
+#define CROSSTALK_CORE_SCRIPT_REPL_JOIN_MAX 220
+#define CROSSTALK_CORE_SCRIPT_REPL_LINE_FMT "%.31s %.220s"
+
+static uint32_t crosstalk_script_repl_cb(void *user, const char *name, uint32_t name_len, const crosstalk_eda_script_val_t *arg, uint32_t arg_cunt, crosstalk_eda_script_val_t *out)
+{
+    char joined[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    char word[CROSSTALK_EDA_SCRIPT_BUILTIN_NAME_CAP] = LDG_ARR_ZERO_INIT;
+    char line[CROSSTALK_RE_REPL_CMD_CAP] = LDG_ARR_ZERO_INIT;
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+    uint64_t fmt_len = 0;
+    uint64_t joined_len = 0;
+    uint32_t res = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    memset(out, 0x0, sizeof(*out));
+
+    if (LDG_UNLIKELY(name_len >= (uint32_t)sizeof(word))) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    memcpy(word, name, (uint64_t)name_len);
+
+    if (arg_cunt != 0)
+    {
+        res = crosstalk_script_args_join(arg, arg_cunt, joined, (uint32_t)sizeof(joined));
+        if (res != LDG_ERR_AOK) { return res; }
+    }
+
+    res = ldg_str_len_get(joined, (uint64_t)sizeof(joined), &joined_len);
+    if (res != LDG_ERR_AOK) { return res; }
+
+    if (joined_len > (uint64_t)CROSSTALK_CORE_SCRIPT_REPL_JOIN_MAX) { return LDG_ERR_STR_TRUNC; }
+
+    res = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CROSSTALK_CORE_SCRIPT_REPL_LINE_FMT, word, joined);
+    if (res != LDG_ERR_AOK) { return res; }
+
+    res = crosstalk_re_repl_line_run(&ctx->repl, line);
+
+    return res == LDG_ERR_IO_WR ? res : LDG_ERR_AOK;
+}
+
+#define CROSSTALK_CORE_SCRIPT_MEMVIEW_LINE_FMT "%.31s %.600s"
+
+static uint32_t crosstalk_script_memview_cb(void *user, const char *name, uint32_t name_len, const crosstalk_eda_script_val_t *arg, uint32_t arg_cunt, crosstalk_eda_script_val_t *out)
+{
+    char joined[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    char word[CROSSTALK_EDA_SCRIPT_BUILTIN_NAME_CAP] = LDG_ARR_ZERO_INIT;
+    char line[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+    uint64_t fmt_len = 0;
+    uint32_t res = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    memset(out, 0x0, sizeof(*out));
+
+    if (LDG_UNLIKELY(name_len >= (uint32_t)sizeof(word))) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    memcpy(word, name, (uint64_t)name_len);
+
+    if (arg_cunt != 0)
+    {
+        res = crosstalk_script_args_join(arg, arg_cunt, joined, (uint32_t)sizeof(joined));
+        if (res != LDG_ERR_AOK) { return res; }
+    }
+
+    res = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, CROSSTALK_CORE_SCRIPT_MEMVIEW_LINE_FMT, word, joined);
+    if (res != LDG_ERR_AOK) { return res; }
+
+    return crosstalk_eda_ui_memview_line_run(&ctx->eda.memview, line);
+}
+
+static uint32_t crosstalk_script_repl_word_get(uint32_t idx, const char **out)
+{
+    static const char *const word[] = { "status", "threads", "thread", "native", "snitch", "modules", "symbol", "address", "regions", "peek", "read", "write", "find", "findstr", "findptr", "xrefs", "terminate", "help", "attach", "detach", "poke", "scan" };
+
+    if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = 0x0;
+
+    if (idx >= (uint32_t)(sizeof(word) / sizeof(word[0]))) { return LDG_ERR_NOT_FOUND; }
+
+    *out = word[idx];
+
+    return LDG_ERR_AOK;
+}
+
+static uint8_t crosstalk_script_repl_word_is(const char *word)
+{
+    const char *name = 0x0;
+    uint32_t idx = 0;
+
+    if (LDG_UNLIKELY(word == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    while (crosstalk_script_repl_word_get(idx, &name) == LDG_ERR_AOK)
+    {
+        if (strcmp(name, word) == 0) { return LDG_TRUTH_TRUE; }
+
+        idx = idx + 0x1;
+    }
+
+    return LDG_TRUTH_FALSE;
+}
+
+static uint32_t crosstalk_script_cmd_limits_get(const char *word, uint32_t *out_min, uint32_t *out_max)
+{
+    const crosstalk_script_verb_t *tbl = 0x0;
+    uint32_t tbl_cunt = 0;
+    uint32_t idx = 0;
+
+    if (LDG_UNLIKELY(word == 0x0 || out_min == 0x0 || out_max == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out_min = 0;
+    *out_max = 0;
+
+    if (strcmp(word, CROSSTALK_CORE_SCRIPT_RUN_NAME) == 0)
+    {
+        *out_min = (uint32_t)CROSSTALK_CORE_SCRIPT_RUN_ARG_MAX;
+        *out_max = (uint32_t)CROSSTALK_CORE_SCRIPT_RUN_ARG_MAX;
+
+        return LDG_ERR_AOK;
+    }
+
+    if (strcmp(word, CROSSTALK_CORE_SCRIPT_HELP_NAME) == 0)
+    {
+        *out_max = (uint32_t)CROSSTALK_CORE_SCRIPT_HELP_ARG_MAX;
+
+        return LDG_ERR_AOK;
+    }
+
+    if (crosstalk_script_verb_tbl_get(&tbl, &tbl_cunt) != LDG_ERR_AOK) { return LDG_ERR_NOT_INIT; }
+
+    for (idx = 0; idx < tbl_cunt; idx = idx + 0x1)
+    {
+        if (strcmp(tbl[idx].name, word) != 0) { continue; }
+
+        *out_min = tbl[idx].min_args;
+        *out_max = tbl[idx].max_args;
+
+        return LDG_ERR_AOK;
+    }
+
+    return LDG_ERR_NOT_FOUND;
+}
+
+#define CROSSTALK_CORE_EXT_EMIT_FMT "%.900s"
+#define CROSSTALK_CORE_EXT_ERR_FMT "err: %u32"
+#define CROSSTALK_CORE_EXT_HELP_WORD "help"
+
+static uint32_t crosstalk_ext_cmd_find(const crosstalk_ctx_t *ctx, const char *word, libresteam_mod_cmd_t *out)
+{
+    const libresteam_mod_host_t *mod = 0x0;
+    uint32_t idx = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || word == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    mod = (const libresteam_mod_host_t *)ctx->libresteam_set.mods;
+    if (mod == 0x0) { return LDG_ERR_NOT_FOUND; }
+
+    for (idx = 0; idx < mod->cmd_cunt && idx < (uint32_t)LIBRESTEAM_MOD_CMD_MAX; idx = idx + 0x1)
+    {
+        if (mod->cmd[idx].name == 0x0 || mod->cmd[idx].cb == 0x0) { continue; }
+
+        if (strcmp(mod->cmd[idx].name, word) != 0) { continue; }
+
+        *out = mod->cmd[idx];
+
+        return LDG_ERR_AOK;
+    }
+
+    return LDG_ERR_NOT_FOUND;
+}
+
+static uint32_t crosstalk_ext_emit_cb(void *sink, const char *text)
+{
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)sink;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || text == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    return crosstalk_re_repl_emit(&ctx->repl, CROSSTALK_CORE_EXT_EMIT_FMT, text);
+}
+
+static uint32_t crosstalk_script_ext_run(crosstalk_ctx_t *ctx, const libresteam_mod_cmd_t *cmd, const crosstalk_eda_script_val_t *arg, uint32_t arg_cunt)
+{
+    char joined[CROSSTALK_CORE_CMDLINE_CAP] = LDG_ARR_ZERO_INIT;
+    char help[] = CROSSTALK_CORE_EXT_HELP_WORD;
+    char *args[CROSSTALK_EDA_SCRIPT_ARGS_MAX] = LDG_ARR_ZERO_INIT;
+    uint32_t argc = 0;
+    uint32_t at = 0;
+    uint32_t res = 0;
+    uint8_t in_word = LDG_TRUTH_FALSE;
+
+    if (arg_cunt != 0)
+    {
+        res = crosstalk_script_args_join(arg, arg_cunt, joined, (uint32_t)sizeof(joined));
+        if (res != LDG_ERR_AOK) { return res; }
+    }
+
+    for (at = 0; joined[at] != LDG_STR_TERM; at = at + 0x1)
+    {
+        if (joined[at] == ' ')
+        {
+            joined[at] = LDG_STR_TERM;
+            in_word = LDG_TRUTH_FALSE;
+
+            continue;
+        }
+
+        if (in_word == LDG_TRUTH_TRUE) { continue; }
+
+        if (argc == (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX) { return LDG_ERR_FULL; }
+
+        args[argc] = &joined[at];
+        argc = argc + 0x1;
+        in_word = LDG_TRUTH_TRUE;
+    }
+
+    if (argc == 0)
+    {
+        args[0] = help;
+        argc = argc + 0x1;
+    }
+
+    res = cmd->cb(cmd->user, argc, args, crosstalk_ext_emit_cb, ctx);
+    if (res == LDG_ERR_AOK) { return LDG_ERR_AOK; }
+
+    if (crosstalk_re_repl_emit(&ctx->repl, CROSSTALK_CORE_EXT_ERR_FMT, res) != LDG_ERR_AOK) { return LDG_ERR_IO_WR; }
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t crosstalk_script_win_cb(void *user, const char *name, uint32_t name_len, const crosstalk_eda_script_val_t *arg, uint32_t arg_cunt, crosstalk_eda_script_val_t *out)
+{
+    libresteam_mod_cmd_t ext = LDG_STRUCT_ZERO_INIT;
+    char word[CROSSTALK_EDA_SCRIPT_BUILTIN_NAME_CAP] = LDG_ARR_ZERO_INIT;
+    char note[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+    const char *owner = CROSSTALK_CORE_SCRIPT_WIN_CMDLINE_TEXT;
+    uint64_t fmt_len = 0;
+    uint32_t min_args = 0;
+    uint32_t max_args = 0;
+    uint8_t cmd_is = LDG_TRUTH_FALSE;
+    uint8_t memview_is = LDG_TRUTH_FALSE;
+    uint8_t repl_is = LDG_TRUTH_FALSE;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || name == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    memset(out, 0x0, sizeof(*out));
+
+    if (LDG_UNLIKELY(name_len >= (uint32_t)sizeof(word))) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    memcpy(word, name, (uint64_t)name_len);
+
+    if (word[0] == CROSSTALK_CORE_SCRIPT_WIN_LEAD)
+    {
+        if (strcmp(&word[LDG_STR_TERM_SIZE], CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW_NAME) == 0) { ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW; }
+        else if (strcmp(&word[LDG_STR_TERM_SIZE], CROSSTALK_CORE_SCRIPT_WIN_REPL_NAME) == 0) { ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_REPL; }
+        else { ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_CMDLINE; }
+
+        return LDG_ERR_AOK;
+    }
+
+    if (crosstalk_script_cmd_limits_get(word, &min_args, &max_args) == LDG_ERR_AOK) { cmd_is = LDG_TRUTH_TRUE; }
+
+    if (crosstalk_eda_ui_memview_verb_is(word) == LDG_TRUTH_TRUE) { memview_is = LDG_TRUTH_TRUE; }
+
+    if (crosstalk_script_repl_word_is(word) == LDG_TRUTH_TRUE) { repl_is = LDG_TRUTH_TRUE; }
+
+    if (ctx->script_win == (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW && memview_is == LDG_TRUTH_TRUE) { return crosstalk_script_memview_cb(user, name, name_len, arg, arg_cunt, out); }
+
+    if (ctx->script_win == (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_REPL && repl_is == LDG_TRUTH_TRUE) { return crosstalk_script_repl_cb(user, name, name_len, arg, arg_cunt, out); }
+
+    if (ctx->script_win == (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_REPL && crosstalk_ext_cmd_find(ctx, word, &ext) == LDG_ERR_AOK) { return crosstalk_script_ext_run(ctx, &ext, arg, arg_cunt); }
+
+    if (ctx->script_win == (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_CMDLINE && cmd_is == LDG_TRUTH_TRUE)
+    {
+        if (arg_cunt < min_args || arg_cunt > max_args)
+        {
+            crosstalk_script_help(ctx, word);
+
+            return LDG_ERR_FUNC_ARG_INVALID;
+        }
+
+        return crosstalk_script_verb_cb(user, name, name_len, arg, arg_cunt, out);
+    }
+
+    if (cmd_is != LDG_TRUTH_TRUE) { owner = memview_is == LDG_TRUTH_TRUE ? CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW_NAME : CROSSTALK_CORE_SCRIPT_WIN_REPL_NAME; }
+
+    if (ldg_str_fmt(note, (uint64_t)sizeof(note), &fmt_len, CROSSTALK_CORE_SCRIPT_WIN_DENY_FMT, word, owner) != LDG_ERR_AOK) { return LDG_ERR_DENIED; }
+
+    if (crosstalk_core_cmdline_out_push(&ctx->cmdline, note) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: window note push failed"); }
+
+    return LDG_ERR_DENIED;
+}
+
+static uint32_t crosstalk_script_win_reg(crosstalk_ctx_t *ctx)
+{
+    const char *name = 0x0;
+    uint32_t idx = 0;
+    uint32_t res = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    while (crosstalk_eda_ui_memview_verb_get(idx, &name) == LDG_ERR_AOK)
+    {
+        res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
+        if (res != LDG_ERR_AOK && res != LDG_ERR_EXISTS) { return res; }
+
+        idx = idx + 0x1;
+    }
+
+    idx = 0;
+
+    while (crosstalk_script_repl_word_get(idx, &name) == LDG_ERR_AOK)
+    {
+        res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
+        if (res != LDG_ERR_AOK && res != LDG_ERR_EXISTS) { return res; }
+
+        idx = idx + 0x1;
+    }
+
+    res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, "." CROSSTALK_CORE_SCRIPT_WIN_CMDLINE_NAME, crosstalk_script_win_cb, 0x0, 0x0, 0x0);
+    if (res != LDG_ERR_AOK) { return res; }
+
+    res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, "." CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW_NAME, crosstalk_script_win_cb, 0x0, 0x0, 0x0);
+    if (res != LDG_ERR_AOK) { return res; }
+
+    return crosstalk_eda_script_builtin_reg(&ctx->eda.script, "." CROSSTALK_CORE_SCRIPT_WIN_REPL_NAME, crosstalk_script_win_cb, 0x0, 0x0, 0x0);
+}
+
 static uint32_t crosstalk_script_builtins_reg(crosstalk_ctx_t *ctx)
 {
     const crosstalk_script_verb_t *tbl = 0x0;
@@ -13902,29 +14294,32 @@ static uint32_t crosstalk_script_builtins_reg(crosstalk_ctx_t *ctx)
 
     for (idx = 0; idx < tbl_cunt; idx = idx + 0x1)
     {
-        ret = crosstalk_eda_script_builtin_reg(&ctx->eda.script, tbl[idx].name, crosstalk_script_verb_cb, tbl[idx].min_args, tbl[idx].max_args, 0x0);
+        ret = crosstalk_eda_script_builtin_reg(&ctx->eda.script, tbl[idx].name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
         if (ret != LDG_ERR_AOK) { return ret; }
 
         if (tbl[idx].help != 0x0)
         {
             ret = crosstalk_core_cmdline_verb_reg(&ctx->cmdline, tbl[idx].name, tbl[idx].help, tbl[idx].max_args);
-            if (ret != LDG_ERR_AOK) { return ret; }
+            if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_EXISTS)) { return ret; }
         }
     }
 
     ret = crosstalk_core_cmdline_verb_reg(&ctx->cmdline, CROSSTALK_CORE_SCRIPT_RUN_NAME, CROSSTALK_CORE_SCRIPT_RUN_HELP, CROSSTALK_CORE_SCRIPT_RUN_ARG_MAX);
-    if (ret != LDG_ERR_AOK) { return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_EXISTS)) { return ret; }
 
-    ret = crosstalk_eda_script_builtin_reg(&ctx->eda.script, CROSSTALK_CORE_SCRIPT_RUN_NAME, crosstalk_script_verb_cb, 0x1, 0x1, 0x0);
+    ret = crosstalk_eda_script_builtin_reg(&ctx->eda.script, CROSSTALK_CORE_SCRIPT_RUN_NAME, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = crosstalk_core_cmdline_verb_reg(&ctx->cmdline, CROSSTALK_CORE_SCRIPT_HELP_NAME, CROSSTALK_CORE_SCRIPT_HELP_HELP, CROSSTALK_CORE_SCRIPT_HELP_ARG_MAX);
-    if (ret != LDG_ERR_AOK) { return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_EXISTS)) { return ret; }
 
     ret = crosstalk_core_cmdline_candidate_cb_set(&ctx->cmdline, crosstalk_cmdline_candidate_cb, ctx);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    return crosstalk_eda_script_builtin_reg(&ctx->eda.script, CROSSTALK_CORE_SCRIPT_HELP_NAME, crosstalk_script_verb_cb, 0x0, 0x1, 0x0);
+    ret = crosstalk_eda_script_builtin_reg(&ctx->eda.script, CROSSTALK_CORE_SCRIPT_HELP_NAME, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    return crosstalk_script_win_reg(ctx);
 }
 
 static void crosstalk_systask_out_cb(void *user, const char *line)
@@ -13983,6 +14378,76 @@ static void crosstalk_script_line_exec(crosstalk_ctx_t *ctx, const char *line)
     if (ldg_str_fmt(text, (uint64_t)sizeof(text), &fmt_len, CROSSTALK_CORE_SCRIPT_SUGGESTION_FMT, diag->suggestion) != LDG_ERR_AOK) { return; }
 
     if (crosstalk_core_cmdline_out_push(&ctx->cmdline, text) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script suggestion push failed"); }
+}
+
+static void crosstalk_ext_cmds_reg(crosstalk_ctx_t *ctx)
+{
+    const libresteam_mod_host_t *mod = 0x0;
+    uint32_t idx = 0;
+    uint32_t res = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0)) { return; }
+
+    mod = (const libresteam_mod_host_t *)ctx->libresteam_set.mods;
+    if (mod == 0x0) { return; }
+
+    for (idx = 0; idx < mod->cmd_cunt && idx < (uint32_t)LIBRESTEAM_MOD_CMD_MAX; idx = idx + 0x1)
+    {
+        if (mod->cmd[idx].name == 0x0) { continue; }
+
+        res = crosstalk_eda_script_builtin_reg(&ctx->eda.script, mod->cmd[idx].name, crosstalk_script_win_cb, 0x0, (uint32_t)CROSSTALK_EDA_SCRIPT_ARGS_MAX, 0x0);
+        if (res == LDG_ERR_EXISTS) { continue; }
+
+        if (res != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: extension command not registered; name: %.31s; err: %u32", mod->cmd[idx].name, res); }
+
+        if (res == LDG_ERR_AOK && crosstalk_re_repl_sesh_verb_reg(&ctx->repl_sesh, mod->cmd[idx].name) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: extension word not registered; name: %.31s", mod->cmd[idx].name); }
+    }
+}
+
+#define CROSSTALK_CORE_REPL_OUT_FMT "%.143s"
+
+static uint32_t crosstalk_repl_script_exec_cb(void *user, const char *line)
+{
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+    char text[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t seq = 0;
+    uint64_t at = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || line == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (crosstalk_core_cmdline_out_seq_get(&ctx->cmdline, &seq) != LDG_ERR_AOK) { return LDG_ERR_NOT_INIT; }
+
+    crosstalk_ext_cmds_reg(ctx);
+
+    ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_REPL;
+
+    crosstalk_script_line_exec(ctx, line);
+
+    ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_CMDLINE;
+
+    while (crosstalk_core_cmdline_out_get(&ctx->cmdline, seq, text, (uint32_t)sizeof(text), &at) == LDG_ERR_AOK)
+    {
+        if (crosstalk_re_repl_emit(&ctx->repl, CROSSTALK_CORE_REPL_OUT_FMT, text) != LDG_ERR_AOK) { return LDG_ERR_IO_WR; }
+
+        seq = at + 0x1;
+    }
+
+    return LDG_ERR_AOK;
+}
+
+static uint32_t crosstalk_memview_script_exec_cb(void *user, const char *line)
+{
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)user;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || line == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_MEMVIEW;
+
+    crosstalk_script_line_exec(ctx, line);
+
+    ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_CMDLINE;
+
+    return LDG_ERR_AOK;
 }
 
 static void crosstalk_remote_cmdline_tick(crosstalk_ctx_t *ctx)
@@ -14238,23 +14703,19 @@ static void crosstalk_bin_sha_slot_fill(crosstalk_ctx_t *ctx, uint32_t slot, con
     uint32_t ret = crosstalk_bin_sha_file_compute(path, buff, ctx->bin_sha[slot], (uint64_t)sizeof(ctx->bin_sha[slot]));
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: bin sha256; slot: %u32; sha256: %.64s; err: %u32; path: %.255s", slot, ctx->bin_sha[slot], ret, path);
+
+    LDG_ST_RELEASE(ctx->bin_sha_rdy[slot], LDG_TRUTH_TRUE);
 }
 
 static void crosstalk_bin_sha_mods_fill(crosstalk_ctx_t *ctx, uint8_t *buff)
 {
     ldg_sys_proc_t proc = LDG_STRUCT_ZERO_INIT;
-    ldg_sys_mod_t *mods = 0x0;
-    void *mods_mem = 0x0;
+    ldg_sys_mod_t *mods = (ldg_sys_mod_t *)ctx->bin_sha_mods_mem;
     uint64_t pid = 0;
     uint64_t mod_cunt = 0;
     uint64_t hit = 0;
     uint64_t idx = 0;
     uint32_t ret = 0;
-
-    ret = ldg_mem_alloc((uint64_t)CROSSTALK_CORE_BIN_SHA_MOD_CAP * (uint64_t)sizeof(ldg_sys_mod_t), &mods_mem);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mod alloc failed; err: %u32", ret); return; }
-
-    mods = (ldg_sys_mod_t *)mods_mem;
 
     ret = ldg_sys_pid_get(&pid);
     if (ret == LDG_ERR_AOK) { ret = ldg_sys_proc_open((uint32_t)pid, &proc); }
@@ -14274,25 +14735,24 @@ static void crosstalk_bin_sha_mods_fill(crosstalk_ctx_t *ctx, uint8_t *buff)
     }
 
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "sys: bin sha256 mods; cunt: %u64; err: %u32", mod_cunt, ret);
-
-    if (ldg_mem_dealloc(mods_mem) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mod dealloc failed"); }
 }
 
-static void crosstalk_bin_sha_resolve(crosstalk_ctx_t *ctx)
+static uint32_t crosstalk_bin_sha_job(uint32_t worker_id, void *arg)
 {
+    crosstalk_ctx_t *ctx = (crosstalk_ctx_t *)arg;
     char self_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     char dir_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     char cc_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     const char *cc_rel = (ldg_io_path_sep_get() == '\\') ? CROSSTALK_CORE_PACK_CC_REL_WIN : CROSSTALK_CORE_PACK_CC_REL_UNIX;
     const char *cc_exe = (ldg_io_path_sep_get() == '\\') ? CROSSTALK_HDL_CC_EXE_WIN : CROSSTALK_HDL_CC_EXE;
-    void *buff_mem = 0x0;
     uint8_t *buff = 0x0;
     uint32_t ret = 0;
 
-    ret = ldg_mem_alloc((uint64_t)CROSSTALK_CORE_BIN_SHA_BUFF_SIZE + (uint64_t)CROSSTALK_CORE_BIN_SHA_ALIGN, &buff_mem);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 buff alloc failed; err: %u32", ret); return; }
+    if (LDG_UNLIKELY(ctx == 0x0 || ctx->bin_sha_buff_mem == 0x0 || ctx->bin_sha_mods_mem == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    buff = (uint8_t *)buff_mem + ((uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN - (uintptr_t)buff_mem % (uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN) % (uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN;
+    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "sys: bin sha256 job start; worker: %u32", worker_id);
+
+    buff = (uint8_t *)ctx->bin_sha_buff_mem + ((uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN - (uintptr_t)ctx->bin_sha_buff_mem % (uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN) % (uintptr_t)CROSSTALK_CORE_BIN_SHA_ALIGN;
 
     ret = ldg_io_path_prog_get(self_path, (uint64_t)sizeof(self_path));
     if (ret == LDG_ERR_AOK) { crosstalk_bin_sha_slot_fill(ctx, (uint32_t)CROSSTALK_CORE_BIN_SHA_IDX_SELF, self_path, buff); }
@@ -14309,7 +14769,21 @@ static void crosstalk_bin_sha_resolve(crosstalk_ctx_t *ctx)
     if (ret == LDG_ERR_AOK) { crosstalk_bin_sha_slot_fill(ctx, (uint32_t)CROSSTALK_CORE_BIN_SHA_IDX_LLVM, dir_path, buff); }
     else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 llvm path failed; err: %u32", ret); }
 
-    if (ldg_mem_dealloc(buff_mem) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 buff dealloc failed"); }
+    return LDG_ERR_AOK;
+}
+
+static uint32_t crosstalk_bin_sha_mem_dealloc(crosstalk_ctx_t *ctx)
+{
+    uint32_t ret = LDG_ERR_AOK;
+
+    if (ctx->bin_sha_buff_mem != 0x0 && LDG_UNLIKELY(ldg_mem_dealloc(ctx->bin_sha_buff_mem) != LDG_ERR_AOK)) { ret = LDG_ERR_MEM_BAD; }
+
+    if (ctx->bin_sha_mods_mem != 0x0 && LDG_UNLIKELY(ldg_mem_dealloc(ctx->bin_sha_mods_mem) != LDG_ERR_AOK)) { ret = LDG_ERR_MEM_BAD; }
+
+    ctx->bin_sha_buff_mem = 0x0;
+    ctx->bin_sha_mods_mem = 0x0;
+
+    return ret;
 }
 
 uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
@@ -14333,7 +14807,11 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     memset(ctx, 0x0, sizeof(crosstalk_ctx_t));
     settings_default_fill(&ctx->game.settings);
-    crosstalk_bin_sha_resolve(ctx);
+
+    ret = ldg_mem_alloc((uint64_t)CROSSTALK_CORE_BIN_SHA_BUFF_SIZE + (uint64_t)CROSSTALK_CORE_BIN_SHA_ALIGN, &ctx->bin_sha_buff_mem);
+    if (LDG_LIKELY(ret == LDG_ERR_AOK)) { ret = ldg_mem_alloc((uint64_t)CROSSTALK_CORE_BIN_SHA_MOD_CAP * (uint64_t)sizeof(ldg_sys_mod_t), &ctx->bin_sha_mods_mem); }
+
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 alloc failed; err: %u32", ret); }
 
     crosstalk_cpuset_reserve(ctx);
 
@@ -14354,6 +14832,8 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ret = crosstalk_res_dir_resolve(ctx->res_dir, (uint64_t)sizeof(ctx->res_dir));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
+        if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
+
         ldg_mem_dealloc(ctx);
         return ret;
     }
@@ -14402,6 +14882,8 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ret = ldg_io_path_join(ctx->res_dir, "fonts/AnonymousPro-Regular.ttf", ctx->font_path, (uint64_t)sizeof(ctx->font_path));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
+        if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
+
         ldg_mem_dealloc(ctx);
         return ret;
     }
@@ -14417,6 +14899,9 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     settings_apply(ctx);
 
+    ret = crosstalk_core_cmdline_drawer_init(&ctx->cmdline);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: cmdline drawer init failed; err: %u32", ret); }
+
     {
         char hist_path[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
 
@@ -14425,9 +14910,6 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: cmdline hist load failed; err: %u32", ret); }
     }
-
-    ret = crosstalk_core_cmdline_drawer_init(&ctx->cmdline);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: cmdline drawer init failed; err: %u32", ret); }
 
     ret = crosstalk_core_scan_init(&ctx->scan);
     if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: scan init failed; err: %u32", ret); }
@@ -14576,6 +15058,20 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ret = crosstalk_re_repl_sesh_init(&ctx->repl_sesh);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: session init failed; err: %u32", ret); }
 
+    if (crosstalk_re_repl_sesh_exec_set(&ctx->repl_sesh, crosstalk_repl_script_exec_cb, ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: script exec not set"); }
+
+    {
+        const char *repl_word = 0x0;
+        uint32_t repl_word_idx = 0;
+
+        while (crosstalk_script_repl_word_get(repl_word_idx, &repl_word) == LDG_ERR_AOK)
+        {
+            if (crosstalk_re_repl_sesh_verb_reg(&ctx->repl_sesh, repl_word) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: word not registered; name: %.31s", repl_word); }
+
+            repl_word_idx = repl_word_idx + 0x1;
+        }
+    }
+
     ret = crosstalk_re_repl_subst_init(&ctx->repl_subst);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl: subst init failed; err: %u32", ret); }
 
@@ -14602,6 +15098,8 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
 
     ret = crosstalk_eda_ui_memview_init(&ctx->eda.memview);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview init failed"); }
+
+    if (crosstalk_eda_ui_memview_exec_set(&ctx->eda.memview, crosstalk_memview_script_exec_cb, ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview: script exec not set"); }
 
     ret = crosstalk_eda_ui_memview_syms_bind(&ctx->eda.memview, &ctx->prog_elf, &ctx->elf, &ctx->prog_type);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview syms bind failed"); }
@@ -14652,7 +15150,7 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script init failed"); }
 
     ret = crosstalk_script_builtins_reg(ctx);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script builtins reg failed"); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script builtins reg failed; err: %u32", ret); }
 
     ret = crosstalk_eda_clk_init(&ctx->eda.clk, (uint64_t)CROSSTALK_EDA_CLK_STEP_HZ_DEFAULT);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "clk init failed"); }
@@ -14677,6 +15175,8 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ret = ldg_sched_conf_default_get(&conf);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
+        if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
+
         ldg_mem_dealloc(ctx);
         return ret;
     }
@@ -14685,6 +15185,8 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
     ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "crosstalk: create sched_init; err: %u32", ret);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
+        if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
+
         ldg_mem_dealloc(ctx);
         return ret;
     }
@@ -14787,6 +15289,9 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
         }
 
         ldg_sched_ctx_shutdown(&ctx->sched);
+
+        if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
+
         ldg_mem_dealloc(ctx);
         return ret;
     }
@@ -14803,12 +15308,21 @@ uint32_t crosstalk_core_create(crosstalk_ctx_t **out)
         }
 
         ldg_sched_ctx_shutdown(&ctx->sched);
+
+        if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
+
         ldg_mem_dealloc(ctx);
         return ret;
     }
 
     ret = ld_begin(ctx, CROSSTALK_LD_STARTUP, CROSSTALK_GAME_SCREEN_MENU);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ctx->game.screen = CROSSTALK_GAME_SCREEN_MENU; }
+
+    if (ctx->bin_sha_buff_mem != 0x0 && ctx->bin_sha_mods_mem != 0x0)
+    {
+        ret = ldg_thread_pool_submit(&ctx->game.ld_pool, crosstalk_bin_sha_job, ctx);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 job submit failed; err: %u32", ret); }
+    }
 
     ctx->game.quit = LDG_TRUTH_FALSE;
 
@@ -16748,7 +17262,7 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             }
         }
 
-        for (;;)
+        while (LDG_TRUTH_TRUE)
         {
             const char *friend_text = 0x0;
             char friend_name[CROSSTALK_GAME_CHAT_NAME_CAP] = LDG_ARR_ZERO_INIT;
@@ -17032,6 +17546,8 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
             if (ret == LDG_ERR_AOK) { ret = ldg_io_path_join(demo_dir, CROSSTALK_CORE_DEMO_SCRIPT_NAME, demo_script, (uint64_t)sizeof(demo_script)); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_eda_script_file_exec(&ctx->eda.script, demo_script); }
+
+            ctx->script_win = (uint8_t)CROSSTALK_CORE_SCRIPT_WIN_CMDLINE;
 
             ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "crosstalk: demo script; err: %u32", ret);
 
@@ -17411,7 +17927,9 @@ static void crosstalk_tick(ldg_sched_event_desc_t desc, void *step, uint64_t ste
 
                 for (uint32_t sha_idx = 0; sha_idx < (uint32_t)CROSSTALK_CORE_BIN_SHA_CUNT && sha_idx < screen_rect.row_cunt; sha_idx++)
                 {
-                    ret = crosstalk_ui_cell_rgba_put(render, screen_rect.col, screen_rect.row + sha_idx, ctx->bin_sha[sha_idx][0] != LDG_STR_TERM ? ctx->bin_sha[sha_idx] : CROSSTALK_CORE_BIN_SHA_NONE_TEXT, (uint64_t)CROSSTALK_CORE_BIN_SHA_TEXT_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
+                    if (LDG_LD_ACQUIRE(ctx->bin_sha_rdy[sha_idx]) != LDG_TRUTH_TRUE || ctx->bin_sha[sha_idx][0] == LDG_STR_TERM) { continue; }
+
+                    ret = crosstalk_ui_cell_rgba_put(render, screen_rect.col, screen_rect.row + sha_idx, ctx->bin_sha[sha_idx], (uint64_t)CROSSTALK_CORE_BIN_SHA_TEXT_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "menu bin sha draw failed; err: %u32", ret); }
                 }
             }
@@ -18790,6 +19308,8 @@ uint32_t crosstalk_core_destroy(crosstalk_ctx_t *ctx)
 
     if (LDG_UNLIKELY(crosstalk_core_cmdline_drawer_shutdown(&ctx->cmdline) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline drawer shutdown failed"); }
 
+    if (LDG_UNLIKELY(crosstalk_eda_ui_memview_shutdown(&ctx->eda.memview) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "memview shutdown failed"); }
+
     crosstalk_shutdown_mark("cmdline", &mark);
 
     if (ctx->watch_ok == LDG_TRUTH_TRUE)
@@ -18824,6 +19344,8 @@ uint32_t crosstalk_core_destroy(crosstalk_ctx_t *ctx)
     if (LDG_UNLIKELY(crosstalk_hdl_type_shutdown(&ctx->prog_type) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "prog type shutdown failed"); }
 
     if (LDG_UNLIKELY(crosstalk_re_repl_sesh_close(&ctx->repl_sesh) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl session close failed"); }
+
+    if (LDG_UNLIKELY(crosstalk_re_repl_sesh_shutdown(&ctx->repl_sesh) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl session shutdown failed"); }
 
     if (LDG_UNLIKELY(crosstalk_re_repl_shutdown(&ctx->repl) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "repl shutdown failed"); }
 
@@ -18885,6 +19407,8 @@ uint32_t crosstalk_core_destroy(crosstalk_ctx_t *ctx)
 
     ldg_thread_pool_shutdown(&ctx->game.ld_pool);
     crosstalk_shutdown_mark("ld_pool", &mark);
+
+    if (LDG_UNLIKELY(crosstalk_bin_sha_mem_dealloc(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sys: bin sha256 mem dealloc failed"); }
 
     ldg_sched_ctx_shutdown(&ctx->sched);
     crosstalk_shutdown_mark("sched", &mark);
