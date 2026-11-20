@@ -10,7 +10,7 @@
 
 #include "hdl/elab.h"
 
-#define CROSSTALK_HDL_ELAB_CONN_CAP 64
+#define CROSSTALK_HDL_ELAB_CONN_CAP 256
 #define CROSSTALK_HDL_ELAB_PARAM_CAP 32
 #define CROSSTALK_HDL_ELAB_QUAL_PATH_CAP 192
 #define CROSSTALK_HDL_ELAB_QUAL_SEP '.'
@@ -28,6 +28,10 @@
 #define CROSSTALK_HDL_ELAB_SYSTASK_DISPLAY_NAME "$display"
 #define CROSSTALK_HDL_ELAB_SYSTASK_WR_NAME "$write"
 #define CROSSTALK_HDL_ELAB_SYSTASK_FINISH_NAME "$finish"
+#define CROSSTALK_HDL_ELAB_SYSFN_TIME_NAME "$time"
+#define CROSSTALK_HDL_ELAB_SYSFN_STIME_NAME "$stime"
+#define CROSSTALK_HDL_ELAB_SYSFN_REALTIME_NAME "$realtime"
+#define CROSSTALK_HDL_ELAB_SYSFN_TIME_WIDTH 64
 
 typedef struct crosstalk_hdl_elab_lv
 {
@@ -1958,6 +1962,11 @@ static uint32_t crosstalk_hdl_elab_systask(crosstalk_hdl_elab_ctx_t *ctx, uint32
             arg.str.len = (uint32_t)ctx->syms[sym_idx].val;
             arg.str_is = LDG_TRUTH_TRUE;
         }
+        else if (arg_node->kind == CROSSTALK_HDL_NODE_EXPR_IDENT && (crosstalk_hdl_elab_tok_lit_eq_is(ctx->src, &arg_node->tok, CROSSTALK_HDL_ELAB_SYSFN_TIME_NAME) == LDG_TRUTH_TRUE || crosstalk_hdl_elab_tok_lit_eq_is(ctx->src, &arg_node->tok, CROSSTALK_HDL_ELAB_SYSFN_STIME_NAME) == LDG_TRUTH_TRUE || crosstalk_hdl_elab_tok_lit_eq_is(ctx->src, &arg_node->tok, CROSSTALK_HDL_ELAB_SYSFN_REALTIME_NAME) == LDG_TRUTH_TRUE))
+        {
+            arg.time_is = LDG_TRUTH_TRUE;
+            arg.width = CROSSTALK_HDL_ELAB_SYSFN_TIME_WIDTH;
+        }
         else
         {
             ret = crosstalk_hdl_elab_expr(ctx, arg_idx, &sig, &width, &sgn);
@@ -3223,8 +3232,9 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
     const crosstalk_hdl_ast_node_t *node = 0x0;
     const crosstalk_hdl_ast_node_t *child = 0x0;
     const crosstalk_hdl_ast_node_t *conn_node = 0x0;
-    crosstalk_hdl_elab_conn_t conns[CROSSTALK_HDL_ELAB_CONN_CAP];
+    crosstalk_hdl_elab_conn_t *conns = 0x0;
     crosstalk_hdl_elab_pbind_t pbinds[CROSSTALK_HDL_ELAB_PARAM_CAP];
+    void *raw = 0x0;
     uint32_t conn_cunt = 0;
     uint32_t pbind_cunt = 0;
     uint32_t mod_node = 0;
@@ -3235,6 +3245,11 @@ static uint32_t crosstalk_hdl_elab_inst(crosstalk_hdl_elab_ctx_t *ctx, uint32_t 
 
     ret = crosstalk_hdl_ast_node_get(ctx->ast, node_idx, &node);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    ret = ldg_mem_pool_alloc((ldg_mem_pool_t *)ctx->pool, (uint64_t)CROSSTALK_HDL_ELAB_CONN_CAP * (uint64_t)sizeof(crosstalk_hdl_elab_conn_t), &raw);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    conns = (crosstalk_hdl_elab_conn_t *)raw;
 
     ret = crosstalk_hdl_elab_mod_find(ctx, &node->tok, &mod_node);
     if (ret != LDG_ERR_AOK)

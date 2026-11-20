@@ -460,6 +460,13 @@ static uint32_t slot_build(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fp
         while (line_start < line_end && (slot->elab_src[line_start] == ' ' || slot->elab_src[line_start] == '\t')) { line_start++; }
 
         ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: elab failed; err: %u32; tok line: %u32; col: %u32; text: %.*s; line text: %.*s", ret, elab->err_tok.line, elab->err_tok.col, (uint32_t)(elab->err_tok.len < (uint32_t)CROSSTALK_EDA_IC_FPGA_ELAB_ERR_TOK_LOG_MAX ? elab->err_tok.len : (uint32_t)CROSSTALK_EDA_IC_FPGA_ELAB_ERR_TOK_LOG_MAX), slot->elab_src + elab->err_tok.off, line_end - line_start, slot->elab_src + line_start);
+
+        if (ret == LDG_ERR_FULL)
+        {
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: elab full; ir; sigs: %u32/%u32; comb: %u32/%u32; seq ops: %u32/%u32; seq blks: %u32/%u32; insts: %u32/%u32; jacks: %u32/%u32; systasks: %u32/%u32; systask args: %u32/%u32; mem inits: %u32/%u32; qual text: %u32/%u32", slot->ir.sig_cunt, slot->ir.sig_cap, slot->ir.comb_cunt, slot->ir.comb_cap, slot->ir.seq_op_cunt, slot->ir.seq_op_cap, slot->ir.seq_blk_cunt, slot->ir.seq_blk_cap, slot->ir.inst_cunt, (uint32_t)CROSSTALK_HDL_IR_INST_MAX, slot->ir.jack_cunt, (uint32_t)CROSSTALK_HDL_IR_JACK_MAX, slot->ir.systask_cunt, (uint32_t)CROSSTALK_HDL_IR_SYSTASK_MAX, slot->ir.systask_arg_cunt, (uint32_t)CROSSTALK_HDL_IR_SYSTASK_ARG_MAX, slot->ir.mem_init_cunt, slot->ir.mem_init_cap, slot->ir.qual_text_len, slot->ir.qual_text_cap);
+            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga: elab full; elab; syms: %u32/%u32; mods: %u32/%u32; funcs: %u32/%u32; styps: %u32/%u32; sfields: %u32/%u32; defers: %u32/%u32", elab->sym_cunt, (uint32_t)CROSSTALK_HDL_ELAB_SYM_CAP, elab->mod_cunt, (uint32_t)CROSSTALK_HDL_ELAB_MOD_CAP, elab->func_cunt, (uint32_t)CROSSTALK_HDL_ELAB_FUNC_CAP, elab->styp_cunt, (uint32_t)CROSSTALK_HDL_ELAB_STYP_CAP, elab->sfield_cunt, (uint32_t)CROSSTALK_HDL_ELAB_SFIELD_CAP, elab->defer_cunt, (uint32_t)CROSSTALK_HDL_ELAB_DEFER_CAP);
+        }
+
         return ret;
     }
 

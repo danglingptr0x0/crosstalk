@@ -170,7 +170,8 @@ typedef struct crosstalk_hdl_ir_systask_arg
     uint32_t width;
     uint8_t sgn;
     uint8_t str_is;
-    uint8_t pudding[2];
+    uint8_t time_is;
+    uint8_t pudding[1];
 } crosstalk_hdl_ir_systask_arg_t;
 
 typedef struct crosstalk_hdl_ir_seq_blk

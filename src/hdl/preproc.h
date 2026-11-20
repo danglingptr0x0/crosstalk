@@ -55,7 +55,8 @@ typedef struct crosstalk_hdl_preproc_ctx
     uint32_t include_depth;
     const char *err_name;
     uint32_t err_name_len;
-    uint8_t pudding[4];
+    uint8_t translate_off;
+    uint8_t pudding[3];
 } crosstalk_hdl_preproc_ctx_t;
 
 uint32_t crosstalk_hdl_preproc_init(crosstalk_hdl_preproc_ctx_t *ctx, void *pool, crosstalk_hdl_preproc_include_cb_t include_cb, void *include_user);

@@ -1002,7 +1002,7 @@ core_dep_build()
     tar -xzf "$DL_DIR/$name.tar.gz" -C "$src" --strip-components=1 || return 1
 
     printf 'dangem: compiling %s\n' "$name"
-    cmake -S "$src" -B "$bld" -DCMAKE_C_COMPILER="$CC" -DCMAKE_INSTALL_PREFIX="$SYS_PREFIX" -DCMAKE_SHARED_LINKER_FLAGS="$LD_AS_NEEDED" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED" "$@" || return 1
+    cmake -S "$src" -B "$bld" -DCMAKE_C_COMPILER="$CC" -DCMAKE_INSTALL_PREFIX="$SYS_PREFIX" -DCMAKE_PREFIX_PATH="$SYS_PREFIX" -DCMAKE_SHARED_LINKER_FLAGS="$LD_AS_NEEDED" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED" "$@" || return 1
     cmake --build "$bld" -j "$JOB_CUNT" || return 1
 
     printf 'dangem: installing %s into %s\n' "$name" "$SYS_PREFIX"
@@ -1024,7 +1024,7 @@ core_deps_build()
     fi
 
     run_term_leave
-    core_dep_build ldg "$elevate" -DLDG_WITH_GPU=OFF && core_dep_build libresteam "$elevate" && cmake -S "$TREE_DIR" -B "$BUILD_DIR" -DCMAKE_C_COMPILER="$CC" -DCROSSTALK_LIBRESTEAM_PREFIX="$SYS_PREFIX" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED"
+    core_dep_build ldg "$elevate" -DLDG_WITH_GPU=OFF && core_dep_build libresteam "$elevate" && cmake -S "$TREE_DIR" -B "$BUILD_DIR" -DCMAKE_C_COMPILER="$CC" -DCROSSTALK_LIBRESTEAM_PREFIX="$SYS_PREFIX" -DCMAKE_PREFIX_PATH="$SYS_PREFIX" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED"
     ret=$?
     run_term_enter
 

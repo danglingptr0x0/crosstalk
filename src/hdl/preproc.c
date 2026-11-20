@@ -9,6 +9,15 @@
 #include "hdl/lex.h"
 #include "hdl/preproc.h"
 
+#define CROSSTALK_HDL_PREPROC_PRAGMA_NONE 0
+#define CROSSTALK_HDL_PREPROC_PRAGMA_OFF 1
+#define CROSSTALK_HDL_PREPROC_PRAGMA_ON 2
+#define CROSSTALK_HDL_PREPROC_PRAGMA_SYNTH "synthesis"
+#define CROSSTALK_HDL_PREPROC_PRAGMA_GENERIC "pragma"
+#define CROSSTALK_HDL_PREPROC_PRAGMA_OFF_WORD "translate_off"
+#define CROSSTALK_HDL_PREPROC_PRAGMA_ON_WORD "translate_on"
+#define CROSSTALK_HDL_PREPROC_COMMENT_MARK_SIZE 2
+
 static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, const char *src, uint32_t len);
 
 static uint8_t crosstalk_hdl_preproc_ident_start_is(char ch)
@@ -29,9 +38,42 @@ static uint8_t crosstalk_hdl_preproc_ident_char_is(char ch)
     return LDG_TRUTH_FALSE;
 }
 
+static uint8_t crosstalk_hdl_preproc_text_has(const char *text, uint32_t len, const char *word)
+{
+    uint32_t word_len = (uint32_t)strlen(word);
+    uint32_t at = 0;
+
+    if (word_len == 0 || word_len > len) { return LDG_TRUTH_FALSE; }
+
+    for (at = 0; at + word_len <= len; at++) { if (memcmp(text + at, word, word_len) == 0) { return LDG_TRUTH_TRUE; } }
+
+    return LDG_TRUTH_FALSE;
+}
+
+static uint32_t crosstalk_hdl_preproc_pragma_get(const char *text, uint32_t len)
+{
+    if (crosstalk_hdl_preproc_text_has(text, len, CROSSTALK_HDL_PREPROC_PRAGMA_SYNTH) != LDG_TRUTH_TRUE && crosstalk_hdl_preproc_text_has(text, len, CROSSTALK_HDL_PREPROC_PRAGMA_GENERIC) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_PREPROC_PRAGMA_NONE; }
+
+    if (crosstalk_hdl_preproc_text_has(text, len, CROSSTALK_HDL_PREPROC_PRAGMA_OFF_WORD) == LDG_TRUTH_TRUE) { return CROSSTALK_HDL_PREPROC_PRAGMA_OFF; }
+
+    if (crosstalk_hdl_preproc_text_has(text, len, CROSSTALK_HDL_PREPROC_PRAGMA_ON_WORD) == LDG_TRUTH_TRUE) { return CROSSTALK_HDL_PREPROC_PRAGMA_ON; }
+
+    return CROSSTALK_HDL_PREPROC_PRAGMA_NONE;
+}
+
+static void crosstalk_hdl_preproc_pragma_apply(crosstalk_hdl_preproc_ctx_t *ctx, const char *text, uint32_t len)
+{
+    uint32_t pragma = crosstalk_hdl_preproc_pragma_get(text, len);
+
+    if (pragma == CROSSTALK_HDL_PREPROC_PRAGMA_OFF) { ctx->translate_off = LDG_TRUTH_TRUE; }
+    else if (pragma == CROSSTALK_HDL_PREPROC_PRAGMA_ON) { ctx->translate_off = LDG_TRUTH_FALSE; }
+}
+
 static uint8_t crosstalk_hdl_preproc_active_is(const crosstalk_hdl_preproc_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_TRUTH_FALSE; }
+
+    if (ctx->translate_off == LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
 
     if (ctx->cond_depth == 0) { return LDG_TRUTH_TRUE; }
 
@@ -772,22 +814,27 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
 
         if (ch == '/' && pos + 1 < len && src[pos + 1] == '/')
         {
+            uint32_t start = pos;
+
             while (pos < len && src[pos] != '\n') { pos++; }
+
+            crosstalk_hdl_preproc_pragma_apply(ctx, src + start, pos - start);
 
             continue;
         }
 
         if (ch == '/' && pos + 1 < len && src[pos + 1] == '*')
         {
+            uint32_t start = pos;
             uint8_t term_is = LDG_TRUTH_FALSE;
 
-            pos = pos + 0x2;
+            pos = pos + CROSSTALK_HDL_PREPROC_COMMENT_MARK_SIZE;
 
             while (pos < len)
             {
                 if (src[pos] == '*' && pos + 1 < len && src[pos + 1] == '/')
                 {
-                    pos = pos + 0x2;
+                    pos = pos + CROSSTALK_HDL_PREPROC_COMMENT_MARK_SIZE;
                     term_is = LDG_TRUTH_TRUE;
                     break;
                 }
@@ -802,6 +849,8 @@ static uint32_t crosstalk_hdl_preproc_scan(crosstalk_hdl_preproc_ctx_t *ctx, con
             }
 
             if (term_is != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_COMMENT_UNTERM; }
+
+            crosstalk_hdl_preproc_pragma_apply(ctx, src + start, pos - start);
 
             continue;
         }
@@ -957,6 +1006,7 @@ uint32_t crosstalk_hdl_preproc_run(crosstalk_hdl_preproc_ctx_t *ctx, const char 
     ctx->out = (char *)raw;
     ctx->out_len = 0;
     ctx->out_cap = (uint32_t)cap - LDG_STR_TERM_SIZE;
+    ctx->translate_off = LDG_TRUTH_FALSE;
 
     ret = crosstalk_hdl_preproc_scan(ctx, src, len);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
