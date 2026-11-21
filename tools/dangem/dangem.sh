@@ -70,7 +70,7 @@ TONE_SEQ=(
     "$ESC[0;38;2;234;240;255;${BG}m"
     "$ESC[0;38;2;143;176;255;${BG}m"
     "$ESC[0;38;2;255;255;255;48;2;61;108;255m"
-    "$ESC[0;38;2;191;255;0;${BG}m"
+    "$ESC[0;38;2;117;186;142;${BG}m"
     "$ESC[0;38;2;61;108;255;${BG}m"
     "$ESC[0;38;2;200;50;50;${BG}m"
 )
@@ -313,7 +313,7 @@ build_link_wr()
     if [[ -n "${KEYV[tgt]:-}" ]]; then build_rsp_arg "--target=" "${KEYV[tgt]}"; fi
 
     build_rsp_arg "" "-fuse-ld=lld"
-    build_rsp_arg "" '-Wl,-rpath,$ORIGIN'
+    build_rsp_arg "" "-Wl,-rpath,\$ORIGIN:$SYS_LIB"
     build_rsp_arg "" "$LD_AS_NEEDED"
     build_rsp_set ldflagset
     build_rsp_arg "" "-o"
@@ -1002,7 +1002,7 @@ core_dep_build()
     tar -xzf "$DL_DIR/$name.tar.gz" -C "$src" --strip-components=1 || return 1
 
     printf 'dangem: compiling %s\n' "$name"
-    cmake -S "$src" -B "$bld" -DCMAKE_C_COMPILER="$CC" -DCMAKE_INSTALL_PREFIX="$SYS_PREFIX" -DCMAKE_PREFIX_PATH="$SYS_PREFIX" -DCMAKE_SHARED_LINKER_FLAGS="$LD_AS_NEEDED" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED" "$@" || return 1
+    cmake -S "$src" -B "$bld" -DCMAKE_C_COMPILER="$CC" -DCMAKE_INSTALL_PREFIX="$SYS_PREFIX" -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_PREFIX_PATH="$SYS_PREFIX" -DCMAKE_SHARED_LINKER_FLAGS="$LD_AS_NEEDED" -DCMAKE_EXE_LINKER_FLAGS="$LD_AS_NEEDED" "$@" || return 1
     cmake --build "$bld" -j "$JOB_CUNT" || return 1
 
     printf 'dangem: installing %s into %s\n' "$name" "$SYS_PREFIX"
