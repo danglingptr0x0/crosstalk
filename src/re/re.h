@@ -8,7 +8,7 @@
 #include "re/diff.h"
 #include "re/img.h"
 
-#define CROSSTALK_RE_DB_SIBLING_EXT ".xts"
+#define CROSSTALK_RE_DB_SIBLING_EXT ".aww"
 
 typedef struct crosstalk_re_ctx
 {

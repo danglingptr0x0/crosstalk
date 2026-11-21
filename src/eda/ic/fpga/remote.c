@@ -3,9 +3,11 @@
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
+#include <dangling/logging/logging.h>
 #include <dangling/mem/alloc.h>
 #include <dangling/str/str.h>
 
+#include "core/log.h"
 #include "eda/ic/fpga/remote.h"
 
 #define REMOTE_STEP 1U
@@ -362,26 +364,15 @@ uint32_t crosstalk_eda_ic_fpga_remote_get(crosstalk_eda_ic_fpga_remote_t *remote
 
 uint32_t crosstalk_eda_ic_fpga_remote_wr(crosstalk_eda_ic_fpga_remote_t *remote, uint32_t func, uint32_t slot, const void *args, uint32_t args_len)
 {
-    crosstalk_eda_ic_fpga_remote_wr_t *wr = 0x0;
-
     if (LDG_UNLIKELY(remote == 0x0 || (args_len > 0 && args == 0x0))) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (LDG_UNLIKELY(args_len > CROSSTALK_EDA_IC_FPGA_REMOTE_WR_ARGS_CAP)) { return LDG_ERR_OVERFLOW; }
 
     if (remote->on != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    if (remote->wr_cunt >= CROSSTALK_EDA_IC_FPGA_REMOTE_WR_CAP) { return LDG_ERR_FULL; }
+    if (ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: viewer write denied; func: %u32; slot: %u32", func, slot) != LDG_ERR_AOK) { return LDG_ERR_IO_WR; }
 
-    wr = &remote->wr[(remote->wr_hd + remote->wr_cunt) % CROSSTALK_EDA_IC_FPGA_REMOTE_WR_CAP];
-    wr->func = func;
-    wr->slot = slot;
-    wr->args_len = args_len;
-
-    if (args_len > 0) { memcpy(wr->args, args, args_len); }
-
-    remote->wr_cunt++;
-
-    return LDG_ERR_AOK;
+    return LDG_ERR_DENIED;
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_out_next(crosstalk_eda_ic_fpga_remote_t *remote, uint8_t *out, uint32_t cap, uint32_t *out_len, uint32_t *out_kind)

@@ -391,7 +391,7 @@
 #define CROSSTALK_CORE_SCRIPT_RUN_LEN 3
 #define CROSSTALK_CORE_SCRIPT_QUOTE_BYTES 2
 #define CROSSTALK_CORE_SCRIPT_QUOTE_NONE 0
-#define CROSSTALK_CORE_SCRIPT_RUN_HELP "run <path.xts>; execute a script file"
+#define CROSSTALK_CORE_SCRIPT_RUN_HELP "run <path.aww>; execute a script file"
 #define CROSSTALK_CORE_SCRIPT_RUN_FAIL_FMT "run failed; err: %u32; path: %.100s"
 #define CROSSTALK_CORE_SCRIPT_HELP_NAME "help"
 #define CROSSTALK_CORE_SCRIPT_HELP_LEN 4
@@ -717,7 +717,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_DELAY_USAGE_TEXT "delay <n> [ns|us|ms|s]; a bare number is ns"
 #define CROSSTALK_CORE_DELAY_DONE_FMT "delay: %u64 ns"
 #define CROSSTALK_CORE_EVENT_DEPTH_MAX 1
-#define CROSSTALK_CORE_EVENT_USAGE_TEXT "on <load|save|exit|fault> <path.xts|off>; bare on lists"
+#define CROSSTALK_CORE_EVENT_USAGE_TEXT "on <load|save|exit|fault> <path.aww|off>; bare on lists"
 #define CROSSTALK_CORE_EVENT_NONE_TEXT "no event scripts bound"
 #define CROSSTALK_CORE_EVENT_OFF_TEXT "event script released"
 #define CROSSTALK_CORE_EVENT_ON_TEXT "event script bound"
@@ -821,9 +821,9 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_GUIDE_DONE_IND_EXAMPLE 0x494E4558ULL
 #define CROSSTALK_CORE_GUIDE_EXAMPLE_TOP "blinky"
 #define CROSSTALK_CORE_GUIDE_EXAMPLE_PORT "leds"
-#define CROSSTALK_CORE_NEWRTL_SCRIPT_REL "newrtlproj.xts"
+#define CROSSTALK_CORE_NEWRTL_SCRIPT_REL "newrtlproj.aww"
 #define CROSSTALK_CORE_DEMO_DIR_REL "demo"
-#define CROSSTALK_CORE_DEMO_SCRIPT_NAME "demo.xts"
+#define CROSSTALK_CORE_DEMO_SCRIPT_NAME "demo.aww"
 #define CROSSTALK_CORE_GUIDE_DEMO_PICK_CUNT 2
 #define CROSSTALK_CORE_GUIDE_PICK_CUNT_NONE 0
 #define CROSSTALK_CORE_GUIDE_PICK_DEMO 1
