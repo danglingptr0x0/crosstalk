@@ -16,7 +16,7 @@ BEGIN
             VALUE "FileDescription", "The DANGLING Computer Superarchitecture Emulator"
             VALUE "FileVersion", "@PROJECT_VERSION@.0"
             VALUE "InternalName", "dangcsaemu"
-            VALUE "LegalCopyright", "Copyright 2026 Ongakken Corporation OU"
+            VALUE "LegalCopyright", "Licensed under AGPL-3.0-only"
             VALUE "OriginalFilename", "dangcsaemu.exe"
             VALUE "ProductName", "The DANGLING Computer Superarchitecture Emulator"
             VALUE "ProductVersion", "@PROJECT_VERSION@.0"

@@ -113,9 +113,9 @@
 #define CROSSTALK_LOBBY_WAVE_B_COL_R 0.95
 #define CROSSTALK_LOBBY_WAVE_B_COL_G 0.55
 #define CROSSTALK_LOBBY_WAVE_B_COL_B 0.20
-#define CROSSTALK_SAVE_ORG_WIN "Ongakken"
+#define CROSSTALK_SAVE_ORG_WIN "danglingptr0x0"
 #define CROSSTALK_SAVE_APP_WIN "Crosstalk"
-#define CROSSTALK_SAVE_ORG_UNIX "ongakken"
+#define CROSSTALK_SAVE_ORG_UNIX "danglingptr0x0"
 #define CROSSTALK_SAVE_APP_UNIX "crosstalk"
 #define CROSSTALK_SAVE_SUBDIR "savefiles"
 #define CROSSTALK_WSHOP_SUBDIR "wshop"

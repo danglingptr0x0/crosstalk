@@ -33,8 +33,8 @@
 
 #define CROSSTALK_MNGR_CONF_EXT ".machine"
 #define CROSSTALK_MNGR_CONF_DIR_REL "machines"
-#define CROSSTALK_MNGR_CONF_ORG_WIN "Ongakken"
-#define CROSSTALK_MNGR_CONF_ORG_UNIX "ongakken"
+#define CROSSTALK_MNGR_CONF_ORG_WIN "danglingptr0x0"
+#define CROSSTALK_MNGR_CONF_ORG_UNIX "danglingptr0x0"
 #define CROSSTALK_MNGR_CONF_APP "emu"
 #define CROSSTALK_MNGR_CONF_SEG_CUNT 3
 
