@@ -484,7 +484,7 @@ static uint32_t chat_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *ren
         ctx->line_seen = row;
         ctx->group_seen = ctx->group;
 
-        if (crosstalk_ui_window_row_show(&ctx->win, row) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "chat scroll failed"); }
+        if (crosstalk_ui_window_row_show(&ctx->win, row) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "chat scroll failed"); }
     }
 
     return ret;

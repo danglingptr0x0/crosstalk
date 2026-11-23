@@ -54,7 +54,7 @@ typedef struct crosstalk_mngr_machine
     char net_path[LDG_IO_PATH_MAX];
     uint64_t ld_off[CROSSTALK_EMU_LD_MAX];
     uint64_t ram_bytes;
-    uint64_t f_op_hz;
+    uint64_t f_op;
     double gamma;
     uint32_t ld_cunt;
     uint32_t win_w;

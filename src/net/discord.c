@@ -215,9 +215,9 @@ static void crosstalk_net_discord_scopes_ld(crosstalk_net_discord_ctx_t *ctx, Di
     if (ldg_str_fmt(merged, (uint64_t)sizeof(merged), &fmt_len, "%.247s%.7s", ctx->scopes, CROSSTALK_NET_DISCORD_GUILD_SCOPE) != LDG_ERR_AOK) { *(merged) = LDG_STR_TERM; }
 
     ret = ldg_str_rbrcpy(ctx->scopes, merged, (uint64_t)sizeof(ctx->scopes));
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: scope merge failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: scope merge failed; err: %u32", ret); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: authorize scopes: %.255s", ctx->scopes);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: authorize scopes: %.255s", ctx->scopes);
     crosstalk_net_discord_str_make(ctx->scopes, out);
 }
 
@@ -237,7 +237,7 @@ static void crosstalk_net_discord_err_capture(crosstalk_net_discord_ctx_t *ctx, 
     {
         if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "%.80s", what) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.159s", ctx->err_text);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.159s", ctx->err_text);
         return;
     }
 
@@ -245,7 +245,7 @@ static void crosstalk_net_discord_err_capture(crosstalk_net_discord_ctx_t *ctx, 
     if (ldg_str_fmt(ctx->err_text, (uint64_t)sizeof(ctx->err_text), &fmt_len, "%.60s: %.*s", what, (int32_t)text.size, (const char *)text.ptr) != LDG_ERR_AOK) { *(ctx->err_text) = LDG_STR_TERM; }
 
     Discord_Free(text.ptr);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.159s; http: %i32; code: %i32", ctx->err_text, (int32_t)Discord_ClientResult_Status(res), (int32_t)Discord_ClientResult_ErrorCode(res));
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.159s; http: %i32; code: %i32", ctx->err_text, (int32_t)Discord_ClientResult_Status(res), (int32_t)Discord_ClientResult_ErrorCode(res));
 }
 
 static void crosstalk_net_discord_user_refresh(crosstalk_net_discord_ctx_t *ctx)
@@ -273,11 +273,11 @@ static void crosstalk_net_discord_log_cb(Discord_String msg, int32_t severity, v
 {
     if (!user_data) { return; }
 
-    if (severity >= (int32_t)Discord_LoggingSeverity_Error) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "discord: %.*s", (uint32_t)msg.size, (const char *)msg.ptr); return; }
+    if (severity >= (int32_t)Discord_LoggingSeverity_Error) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "discord: %.*s", (uint32_t)msg.size, (const char *)msg.ptr); return; }
 
-    if (severity == (int32_t)Discord_LoggingSeverity_Warning) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.*s", (uint32_t)msg.size, (const char *)msg.ptr); return; }
+    if (severity == (int32_t)Discord_LoggingSeverity_Warning) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: %.*s", (uint32_t)msg.size, (const char *)msg.ptr); return; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: %.*s", (uint32_t)msg.size, (const char *)msg.ptr);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: %.*s", (uint32_t)msg.size, (const char *)msg.ptr);
 }
 
 static void crosstalk_net_discord_status_cb(int32_t status, int32_t err, int32_t err_detail, void *user_data)
@@ -288,7 +288,7 @@ static void crosstalk_net_discord_status_cb(int32_t status, int32_t err, int32_t
 
     if (!ctx) { return; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: client status; status: %i32; err: %i32; detail: %i32", status, err, err_detail);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: client status; status: %i32; err: %i32; detail: %i32", status, err, err_detail);
 
     if (status == (int32_t)Discord_Client_Status_Ready)
     {
@@ -297,7 +297,7 @@ static void crosstalk_net_discord_status_cb(int32_t status, int32_t err, int32_t
         memset(&ctx->presence_sent, CROSSTALK_NET_DISCORD_FILL, sizeof(ctx->presence_sent));
         ctx->presence_next = CROSSTALK_NET_DISCORD_TIMER_DUE;
         crosstalk_net_discord_user_refresh(ctx);
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: ready; user: %.63s; id: %u64", ctx->user_name, ctx->user_id);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: ready; user: %.63s; id: %u64", ctx->user_name, ctx->user_id);
         return;
     }
 
@@ -343,7 +343,7 @@ static void crosstalk_net_discord_activity_join_cb(Discord_String join_secret, v
 
     crosstalk_net_discord_str_copy(&join_secret, ctx->join_secret_in, (uint32_t)sizeof(ctx->join_secret_in));
     ctx->join_pending = LDG_TRUTH_TRUE;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: activity join recv; secret: %.63s", ctx->join_secret_in);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: activity join recv; secret: %.63s", ctx->join_secret_in);
 }
 
 static void crosstalk_net_discord_tok_update_cb(Discord_ClientResult *res, void *user_data)
@@ -380,14 +380,14 @@ static void crosstalk_net_discord_tok_cb(Discord_ClientResult *res, Discord_Stri
             ret = ldg_sys_secret_set(CROSSTALK_NET_DISCORD_SECRET_APP, CROSSTALK_NET_DISCORD_SECRET_KEY, "");
 
             ldg_mem_secure_zero(ctx->refresh_tok, sizeof(ctx->refresh_tok));
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: refresh token rejected; stored token dropped; err: %u32", ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: refresh token rejected; stored token dropped; err: %u32", ret);
         }
 
         crosstalk_net_discord_err_capture(ctx, res, "token exchange failed");
         return;
     }
 
-    if (expires_in <= 0 || (uint64_t)scopes.size == 0) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: token carries no scopes or lifetime; expires_in: %i32", expires_in); }
+    if (expires_in <= 0 || (uint64_t)scopes.size == 0) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: token carries no scopes or lifetime; expires_in: %i32", expires_in); }
 
     crosstalk_net_discord_str_copy(&refresh_tok, ctx->refresh_tok, (uint32_t)sizeof(ctx->refresh_tok));
 
@@ -395,7 +395,7 @@ static void crosstalk_net_discord_tok_cb(Discord_ClientResult *res, Discord_Stri
     {
         ret = ldg_sys_secret_set(CROSSTALK_NET_DISCORD_SECRET_APP, CROSSTALK_NET_DISCORD_SECRET_KEY, ctx->refresh_tok);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: refresh token stored; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: refresh token stored; err: %u32", ret);
     }
 
     if (ctx->refresh_tok[0] != LDG_STR_TERM) { ctx->auth = CROSSTALK_NET_DISCORD_AUTH_LINKED; }
@@ -431,7 +431,7 @@ static void crosstalk_net_discord_authorize_cb(Discord_ClientResult *res, Discor
 
     if (!ctx) { return; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: authorize callback; redirect: %.*s", (uint32_t)redirect_uri.size, (const char *)redirect_uri.ptr);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: authorize callback; redirect: %.*s", (uint32_t)redirect_uri.size, (const char *)redirect_uri.ptr);
     crosstalk_net_discord_auth_args_drop(ctx);
 
     if (!CROSSTALK_NET_DISCORD_SDK_OK(res))
@@ -497,14 +497,14 @@ static void crosstalk_net_discord_guilds_cb(Discord_ClientResult *res, Discord_G
     if (ctx->guild_member == LDG_TRUTH_TRUE) { ctx->guild_next = CROSSTALK_NET_DISCORD_GUILD_INTERVAL; }
     else { ctx->guild_next = CROSSTALK_NET_DISCORD_GUILD_RETRY; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: guild check; guilds: %u64; member: %u32", span_cunt, (uint32_t)ctx->guild_member);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: guild check; guilds: %u64; member: %u32", span_cunt, (uint32_t)ctx->guild_member);
 }
 
 static void crosstalk_net_discord_app_installed_cb(uint8_t installed, void *user_data)
 {
     if (!user_data) { return; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: app installed: %u32", (uint32_t)installed);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: app installed: %u32", (uint32_t)installed);
 }
 
 static void crosstalk_net_discord_invite_name_resolve(crosstalk_net_discord_ctx_t *ctx, uint64_t user_id)
@@ -541,7 +541,7 @@ static void crosstalk_net_discord_invite_created_cb(Discord_ActivityInvite *invi
     ctx->invite_sender_id = Discord_ActivityInvite_SenderId(invite);
     crosstalk_net_discord_invite_name_resolve(ctx, ctx->invite_sender_id);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: invite recv; from: %.63s; id: %u64", ctx->invite_name, ctx->invite_sender_id);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: invite recv; from: %.63s; id: %u64", ctx->invite_name, ctx->invite_sender_id);
 }
 
 static void crosstalk_net_discord_invite_accept_cb(Discord_ClientResult *res, Discord_String join_secret, void *user_data)
@@ -558,7 +558,7 @@ static void crosstalk_net_discord_invite_accept_cb(Discord_ClientResult *res, Di
 
     crosstalk_net_discord_str_copy(&join_secret, ctx->join_secret_in, (uint32_t)sizeof(ctx->join_secret_in));
     ctx->join_pending = LDG_TRUTH_TRUE;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: invite accepted; secret: %.63s", ctx->join_secret_in);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: invite accepted; secret: %.63s", ctx->join_secret_in);
 }
 
 static void crosstalk_net_discord_invite_sent_cb(Discord_ClientResult *res, void *user_data)
@@ -573,7 +573,7 @@ static void crosstalk_net_discord_invite_sent_cb(Discord_ClientResult *res, void
         return;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: invite sent");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: invite sent");
 }
 
 static void crosstalk_net_discord_msg_handle_ingest(crosstalk_net_discord_ctx_t *ctx, Discord_MessageHandle *handle, uint8_t hist)
@@ -625,7 +625,7 @@ static void crosstalk_net_discord_msg_handle_ingest(crosstalk_net_discord_ctx_t 
     {
         ctx->msg[slot].peer_id = author_id;
         ret = ldg_str_rbrcpy(ctx->msg[slot].peer_name, ctx->msg[slot].name, (uint64_t)sizeof(ctx->msg[slot].peer_name));
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord peer name copy failed"); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord peer name copy failed"); }
 
         return;
     }
@@ -674,7 +674,7 @@ static void crosstalk_net_discord_history_cb(Discord_ClientResult *res, Discord_
             crosstalk_net_discord_msg_handle_ingest(ctx, &msgs.ptr[pick], LDG_TRUTH_TRUE);
         }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: history filled; cunt: %u64; newest_first: %u32; ring: %u32", span_cunt, (uint32_t)newest_first, ctx->msg_cunt);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: history filled; cunt: %u64; newest_first: %u32; ring: %u32", span_cunt, (uint32_t)newest_first, ctx->msg_cunt);
     }
 }
 
@@ -690,11 +690,11 @@ static void crosstalk_net_discord_msg_created_cb(uint64_t msg_id, void *user_dat
 
     if (!ctx) { return; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: msg cb fired; msg: %u64; self: %u64; lobby_live: %u32; ring: %u32", msg_id, ctx->user_id, (uint32_t)ctx->lobby_live, ctx->msg_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: msg cb fired; msg: %u64; self: %u64; lobby_live: %u32; ring: %u32", msg_id, ctx->user_id, (uint32_t)ctx->lobby_live, ctx->msg_cunt);
 
     if (CROSSTALK_NET_DISCORD_SDK_BOOL(Discord_Client_GetMessageHandle(crosstalk_net_discord_client_get(ctx), msg_id, &handle)) == LDG_TRUTH_FALSE)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: msg cb dropped; reason: no handle; msg: %u64", msg_id);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: msg cb dropped; reason: no handle; msg: %u64", msg_id);
         return;
     }
 
@@ -706,22 +706,22 @@ static void crosstalk_net_discord_msg_created_cb(uint64_t msg_id, void *user_dat
     else { dm = LDG_TRUTH_TRUE; }
 
     author_id = Discord_MessageHandle_AuthorId(&handle);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: msg cb classified; msg: %u64; author: %u64; dm: %u32; lobby: %u64", msg_id, author_id, (uint32_t)dm, msg_lobby_id);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: msg cb classified; msg: %u64; author: %u64; dm: %u32; lobby: %u64", msg_id, author_id, (uint32_t)dm, msg_lobby_id);
 
     if (author_id == ctx->user_id)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: msg cb dropped; reason: self echo; msg: %u64", msg_id);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: msg cb dropped; reason: self echo; msg: %u64", msg_id);
         Discord_MessageHandle_Drop(&handle);
         return;
     }
 
-    if (ctx->msg_cunt == CROSSTALK_NET_DISCORD_MSG_RING) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: msg ring full; overwriting oldest; cap: %u32", (uint32_t)CROSSTALK_NET_DISCORD_MSG_RING); }
+    if (ctx->msg_cunt == CROSSTALK_NET_DISCORD_MSG_RING) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: msg ring full; overwriting oldest; cap: %u32", (uint32_t)CROSSTALK_NET_DISCORD_MSG_RING); }
 
     crosstalk_net_discord_msg_handle_ingest(ctx, &handle, LDG_TRUTH_FALSE);
     slot = (ctx->msg_hd + ctx->msg_cunt + CROSSTALK_NET_DISCORD_MSG_RING - CROSSTALK_NET_DISCORD_RING_STEP) % CROSSTALK_NET_DISCORD_MSG_RING;
 
     Discord_MessageHandle_Drop(&handle);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: chat recv; from: %.63s; author: %u64; dm: %u32; slot: %u32; ring: %u32", ctx->msg[slot].name, author_id, (uint32_t)dm, slot, ctx->msg_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: chat recv; from: %.63s; author: %u64; dm: %u32; slot: %u32; ring: %u32", ctx->msg[slot].name, author_id, (uint32_t)dm, slot, ctx->msg_cunt);
 }
 
 static void crosstalk_net_discord_msg_sent_cb(Discord_ClientResult *res, uint64_t msg_id, void *user_data)
@@ -733,11 +733,11 @@ static void crosstalk_net_discord_msg_sent_cb(Discord_ClientResult *res, uint64_
     if (!CROSSTALK_NET_DISCORD_SDK_OK(res))
     {
         crosstalk_net_discord_err_capture(ctx, res, "chat send failed");
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: chat send failed; msg: %u64; detail: %.159s", msg_id, ctx->err_text);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: chat send failed; msg: %u64; detail: %.159s", msg_id, ctx->err_text);
         return;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: chat sent; msg: %u64", msg_id);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: chat sent; msg: %u64", msg_id);
 }
 
 static void crosstalk_net_discord_presence_cb(Discord_ClientResult *res, void *user_data)
@@ -752,7 +752,7 @@ static void crosstalk_net_discord_presence_cb(Discord_ClientResult *res, void *u
         return;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: presence accepted; kind: %u32", ctx->presence_sent.kind);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "discord: presence accepted; kind: %u32", ctx->presence_sent.kind);
 }
 
 static void crosstalk_net_discord_dev_span_copy(Discord_AudioDeviceSpan dev_span, crosstalk_net_discord_dev_t *out, uint32_t cap, uint32_t *out_cunt)
@@ -942,7 +942,7 @@ static void crosstalk_net_discord_voice_lobby_cb(Discord_ClientResult *res, uint
     ctx->call_next = CROSSTALK_NET_DISCORD_TIMER_DUE;
     ctx->lobby_live = LDG_TRUTH_TRUE;
     ctx->call_lobby_id = lobby_id;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: lobby joined; lobby: %u64; voice: %u32", lobby_id, (uint32_t)ctx->voice_on);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: lobby joined; lobby: %u64; voice: %u32", lobby_id, (uint32_t)ctx->voice_on);
     Discord_Client_GetLobbyMessagesWithLimit(crosstalk_net_discord_client_get(ctx), lobby_id, (int32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT, (Discord_Client_GetLobbyMessagesCallback)crosstalk_net_discord_history_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     if (ctx->voice_on == LDG_TRUTH_FALSE)
@@ -998,7 +998,7 @@ static void crosstalk_net_discord_dm_summary_cb(Discord_ClientResult *res, Disco
         cunt++;
     }
 
-    if (cunt != ctx->dm_cunt) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: dm conversations; cunt: %u32", cunt); }
+    if (cunt != ctx->dm_cunt) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: dm conversations; cunt: %u32", cunt); }
 
     ctx->dm_cunt = cunt;
 }
@@ -1221,7 +1221,7 @@ static void crosstalk_net_discord_contacts_refresh(crosstalk_net_discord_ctx_t *
 
     Discord_Client_GetUserMessageSummaries(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_dm_summary_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
-    if (prev != ctx->contact_cunt) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: contacts refreshed; cunt: %u32; dm: %u32", ctx->contact_cunt, ctx->dm_cunt); }
+    if (prev != ctx->contact_cunt) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: contacts refreshed; cunt: %u32; dm: %u32", ctx->contact_cunt, ctx->dm_cunt); }
 }
 
 static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ctx)
@@ -1359,7 +1359,7 @@ static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ct
         Discord_Activity_AddButton(&activity, &button);
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: presence push; kind: %u32; details: %.63s; state: %.63s; activity: %.95s; party: %u32/%u32; party id: %.63s; joinable: %u32; join secret: %.63s", ctx->presence.kind, ctx->presence.details, ctx->presence.state, ctx->presence.activity, ctx->presence.party_cunt, ctx->presence.party_cunt_max, ctx->presence.party_id, (uint32_t)ctx->presence.joinable, secret_on == LDG_TRUTH_TRUE ? ctx->presence.join_secret : "-");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: presence push; kind: %u32; details: %.63s; state: %.63s; activity: %.95s; party: %u32/%u32; party id: %.63s; joinable: %u32; join secret: %.63s", ctx->presence.kind, ctx->presence.details, ctx->presence.state, ctx->presence.activity, ctx->presence.party_cunt, ctx->presence.party_cunt_max, ctx->presence.party_id, (uint32_t)ctx->presence.joinable, secret_on == LDG_TRUTH_TRUE ? ctx->presence.join_secret : "-");
 
     Discord_Client_UpdateRichPresence(crosstalk_net_discord_client_get(ctx), &activity, crosstalk_net_discord_presence_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
@@ -1438,7 +1438,7 @@ uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t a
     if (steam_app_id != 0)
     {
         uint8_t launch_ok = CROSSTALK_NET_DISCORD_SDK_BOOL(Discord_Client_RegisterLaunchSteamApplication(crosstalk_net_discord_client_get(ctx), app_id, steam_app_id));
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, launch_ok == LDG_TRUTH_TRUE ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: steam launch registered; steam_app: %u32; ok: %u32", steam_app_id, (uint32_t)launch_ok);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, launch_ok == LDG_TRUTH_TRUE ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: steam launch registered; steam_app: %u32; ok: %u32", steam_app_id, (uint32_t)launch_ok);
     }
 
     Discord_Client_AddLogCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_LogCallback)(uintptr_t)crosstalk_net_discord_log_cb, crosstalk_net_discord_user_data_free_cb, ctx, Discord_LoggingSeverity_Verbose);
@@ -1452,7 +1452,7 @@ uint32_t crosstalk_net_discord_init(crosstalk_net_discord_ctx_t *ctx, uint64_t a
     Discord_Client_SetTokenExpirationCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_tok_expired_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetActivityJoinCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_activity_join_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetMessageCreatedCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_msg_created_cb, crosstalk_net_discord_user_data_free_cb, ctx);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: msg callback registered");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: msg callback registered");
     Discord_Client_SetActivityInviteCreatedCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_invite_created_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetDeviceChangeCallback(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_dev_change_cb, crosstalk_net_discord_user_data_free_cb, ctx);
     Discord_Client_SetNoAudioInputCallback(crosstalk_net_discord_client_get(ctx), (Discord_Client_NoAudioInputCallback)(uintptr_t)crosstalk_net_discord_no_input_cb, crosstalk_net_discord_user_data_free_cb, ctx);
@@ -1524,7 +1524,7 @@ void crosstalk_net_discord_poll(crosstalk_net_discord_ctx_t *ctx, double dt)
             ctx->auth_local_req = LDG_TRUTH_FALSE;
             ctx->auth_fail_req = LDG_TRUTH_TRUE;
             Discord_Client_AbortAuthorize(crosstalk_net_discord_client_get(ctx));
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: local authorize timed out");
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: local authorize timed out");
         }
     }
 
@@ -1552,7 +1552,7 @@ void crosstalk_net_discord_poll(crosstalk_net_discord_ctx_t *ctx, double dt)
     {
         ctx->guild_req = LDG_TRUTH_FALSE;
         ctx->guild_next = CROSSTALK_NET_DISCORD_GUILD_RETRY;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: guild check timed out");
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: guild check timed out");
     }
     else
     {
@@ -1639,7 +1639,7 @@ uint32_t crosstalk_net_discord_auth_link(crosstalk_net_discord_ctx_t *ctx)
 
     crosstalk_net_discord_auth_args_drop(ctx);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: pre-authorize; sdk_status: %i32; authenticated: %u32; app_id: %u64", (int32_t)Discord_Client_GetStatus(crosstalk_net_discord_client_get(ctx)), (uint32_t)CROSSTALK_NET_DISCORD_SDK_BOOL(Discord_Client_IsAuthenticated(crosstalk_net_discord_client_get(ctx))), Discord_Client_GetApplicationId(crosstalk_net_discord_client_get(ctx)));
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: pre-authorize; sdk_status: %i32; authenticated: %u32; app_id: %u64", (int32_t)Discord_Client_GetStatus(crosstalk_net_discord_client_get(ctx)), (uint32_t)CROSSTALK_NET_DISCORD_SDK_BOOL(Discord_Client_IsAuthenticated(crosstalk_net_discord_client_get(ctx))), Discord_Client_GetApplicationId(crosstalk_net_discord_client_get(ctx)));
     Discord_Client_IsDiscordAppInstalled(crosstalk_net_discord_client_get(ctx), (Discord_Client_IsDiscordAppInstalledCallback)(uintptr_t)crosstalk_net_discord_app_installed_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     Discord_AuthorizationCodeVerifier_Challenge(crosstalk_net_discord_verifier_get(ctx), crosstalk_net_discord_auth_challenge_get(ctx));
@@ -1666,7 +1666,7 @@ uint32_t crosstalk_net_discord_auth_link(crosstalk_net_discord_ctx_t *ctx)
 
         if (ldg_str_fmt(ctx->auth_url, (uint64_t)sizeof(ctx->auth_url), &fmt_len, "%.63s?client_id=%u64&response_type=code&redirect_uri=%.255s&scope=%.255s&code_challenge=%.255s&code_challenge_method=S256", CROSSTALK_NET_DISCORD_AUTH_ENDPOINT, ctx->app_id, redirect_enc, scopes_enc, challenge_str) != LDG_ERR_AOK) { *(ctx->auth_url) = LDG_STR_TERM; }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: auth url built; len: %u64", (uint64_t)strlen(ctx->auth_url));
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: auth url built; len: %u64", (uint64_t)strlen(ctx->auth_url));
     }
 
     return LDG_ERR_AOK;
@@ -1691,7 +1691,7 @@ uint32_t crosstalk_net_discord_auth_restore(crosstalk_net_discord_ctx_t *ctx)
     }
 
     ctx->auth = CROSSTALK_NET_DISCORD_AUTH_PENDING;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: restoring session from stored refresh token");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: restoring session from stored refresh token");
 
     crosstalk_net_discord_str_make(ctx->refresh_tok, &refresh);
     Discord_Client_RefreshToken(crosstalk_net_discord_client_get(ctx), ctx->app_id, refresh, (Discord_Client_TokenExchangeCallback)(uintptr_t)crosstalk_net_discord_tok_cb, crosstalk_net_discord_user_data_free_cb, ctx);
@@ -1729,7 +1729,7 @@ uint32_t crosstalk_net_discord_auth_link_local(crosstalk_net_discord_ctx_t *ctx)
     ctx->auth_local_req = LDG_TRUTH_TRUE;
     ctx->auth_deadline = (double)ldg_time_epoch_ms_get() + (CROSSTALK_NET_DISCORD_AUTH_LOCAL_TIMEOUT * (double)LDG_MS_PER_SEC);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: local authorize try; timeout: %.1f", (double)CROSSTALK_NET_DISCORD_AUTH_LOCAL_TIMEOUT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: local authorize try; timeout: %.1f", (double)CROSSTALK_NET_DISCORD_AUTH_LOCAL_TIMEOUT);
     Discord_Client_Authorize(crosstalk_net_discord_client_get(ctx), crosstalk_net_discord_auth_args_get(ctx), crosstalk_net_discord_authorize_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     return LDG_ERR_AOK;
@@ -1746,7 +1746,7 @@ uint32_t crosstalk_net_discord_auth_unlink(crosstalk_net_discord_ctx_t *ctx)
     if (LDG_UNLIKELY(ctx->auth != CROSSTALK_NET_DISCORD_AUTH_LINKED)) { return LDG_ERR_INVALID; }
 
     ret = ldg_sys_secret_set(CROSSTALK_NET_DISCORD_SECRET_APP, CROSSTALK_NET_DISCORD_SECRET_KEY, "");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: stored token cleared; err: %u32", ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: stored token cleared; err: %u32", ret);
 
     ldg_mem_secure_zero(ctx->refresh_tok, sizeof(ctx->refresh_tok));
 
@@ -2144,7 +2144,7 @@ uint32_t crosstalk_net_discord_join_secret_get(crosstalk_net_discord_ctx_t *ctx,
         return LDG_ERR_AOK;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: join secret rejected; secret: %.63s", ctx->join_secret_in);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "discord: join secret rejected; secret: %.63s", ctx->join_secret_in);
 
     return LDG_ERR_INVALID;
 }
@@ -2219,7 +2219,7 @@ uint32_t crosstalk_net_discord_dm_history_req(crosstalk_net_discord_ctx_t *ctx, 
 
     if (LDG_UNLIKELY(user_id == 0)) { return LDG_ERR_EMPTY; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: dm history req; user: %u64; limit: %u32", user_id, (uint32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: dm history req; user: %u64; limit: %u32", user_id, (uint32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT);
     Discord_Client_GetUserMessagesWithLimit(crosstalk_net_discord_client_get(ctx), user_id, (int32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT, (Discord_Client_UserMessagesWithLimitCallback)crosstalk_net_discord_history_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     return LDG_ERR_AOK;
@@ -2235,7 +2235,7 @@ uint32_t crosstalk_net_discord_lobby_history_req(crosstalk_net_discord_ctx_t *ct
 
     if (LDG_UNLIKELY(ctx->lobby_live == LDG_TRUTH_FALSE)) { return LDG_ERR_EMPTY; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: lobby history req; lobby: %u64; limit: %u32", ctx->call_lobby_id, (uint32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: lobby history req; lobby: %u64; limit: %u32", ctx->call_lobby_id, (uint32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT);
     Discord_Client_GetLobbyMessagesWithLimit(crosstalk_net_discord_client_get(ctx), ctx->call_lobby_id, (int32_t)CROSSTALK_NET_DISCORD_HISTORY_LIMIT, (Discord_Client_GetLobbyMessagesCallback)crosstalk_net_discord_history_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     return LDG_ERR_AOK;
@@ -2324,7 +2324,7 @@ uint32_t crosstalk_net_discord_dm_send(crosstalk_net_discord_ctx_t *ctx, uint64_
 
     if (LDG_UNLIKELY(user_id == 0)) { return LDG_ERR_EMPTY; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: dm send req; to: %u64; len: %u64", user_id, (uint64_t)strlen(text));
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: dm send req; to: %u64; len: %u64", user_id, (uint64_t)strlen(text));
 
     crosstalk_net_discord_str_make(text, &content);
     Discord_Client_SendUserMessage(crosstalk_net_discord_client_get(ctx), user_id, content, crosstalk_net_discord_msg_sent_cb, crosstalk_net_discord_user_data_free_cb, ctx);
@@ -2343,7 +2343,7 @@ uint32_t crosstalk_net_discord_invite_send(crosstalk_net_discord_ctx_t *ctx, uin
     else if (user_id == 0) { ret = LDG_ERR_EMPTY; }
     else if (ctx->presence.joinable != LDG_TRUTH_TRUE) { ret = LDG_ERR_INVALID; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: invite send; user: %u64; err: %u32; client live: %u32; state: %u32; joinable: %u32; party: %u32/%u32; party id: %.63s; text: %.63s", user_id, ret, (uint32_t)ctx->client_live, (uint32_t)ctx->state, (uint32_t)ctx->presence.joinable, ctx->presence.party_cunt, ctx->presence.party_cunt_max, ctx->presence.party_id, text);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "discord: invite send; user: %u64; err: %u32; client live: %u32; state: %u32; joinable: %u32; party: %u32/%u32; party id: %.63s; text: %.63s", user_id, ret, (uint32_t)ctx->client_live, (uint32_t)ctx->state, (uint32_t)ctx->presence.joinable, ctx->presence.party_cunt, ctx->presence.party_cunt_max, ctx->presence.party_id, text);
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -2365,7 +2365,7 @@ static void crosstalk_net_discord_dnd_set_cb(Discord_ClientResult *res, void *us
         return;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: status set accepted");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: status set accepted");
 }
 
 uint32_t crosstalk_net_discord_dnd_set(crosstalk_net_discord_ctx_t *ctx, uint8_t on)
@@ -2374,7 +2374,7 @@ uint32_t crosstalk_net_discord_dnd_set(crosstalk_net_discord_ctx_t *ctx, uint8_t
 
     if (ctx->client_live == LDG_TRUTH_FALSE || ctx->state != CROSSTALK_NET_DISCORD_STATE_RDY) { return LDG_ERR_NOT_INIT; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: status set; dnd: %u32", (uint32_t)on);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "discord: status set; dnd: %u32", (uint32_t)on);
     Discord_Client_SetOnlineStatus(crosstalk_net_discord_client_get(ctx), on == LDG_TRUTH_TRUE ? Discord_StatusType_Dnd : Discord_StatusType_Online, crosstalk_net_discord_dnd_set_cb, crosstalk_net_discord_user_data_free_cb, ctx);
 
     return LDG_ERR_AOK;

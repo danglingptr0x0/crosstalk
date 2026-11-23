@@ -128,12 +128,12 @@ uint32_t crosstalk_hdl_proc_start(crosstalk_hdl_proc_ctx_t *ctx, const char *pat
     ret = ldg_sys_proc_spawn(path, argv, cwd, LDG_SYS_PROC_SPAWN_STDIO_PIPE, &ctx->proc);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "proc: spawn failed; path: %s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "proc: spawn failed; path: %s; err: %u32", path, ret);
         return ret;
     }
 
     ctx->state = CROSSTALK_HDL_PROC_STATE_RUN;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "proc: spawned; path: %s; pid: %u32", path, ctx->proc.pid);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "proc: spawned; path: %s; pid: %u32", path, ctx->proc.pid);
 
     return LDG_ERR_AOK;
 }
@@ -166,7 +166,7 @@ uint32_t crosstalk_hdl_proc_pump(crosstalk_hdl_proc_ctx_t *ctx)
         if (ret != LDG_ERR_AOK) { return ret; }
 
         ctx->state = CROSSTALK_HDL_PROC_STATE_EXIT;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "proc: exited; pid: %u32; code: %u32; out: %u32; err: %u32", ctx->proc.pid, ctx->exit_code, ctx->out_len, ctx->err_len);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "proc: exited; pid: %u32; code: %u32; out: %u32; err: %u32", ctx->proc.pid, ctx->exit_code, ctx->out_len, ctx->err_len);
     }
 
     return LDG_ERR_AOK;
@@ -260,11 +260,11 @@ uint32_t crosstalk_hdl_proc_stop(crosstalk_hdl_proc_ctx_t *ctx)
     if (ldg_sys_proc_alive_is(&ctx->proc) == LDG_TRUTH_TRUE)
     {
         ret = ldg_sys_proc_kill(&ctx->proc);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "proc: kill failed; pid: %u32; err: %u32", ctx->proc.pid, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "proc: kill failed; pid: %u32; err: %u32", ctx->proc.pid, ret); }
     }
 
     ret = ldg_sys_proc_close(&ctx->proc);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "proc: close failed; pid: %u32; err: %u32", ctx->proc.pid, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "proc: close failed; pid: %u32; err: %u32", ctx->proc.pid, ret); }
 
     ctx->proc = (ldg_sys_proc_t)LDG_STRUCT_ZERO_INIT;
     ctx->state = CROSSTALK_HDL_PROC_STATE_IDLE;

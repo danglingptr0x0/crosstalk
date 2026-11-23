@@ -374,11 +374,11 @@ static uint32_t crosstalk_hdl_lutmap_flow_run(const crosstalk_hdl_aig_ctx_t *aig
 
         for (sig_idx = 0; sig_idx < aig_ctx->ir_ctx->sig_cunt; sig_idx++)
         {
-            if (aig_ctx->lit_off[sig_idx] == UINT32_MAX) { continue; }
+            if (aig_ctx->literal_off[sig_idx] == UINT32_MAX) { continue; }
 
             for (bit_idx = 0; bit_idx < aig_ctx->ir_ctx->sigs[sig_idx].width; bit_idx++)
             {
-                root_node = aig_ctx->lit_arena[aig_ctx->lit_off[sig_idx] + bit_idx] >> 1;
+                root_node = aig_ctx->literal_arena[aig_ctx->literal_off[sig_idx] + bit_idx] >> 1;
                 if (root_node == 0 || ctx.pi_is[root_node] == LDG_TRUTH_TRUE) { continue; }
 
                 ctx.need[root_node] = LDG_TRUTH_TRUE;

@@ -44,7 +44,6 @@
 #define CALC_BIT_CH_SET '1'
 #define CALC_OP_POW '^'
 #define CALC_OP_XOR 'x'
-#define CALC_NIBBLE_GROUP 4
 #define CALC_FP32_BITS 32
 #define CALC_FP32_MASK 0xFFFFFFFFULL
 #define CALC_FP32_SIGN_SHIFT 31
@@ -71,9 +70,6 @@
 #define CALC_DIS_PIECE_CAP 56
 #define CALC_HIST_SHOWN_MAX 10
 #define CALC_MEM_WORD_BYTES 4
-#define CALC_TIME_US_NS 1000.0
-#define CALC_TIME_MS_NS 1000000.0
-#define CALC_TIME_S_NS 1000000000.0
 #define CALC_FRAC_BASE 10.0
 #define CALC_DIS_TOK "dis "
 #define CALC_DIS_TOK_LEN 4
@@ -228,7 +224,7 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
 
             if (ldg_hex_to_nipple(cur->text[cur->at], &nibble) != LDG_ERR_AOK) { break; }
 
-            val = (val << CALC_NIBBLE_GROUP) | (uint64_t)nibble;
+            val = (val << LDG_NIBBLE_BITS) | (uint64_t)nibble;
             cur->at++;
             digits++;
         }
@@ -292,13 +288,13 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
     }
 
     if (dec_is == LDG_TRUTH_TRUE) { if (cur->text[cur->at] == 'n' && cur->text[cur->at + 1] == 's') { scale_ns = 1.0; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 'u' && cur->text[cur->at + 1] == 's') { scale_ns = CALC_TIME_US_NS; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 'm' && cur->text[cur->at + 1] == 's') { scale_ns = CALC_TIME_MS_NS; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 's' && calc_ident_rest_is(cur->text[cur->at + 1]) != LDG_TRUTH_TRUE) { scale_ns = CALC_TIME_S_NS; cur->at++; } }
+        else if (cur->text[cur->at] == 'u' && cur->text[cur->at + 1] == 's') { scale_ns = (double)LDG_NS_PER_US; cur->at = cur->at + 0x2; }
+        else if (cur->text[cur->at] == 'm' && cur->text[cur->at + 1] == 's') { scale_ns = (double)LDG_NS_PER_MS; cur->at = cur->at + 0x2; }
+        else if (cur->text[cur->at] == 's' && calc_ident_rest_is(cur->text[cur->at + 1]) != LDG_TRUTH_TRUE) { scale_ns = (double)LDG_NS_PER_SEC; cur->at++; } }
 
     if (scale_ns > 0.0)
     {
-        double secs = ((double)val + frac) * scale_ns / CALC_TIME_S_NS;
+        double secs = ((double)val + frac) * scale_ns / (double)LDG_NS_PER_SEC;
 
         if (env->rate_hz == 0) { return CROSSTALK_EDA_UI_CALC_ERR_NO_CLK; }
 
@@ -563,13 +559,13 @@ static uint32_t calc_bin_fmt(uint64_t val, char *out, uint32_t cap)
     uint32_t used = 0;
     uint32_t idx = 0;
 
-    while (nibble_cunt < (uint32_t)(sizeof(uint64_t) * 0x2) && (val >> (nibble_cunt * CALC_NIBBLE_GROUP)) != 0) { nibble_cunt++; }
+    while (nibble_cunt < (uint32_t)(sizeof(uint64_t) * 0x2) && (val >> (nibble_cunt * LDG_NIBBLE_BITS)) != 0) { nibble_cunt++; }
 
-    for (idx = 0; idx < nibble_cunt * CALC_NIBBLE_GROUP; idx++)
+    for (idx = 0; idx < nibble_cunt * LDG_NIBBLE_BITS; idx++)
     {
-        uint32_t bit = nibble_cunt * CALC_NIBBLE_GROUP - 1 - idx;
+        uint32_t bit = nibble_cunt * LDG_NIBBLE_BITS - 1 - idx;
 
-        if (idx != 0 && bit % CALC_NIBBLE_GROUP == 0x3)
+        if (idx != 0 && bit % LDG_NIBBLE_BITS == 0x3)
         {
             if (used + LDG_STR_TERM_SIZE >= cap) { return LDG_ERR_STR_TRUNC; }
 
@@ -712,7 +708,7 @@ static void calc_whole_mark(char *out, uint32_t cap)
 
     if (len + (uint32_t)CALC_FP_FRAC_CHARS + LDG_STR_TERM_SIZE > cap) { return; }
 
-    if (ldg_str_rbrcpy(out + len, CALC_FP_FRAC_SUFFIX, (uint64_t)(cap - len)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "calc whole mark failed"); }
+    if (ldg_str_rbrcpy(out + len, CALC_FP_FRAC_SUFFIX, (uint64_t)(cap - len)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "calc whole mark failed"); }
 }
 
 static uint32_t calc_fp32_fmt(uint64_t val, char *out, uint32_t cap)
@@ -782,11 +778,11 @@ static uint32_t calc_time_fmt(uint64_t cycles, uint64_t rate_hz, char *out, uint
 
     secs = (double)cycles / (double)rate_hz;
 
-    if (secs < CALC_TIME_US_NS / CALC_TIME_S_NS) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g ns @ %u64 Hz", secs * CALC_TIME_S_NS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (secs < (double)LDG_NS_PER_US / (double)LDG_NS_PER_SEC) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g ns @ %u64 Hz", secs * (double)LDG_NS_PER_SEC, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
-    if (secs < CALC_TIME_MS_NS / CALC_TIME_S_NS) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g us @ %u64 Hz", secs * CALC_TIME_S_NS / CALC_TIME_US_NS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (secs < (double)LDG_NS_PER_MS / (double)LDG_NS_PER_SEC) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g us @ %u64 Hz", secs * (double)LDG_NS_PER_SEC / (double)LDG_NS_PER_US, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
-    if (secs < 1.0) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g ms @ %u64 Hz", secs * CALC_TIME_S_NS / CALC_TIME_MS_NS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
+    if (secs < 1.0) { return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g ms @ %u64 Hz", secs * (double)LDG_NS_PER_SEC / (double)LDG_NS_PER_MS, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK; }
 
     return ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.4g s @ %u64 Hz", secs, rate_hz) != LDG_ERR_AOK ? LDG_ERR_STR_FMT : LDG_ERR_AOK;
 }

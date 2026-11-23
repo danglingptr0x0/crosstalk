@@ -208,7 +208,7 @@ static uint32_t bkp_wr(const char *path)
     ret = ldg_io_file_open(bkp_path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, GAME_SAVE_FILE_MODE, &dst);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        if (ldg_io_file_close(src) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp source close failed"); }
+        if (ldg_io_file_close(src) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp source close failed"); }
 
         return ret;
     }
@@ -239,9 +239,9 @@ static uint32_t bkp_wr(const char *path)
     if (ret == LDG_ERR_AOK) { ret = ldg_io_file_commit(dst); }
 
     if (ret == LDG_ERR_AOK) { ret = ldg_io_file_close(dst); }
-    else if (ldg_io_file_close(dst) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp target close failed"); }
+    else if (ldg_io_file_close(dst) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp target close failed"); }
 
-    if (ldg_io_file_close(src) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp source close failed"); }
+    if (ldg_io_file_close(src) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save: bkp source close failed"); }
 
     return ret;
 }
@@ -420,7 +420,7 @@ uint32_t crosstalk_game_save_wr(const crosstalk_game_settings_t *settings, const
     if (ret == LDG_ERR_AOK)
     {
         ret = bkp_wr(path);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "save bkp copy failed; refusing overwrite"); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "save bkp copy failed; refusing overwrite"); }
     }
 
     if (ret == LDG_ERR_AOK) { ret = ldg_io_file_open(path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, GAME_SAVE_FILE_MODE, &file); }
@@ -454,7 +454,7 @@ static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payl
     ret = save_hdr_parse(payload, payload_len, &hdr);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save hdr rejected; err: %u32; payload_len: %u32", ret, payload_len);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save hdr rejected; err: %u32; payload_len: %u32", ret, payload_len);
         return ret;
     }
 
@@ -520,7 +520,7 @@ static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payl
             ret = crosstalk_game_credit_deserialize(out_credit, data, len);
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save credit sect rejected; err: %u32; len: %u32", ret, len);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save credit sect rejected; err: %u32; len: %u32", ret, len);
                 ret = crosstalk_game_credit_init(out_credit);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
@@ -660,12 +660,12 @@ uint32_t crosstalk_game_save_meta_rd(const char *path, char *out_author_name, ui
 
                 if (save_sect_name_eq_is(descs[idx].name, CROSSTALK_GAME_SAVE_SECT_CRT) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
 
-                if (editors_cap > 0 && game_hit != LDG_TRUTH_TRUE && descs[idx].len > 0) { if (save_editors_append(out_editors, editors_cap, descs[idx].name) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save editors text truncated"); } }
+                if (editors_cap > 0 && game_hit != LDG_TRUTH_TRUE && descs[idx].len > 0) { if (save_editors_append(out_editors, editors_cap, descs[idx].name) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save editors text truncated"); } }
             }
         }
     }
 
-    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save meta close failed"); }
+    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save meta close failed"); }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -763,7 +763,7 @@ uint32_t crosstalk_game_save_editor_sect_rd(const char *path, const char *name, 
         if (ret == LDG_ERR_AOK && bytes_rd != (uint64_t)blob_len) { ret = LDG_ERR_IO_RD; }
     }
 
-    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save editor sect close failed"); }
+    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "save editor sect close failed"); }
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -824,7 +824,7 @@ uint32_t crosstalk_game_save_rd(const char *path, crosstalk_game_settings_t *out
     ret = ldg_emiemi_decode(frame, frame_len, &payload, &payload_len, &checksum);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save frame decode failed; err: %u32; frame_len: %u32", ret, frame_len);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crosstalk: save frame decode failed; err: %u32; frame_len: %u32", ret, frame_len);
         ldg_mem_dealloc(frame);
         return ret;
     }

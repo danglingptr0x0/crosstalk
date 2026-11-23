@@ -60,7 +60,7 @@ static uint32_t parse_diag_set(parse_ctx_t *ctx, const crosstalk_eda_script_tok_
     return code;
 }
 
-static uint32_t parse_advance(parse_ctx_t *ctx)
+static uint32_t parse_adv(parse_ctx_t *ctx)
 {
     uint32_t ret = 0;
 
@@ -83,7 +83,7 @@ static uint32_t parse_node_new(parse_ctx_t *ctx, uint32_t kind, const crosstalk_
 
 static uint32_t parse_semi_want(parse_ctx_t *ctx, const crosstalk_eda_script_tok_t *start_tok)
 {
-    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI) { return parse_advance(ctx); }
+    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI) { return parse_adv(ctx); }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_EOF || ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACE || ctx->tok.line != ctx->prev_line) { return LDG_ERR_AOK; }
 
@@ -92,11 +92,11 @@ static uint32_t parse_semi_want(parse_ctx_t *ctx, const crosstalk_eda_script_tok
 
 static uint32_t parse_arg_list(parse_ctx_t *ctx, crosstalk_eda_script_list_t *list)
 {
-    uint32_t ret = parse_advance(ctx);
+    uint32_t ret = parse_adv(ctx);
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RPAREN) { return parse_advance(ctx); }
+    if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RPAREN) { return parse_adv(ctx); }
 
     while (LDG_TRUTH_TRUE)
     {
@@ -114,7 +114,7 @@ static uint32_t parse_arg_list(parse_ctx_t *ctx, crosstalk_eda_script_list_t *li
 
             arg->width = (uint32_t)PARSE_STR_WIDTH;
 
-            ret = parse_advance(ctx);
+            ret = parse_adv(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
         else
@@ -128,7 +128,7 @@ static uint32_t parse_arg_list(parse_ctx_t *ctx, crosstalk_eda_script_list_t *li
 
         if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COMMA)
         {
-            ret = parse_advance(ctx);
+            ret = parse_adv(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             continue;
@@ -139,7 +139,7 @@ static uint32_t parse_arg_list(parse_ctx_t *ctx, crosstalk_eda_script_list_t *li
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RPAREN)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "argument list is not closed", "close the call with a right parenthesis"); }
 
-    return parse_advance(ctx);
+    return parse_adv(ctx);
 }
 
 static uint32_t parse_call(parse_ctx_t *ctx, const crosstalk_eda_script_tok_t *name_tok, crosstalk_eda_script_node_t **out)
@@ -165,14 +165,14 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
     {
         crosstalk_eda_script_tok_t name_tok = LDG_STRUCT_ZERO_INIT;
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "call is missing a subroutine name", "write the call as call name(args)"); }
 
         name_tok = ctx->tok;
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "call is missing its argument list", "write the call as call name(args)"); }
@@ -189,7 +189,7 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
         if (peek.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)
         {
-            ret = parse_advance(ctx);
+            ret = parse_adv(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             return parse_call(ctx, &tok, out);
@@ -203,12 +203,12 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
         (*out)->name_len = tok.len;
 
-        return parse_advance(ctx);
+        return parse_adv(ctx);
     }
 
     if (tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT || tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_CHAR)
     {
-        if (LDG_UNLIKELY(tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT && tok.width == 0)) { return parse_diag_set(ctx, &tok, CROSSTALK_EDA_SCRIPT_ERR_LIT_BARE, "literal has no width", "prefix the literal with its width, as in 32'0x2A"); }
+        if (LDG_UNLIKELY(tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT && tok.width == 0)) { return parse_diag_set(ctx, &tok, CROSSTALK_EDA_SCRIPT_ERR_LITERAL_BARE, "literal has no width", "prefix the literal with its width, as in 32'0x2A"); }
 
         ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_NUM, &tok, out);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -216,14 +216,14 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
         (*out)->val = tok.val;
         (*out)->width = tok.width;
 
-        return parse_advance(ctx);
+        return parse_adv(ctx);
     }
 
     if (tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_STR) { return parse_diag_set(ctx, &tok, CROSSTALK_EDA_SCRIPT_ERR_TYPE, "string literal used as a value", "strings are allowed only as call arguments or array initializers"); }
 
     if (tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)
     {
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         ret = parse_expr(ctx, out);
@@ -231,7 +231,7 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RPAREN)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "parenthesized expression is not closed", "close the expression with a right parenthesis"); }
 
-        return parse_advance(ctx);
+        return parse_adv(ctx);
     }
 
     if (tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LBRACE)
@@ -239,7 +239,7 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
         ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_CONCAT, &tok, out);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         while (LDG_TRUTH_TRUE)
@@ -254,7 +254,7 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
             if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COMMA)
             {
-                ret = parse_advance(ctx);
+                ret = parse_adv(ctx);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                 continue;
@@ -265,7 +265,7 @@ static uint32_t parse_primary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACE)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "concatenation is not closed", "close the concatenation with a right brace"); }
 
-        return parse_advance(ctx);
+        return parse_adv(ctx);
     }
 
     return parse_diag_set(ctx, &tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "expected an expression", "write a sized literal, a variable, a call, or a parenthesized expression");
@@ -286,7 +286,7 @@ static uint32_t parse_postfix(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
         if (ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LBRACKET) { break; }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         ret = parse_expr(ctx, &first);
@@ -297,7 +297,7 @@ static uint32_t parse_postfix(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
             crosstalk_eda_script_node_t *lo = 0x0;
             crosstalk_eda_script_node_t *slice = 0x0;
 
-            ret = parse_advance(ctx);
+            ret = parse_adv(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             ret = parse_expr(ctx, &lo);
@@ -327,7 +327,7 @@ static uint32_t parse_postfix(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACKET)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "subscript is not closed", "close the subscript with a right bracket"); }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
@@ -350,7 +350,7 @@ static uint32_t parse_unary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     if (un_is != LDG_TRUTH_TRUE) { return parse_postfix(ctx, out); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_UN, &tok, &node);
@@ -384,7 +384,7 @@ static uint32_t parse_bin(parse_ctx_t *ctx, const parse_lvl_t *ops, uint32_t ops
 
             if (ctx->tok.kind != ops[idx].tok) { continue; }
 
-            ret = parse_advance(ctx);
+            ret = parse_adv(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_BIN, &op_tok, &node);
@@ -490,7 +490,7 @@ static uint32_t parse_impl(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     op_tok = ctx->tok;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_BIN, &op_tok, &node);
@@ -526,7 +526,7 @@ static uint32_t parse_ternary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
     op_tok = ctx->tok;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_TERNARY, &op_tok, &node);
@@ -539,7 +539,7 @@ static uint32_t parse_ternary(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COLON)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "conditional expression is missing its colon", "write the conditional as cond ? a : b"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_ternary(ctx, &node->third);
@@ -603,7 +603,7 @@ static uint32_t parse_assign_expr(parse_ctx_t *ctx, crosstalk_eda_script_node_t 
 
     if (LDG_UNLIKELY(parse_lvalue_is(*out) != LDG_TRUTH_TRUE)) { return parse_diag_set(ctx, &op_tok, CROSSTALK_EDA_SCRIPT_ERR_LVALUE, "assignment target cannot be assigned to", "assign to a variable, an array element, or a bit slice"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_ASSIGN, &op_tok, &node);
@@ -643,7 +643,7 @@ static uint32_t parse_range(parse_ctx_t *ctx, crosstalk_eda_script_node_t *decl)
     decl->has_range = LDG_TRUTH_TRUE;
     decl->r_lo_open = ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT || ctx->tok.width == 0)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "range bound has no width", "write each bound as a width-prefixed literal, as in 16'0x0"); }
@@ -652,26 +652,26 @@ static uint32_t parse_range(parse_ctx_t *ctx, crosstalk_eda_script_node_t *decl)
 
     if (decl->width == 0) { decl->width = ctx->tok.width; }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COMMA)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "range is missing its comma", "write the range as [lo, hi]"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT || ctx->tok.width == 0)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "range bound has no width", "write each bound as a width-prefixed literal, as in 16'0x3E8"); }
 
     decl->r_hi = ctx->tok.val;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACKET) { decl->r_hi_open = LDG_TRUTH_FALSE; }
     else if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RPAREN) { decl->r_hi_open = LDG_TRUTH_TRUE; }
     else { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "range is not closed", "close the range with a bracket or a parenthesis"); }
 
-    return parse_advance(ctx);
+    return parse_adv(ctx);
 }
 
 static uint32_t parse_decl_init(parse_ctx_t *ctx, crosstalk_eda_script_node_t *decl)
@@ -689,7 +689,7 @@ static uint32_t parse_decl_init(parse_ctx_t *ctx, crosstalk_eda_script_node_t *d
 
         if (LDG_UNLIKELY(decl->bytes_len != decl->arr_cunt)) { return parse_diag_set(ctx, &str_tok, CROSSTALK_EDA_SCRIPT_ERR_WIDTH, "string initializer length does not match the array size", "make the array size equal the string length"); }
 
-        return parse_advance(ctx);
+        return parse_adv(ctx);
     }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LBRACE && decl->arr_cunt != 0)
@@ -700,7 +700,7 @@ static uint32_t parse_decl_init(parse_ctx_t *ctx, crosstalk_eda_script_node_t *d
         ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_INIT_LIST, &open_tok, &list);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         while (LDG_TRUTH_TRUE)
@@ -715,7 +715,7 @@ static uint32_t parse_decl_init(parse_ctx_t *ctx, crosstalk_eda_script_node_t *d
 
             if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COMMA)
             {
-                ret = parse_advance(ctx);
+                ret = parse_adv(ctx);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
                 continue;
@@ -730,7 +730,7 @@ static uint32_t parse_decl_init(parse_ctx_t *ctx, crosstalk_eda_script_node_t *d
 
         decl->rhs = list;
 
-        return parse_advance(ctx);
+        return parse_adv(ctx);
     }
 
     return parse_expr(ctx, &decl->lhs);
@@ -747,7 +747,7 @@ static uint32_t parse_decl(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
     {
         const_is = LDG_TRUTH_TRUE;
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
@@ -759,7 +759,7 @@ static uint32_t parse_decl(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
     decl->is_const = const_is;
     decl->width = (uint32_t)ctx->tok.val;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LBRACKET || ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)
@@ -775,30 +775,30 @@ static uint32_t parse_decl(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     decl->name_len = ctx->tok.len;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LBRACKET)
     {
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT || ctx->tok.val == 0)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "array size is not a positive constant", "give the array a constant size greater than zero"); }
 
         decl->arr_cunt = (uint32_t)ctx->tok.val;
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACKET)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "array size is not closed", "close the array size with a right bracket"); }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_ASSIGN)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "declaration has no initializer", "every variable needs an explicit initial value"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_decl_init(ctx, decl);
@@ -818,12 +818,12 @@ static uint32_t parse_guard_tail(parse_ctx_t *ctx, crosstalk_eda_script_node_t *
 
     if (ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_KW_IFF) { return LDG_ERR_AOK; }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "guard is missing its parentheses", "write the guard as iff (expression)"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_expr(ctx, iff_out);
@@ -831,7 +831,7 @@ static uint32_t parse_guard_tail(parse_ctx_t *ctx, crosstalk_eda_script_node_t *
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RPAREN)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "guard is not closed", "close the guard with a right parenthesis"); }
 
-    return parse_advance(ctx);
+    return parse_adv(ctx);
 }
 
 static uint32_t parse_guard(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
@@ -844,7 +844,7 @@ static uint32_t parse_guard(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     guard->action_call = start_tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_KW_CALL ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "action is missing its target", "write jmp section iff (cond) or call sub(args)"); }
@@ -854,7 +854,7 @@ static uint32_t parse_guard(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     guard->name_len = ctx->tok.len;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)
@@ -870,7 +870,7 @@ static uint32_t parse_guard(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_BANG)
     {
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "alternative action is missing its target", "write the alternative as ! target"); }
@@ -880,7 +880,7 @@ static uint32_t parse_guard(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
         guard->alt_name_len = ctx->tok.len;
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LPAREN)
@@ -911,7 +911,7 @@ static uint32_t parse_section(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "section is missing a name", "open the section as init name:"); }
@@ -921,12 +921,12 @@ static uint32_t parse_section(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
 
     section->name_len = ctx->tok.len;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COLON)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "section name is not followed by a colon", "open the section as init name:"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     while (ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_KW_RACK)
@@ -942,12 +942,12 @@ static uint32_t parse_section(parse_ctx_t *ctx, crosstalk_eda_script_node_t **ou
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT || ctx->tok.len != section->name_len || memcmp(ctx->tok.start, section->name, ctx->tok.len) != 0)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_SECTION, "term name does not match the section", "close the section with term and the same name"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_semi_want(ctx, &start_tok);
@@ -989,7 +989,7 @@ static uint32_t parse_switch_notches(parse_ctx_t *ctx, crosstalk_eda_script_node
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_LBRACKET)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_SWITCH, "rotary has no notch list", "write the notches as [v0, v1, ...] before the name"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     while (LDG_TRUTH_TRUE)
@@ -1013,12 +1013,12 @@ static uint32_t parse_switch_notches(parse_ctx_t *ctx, crosstalk_eda_script_node
         ret = crosstalk_eda_script_ast_list_push(&switch_ref->list, notch);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COMMA)
         {
-            ret = parse_advance(ctx);
+            ret = parse_adv(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             continue;
@@ -1031,7 +1031,7 @@ static uint32_t parse_switch_notches(parse_ctx_t *ctx, crosstalk_eda_script_node
 
     if (LDG_UNLIKELY(switch_ref->list.cunt < (uint32_t)PARSE_NOTCH_MIN)) { return parse_diag_set(ctx, &open_tok, CROSSTALK_EDA_SCRIPT_ERR_SWITCH, "rotary needs at least two notches", "give the rotary two or more notch values"); }
 
-    return parse_advance(ctx);
+    return parse_adv(ctx);
 }
 
 static uint32_t parse_switch(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
@@ -1047,7 +1047,7 @@ static uint32_t parse_switch(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out
 
     if (kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_LEVER || kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_BUTTON) { switch_ref->width = 1; }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (kind == (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_ENCODER)
@@ -1071,21 +1071,21 @@ static uint32_t parse_switch(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out
 
     switch_ref->name_len = ctx->tok.len;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (kind != (uint32_t)CROSSTALK_EDA_SCRIPT_SWITCH_BUTTON)
     {
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_ASSIGN)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_SWITCH, "switch has no initial position", "give the switch an initial position with = value"); }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_INT)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_SWITCH, "initial position is not a numeric literal", "initialize the switch with a plain numeric literal"); }
 
         switch_ref->val = ctx->tok.val;
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
@@ -1122,7 +1122,7 @@ static uint32_t parse_rack(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "rack is missing a name", "open the rack as rack name:"); }
@@ -1132,12 +1132,12 @@ static uint32_t parse_rack(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     rack->name_len = ctx->tok.len;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_COLON)) { return parse_diag_set(ctx, &start_tok, CROSSTALK_EDA_SCRIPT_ERR_PARSE, "rack name is not followed by a colon", "open the rack as rack name:"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     while (ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_KW_RACK)
@@ -1155,12 +1155,12 @@ static uint32_t parse_rack(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (LDG_UNLIKELY(ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT || ctx->tok.len != rack->name_len || memcmp(ctx->tok.start, rack->name, ctx->tok.len) != 0)) { return parse_diag_set(ctx, &ctx->tok, CROSSTALK_EDA_SCRIPT_ERR_SECTION, "term name does not match the rack", "close the rack with term and the same name"); }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_semi_want(ctx, &start_tok);
@@ -1253,7 +1253,7 @@ static uint32_t parse_cmd(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_semi_want(ctx, &start_tok);
@@ -1278,7 +1278,7 @@ static uint32_t parse_step_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t *s
 
     step->lhs = seed;
 
-    ret = parse_advance(ctx);
+    ret = parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = parse_semi_want(ctx, start_tok);
@@ -1295,7 +1295,7 @@ static uint32_t parse_win(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 {
     crosstalk_eda_script_tok_t start_tok = ctx->tok;
     crosstalk_eda_script_node_t *call = 0x0;
-    uint32_t res = parse_advance(ctx);
+    uint32_t res = parse_adv(ctx);
 
     if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
 
@@ -1309,12 +1309,12 @@ static uint32_t parse_win(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
 
     call->name_len = ctx->tok.len + (uint32_t)PARSE_WIN_LEAD_LEN;
 
-    res = parse_advance(ctx);
+    res = parse_adv(ctx);
     if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
 
     if (ctx->tok.kind == (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_SEMI)
     {
-        res = parse_advance(ctx);
+        res = parse_adv(ctx);
         if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
     }
 
@@ -1351,7 +1351,7 @@ static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
         ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_RET, &start_tok, out);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         return parse_semi_want(ctx, &start_tok);
@@ -1362,7 +1362,7 @@ static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
         ret = parse_node_new(ctx, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_BLK, &start_tok, &stmt);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         while (ctx->tok.kind != (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_RBRACE)
@@ -1378,7 +1378,7 @@ static uint32_t parse_stmt(parse_ctx_t *ctx, crosstalk_eda_script_node_t **out)
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
-        ret = parse_advance(ctx);
+        ret = parse_adv(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         *out = stmt;
@@ -1441,7 +1441,7 @@ uint32_t crosstalk_eda_script_parse_program(crosstalk_eda_script_lex_t *lex, cro
     ctx.ast = ast;
     ctx.diag = diag;
 
-    ret = parse_advance(&ctx);
+    ret = parse_adv(&ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = crosstalk_eda_script_ast_node_new(ast, (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_PROGRAM, &ctx.tok, &program);

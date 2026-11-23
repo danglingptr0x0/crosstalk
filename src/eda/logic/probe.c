@@ -186,7 +186,7 @@ uint32_t crosstalk_eda_logic_probe_host_attach(crosstalk_eda_logic_probe_ctx_t *
     ctx->live_cunt++;
     *out = idx;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "probe: host attach; slot: %u32; port: %.63s; width: %u32; probe: %u32", slot_idx, port, width, idx);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "probe: host attach; slot: %u32; port: %.63s; width: %u32; probe: %u32", slot_idx, port, width, idx);
 
     return LDG_ERR_AOK;
 }
@@ -409,8 +409,8 @@ uint32_t crosstalk_eda_logic_probe_cycle_sample(crosstalk_eda_logic_probe_ctx_t 
                 probe->abi_ck = LDG_TRUTH_TRUE;
                 probe->abi_vals = 0x0;
 
-                if (probe->abi_sig == (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "probe: port absent from the compiled component; port: %.63s", probe->port); }
-                else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "probe: bound to the compiled component; port: %.63s; abi sig: %u32", probe->port, probe->abi_sig); }
+                if (probe->abi_sig == (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "probe: port absent from the compiled component; port: %.63s", probe->port); }
+                else { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "probe: bound to the compiled component; port: %.63s; abi sig: %u32", probe->port, probe->abi_sig); }
             }
 
             if (probe->abi_sig == (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE) { continue; }

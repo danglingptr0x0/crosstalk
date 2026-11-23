@@ -501,11 +501,11 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
 
     if (sect != 0x0) { ldg_mem_dealloc(sect); }
 
-    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "elf close failed"); }
+    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "elf close failed"); }
 
     if (ret != LDG_ERR_AOK)
     {
-        if (crosstalk_hdl_elf_clear(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "elf clear failed"); }
+        if (crosstalk_hdl_elf_clear(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "elf clear failed"); }
 
         return ret;
     }

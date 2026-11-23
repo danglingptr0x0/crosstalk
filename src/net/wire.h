@@ -144,7 +144,7 @@ typedef struct crosstalk_net_wire_ident
 typedef struct crosstalk_net_wire_peer_state
 {
     uint64_t steam_id;
-    uint64_t idle_ms;
+    uint64_t idle;
     uint8_t state;
     uint8_t focused;
     uint8_t pudding[6];
@@ -214,10 +214,10 @@ typedef struct crosstalk_net_wire_author
 {
     uint64_t steam_id;
     uint64_t created_epoch_ms;
-    uint64_t bench_ms_total;
+    uint64_t bench_total;
     char name[CROSSTALK_NET_WIRE_AUTHOR_NAME_CAP];
     char board_name[CROSSTALK_NET_WIRE_BOARD_NAME_CAP];
-    uint64_t sim_ms_total;
+    uint64_t sim_total;
 } crosstalk_net_wire_author_t;
 
 #define CROSSTALK_NET_WIRE_PIN_REF_CAP 16

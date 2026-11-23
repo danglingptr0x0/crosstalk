@@ -8,8 +8,8 @@
 #define CROSSTALK_HDL_ERR_AIG_CAP 737
 #define CROSSTALK_HDL_ERR_AIG_CYCLE 738
 
-#define CROSSTALK_HDL_AIG_LIT_FALSE 0x0
-#define CROSSTALK_HDL_AIG_LIT_TRUE 0x1
+#define CROSSTALK_HDL_AIG_LITERAL_FALSE 0x0
+#define CROSSTALK_HDL_AIG_LITERAL_TRUE 0x1
 #define CROSSTALK_HDL_AIG_WIDTH_MAX 64
 #define CROSSTALK_HDL_AIG_NODE_CAP_DEFAULT 0x400000
 #define CROSSTALK_HDL_AIG_ROOT_CAP_DEFAULT 0x40000
@@ -30,8 +30,8 @@ typedef struct crosstalk_hdl_aig_ctx
     const crosstalk_hdl_ir_t *ir_ctx;
     crosstalk_hdl_aig_node_t *nodes;
     uint32_t *hash_tbl;
-    uint32_t *lit_arena;
-    uint32_t *lit_off;
+    uint32_t *literal_arena;
+    uint32_t *literal_off;
     uint32_t *ff_arena;
     uint32_t *ff_off;
     uint32_t *roots;

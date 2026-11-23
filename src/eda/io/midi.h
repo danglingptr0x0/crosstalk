@@ -25,7 +25,7 @@
 #define CROSSTALK_EDA_IO_MIDI_STOP_BIT 0x200
 #define CROSSTALK_EDA_IO_MIDI_PIN_LOW 0
 #define CROSSTALK_EDA_IO_MIDI_PIN_HIGH 1
-#define CROSSTALK_EDA_IO_MIDI_REFRESH_SECS 1.0
+#define CROSSTALK_EDA_IO_MIDI_REFRESH_PERIOD LDG_MS_PER_SEC
 
 #define CROSSTALK_EDA_IO_MIDI_FILE_CAP 262144
 #define CROSSTALK_EDA_IO_MIDI_TRACK_MAX 32
@@ -33,7 +33,6 @@
 #define CROSSTALK_EDA_IO_MIDI_HDR_LEN 14
 #define CROSSTALK_EDA_IO_MIDI_CHUNK_HDR 8
 #define CROSSTALK_EDA_IO_MIDI_TEMPO_DEFAULT 500000
-#define CROSSTALK_EDA_IO_MIDI_USEC_PER_SEC 1000000
 #define CROSSTALK_EDA_IO_MIDI_FMT_MAX 1
 #define CROSSTALK_EDA_IO_MIDI_SMPTE_BIT 0x8000
 #define CROSSTALK_EDA_IO_MIDI_META 255
@@ -81,7 +80,7 @@ typedef struct crosstalk_eda_io_midi_ctx
     uint8_t file[CROSSTALK_EDA_IO_MIDI_FILE_CAP];
     crosstalk_eda_io_midi_track_t track[CROSSTALK_EDA_IO_MIDI_TRACK_MAX];
     char file_path[CROSSTALK_EDA_IO_MIDI_PATH_CAP];
-    double refresh_acc;
+    uint64_t refresh_acc;
     uint64_t dev_idx;
     uint64_t freq;
     uint64_t phase;
@@ -131,7 +130,7 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
 uint32_t crosstalk_eda_io_midi_file_stop(crosstalk_eda_io_midi_ctx_t *ctx);
 uint8_t crosstalk_eda_io_midi_playing_is(const crosstalk_eda_io_midi_ctx_t *ctx);
 uint32_t crosstalk_eda_io_midi_pump(crosstalk_eda_io_midi_ctx_t *ctx);
-uint32_t crosstalk_eda_io_midi_tick(crosstalk_eda_io_midi_ctx_t *ctx, double dt);
+uint32_t crosstalk_eda_io_midi_tick(crosstalk_eda_io_midi_ctx_t *ctx, uint64_t dt);
 uint32_t crosstalk_eda_io_midi_cycle_drive(crosstalk_eda_io_midi_ctx_t *ctx, uint32_t slot_idx, crosstalk_hdl_exec_ctx_t *exec, const crosstalk_hdl_abi_t *abi);
 uint32_t crosstalk_eda_io_midi_pending_get(const crosstalk_eda_io_midi_ctx_t *ctx, uint32_t *out);
 uint8_t crosstalk_eda_io_midi_live_is(const crosstalk_eda_io_midi_ctx_t *ctx);

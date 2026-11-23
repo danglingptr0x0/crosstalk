@@ -121,7 +121,7 @@ static char lex_at(const crosstalk_eda_script_lex_t *ctx, uint32_t off)
     return ctx->src[ctx->at + off];
 }
 
-static void lex_advance(crosstalk_eda_script_lex_t *ctx, uint32_t cunt)
+static void lex_adv(crosstalk_eda_script_lex_t *ctx, uint32_t cunt)
 {
     uint32_t idx = 0;
 
@@ -146,13 +146,13 @@ static void lex_ws_skip(crosstalk_eda_script_lex_t *ctx)
 
         if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
         {
-            lex_advance(ctx, (uint32_t)LEX_STEP);
+            lex_adv(ctx, (uint32_t)LEX_STEP);
             continue;
         }
 
         if (ch == '/' && lex_at(ctx, (uint32_t)LEX_STEP) == '/')
         {
-            while (ctx->at < ctx->src_len && ctx->src[ctx->at] != '\n') { lex_advance(ctx, (uint32_t)LEX_STEP); }
+            while (ctx->at < ctx->src_len && ctx->src[ctx->at] != '\n') { lex_adv(ctx, (uint32_t)LEX_STEP); }
 
             continue;
         }
@@ -164,18 +164,18 @@ static void lex_ws_skip(crosstalk_eda_script_lex_t *ctx)
 static uint32_t lex_num_body(crosstalk_eda_script_lex_t *ctx, uint64_t max_val, uint64_t *out)
 {
     uint64_t val = 0;
-    uint64_t radix = (uint64_t)CROSSTALK_EDA_SCRIPT_RADIX_DEC;
+    uint64_t radix = (uint64_t)LDG_BASE_DEC;
     uint32_t digits = 0;
 
     if (lex_at(ctx, (uint32_t)LEX_HERE) == LDG_ASCII_DIGIT_ZERO && (lex_at(ctx, (uint32_t)LEX_STEP) == 'x' || lex_at(ctx, (uint32_t)LEX_STEP) == 'X'))
     {
-        radix = (uint64_t)CROSSTALK_EDA_SCRIPT_RADIX_HEX;
-        lex_advance(ctx, (uint32_t)LEX_PAIR);
+        radix = (uint64_t)LDG_BASE_HEX;
+        lex_adv(ctx, (uint32_t)LEX_PAIR);
     }
     else if (lex_at(ctx, (uint32_t)LEX_HERE) == LDG_ASCII_DIGIT_ZERO && (lex_at(ctx, (uint32_t)LEX_STEP) == 'b' || lex_at(ctx, (uint32_t)LEX_STEP) == 'B'))
     {
         radix = (uint64_t)CROSSTALK_EDA_SCRIPT_RADIX_BIN;
-        lex_advance(ctx, (uint32_t)LEX_PAIR);
+        lex_adv(ctx, (uint32_t)LEX_PAIR);
     }
 
     while (ctx->at < ctx->src_len)
@@ -183,7 +183,7 @@ static uint32_t lex_num_body(crosstalk_eda_script_lex_t *ctx, uint64_t max_val, 
         char ch = lex_at(ctx, (uint32_t)LEX_HERE);
         uint64_t dig = 0;
 
-        if (radix == (uint64_t)CROSSTALK_EDA_SCRIPT_RADIX_HEX)
+        if (radix == (uint64_t)LDG_BASE_HEX)
         {
             if (lex_hex_digit_is(ch) != LDG_TRUTH_TRUE) { break; }
 
@@ -210,7 +210,7 @@ static uint32_t lex_num_body(crosstalk_eda_script_lex_t *ctx, uint64_t max_val, 
 
         val = val + dig;
         digits = digits + (uint32_t)LEX_STEP;
-        lex_advance(ctx, (uint32_t)LEX_STEP);
+        lex_adv(ctx, (uint32_t)LEX_STEP);
     }
 
     if (LDG_UNLIKELY(digits == 0)) { return CROSSTALK_EDA_SCRIPT_ERR_LEX; }
@@ -299,7 +299,7 @@ static uint32_t lex_op_next(crosstalk_eda_script_lex_t *ctx, char ch, char nx, c
 
     out->kind = kind;
     out->len = len;
-    lex_advance(ctx, len);
+    lex_adv(ctx, len);
 
     return LDG_ERR_AOK;
 }
@@ -340,7 +340,7 @@ static uint32_t lex_num_next(crosstalk_eda_script_lex_t *ctx, crosstalk_eda_scri
 
     while (lex_digit_is(lex_at(ctx, prefix_digits)) == LDG_TRUTH_TRUE && prefix_digits < (uint32_t)CROSSTALK_EDA_SCRIPT_WIDTH_DIGITS_MAX)
     {
-        prefix = prefix * (uint64_t)CROSSTALK_EDA_SCRIPT_RADIX_DEC + (uint64_t)(lex_at(ctx, prefix_digits) - LDG_ASCII_DIGIT_ZERO);
+        prefix = prefix * (uint64_t)LDG_BASE_DEC + (uint64_t)(lex_at(ctx, prefix_digits) - LDG_ASCII_DIGIT_ZERO);
         prefix_digits = prefix_digits + (uint32_t)LEX_STEP;
     }
 
@@ -350,7 +350,7 @@ static uint32_t lex_num_next(crosstalk_eda_script_lex_t *ctx, crosstalk_eda_scri
 
         if (LDG_UNLIKELY(crosstalk_eda_script_lex_width_valid_is(prefix) != LDG_TRUTH_TRUE)) { return CROSSTALK_EDA_SCRIPT_ERR_LEX; }
 
-        lex_advance(ctx, prefix_digits + (uint32_t)LEX_STEP);
+        lex_adv(ctx, prefix_digits + (uint32_t)LEX_STEP);
         max_val = prefix == (uint64_t)CROSSTALK_EDA_SCRIPT_WIDTH_MAX ? UINT64_MAX : ((((uint64_t)LEX_STEP) << prefix) - (uint64_t)LEX_STEP);
 
         ret = lex_num_body(ctx, max_val, &val);
@@ -379,7 +379,7 @@ static uint32_t lex_char_next(crosstalk_eda_script_lex_t *ctx, crosstalk_eda_scr
 {
     char cc = 0;
 
-    lex_advance(ctx, (uint32_t)LEX_STEP);
+    lex_adv(ctx, (uint32_t)LEX_STEP);
     cc = lex_at(ctx, (uint32_t)LEX_HERE);
 
     if (LDG_UNLIKELY(cc == LDG_STR_TERM || cc == '\n')) { return CROSSTALK_EDA_SCRIPT_ERR_LEX; }
@@ -390,13 +390,13 @@ static uint32_t lex_char_next(crosstalk_eda_script_lex_t *ctx, crosstalk_eda_scr
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        lex_advance(ctx, (uint32_t)LEX_PAIR);
+        lex_adv(ctx, (uint32_t)LEX_PAIR);
     }
-    else { lex_advance(ctx, (uint32_t)LEX_STEP); }
+    else { lex_adv(ctx, (uint32_t)LEX_STEP); }
 
     if (LDG_UNLIKELY(lex_at(ctx, (uint32_t)LEX_HERE) != LEX_TICK)) { return CROSSTALK_EDA_SCRIPT_ERR_LEX; }
 
-    lex_advance(ctx, (uint32_t)LEX_STEP);
+    lex_adv(ctx, (uint32_t)LEX_STEP);
     out->kind = CROSSTALK_EDA_SCRIPT_TOK_CHAR;
     out->width = (uint32_t)LEX_CHAR_WIDTH;
     out->val = (uint64_t)(uint8_t)cc;
@@ -427,7 +427,7 @@ static uint32_t lex_str_next(crosstalk_eda_script_lex_t *ctx, crosstalk_eda_scri
     out->kind = CROSSTALK_EDA_SCRIPT_TOK_STR;
     out->start = ctx->src + ctx->at + (uint32_t)LEX_STEP;
     out->len = len - (uint32_t)LEX_STEP;
-    lex_advance(ctx, len + (uint32_t)LEX_STEP);
+    lex_adv(ctx, len + (uint32_t)LEX_STEP);
 
     return LDG_ERR_AOK;
 }
@@ -469,7 +469,7 @@ uint32_t crosstalk_eda_script_lex_next(crosstalk_eda_script_lex_t *ctx, crosstal
 
         out->len = len;
         out->kind = lex_kw_find(out->start, len, &kind) == LDG_TRUTH_TRUE ? kind : (uint32_t)CROSSTALK_EDA_SCRIPT_TOK_IDENT;
-        lex_advance(ctx, len);
+        lex_adv(ctx, len);
 
         return LDG_ERR_AOK;
     }
@@ -484,7 +484,7 @@ uint32_t crosstalk_eda_script_lex_next(crosstalk_eda_script_lex_t *ctx, crosstal
     {
         out->kind = kind;
         out->len = (uint32_t)LEX_STEP;
-        lex_advance(ctx, (uint32_t)LEX_STEP);
+        lex_adv(ctx, (uint32_t)LEX_STEP);
 
         return LDG_ERR_AOK;
     }
@@ -531,7 +531,7 @@ uint32_t crosstalk_eda_script_lex_word_next(crosstalk_eda_script_lex_t *ctx, con
     *out_len = 0;
     *out_quoted = LDG_TRUTH_FALSE;
 
-    while (ctx->at < ctx->src_len && (ctx->src[ctx->at] == ' ' || ctx->src[ctx->at] == '\t')) { lex_advance(ctx, (uint32_t)LEX_STEP); }
+    while (ctx->at < ctx->src_len && (ctx->src[ctx->at] == ' ' || ctx->src[ctx->at] == '\t')) { lex_adv(ctx, (uint32_t)LEX_STEP); }
 
     if (ctx->at >= ctx->src_len) { return LDG_ERR_EOF; }
 
@@ -564,7 +564,7 @@ uint32_t crosstalk_eda_script_lex_word_next(crosstalk_eda_script_lex_t *ctx, con
 
     if (LDG_UNLIKELY(len > (uint32_t)CROSSTALK_EDA_SCRIPT_STR_LEN_MAX)) { return CROSSTALK_EDA_SCRIPT_ERR_LEX; }
 
-    lex_advance(ctx, len);
+    lex_adv(ctx, len);
     *out_len = len;
 
     return LDG_ERR_AOK;

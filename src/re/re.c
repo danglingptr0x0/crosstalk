@@ -41,15 +41,15 @@ uint32_t crosstalk_re_shutdown(crosstalk_re_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (crosstalk_hdl_elf_shutdown(&ctx->cand_elf) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cand elf shutdown failed"); }
+    if (crosstalk_hdl_elf_shutdown(&ctx->cand_elf) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cand elf shutdown failed"); }
 
-    if (crosstalk_re_cc_shutdown(&ctx->cc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc shutdown failed"); }
+    if (crosstalk_re_cc_shutdown(&ctx->cc) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc shutdown failed"); }
 
-    if (crosstalk_re_diff_shutdown(&ctx->diff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re diff shutdown failed"); }
+    if (crosstalk_re_diff_shutdown(&ctx->diff) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re diff shutdown failed"); }
 
-    if (crosstalk_re_db_shutdown(&ctx->db) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db shutdown failed"); }
+    if (crosstalk_re_db_shutdown(&ctx->db) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db shutdown failed"); }
 
-    if (crosstalk_re_img_shutdown(&ctx->img) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img shutdown failed"); }
+    if (crosstalk_re_img_shutdown(&ctx->img) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img shutdown failed"); }
 
     memset(ctx, 0x0, sizeof(*ctx));
 

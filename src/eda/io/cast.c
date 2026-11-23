@@ -147,7 +147,7 @@ uint32_t crosstalk_eda_io_cast_start(crosstalk_eda_io_cast_ctx_t *ctx, const cha
     ctx->frame_cunt = 0;
     ctx->frame_len = 0;
     ctx->frame_at = 0;
-    ctx->next = 0.0;
+    ctx->next = 0;
     ctx->on = LDG_TRUTH_TRUE;
 
     return LDG_ERR_AOK;
@@ -171,7 +171,7 @@ uint8_t crosstalk_eda_io_cast_on_is(const crosstalk_eda_io_cast_ctx_t *ctx)
     return ctx->on != 0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
-uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, crosstalk_eda_io_serial_ctx_t *serial, double now)
+uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, crosstalk_eda_io_serial_ctx_t *serial, uint64_t now)
 {
     uint8_t payload[CROSSTALK_EDA_IO_CAST_PAYLOAD] = LDG_ARR_ZERO_INIT;
     uint32_t hash = 0;
@@ -189,7 +189,7 @@ uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const cros
 
     if (now < ctx->next) { return LDG_ERR_AOK; }
 
-    ctx->next = now + CROSSTALK_EDA_IO_CAST_PERIOD_SECS;
+    ctx->next = now + CROSSTALK_EDA_IO_CAST_PERIOD;
 
     if (crosstalk_eda_io_serial_attached_is(serial) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
@@ -207,7 +207,7 @@ uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const cros
     ctx->prev_hash = (uint64_t)hash;
     ctx->frame_cunt++;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cast: frame queued; cunt: %u64; checksum: %08X32", ctx->frame_cunt, checksum);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cast: frame queued; cunt: %u64; checksum: %08X32", ctx->frame_cunt, checksum);
 
     ret = cast_drain(ctx, serial);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ctx->frame_len = 0; ctx->frame_at = 0; }

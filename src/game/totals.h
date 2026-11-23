@@ -14,8 +14,8 @@ typedef struct crosstalk_game_totals_info
     const char *author_name;
     const crosstalk_eda_ic_fpga_emu_stat_t *emu_stat;
     uint64_t created_epoch_ms;
-    uint64_t bench_ms_total;
-    uint64_t sim_ms_total;
+    uint64_t bench_total;
+    uint64_t sim_total;
 } crosstalk_game_totals_info_t;
 
 typedef struct crosstalk_game_totals_ctx

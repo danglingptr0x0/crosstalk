@@ -78,7 +78,7 @@ static uint32_t cmdline_win_parse(const char *val, uint32_t *out_w, uint32_t *ou
 
     if (*out_w == 0 || *out_h == 0) { return CROSSTALK_EMU_CMDLINE_ERR_ARG; }
 
-    if (*out_w != ask_w || *out_h != ask_h) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: window locked to the display aspect; asked: %u32x%u32; win: %u32x%u32", ask_w, ask_h, *out_w, *out_h); }
+    if (*out_w != ask_w || *out_h != ask_h) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: window locked to the display aspect; asked: %u32x%u32; win: %u32x%u32", ask_w, ask_h, *out_w, *out_h); }
 
     return LDG_ERR_AOK;
 }
@@ -117,22 +117,22 @@ static uint32_t cmdline_memld_add(crosstalk_emu_conf_t *out, char *val)
 
 uint32_t crosstalk_emu_cmdline_usage_put(void)
 {
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: usage: dangcsaemu [--core <core.bin>] [options]");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --core <path>; emulator core to run");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --memld <path>[@<word off>]; image stored into DLU mem at rst; repeatable");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --prog <path>; the same, at the start of memory");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --disk [N:]<path>; disk image for drive N; repeatable");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --hz <cycles>; operating frequency the DLU is paced at");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --clk <name>; clock signal name; defaults to %s", CROSSTALK_EMU_CLK_SIG_DEFAULT);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --mem <name>; memory signal name; defaults to %s", CROSSTALK_EMU_MEM_SIG_DEFAULT);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --font <path>; console font");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --win <WxH>; window size; defaults to %u32x%u32", (uint32_t)CROSSTALK_EMU_WIN_W_DEFAULT, (uint32_t)CROSSTALK_EMU_WIN_H_DEFAULT);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --gamma <value>; display gamma; %.1f to %.1f", CROSSTALK_EMU_SCREEN_GAMMA_MIN, CROSSTALK_EMU_SCREEN_GAMMA_MAX);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --keys raw|scan; key delivery; defaults to scan");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --net <path>; serial endpoint the program's network bytes move through");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-audio; leave sound off");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-serial; do not mirror the program's serial to the log");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-persist; do not write disk images back on exit");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: usage: dangcsaemu [--core <core.bin>] [options]");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --core <path>; emulator core to run");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --memld <path>[@<word off>]; image stored into DLU mem at rst; repeatable");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --prog <path>; the same, at the start of memory");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --disk [N:]<path>; disk image for drive N; repeatable");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --hz <cycles>; operating frequency the DLU is paced at");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --clk <name>; clock signal name; defaults to %s", CROSSTALK_EMU_CLK_SIG_DEFAULT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --mem <name>; memory signal name; defaults to %s", CROSSTALK_EMU_MEM_SIG_DEFAULT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --font <path>; console font");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --win <WxH>; window size; defaults to %u32x%u32", (uint32_t)CROSSTALK_EMU_WIN_W_DEFAULT, (uint32_t)CROSSTALK_EMU_WIN_H_DEFAULT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --gamma <value>; display gamma; %.1f to %.1f", CROSSTALK_EMU_SCREEN_GAMMA_MIN, CROSSTALK_EMU_SCREEN_GAMMA_MAX);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --keys raw|scan; key delivery; defaults to scan");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --net <path>; serial endpoint the program's network bytes move through");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-audio; leave sound off");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-serial; do not mirror the program's serial to the log");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: --no-persist; do not write disk images back on exit");
 
     return LDG_ERR_AOK;
 }
@@ -168,7 +168,7 @@ uint32_t crosstalk_emu_cmdline_parse(uint32_t argc, char **argv, crosstalk_emu_c
 
         if (at + (uint32_t)CMDLINE_STEP >= argc)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: option needs a value; option: %s", arg);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: option needs a value; option: %s", arg);
 
             return CROSSTALK_EMU_CMDLINE_ERR_ARG;
         }
@@ -182,7 +182,7 @@ uint32_t crosstalk_emu_cmdline_parse(uint32_t argc, char **argv, crosstalk_emu_c
             ret = cmdline_memld_add(out, argv[at]);
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: image not readable; value: %s; err: %u32", val, ret);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: image not readable; value: %s; err: %u32", val, ret);
 
                 return ret;
             }
@@ -191,13 +191,13 @@ uint32_t crosstalk_emu_cmdline_parse(uint32_t argc, char **argv, crosstalk_emu_c
         else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_MEM) == 0) { out->mem_sig = val; }
         else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_FONT) == 0) { out->font_path = val; }
         else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_NET) == 0) { out->net_path = val; }
-        else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_HZ) == 0) { out->f_op_hz = strtoull(val, 0x0, LDG_BASE_DEC); }
+        else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_HZ) == 0) { out->f_op = strtoull(val, 0x0, LDG_BASE_DEC); }
         else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_GAMMA) == 0) { *out_gamma = strtod(val, 0x0); }
         else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_KEYS) == 0) { if (strcmp(val, CROSSTALK_EMU_CMDLINE_KEYS_RAW) == 0) { out->key_mode = (uint32_t)CROSSTALK_EMU_INPUT_MODE_RAW; }
             else if (strcmp(val, CROSSTALK_EMU_CMDLINE_KEYS_SCAN) == 0) { out->key_mode = (uint32_t)CROSSTALK_EMU_INPUT_MODE_SCAN; }
             else
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: key mode not known; mode: %s", val);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: key mode not known; mode: %s", val);
                 return CROSSTALK_EMU_CMDLINE_ERR_ARG;
             } }
         else if (strcmp(arg, CROSSTALK_EMU_CMDLINE_ARG_WIN) == 0)
@@ -205,7 +205,7 @@ uint32_t crosstalk_emu_cmdline_parse(uint32_t argc, char **argv, crosstalk_emu_c
             ret = cmdline_win_parse(val, &out->win_w, &out->win_h);
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: window size not readable; value: %s", val);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: window size not readable; value: %s", val);
 
                 return ret;
             }
@@ -218,7 +218,7 @@ uint32_t crosstalk_emu_cmdline_parse(uint32_t argc, char **argv, crosstalk_emu_c
             ret = cmdline_drive_parse(val, &drive, &path);
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: disk not readable; value: %s", val);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: disk not readable; value: %s", val);
 
                 return ret;
             }
@@ -227,13 +227,13 @@ uint32_t crosstalk_emu_cmdline_parse(uint32_t argc, char **argv, crosstalk_emu_c
         }
         else
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: option not known; option: %s", arg);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: option not known; option: %s", arg);
 
             return CROSSTALK_EMU_CMDLINE_ERR_ARG;
         }
     }
 
-    if (out->plugin_path == 0x0) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: no core given; the display has no source until one is attached"); }
+    if (out->plugin_path == 0x0) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "dangcsaemu: no core given; the display has no source until one is attached"); }
 
     return LDG_ERR_AOK;
 }

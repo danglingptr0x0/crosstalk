@@ -116,7 +116,7 @@ uint32_t crosstalk_eda_ui_scope_sig_attach(crosstalk_eda_ui_scope_ctx_t *ctx, co
     ctx->ns_per_div = step_ns * (uint64_t)CROSSTALK_EDA_UI_SCOPE_PERIOD_SAMPLES;
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "scope: signal attached; sig: %.63s; step: %u64 ns; ns/div: %u64", sig, step_ns, ctx->ns_per_div);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "scope: signal attached; sig: %.63s; step: %u64 ns; ns/div: %u64", sig, step_ns, ctx->ns_per_div);
 
     return LDG_ERR_AOK;
 }
@@ -293,7 +293,7 @@ uint32_t crosstalk_eda_ui_scope_mem_attach(crosstalk_eda_ui_scope_ctx_t *ctx, ui
     trace->fixed = fixed != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
     trace->live = LDG_TRUTH_TRUE;
 
-    if (ldg_str_rbrcpy(trace->label, label, (uint64_t)sizeof(trace->label)) == LDG_ERR_STR_TRUNC) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scope trace label truncated"); }
+    if (ldg_str_rbrcpy(trace->label, label, (uint64_t)sizeof(trace->label)) == LDG_ERR_STR_TRUNC) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scope trace label truncated"); }
 
     *out_idx = ctx->mem_cunt;
     ctx->mem_cunt = ctx->mem_cunt + (uint32_t)CROSSTALK_EDA_UI_SCOPE_STEP;

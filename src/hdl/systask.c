@@ -18,15 +18,10 @@
 #define SYSTASK_WORD_CLEAR 0ULL
 #define SYSTASK_HEX_BITS 4U
 #define SYSTASK_OCT_BITS 3U
-#define SYSTASK_RADIX_DEC 10U
-#define SYSTASK_RADIX_HEX 16U
 #define SYSTASK_RADIX_OCT 8U
 #define SYSTASK_RADIX_BIN 2U
 #define SYSTASK_DIGIT_CAP 136
 #define SYSTASK_TIME_FILL 20U
-#define SYSTASK_NS_PER_SEC 1000000000.0
-#define SYSTASK_NS_UNKNOWN 0.0
-#define SYSTASK_ROUND_HALF 0.5
 #define SYSTASK_FILL_NONE 0U
 #define SYSTASK_LIMB_LO 0
 #define SYSTASK_LIMB_HI 1
@@ -181,13 +176,13 @@ static uint32_t systask_fill_default_get(uint32_t width, uint32_t radix, uint8_t
     uint64_t hi = width > SYSTASK_WORD_BITS ? systask_mask_get(width - SYSTASK_WORD_BITS) : SYSTASK_WORD_CLEAR;
     uint32_t len = 0;
 
-    if (radix == SYSTASK_RADIX_HEX) { return (width + SYSTASK_HEX_BITS - SYSTASK_STEP) / SYSTASK_HEX_BITS; }
+    if (radix == LDG_BASE_HEX) { return (width + SYSTASK_HEX_BITS - SYSTASK_STEP) / SYSTASK_HEX_BITS; }
 
     if (radix == SYSTASK_RADIX_OCT) { return (width + SYSTASK_OCT_BITS - SYSTASK_STEP) / SYSTASK_OCT_BITS; }
 
     if (radix == SYSTASK_RADIX_BIN) { return width; }
 
-    if (systask_digits_make(systask_mask_get(width), hi, SYSTASK_RADIX_DEC, digits, &len) != LDG_ERR_AOK) { return SYSTASK_FILL_NONE; }
+    if (systask_digits_make(systask_mask_get(width), hi, LDG_BASE_DEC, digits, &len) != LDG_ERR_AOK) { return SYSTASK_FILL_NONE; }
 
     return sgn == LDG_TRUTH_TRUE ? len + SYSTASK_STEP : len;
 }
@@ -201,7 +196,7 @@ static void systask_num_put(crosstalk_hdl_systask_ctx_t *ctx, const systask_val_
     uint32_t want = fill;
     uint8_t neg = LDG_TRUTH_FALSE;
 
-    if (radix == SYSTASK_RADIX_DEC && val->sgn == LDG_TRUTH_TRUE && val->width != 0)
+    if (radix == LDG_BASE_DEC && val->sgn == LDG_TRUTH_TRUE && val->width != 0)
     {
         uint8_t top_set = val->width > SYSTASK_WORD_BITS ? (uint8_t)((hi >> (val->width - SYSTASK_WORD_BITS - SYSTASK_STEP)) & (uint64_t)SYSTASK_STEP) : (uint8_t)((lo >> (val->width - SYSTASK_STEP)) & (uint64_t)SYSTASK_STEP);
 
@@ -229,7 +224,7 @@ static void systask_num_put(crosstalk_hdl_systask_ctx_t *ctx, const systask_val_
 
     if (neg == LDG_TRUTH_TRUE) { len++; }
 
-    if (want > len) { systask_fill_put(ctx, radix == SYSTASK_RADIX_DEC ? SYSTASK_FILL_SPACE : SYSTASK_FILL_ZERO, want - len); }
+    if (want > len) { systask_fill_put(ctx, radix == LDG_BASE_DEC ? SYSTASK_FILL_SPACE : SYSTASK_FILL_ZERO, want - len); }
 
     if (neg == LDG_TRUTH_TRUE)
     {
@@ -265,7 +260,7 @@ static void systask_str_val_put(crosstalk_hdl_systask_ctx_t *ctx, const systask_
     }
 }
 
-static void systask_lit_bounds_get(const char *src, const crosstalk_hdl_tok_t *tok, uint32_t *out_start, uint32_t *out_end)
+static void systask_literal_bounds_get(const char *src, const crosstalk_hdl_tok_t *tok, uint32_t *out_start, uint32_t *out_end)
 {
     uint32_t start = tok->off;
     uint32_t end = tok->off + tok->len;
@@ -278,12 +273,12 @@ static void systask_lit_bounds_get(const char *src, const crosstalk_hdl_tok_t *t
     *out_end = end;
 }
 
-static void systask_lit_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_tok_t *tok)
+static void systask_literal_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_tok_t *tok)
 {
     uint32_t start = 0;
     uint32_t end = 0;
 
-    systask_lit_bounds_get(ctx->src, tok, &start, &end);
+    systask_literal_bounds_get(ctx->src, tok, &start, &end);
     systask_text_put(ctx, &ctx->src[start], (uint64_t)(end - start));
 }
 
@@ -293,8 +288,11 @@ static void systask_val_get(const crosstalk_hdl_systask_ctx_t *ctx, const crosst
     {
         out->width = SYSTASK_WORD_BITS;
         out->sgn = LDG_TRUTH_FALSE;
-        out->lo = (uint64_t)((double)exec->cycle_cunt * ctx->ns_per_cycle + SYSTASK_ROUND_HALF);
+        out->lo = ctx->f_op == 0 ? SYSTASK_WORD_CLEAR : exec->cycle_cunt / ctx->f_op * (uint64_t)LDG_NS_PER_SEC + exec->cycle_cunt % ctx->f_op * (uint64_t)LDG_NS_PER_SEC / ctx->f_op;
         out->hi = SYSTASK_WORD_CLEAR;
+
+        if (ctx->ir_ctx->timed == LDG_TRUTH_TRUE) { out->lo = exec->now / ctx->ir_ctx->time_unit + (uint64_t)(exec->now % ctx->ir_ctx->time_unit >= ctx->ir_ctx->time_unit - exec->now % ctx->ir_ctx->time_unit); }
+
         return;
     }
 
@@ -310,7 +308,7 @@ static void systask_spec_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
 {
     const crosstalk_hdl_ir_systask_arg_t *arg = 0x0;
     systask_val_t val = LDG_STRUCT_ZERO_INIT;
-    uint32_t radix = SYSTASK_RADIX_DEC;
+    uint32_t radix = LDG_BASE_DEC;
 
     if (spec == SYSTASK_SPEC)
     {
@@ -326,8 +324,10 @@ static void systask_spec_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
 
     if (spec == SYSTASK_SPEC_TIME)
     {
-        val.lo = (uint64_t)((double)exec->cycle_cunt * ctx->ns_per_cycle + SYSTASK_ROUND_HALF);
+        val.lo = ctx->f_op == 0 ? SYSTASK_WORD_CLEAR : exec->cycle_cunt / ctx->f_op * (uint64_t)LDG_NS_PER_SEC + exec->cycle_cunt % ctx->f_op * (uint64_t)LDG_NS_PER_SEC / ctx->f_op;
         val.width = SYSTASK_WORD_BITS;
+
+        if (ctx->ir_ctx->timed == LDG_TRUTH_TRUE) { val.lo = exec->now / ctx->ir_ctx->time_unit + (uint64_t)(exec->now % ctx->ir_ctx->time_unit >= ctx->ir_ctx->time_unit - exec->now % ctx->ir_ctx->time_unit); }
 
         if (*io_at < task->arg_cunt && ctx->ir_ctx->systask_args[task->arg_start + *io_at].str_is != LDG_TRUTH_TRUE)
         {
@@ -335,7 +335,7 @@ static void systask_spec_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
             (*io_at)++;
         }
 
-        systask_num_put(ctx, &val, SYSTASK_RADIX_DEC, fill_set == LDG_TRUTH_TRUE ? fill : SYSTASK_TIME_FILL, LDG_TRUTH_TRUE);
+        systask_num_put(ctx, &val, LDG_BASE_DEC, fill_set == LDG_TRUTH_TRUE ? fill : SYSTASK_TIME_FILL, LDG_TRUTH_TRUE);
         return;
     }
 
@@ -350,7 +350,7 @@ static void systask_spec_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
 
     if (arg->str_is == LDG_TRUTH_TRUE)
     {
-        systask_lit_put(ctx, &arg->str);
+        systask_literal_put(ctx, &arg->str);
         return;
     }
 
@@ -368,7 +368,7 @@ static void systask_spec_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
         return;
     }
 
-    if (spec == SYSTASK_SPEC_HEX || spec == SYSTASK_SPEC_HEX_ALT) { radix = SYSTASK_RADIX_HEX; }
+    if (spec == SYSTASK_SPEC_HEX || spec == SYSTASK_SPEC_HEX_ALT) { radix = LDG_BASE_HEX; }
     else if (spec == SYSTASK_SPEC_OCT) { radix = SYSTASK_RADIX_OCT; }
     else if (spec == SYSTASK_SPEC_BIN) { radix = SYSTASK_RADIX_BIN; }
     else if (spec != SYSTASK_SPEC_DEC)
@@ -377,7 +377,7 @@ static void systask_spec_put(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
         return;
     }
 
-    if (radix != SYSTASK_RADIX_DEC) { val.sgn = LDG_TRUTH_FALSE; }
+    if (radix != LDG_BASE_DEC) { val.sgn = LDG_TRUTH_FALSE; }
 
     systask_num_put(ctx, &val, radix, fill, fill_set);
 }
@@ -388,7 +388,7 @@ static void systask_fmt_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hd
     uint32_t end = 0;
     uint32_t pos = 0;
 
-    systask_lit_bounds_get(ctx->src, fmt_tok, &start, &end);
+    systask_literal_bounds_get(ctx->src, fmt_tok, &start, &end);
 
     for (pos = start; pos < end; pos++)
     {
@@ -419,7 +419,7 @@ static void systask_fmt_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hd
 
         while (pos < end && ctx->src[pos] >= SYSTASK_DIGIT_LO && ctx->src[pos] <= SYSTASK_DIGIT_HI)
         {
-            fill = fill * SYSTASK_RADIX_DEC + (uint32_t)(ctx->src[pos] - SYSTASK_DIGIT_LO);
+            fill = fill * LDG_BASE_DEC + (uint32_t)(ctx->src[pos] - SYSTASK_DIGIT_LO);
             fill_set = LDG_TRUTH_TRUE;
             pos++;
         }
@@ -458,7 +458,7 @@ static void systask_task_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_h
         }
 
         systask_val_get(ctx, exec, arg, &val);
-        systask_num_put(ctx, &val, SYSTASK_RADIX_DEC, SYSTASK_FILL_NONE, LDG_TRUTH_FALSE);
+        systask_num_put(ctx, &val, LDG_BASE_DEC, SYSTASK_FILL_NONE, LDG_TRUTH_FALSE);
     }
 
     if (task->kind == CROSSTALK_HDL_IR_SYSTASK_DISPLAY) { systask_ch_put(ctx, SYSTASK_LF); }
@@ -564,7 +564,7 @@ uint32_t crosstalk_hdl_systask_out_cb_set(crosstalk_hdl_systask_ctx_t *ctx, cros
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_hdl_systask_scope_set(crosstalk_hdl_systask_ctx_t *ctx, const char *scope, uint64_t f_op_hz)
+uint32_t crosstalk_hdl_systask_scope_set(crosstalk_hdl_systask_ctx_t *ctx, const char *scope, uint64_t f_op)
 {
     uint32_t ret = 0;
 
@@ -573,7 +573,7 @@ uint32_t crosstalk_hdl_systask_scope_set(crosstalk_hdl_systask_ctx_t *ctx, const
     ret = ldg_str_rbrcpy(ctx->scope, scope, (uint64_t)sizeof(ctx->scope));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
-    ctx->ns_per_cycle = f_op_hz == 0 ? SYSTASK_NS_UNKNOWN : SYSTASK_NS_PER_SEC / (double)f_op_hz;
+    ctx->f_op = f_op;
 
     return LDG_ERR_AOK;
 }
@@ -593,6 +593,24 @@ uint32_t crosstalk_hdl_systask_blk_run(crosstalk_hdl_systask_ctx_t *ctx, const c
     for (idx = hd; idx < hd + ctx->blk_cunt[blk_idx]; idx++)
     {
         const crosstalk_hdl_ir_systask_t *task = &ctx->ir_ctx->systasks[idx];
+
+        if (systask_guard_is(exec, task->guard) == LDG_TRUTH_TRUE) { systask_task_run(ctx, exec, task); }
+    }
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_systask_seg_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_exec_ctx_t *exec, uint32_t seg_idx)
+{
+    uint32_t idx = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || exec == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    for (idx = 0; idx < ctx->ir_ctx->systask_cunt; idx++)
+    {
+        const crosstalk_hdl_ir_systask_t *task = &ctx->ir_ctx->systasks[idx];
+
+        if (task->where != CROSSTALK_HDL_IR_SYSTASK_WHERE_SEG || task->blk != seg_idx) { continue; }
 
         if (systask_guard_is(exec, task->guard) == LDG_TRUTH_TRUE) { systask_task_run(ctx, exec, task); }
     }

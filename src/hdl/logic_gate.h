@@ -35,7 +35,7 @@ typedef struct crosstalk_hdl_logic_gate_ctx
     crosstalk_hdl_logic_gate_mem_op_t *mem_ops;
     uint8_t *node_val;
     uint32_t *latch_pi_node;
-    uint32_t *latch_root_lit;
+    uint32_t *latch_root_literal;
     uint32_t *ff_sig;
     uint32_t *ff_root_off;
     uint64_t cycle_cunt;

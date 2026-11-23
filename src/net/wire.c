@@ -80,7 +80,7 @@ uint32_t crosstalk_net_wire_blob_send(crosstalk_net_libresteam_ctx_t *ctx, uint8
         chunk_cunt++;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "net: blob sent; kind: %u32; len: %u32; chunks: %u32", (uint32_t)kind, len, chunk_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "net: blob sent; kind: %u32; len: %u32; chunks: %u32", (uint32_t)kind, len, chunk_cunt);
 
     return LDG_ERR_AOK;
 }
@@ -107,7 +107,7 @@ uint32_t crosstalk_net_wire_blob_recv(crosstalk_net_libresteam_ctx_t *ctx, const
     {
         ctx->snap_total = chunk.total_len;
         ctx->snap_len = 0;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "net: blob recv begin; total: %u32; chunk: %u32", chunk.total_len, chunk.part_len);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "net: blob recv begin; total: %u32; chunk: %u32", chunk.total_len, chunk.part_len);
     }
 
     if (LDG_UNLIKELY(chunk.total_len != ctx->snap_total)) { return LDG_ERR_INVALID; }

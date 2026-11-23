@@ -197,7 +197,7 @@ static void stackview_query_exec(crosstalk_eda_ui_stackview_ctx_t *ctx)
 
     if (ctx->req != (uint32_t)CROSSTALK_EDA_UI_STACKVIEW_REQ_NONE)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "stackview: request pending; sig: %.63s", ctx->req_sig);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "stackview: request pending; sig: %.63s", ctx->req_sig);
 
         return;
     }

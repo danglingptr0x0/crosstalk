@@ -89,7 +89,7 @@ void crosstalk_net_libresteam_notice_push(crosstalk_net_libresteam_ctx_t *ctx, c
 
     slot = &ctx->notice[idx];
     rc = ldg_str_rbrcpy(slot->text, text, sizeof(slot->text));
-    if (rc != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam: notice truncated; rc: %u32", rc); }
+    if (rc != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam: notice truncated; rc: %u32", rc); }
 
     slot->ttl = NET_LIBRESTEAM_NOTICE_TTL;
 }
@@ -197,7 +197,7 @@ static uint32_t net_libresteam_client_find(const crosstalk_net_libresteam_ctx_t 
 
 static void net_libresteam_conn_drop(crosstalk_net_libresteam_ctx_t *ctx, uint32_t conn)
 {
-    if (libresteam_net_socks_conn_close(ctx->set, conn, NET_LIBRESTEAM_CONN_CLOSE_REASON_APP, 0x0, NET_LIBRESTEAM_LINGER_OFF) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: conn close failed; conn: %u32", conn); }
+    if (libresteam_net_socks_conn_close(ctx->set, conn, NET_LIBRESTEAM_CONN_CLOSE_REASON_APP, 0x0, NET_LIBRESTEAM_LINGER_OFF) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: conn close failed; conn: %u32", conn); }
 }
 
 static void net_libresteam_join_ask_clear(crosstalk_net_libresteam_ctx_t *ctx)
@@ -217,12 +217,12 @@ static void net_libresteam_client_admit(crosstalk_net_libresteam_ctx_t *ctx, uin
 
     if (idx >= CROSSTALK_NET_CLIENT_MAX || libresteam_net_socks_conn_accept(ctx->set, conn, &eres) != LDG_ERR_AOK || eres != NET_LIBRESTEAM_ERES_OK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: admit failed; conn: %u32; slot: %u32; steam res: %u32", conn, idx, eres);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: admit failed; conn: %u32; slot: %u32; steam res: %u32", conn, idx, eres);
         net_libresteam_conn_drop(ctx, conn);
         return;
     }
 
-    if (libresteam_net_socks_conn_poll_group_set(ctx->set, conn, ctx->poll_group) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: poll group set failed; conn: %u32", conn); }
+    if (libresteam_net_socks_conn_poll_group_set(ctx->set, conn, ctx->poll_group) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: poll group set failed; conn: %u32", conn); }
 
     ctx->client[idx].conn = conn;
     ctx->client[idx].steam_id = steam_id;
@@ -230,7 +230,7 @@ static void net_libresteam_client_admit(crosstalk_net_libresteam_ctx_t *ctx, uin
     net_libresteam_persona_copy(ctx, ctx->client[idx].steam_id, ctx->client[idx].name, (uint64_t)sizeof(ctx->client[idx].name));
     ctx->client_cunt++;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: player joined; name: %.63s; conn: %u32", ctx->client[idx].name, idx);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: player joined; name: %.63s; conn: %u32", ctx->client[idx].name, idx);
 
     if (ctx->cb != 0x0 && ctx->cb->on_conn != 0x0) { ctx->cb->on_conn(ctx, idx); }
 }
@@ -248,7 +248,7 @@ static void net_libresteam_srv_conn_status(crosstalk_net_libresteam_ctx_t *ctx, 
 
         if (idx >= CROSSTALK_NET_CLIENT_MAX || ctx->join_ask_live == LDG_TRUTH_TRUE)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join refused; conn: %u32; steam_id: %u64; full: %u32; ask pending: %u32", conn, net_libresteam_ident_steam_get(&info->ident_remote), (uint32_t)(idx >= CROSSTALK_NET_CLIENT_MAX ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE), (uint32_t)ctx->join_ask_live);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join refused; conn: %u32; steam_id: %u64; full: %u32; ask pending: %u32", conn, net_libresteam_ident_steam_get(&info->ident_remote), (uint32_t)(idx >= CROSSTALK_NET_CLIENT_MAX ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE), (uint32_t)ctx->join_ask_live);
             net_libresteam_conn_drop(ctx, conn);
             return;
         }
@@ -258,7 +258,7 @@ static void net_libresteam_srv_conn_status(crosstalk_net_libresteam_ctx_t *ctx, 
         ctx->join_ask_live = LDG_TRUTH_TRUE;
         net_libresteam_persona_copy(ctx, ctx->join_ask_steam_id, ctx->join_ask_name, (uint64_t)sizeof(ctx->join_ask_name));
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join asked; name: %.63s; steam_id: %u64; conn: %u32", ctx->join_ask_name, ctx->join_ask_steam_id, conn);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join asked; name: %.63s; steam_id: %u64; conn: %u32", ctx->join_ask_name, ctx->join_ask_steam_id, conn);
 
         return;
     }
@@ -269,14 +269,14 @@ static void net_libresteam_srv_conn_status(crosstalk_net_libresteam_ctx_t *ctx, 
     {
         if (ctx->join_ask_live != LDG_TRUTH_TRUE || conn != ctx->join_ask_conn) { return; }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join ask gone; name: %.63s; steam_id: %u64; state: %u32", ctx->join_ask_name, ctx->join_ask_steam_id, info->state);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join ask gone; name: %.63s; steam_id: %u64; state: %u32", ctx->join_ask_name, ctx->join_ask_steam_id, info->state);
         net_libresteam_conn_drop(ctx, conn);
         net_libresteam_join_ask_clear(ctx);
 
         return;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: player left; name: %.63s; conn: %u32", ctx->client[slot].name, slot);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: player left; name: %.63s; conn: %u32", ctx->client[slot].name, slot);
 
     if (ctx->cb != 0x0 && ctx->cb->on_dc != 0x0) { ctx->cb->on_dc(ctx, slot); }
 
@@ -400,7 +400,7 @@ uint32_t crosstalk_net_libresteam_init(crosstalk_net_libresteam_ctx_t *ctx, cons
     ret = libresteam_friends_msg_listen_set(set, LDG_TRUTH_TRUE);
     if (ret == LDG_ERR_AOK) { ctx->friend_msg_live = LDG_TRUTH_TRUE; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "libresteam: friend msg listen; err: %u32", ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "libresteam: friend msg listen; err: %u32", ret);
 
     ctx->snap_cap = CROSSTALK_NET_SNAP_CAP;
     ctx->lobby_live = LDG_TRUTH_TRUE;
@@ -462,7 +462,7 @@ void crosstalk_net_libresteam_shutdown(crosstalk_net_libresteam_ctx_t *ctx)
     {
         ret = libresteam_friends_msg_listen_set(ctx->set, LDG_TRUTH_FALSE);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: friend msg listen off; err: %u32; drops: %u32", ret, ctx->friend_msg_drop);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: friend msg listen off; err: %u32; drops: %u32", ret, ctx->friend_msg_drop);
         ctx->friend_msg_live = LDG_TRUTH_FALSE;
     }
 
@@ -615,7 +615,7 @@ static void net_libresteam_friends_refresh(crosstalk_net_libresteam_ctx_t *ctx)
         cunt++;
     }
 
-    if (cunt != ctx->friend_cunt) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: friends refreshed; cunt: %u32", cunt); }
+    if (cunt != ctx->friend_cunt) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: friends refreshed; cunt: %u32", cunt); }
 
     ctx->friend_cunt = cunt;
 
@@ -758,13 +758,13 @@ static void net_libresteam_lobby_entered(crosstalk_net_libresteam_ctx_t *ctx, ui
 
     if (host != LDG_TRUTH_TRUE) { return; }
 
-    if (libresteam_lobby_data_set(ctx->set, lobby, CROSSTALK_NET_LOBBY_KEY_MAP, ctx->lobby_map) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby map set failed"); }
+    if (libresteam_lobby_data_set(ctx->set, lobby, CROSSTALK_NET_LOBBY_KEY_MAP, ctx->lobby_map) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby map set failed"); }
 
-    if (libresteam_lobby_data_set(ctx->set, lobby, CROSSTALK_NET_LOBBY_KEY_REV, NET_LIBRESTEAM_LOBBY_REV) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby rev set failed"); }
+    if (libresteam_lobby_data_set(ctx->set, lobby, CROSSTALK_NET_LOBBY_KEY_REV, NET_LIBRESTEAM_LOBBY_REV) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby rev set failed"); }
 
     if (ldg_str_fmt(host_str, (uint64_t)sizeof(host_str), &fmt_len, "%u64", crosstalk_net_libresteam_local_steam_id_get(ctx)) != LDG_ERR_AOK) { return; }
 
-    if (libresteam_lobby_data_set(ctx->set, lobby, CROSSTALK_NET_LOBBY_KEY_HOST, host_str) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby host set failed"); }
+    if (libresteam_lobby_data_set(ctx->set, lobby, CROSSTALK_NET_LOBBY_KEY_HOST, host_str) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby host set failed"); }
 }
 
 static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ctx)
@@ -788,7 +788,7 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         {
             ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
 
-            if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby create refused; steam res: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD)); }
+            if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby create refused; steam res: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD)); }
         }
     }
     else if (ctx->lobby_pending == CROSSTALK_NET_LOBBY_PENDING_JOIN)
@@ -801,7 +801,7 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         {
             ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
 
-            if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby join refused; enter resp: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP)); }
+            if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby join refused; enter resp: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP)); }
         }
     }
     else if (ctx->lobby_pending == CROSSTALK_NET_LOBBY_PENDING_LIST)
@@ -820,7 +820,7 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         else { ctx->lobby_list_cunt = 0; }
     }
 
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby call failed; pending: %u32; err: %u32", ctx->lobby_pending, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby call failed; pending: %u32; err: %u32", ctx->lobby_pending, ret); }
 
     ctx->lobby_pending = CROSSTALK_NET_LOBBY_PENDING_NONE;
 }
@@ -908,7 +908,7 @@ void crosstalk_net_libresteam_poll(crosstalk_net_libresteam_ctx_t *ctx, double d
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
     ret = libresteam_cb_pump(ctx->set, &ctx->sink);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam: callback pump failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam: callback pump failed; err: %u32", ret); }
 
     net_libresteam_lobby_pending_poll(ctx);
 
@@ -968,7 +968,7 @@ static uint32_t net_libresteam_srv_up(crosstalk_net_libresteam_ctx_t *ctx)
     ret = libresteam_net_socks_poll_group_create(ctx->set, &ctx->poll_group);
     if (ret != LDG_ERR_AOK)
     {
-        if (libresteam_net_socks_listen_sock_close(ctx->set, ctx->listen_sock) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: listen sock close failed"); }
+        if (libresteam_net_socks_listen_sock_close(ctx->set, ctx->listen_sock) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: listen sock close failed"); }
 
         ctx->listen_sock = LIBRESTEAM_NET_HANDLE_INVALID;
         ctx->poll_group = LIBRESTEAM_NET_HANDLE_INVALID;
@@ -1074,7 +1074,7 @@ uint32_t crosstalk_net_libresteam_lan_host_start(crosstalk_net_libresteam_ctx_t 
 
     srv_map = (map != 0x0 && map[0] != LDG_STR_TERM) ? map : NET_LIBRESTEAM_LOBBY_MAP;
 
-    if (name != 0x0 && name[0] != LDG_STR_TERM) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam: lan host name; name: %.63s", name); }
+    if (name != 0x0 && name[0] != LDG_STR_TERM) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "libresteam: lan host name; name: %.63s", name); }
 
     crosstalk_net_libresteam_sesh_stop(ctx);
 
@@ -1085,7 +1085,7 @@ uint32_t crosstalk_net_libresteam_lan_host_start(crosstalk_net_libresteam_ctx_t 
     ret = libresteam_net_socks_listen_sock_ip_create(ctx->set, &local, (uint32_t)NET_LIBRESTEAM_CONF_VAL_CUNT, &conf, &ctx->listen_sock);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "libresteam: lan listen failed; err: %u32; port: %u32", ret, (uint32_t)port);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "libresteam: lan listen failed; err: %u32; port: %u32", ret, (uint32_t)port);
         return ret;
     }
 
@@ -1095,7 +1095,7 @@ uint32_t crosstalk_net_libresteam_lan_host_start(crosstalk_net_libresteam_ctx_t 
     ctx->lan_port = port;
     ctx->lan_sesh = (uint8_t)CROSSTALK_NET_LAN_SESH_HOSTING;
     crosstalk_net_libresteam_notice_push(ctx, "hosting LAN session");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: lan host; port: %u32; max: %u32; map: %.31s", (uint32_t)port, player_max, srv_map);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: lan host; port: %u32; max: %u32; map: %.31s", (uint32_t)port, player_max, srv_map);
     return LDG_ERR_AOK;
 }
 
@@ -1117,14 +1117,14 @@ uint32_t crosstalk_net_libresteam_lan_client_join(crosstalk_net_libresteam_ctx_t
     ret = libresteam_net_socks_ip_addr_connect(ctx->set, &addr, (uint32_t)NET_LIBRESTEAM_CONF_VAL_CUNT, &conf, &ctx->srv_conn);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "libresteam: lan join failed; err: %u32; ip: %u32; port: %u32", ret, ip, (uint32_t)port);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "libresteam: lan join failed; err: %u32; ip: %u32; port: %u32", ret, ip, (uint32_t)port);
         return ret;
     }
 
     net_libresteam_client_up(ctx);
     ctx->lan_sesh = (uint8_t)CROSSTALK_NET_LAN_SESH_JOINED;
     crosstalk_net_libresteam_notice_push(ctx, "joining LAN session");
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: lan join; ip: %u32; port: %u32", ip, (uint32_t)port);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: lan join; ip: %u32; port: %u32", ip, (uint32_t)port);
     return LDG_ERR_AOK;
 }
 
@@ -1161,9 +1161,9 @@ void crosstalk_net_libresteam_sesh_stop(crosstalk_net_libresteam_ctx_t *ctx)
 
     if (ctx->srv_conn != LIBRESTEAM_NET_HANDLE_INVALID) { net_libresteam_conn_drop(ctx, ctx->srv_conn); }
 
-    if (ctx->poll_group != LIBRESTEAM_NET_HANDLE_INVALID && libresteam_net_socks_poll_group_destroy(ctx->set, ctx->poll_group) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: poll group destroy failed"); }
+    if (ctx->poll_group != LIBRESTEAM_NET_HANDLE_INVALID && libresteam_net_socks_poll_group_destroy(ctx->set, ctx->poll_group) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: poll group destroy failed"); }
 
-    if (ctx->listen_sock != LIBRESTEAM_NET_HANDLE_INVALID && libresteam_net_socks_listen_sock_close(ctx->set, ctx->listen_sock) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: listen sock close failed"); }
+    if (ctx->listen_sock != LIBRESTEAM_NET_HANDLE_INVALID && libresteam_net_socks_listen_sock_close(ctx->set, ctx->listen_sock) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: listen sock close failed"); }
 
     ctx->srv_conn = LIBRESTEAM_NET_HANDLE_INVALID;
     ctx->poll_group = LIBRESTEAM_NET_HANDLE_INVALID;
@@ -1201,7 +1201,7 @@ uint32_t crosstalk_net_libresteam_join_ask_answer(crosstalk_net_libresteam_ctx_t
     conn = ctx->join_ask_conn;
     steam_id = ctx->join_ask_steam_id;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join answered; allow: %u32; name: %.63s; steam_id: %u64; conn: %u32", (uint32_t)allow, ctx->join_ask_name, steam_id, conn);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "libresteam: join answered; allow: %u32; name: %.63s; steam_id: %u64; conn: %u32", (uint32_t)allow, ctx->join_ask_name, steam_id, conn);
 
     net_libresteam_join_ask_clear(ctx);
 
@@ -1373,7 +1373,7 @@ void crosstalk_net_libresteam_lobby_leave(crosstalk_net_libresteam_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
-    if (ctx->lobby_id != NET_LIBRESTEAM_ID_NONE && libresteam_lobby_leave(ctx->set, net_libresteam_id_make(ctx->lobby_id)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby leave failed; lobby: %u64", ctx->lobby_id); }
+    if (ctx->lobby_id != NET_LIBRESTEAM_ID_NONE && libresteam_lobby_leave(ctx->set, net_libresteam_id_make(ctx->lobby_id)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby leave failed; lobby: %u64", ctx->lobby_id); }
 
     ctx->lobby_id = NET_LIBRESTEAM_ID_NONE;
     ctx->lobby_host_id = NET_LIBRESTEAM_ID_NONE;
@@ -1387,7 +1387,7 @@ static void net_libresteam_member_flag_set(crosstalk_net_libresteam_ctx_t *ctx, 
 {
     if (ctx->lobby_id == NET_LIBRESTEAM_ID_NONE) { return; }
 
-    if (libresteam_lobby_member_data_set(ctx->set, net_libresteam_id_make(ctx->lobby_id), key, on != LDG_TRUTH_FALSE ? NET_LIBRESTEAM_FLAG_ON : NET_LIBRESTEAM_FLAG_OFF) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: member data set failed; key: %.15s", key); }
+    if (libresteam_lobby_member_data_set(ctx->set, net_libresteam_id_make(ctx->lobby_id), key, on != LDG_TRUTH_FALSE ? NET_LIBRESTEAM_FLAG_ON : NET_LIBRESTEAM_FLAG_OFF) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: member data set failed; key: %.15s", key); }
 }
 
 void crosstalk_net_libresteam_lobby_rdy_set(crosstalk_net_libresteam_ctx_t *ctx, uint8_t rdy)
@@ -1495,7 +1495,7 @@ static void net_libresteam_presence_kv_set(const libresteam_backend_set_t *set, 
     uint32_t ret = 0;
 
     ret = libresteam_friends_rich_presence_set(set, key, val);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "presence: libresteam set failed; key: %.63s; err: %u32", key, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "presence: libresteam set failed; key: %.63s; err: %u32", key, ret); }
 }
 
 static void net_libresteam_presence_lines_set(const libresteam_backend_set_t *set, const char *op, const char *att, uint8_t in_lobby)

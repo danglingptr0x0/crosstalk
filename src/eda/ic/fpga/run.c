@@ -29,15 +29,15 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
     {
         ret = ldg_sys_cpuset_thread_self_set(ctx->cpuset_id, ctx->cpuset_cunt);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "fpga run: worker cpuset; first: %u32; cunt: %u32; err: %u32", ctx->cpuset_id[0], ctx->cpuset_cunt, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "fpga run: worker cpuset; first: %u32; cunt: %u32; err: %u32", ctx->cpuset_id[0], ctx->cpuset_cunt, ret);
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker enter; id: %u32; alive: %u32", worker_id, alive_now);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker enter; id: %u32; alive: %u32", worker_id, alive_now);
 
     if (LDG_LD_ACQUIRE(ctx->stop) == LDG_TRUTH_TRUE)
     {
         alive_now = LDG_SUB_FETCH(ctx->alive, 1);
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker exit; id: %u32; alive: %u32", worker_id, alive_now);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker exit; id: %u32; alive: %u32", worker_id, alive_now);
         return LDG_ERR_AOK;
     }
 
@@ -53,14 +53,14 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
         uint64_t steps = 0;
         uint32_t slot_idx = 0;
 
-        if (crosstalk_eda_clk_advance(ctx->clk, (double)(now - mark) / (double)LDG_NS_PER_SEC, &steps) != LDG_ERR_AOK) { steps = 0; }
+        if (crosstalk_eda_clk_adv(ctx->clk, now - mark, &steps) != LDG_ERR_AOK) { steps = 0; }
 
         mark = now;
         ctx->iters_total++;
 
         if (steps == 0)
         {
-            if (ldg_thread_yield((uint64_t)CROSSTALK_EDA_IC_FPGA_RUN_IDLE_YIELD_NS) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run idle yield failed"); }
+            if (ldg_thread_yield((uint64_t)CROSSTALK_EDA_IC_FPGA_RUN_IDLE_YIELD_NS) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run idle yield failed"); }
 
             continue;
         }
@@ -105,7 +105,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
 
             ctx->cycles_total = ctx->cycles_total + done;
 
-            if (ctx->fpga->slot[slot_idx].comp.f_op_hz > ctx->tune_hz_cap) { ctx->tune_hz_cap = ctx->fpga->slot[slot_idx].comp.f_op_hz; }
+            if (ctx->fpga->slot[slot_idx].comp.f_op > ctx->tune_hz_cap) { ctx->tune_hz_cap = ctx->fpga->slot[slot_idx].comp.f_op; }
         }
 
 
@@ -135,7 +135,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
                 {
                     if (crosstalk_eda_ic_fpga_slot_live_is(ctx->fpga, slot_idx) != LDG_TRUTH_TRUE) { continue; }
 
-                    if (crosstalk_eda_clk_domain_freq_set(ctx->clk, ctx->fpga->slot[slot_idx].clk_domain, hz) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run clk tune failed"); }
+                    if (crosstalk_eda_clk_domain_freq_set(ctx->clk, ctx->fpga->slot[slot_idx].clk_domain, hz) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run clk tune failed"); }
                 }
 
                 ctx->tune_hz = hz;
@@ -149,7 +149,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
                 uint64_t iters = ((ctx->iters_total - ctx->log_iters) * (uint64_t)LDG_NS_PER_SEC) / log_span;
                 uint64_t busy_pct = ((ctx->busy_ns - ctx->log_busy_ns) * 100) / log_span;
 
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: clk; hz: %u64; mean: %u64; pin: %u64; cap: %u64; cycles: %u64; iters/s: %u64; busy: %u64%%", ctx->tune_hz, mean, ctx->pin_hz, ctx->tune_hz_cap, ctx->cycles_total, iters, busy_pct);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: clk; hz: %u64; mean: %u64; pin: %u64; cap: %u64; cycles: %u64; iters/s: %u64; busy: %u64%%", ctx->tune_hz, mean, ctx->pin_hz, ctx->tune_hz_cap, ctx->cycles_total, iters, busy_pct);
 
                 ctx->log_mark = now;
                 ctx->log_cycles = ctx->cycles_total;
@@ -163,7 +163,7 @@ static uint32_t run_worker(uint32_t worker_id, void *arg)
 
     alive_now = LDG_SUB_FETCH(ctx->alive, 1);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker exit; id: %u32; alive: %u32", worker_id, alive_now);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: worker exit; id: %u32; alive: %u32", worker_id, alive_now);
 
     return LDG_ERR_AOK;
 }
@@ -180,7 +180,7 @@ uint32_t crosstalk_eda_ic_fpga_run_pin_set(crosstalk_eda_ic_fpga_run_ctx_t *ctx,
 
     if (hz == 0)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: clk unpinned; tuning resumes");
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: clk unpinned; tuning resumes");
         return LDG_ERR_AOK;
     }
 
@@ -190,12 +190,12 @@ uint32_t crosstalk_eda_ic_fpga_run_pin_set(crosstalk_eda_ic_fpga_run_ctx_t *ctx,
     {
         if (crosstalk_eda_ic_fpga_slot_live_is(ctx->fpga, slot_idx) != LDG_TRUTH_TRUE) { continue; }
 
-        if (crosstalk_eda_clk_domain_freq_set(ctx->clk, ctx->fpga->slot[slot_idx].clk_domain, hz) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run clk pin failed"); }
+        if (crosstalk_eda_clk_domain_freq_set(ctx->clk, ctx->fpga->slot[slot_idx].clk_domain, hz) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run clk pin failed"); }
     }
 
     ctx->tune_hz = hz;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: clk pinned; hz: %u64", hz);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: clk pinned; hz: %u64", hz);
 
     return LDG_ERR_AOK;
 }
@@ -242,7 +242,7 @@ uint32_t crosstalk_eda_ic_fpga_run_init(crosstalk_eda_ic_fpga_run_ctx_t *ctx, cr
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_thread_pool_priority_set(&ctx->pool, LDG_THREAD_POOL_PRIORITY_NORMAL);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "fpga run: worker priority; lvl: normal; err: %u32", ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "fpga run: worker priority; lvl: normal; err: %u32", ret);
 
     ctx->ok = LDG_TRUTH_TRUE;
 
@@ -255,9 +255,9 @@ uint32_t crosstalk_eda_ic_fpga_run_shutdown(crosstalk_eda_ic_fpga_run_ctx_t *ctx
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    if (crosstalk_eda_ic_fpga_run_hlt(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run halt failed"); }
+    if (crosstalk_eda_ic_fpga_run_hlt(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run halt failed"); }
 
-    if (ldg_thread_pool_shutdown(&ctx->pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run pool shutdown failed"); }
+    if (ldg_thread_pool_shutdown(&ctx->pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run pool shutdown failed"); }
 
     memset(ctx, 0x0, sizeof(*ctx));
 
@@ -295,7 +295,7 @@ uint32_t crosstalk_eda_ic_fpga_run_start(crosstalk_eda_ic_fpga_run_ctx_t *ctx)
 
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: started");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: started");
 
     return LDG_ERR_AOK;
 }
@@ -310,13 +310,13 @@ uint32_t crosstalk_eda_ic_fpga_run_hlt(crosstalk_eda_ic_fpga_run_ctx_t *ctx)
 
     LDG_ST_RELEASE(ctx->stop, LDG_TRUTH_TRUE);
 
-    if (ldg_thread_pool_stop(&ctx->pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run pool stop failed"); }
+    if (ldg_thread_pool_stop(&ctx->pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fpga run pool stop failed"); }
 
     while (LDG_LD_ACQUIRE(ctx->alive) != 0) { if (ldg_thread_yield((uint64_t)CROSSTALK_EDA_IC_FPGA_RUN_HLT_WAIT_NS) != LDG_ERR_AOK) { break; } }
 
     ctx->live = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: halted; worker: %u32; cycles: %u64; steps: %u64", ctx->worker_id, ctx->cycles_total, ctx->steps_total);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fpga run: halted; worker: %u32; cycles: %u64; steps: %u64", ctx->worker_id, ctx->cycles_total, ctx->steps_total);
 
     return LDG_ERR_AOK;
 }

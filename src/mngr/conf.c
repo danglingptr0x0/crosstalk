@@ -53,7 +53,7 @@ uint32_t crosstalk_mngr_conf_default_get(crosstalk_mngr_machine_t *out)
     memset(out, 0x0, sizeof(*out));
 
     out->ram_bytes = (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES;
-    out->f_op_hz = (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_CLK_HZ;
+    out->f_op = (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_CLK_HZ;
     out->gamma = MNGR_CONF_GAMMA_DEFAULT;
     out->win_w = (uint32_t)MNGR_CONF_WIN_W_DEFAULT;
     out->win_h = (uint32_t)MNGR_CONF_WIN_H_DEFAULT;
@@ -142,7 +142,7 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
     mngr_conf_u64_put(out + at, machine->ram_bytes);
     at = at + (uint32_t)(LDG_WORD_BYTES * 2);
 
-    mngr_conf_u64_put(out + at, machine->f_op_hz);
+    mngr_conf_u64_put(out + at, machine->f_op);
     at = at + (uint32_t)(LDG_WORD_BYTES * 2);
 
     mngr_conf_u64_put(out + at, (uint64_t)(machine->gamma * (double)LDG_MS_PER_SEC));
@@ -273,7 +273,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
             out->ram_bytes = mngr_conf_u64_get(buff + body);
             body = body + (uint32_t)(LDG_WORD_BYTES * 2);
 
-            out->f_op_hz = mngr_conf_u64_get(buff + body);
+            out->f_op = mngr_conf_u64_get(buff + body);
             body = body + (uint32_t)(LDG_WORD_BYTES * 2);
 
             out->gamma = (double)mngr_conf_u64_get(buff + body) / (double)LDG_MS_PER_SEC;
@@ -367,7 +367,7 @@ uint32_t crosstalk_mngr_conf_wr(const crosstalk_mngr_machine_t *machine, const c
 
     if (done_len != (uint64_t)len) { return LDG_ERR_IO_WR; }
 
-    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine written; name: %.47s; path: %.191s; bytes: %u32", machine->name, path, len);
+    ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine written; name: %.47s; path: %.191s; bytes: %u32", machine->name, path, len);
 
     return LDG_ERR_AOK;
 }

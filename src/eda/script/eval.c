@@ -12,10 +12,7 @@
 #define EVAL_STEP 1
 #define EVAL_BIT 1
 #define EVAL_ASCII_NINE '9'
-#define EVAL_RADIX_DEC 10
-#define EVAL_RADIX_HEX 16
 #define EVAL_HEX_ALPHA 10
-#define EVAL_BYTE_BITS 8
 
 typedef struct eval_lv
 {
@@ -118,9 +115,9 @@ static const crosstalk_eda_script_section_t* eval_section_find(const crosstalk_e
 
 static uint32_t eval_elem_size(uint32_t width)
 {
-    if (width <= (uint32_t)EVAL_BYTE_BITS) { return (uint32_t)EVAL_STEP; }
+    if (width <= (uint32_t)LDG_BYTE_BITS) { return (uint32_t)EVAL_STEP; }
 
-    return width / (uint32_t)EVAL_BYTE_BITS;
+    return width / (uint32_t)LDG_BYTE_BITS;
 }
 
 static uint64_t eval_elem_ld(const crosstalk_eda_script_slot_t *slot, uint32_t idx)
@@ -350,7 +347,7 @@ static uint32_t eval_rack_reg(crosstalk_eda_script_eval_t *ctx, const crosstalk_
 uint32_t crosstalk_eda_script_val_num_get(const crosstalk_eda_script_val_t *arg, uint64_t *out)
 {
     uint64_t val = 0;
-    uint64_t radix = (uint64_t)EVAL_RADIX_DEC;
+    uint64_t radix = (uint64_t)LDG_BASE_DEC;
     uint32_t at = 0;
     uint32_t digits = 0;
 
@@ -369,7 +366,7 @@ uint32_t crosstalk_eda_script_val_num_get(const crosstalk_eda_script_val_t *arg,
 
     if (arg->bytes_len > (uint32_t)EVAL_STEP && arg->bytes[0] == (uint8_t)LDG_ASCII_DIGIT_ZERO && (arg->bytes[1] == (uint8_t)'x' || arg->bytes[1] == (uint8_t)'X'))
     {
-        radix = (uint64_t)EVAL_RADIX_HEX;
+        radix = (uint64_t)LDG_BASE_HEX;
         at = (uint32_t)EVAL_STEP + (uint32_t)EVAL_STEP;
     }
 
@@ -379,8 +376,8 @@ uint32_t crosstalk_eda_script_val_num_get(const crosstalk_eda_script_val_t *arg,
         uint64_t dig = 0;
 
         if (ch >= LDG_ASCII_DIGIT_ZERO && ch <= EVAL_ASCII_NINE) { dig = (uint64_t)(ch - LDG_ASCII_DIGIT_ZERO); }
-        else if (radix == (uint64_t)EVAL_RADIX_HEX && ch >= 'a' && ch <= 'f') { dig = (uint64_t)(ch - 'a') + (uint64_t)EVAL_HEX_ALPHA; }
-        else if (radix == (uint64_t)EVAL_RADIX_HEX && ch >= 'A' && ch <= 'F') { dig = (uint64_t)(ch - 'A') + (uint64_t)EVAL_HEX_ALPHA; }
+        else if (radix == (uint64_t)LDG_BASE_HEX && ch >= 'a' && ch <= 'f') { dig = (uint64_t)(ch - 'a') + (uint64_t)EVAL_HEX_ALPHA; }
+        else if (radix == (uint64_t)LDG_BASE_HEX && ch >= 'A' && ch <= 'F') { dig = (uint64_t)(ch - 'A') + (uint64_t)EVAL_HEX_ALPHA; }
         else { return LDG_ERR_FUNC_ARG_INVALID; }
 
         val = val * radix + dig;

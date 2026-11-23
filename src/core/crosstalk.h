@@ -18,6 +18,7 @@
 #include <dangling/core/err.h>
 #include <dangling/sched/sched.h>
 #include <dangling/io/path.h>
+#include <dangling/io/file.h>
 #include <dangling/thread/pool.h>
 #include <dangling/thread/sync.h>
 #include <dangling/thread/yield.h>
@@ -67,13 +68,13 @@
 #define CROSSTALK_CORE_TOAST_TEXT_CAP 192
 #define CROSSTALK_CORE_TOAST_SHOW_MS 4000
 #define CROSSTALK_CORE_HUB_SYNC_PERIOD_MS 30000
-#define CROSSTALK_CORE_REMOTE_OWNER_SECS 0.25
+#define CROSSTALK_CORE_REMOTE_OWNER_PERIOD ((uint64_t)250)
 #define CROSSTALK_CORE_REMOTE_OUT_MAX 128
 #define CROSSTALK_CORE_REMOTE_CMD_MAX 8
 #define CROSSTALK_CORE_REMOTE_CMDLINE_OUT_MAX 32
 #define CROSSTALK_CORE_REMOTE_OUT_CAP (CROSSTALK_EDA_IC_FPGA_REMOTE_WR_ARGS_CAP + CROSSTALK_EDA_IC_FPGA_REMOTE_KEY_CAP)
-#define CROSSTALK_CORE_CREDIT_TIME_PERIOD 5.0
-#define CROSSTALK_CORE_CREDIT_TIME_DELTA_MAX 30.0
+#define CROSSTALK_CORE_CREDIT_TIME_PERIOD ((uint64_t)5 * LDG_MS_PER_SEC)
+#define CROSSTALK_CORE_CREDIT_TIME_DELTA_MAX ((uint64_t)30 * LDG_MS_PER_SEC)
 #define CROSSTALK_CORE_CREDIT_DISCORD_UNKNOWN 0U
 #define CROSSTALK_CORE_CREDIT_PEER_NONE 0U
 #define CROSSTALK_CORE_PRIVACY_STEP 1U
@@ -157,6 +158,35 @@
 #define CROSSTALK_CORE_SERIAL_TX_TEXT "serial bytes sent"
 #define CROSSTALK_CORE_SERIAL_CONF_BAD_TEXT "serial conf refused; port@baud:parity:data:stop"
 #define CROSSTALK_CORE_SERIAL_TX_FAIL_TEXT "serial send refused"
+#define CROSSTALK_CORE_SERIAL_RX_LOG_CHUNK 32
+#define CROSSTALK_CORE_SERIAL_RX_LOG_HEX_DIGITS 2
+#define CROSSTALK_CORE_SERIAL_RX_LOG_HEX_STRIDE 3
+#define CROSSTALK_CORE_SERIAL_RX_LOG_PAIR_CAP 3
+#define CROSSTALK_CORE_SERIAL_RX_LOG_SEP ' '
+#define CROSSTALK_CORE_EMIEMI_CHUNK 256
+#define CROSSTALK_CORE_EMIEMI_HEX_DIGITS "0123456789ABCDEF"
+#define CROSSTALK_CORE_EMIEMI_USAGE_TEXT "emiemi <path>"
+#define CROSSTALK_CORE_EMIEMI_BUSY_TEXT "an EMIEMI frame is already being sent"
+#define CROSSTALK_CORE_EMIEMI_NO_PORT_TEXT "no serial port attached"
+#define CROSSTALK_CORE_EMIEMI_FAIL_TEXT "could not send that file"
+#define CROSSTALK_CORE_EMIEMI_START_TEXT "sending the EMIEMI frame"
+#define CROSSTALK_CORE_EMIEMI_DONE_TEXT "EMIEMI frame sent"
+#define CROSSTALK_CORE_EMIEMI_LOST_TEXT "EMIEMI send stopped; the serial port went away"
+#define CROSSTALK_CORE_PROBE_VIEW_CUNT 4
+#define CROSSTALK_CORE_FWD_TOK_CUNT 5
+#define CROSSTALK_CORE_FWD_TOK_RX_DATA 0
+#define CROSSTALK_CORE_FWD_TOK_RX_RDY 1
+#define CROSSTALK_CORE_FWD_TOK_RX_ACK 2
+#define CROSSTALK_CORE_FWD_TOK_TX_DATA 3
+#define CROSSTALK_CORE_FWD_TOK_TX_RDY 4
+#define CROSSTALK_CORE_FWD_OFF_TOK "off"
+#define CROSSTALK_CORE_FWD_OFF_TOK_CUNT 1
+#define CROSSTALK_CORE_FWD_NO_ACK_TOK "-"
+#define CROSSTALK_CORE_FWD_ACK_NONE ""
+#define CROSSTALK_CORE_FWD_USAGE_TEXT "fwd [<rx_data> <rx_rdy> <rx_ack|-> <tx_data> <tx_rdy>|off]"
+#define CROSSTALK_CORE_FWD_ON_TEXT "FWD_ON_TEXT"
+#define CROSSTALK_CORE_FWD_OFF_TEXT "FWD_OFF_TEXT"
+#define CROSSTALK_CORE_FWD_FAIL_TEXT "FWD_FAIL_TEXT"
 #define CROSSTALK_CORE_SERIAL_STOP_TOK_SINGLE "1"
 #define CROSSTALK_CORE_SERIAL_STOP_TOK_DOUBLE "2"
 #define CROSSTALK_CORE_SERIAL_LANE_RX "serial_rx"
@@ -303,15 +333,15 @@
 #define CROSSTALK_CORE_CGACAST_FAIL_TEXT "cast would not start; ck signal and geometry"
 #define CROSSTALK_CORE_CGACAST_W_DEFAULT 320
 #define CROSSTALK_CORE_CGACAST_H_DEFAULT 200
-#define CROSSTALK_CORE_SERIAL_ACCESS_GRANT_SECS 5.0
-#define CROSSTALK_CORE_SERIAL_ACCESS_TIMEOUT_SECS 15.0
+#define CROSSTALK_CORE_SERIAL_ACCESS_GRANT ((uint64_t)5 * LDG_MS_PER_SEC)
+#define CROSSTALK_CORE_SERIAL_ACCESS_TIMEOUT ((uint64_t)15 * LDG_MS_PER_SEC)
 #define CROSSTALK_CORE_SERIAL_ACCESS_ON_FMT "%.63s put %.63s on the horn for the session"
 #define CROSSTALK_CORE_SERIAL_ACCESS_OFF_FMT "%.63s hung up %.63s"
 #define CROSSTALK_CORE_SERIAL_ACCESS_QUIET_TEXT "the shared serial device went quiet; detached"
 #define CROSSTALK_CORE_MP_HOST_RETRY_CUNT 5
-#define CROSSTALK_CORE_MP_HOST_RETRY_SECS 1.0
+#define CROSSTALK_CORE_MP_HOST_RETRY LDG_MS_PER_SEC
 #define CROSSTALK_CORE_MP_HOST_FAIL_TEXT "hosting failed; Steam is still connecting; pressing host again retries"
-#define CROSSTALK_CORE_AUTO_HOST_RETRY_SECS 10.0
+#define CROSSTALK_CORE_AUTO_HOST_RETRY ((uint64_t)10 * LDG_MS_PER_SEC)
 #define CROSSTALK_CORE_AUTO_HOST_RETRY_MAX 5
 #define CROSSTALK_CORE_UNAME_CAP 256
 #define CROSSTALK_CORE_TRANSPONDER_OFF_WORD "off"
@@ -525,7 +555,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_MEMWATCH_HIT_FMT "memory watch hit at 0x%X64"
 #define CROSSTALK_CORE_MEMWATCH_MUT_FMT "memory changed at 0x%X64"
 #define CROSSTALK_CORE_MEMWATCH_NOTICE_CAP 96
-#define CROSSTALK_CORE_MEMWATCH_NOTIFY_SECS 1.0
+#define CROSSTALK_CORE_MEMWATCH_NOTIFY_PERIOD LDG_MS_PER_SEC
 #define CROSSTALK_CORE_BUSY_TITLE "Working"
 #define CROSSTALK_CORE_PERSIST_TITLE "Persisting machine state"
 #define CROSSTALK_CORE_PERSIST_BODY_TEXT "the virtual disk is being written back; please hold"
@@ -541,7 +571,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_MENU_MNEMONIC_CAP 16
 #define CROSSTALK_CORE_MENU_ACTION_NONE 0U
 #define CROSSTALK_CORE_MP_HOST_SELF 1U
-#define CROSSTALK_CORE_IDLE_RST 0.0
+#define CROSSTALK_CORE_IDLE_RST ((uint64_t)0)
 #define CROSSTALK_CORE_DESK_FRAC_ORIG 0.0
 #define CROSSTALK_CORE_DESK_FRAC_FULL 1.0
 #define CROSSTALK_CORE_BUSY_COL_CUNT 72
@@ -652,9 +682,11 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_TERM_HOST_LS_WIN "dir\r"
 #define CROSSTALK_CORE_TERM_HOST_LS_UNIX "ls\r"
 #define CROSSTALK_CORE_TERM_HOST_KEYS_CAP 1032
-#define CROSSTALK_CORE_WATER_MINS_MAX 1440
-#define CROSSTALK_CORE_WATER_LINE_CAP 64
-#define CROSSTALK_CORE_WATER_TEXT "Time for a glass of water"
+#define CROSSTALK_CORE_WATER_MIN_MAX 1440
+#define CROSSTALK_CORE_WATER_MIN_DEFAULT 45
+#define CROSSTALK_CORE_WATER_PERIOD_OFF_MS 0
+#define CROSSTALK_CORE_WATER_LN_CAP 64
+#define CROSSTALK_CORE_WATER_TEXT "Vatten!"
 #define CROSSTALK_CORE_WATER_OFF_TEXT "water reminders off"
 #define CROSSTALK_CORE_WATER_USAGE_TEXT "water [1 to 1440|off]; bare water reports"
 #define CROSSTALK_CORE_WATER_ON_FMT "water reminder every %u32 min"
@@ -804,8 +836,8 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_DISCORD_HEX_HI 0
 #define CROSSTALK_CORE_DISCORD_HEX_LO 1
 #define CROSSTALK_CORE_DISCORD_HEX_PAIR_CAP 3
-#define CROSSTALK_CORE_PEER_STATE_PERIOD 2.0
-#define CROSSTALK_CORE_PEER_STATE_AFK_SECS 180.0
+#define CROSSTALK_CORE_PEER_STATE_PERIOD ((uint64_t)2 * LDG_MS_PER_SEC)
+#define CROSSTALK_CORE_PEER_STATE_AFK ((uint64_t)180 * LDG_MS_PER_SEC)
 #define CROSSTALK_CORE_SOUNDTRACK_APP_ID 4912620U
 #define CROSSTALK_CORE_STORY_APP_ID 4912640U
 #define CROSSTALK_CORE_REVERSE_APP_ID 5158190U
@@ -979,6 +1011,12 @@ typedef struct crosstalk_ctx
     uint32_t serial_tx_probe_handle;
     uint64_t serial_rx_sample_at;
     uint64_t serial_tx_sample_at;
+    ldg_io_file_t *emiemi_fh;
+    uint64_t emiemi_remaining;
+    uint64_t emiemi_total;
+    uint32_t emiemi_hash;
+    uint8_t emiemi_live;
+    uint8_t emiemi_pudding[3];
     uint8_t console_exec_is;
     uint8_t script_win;
     uint8_t defer_pudding[6];
@@ -1004,7 +1042,7 @@ typedef struct crosstalk_ctx
     uint8_t menu_pudding[1];
     uint64_t st_time_ms;
     uint64_t instability_prev_tsc;
-    double instability_next;
+    uint64_t instability_next;
     ldg_sched_event_desc_t fixed_event;
     ldg_sched_event_desc_t step_event;
     crosstalk_net_wire_ident_t ident[CROSSTALK_CORE_IDENT_CAP];
@@ -1013,8 +1051,8 @@ typedef struct crosstalk_ctx
     crosstalk_net_wire_peer_state_t peer_state[CROSSTALK_CORE_IDENT_CAP];
     uint32_t peer_state_cunt;
     uint8_t peer_state_pudding[4];
-    double peer_state_next;
-    double idle_secs;
+    uint64_t peer_state_next;
+    uint64_t idle;
     uint8_t peer_state_sent;
     uint8_t paused_by_focus;
     uint8_t remote_sesh;
@@ -1023,7 +1061,7 @@ typedef struct crosstalk_ctx
     uint8_t timeline_set;
     uint8_t peer_pudding[2];
     crosstalk_eda_ic_fpga_remote_t remote;
-    double remote_owner_next;
+    uint64_t remote_owner_next;
     uint8_t remote_owner_seen;
     uint8_t remote_owner_editor;
     uint8_t remote_entered;
@@ -1036,13 +1074,13 @@ typedef struct crosstalk_ctx
     uint32_t remote_cmd_hd;
     uint32_t remote_cmd_cunt;
     char remote_cmd[CROSSTALK_CORE_REMOTE_CMD_MAX][CROSSTALK_NET_WIRE_REMOTE_CMDLINE_CAP];
-    double auto_host_next;
+    uint64_t auto_host_next;
     void *bin_sha_buff_mem;
     void *bin_sha_mods_mem;
     char bin_sha[CROSSTALK_CORE_BIN_SHA_CUNT][CROSSTALK_CORE_BIN_SHA_TEXT_CAP];
     uint8_t bin_sha_rdy[CROSSTALK_CORE_BIN_SHA_CUNT];
     uint8_t bin_sha_pudding[4];
-    double credit_time_seen;
+    uint64_t credit_time_seen;
     uint64_t credit_peer_steam[CROSSTALK_NET_CLIENT_MAX];
     uint64_t credit_peer_seq[CROSSTALK_NET_CLIENT_MAX];
     uint8_t eda_pudding[32];
@@ -1077,11 +1115,11 @@ typedef struct crosstalk_ctx
     uint8_t re_diff_pending;
     uint8_t re_pudding[35];
     crosstalk_game_ctx_t game;
-    double dt;
-    double time;
+    uint64_t dt;
+    uint64_t time;
     double tick_period;
-    double memwatch_notice_next;
-    double sim_run_since;
+    uint64_t memwatch_notice_next;
+    uint64_t sim_run_since;
     double perf_delta_sum;
     double perf_window_elapsed;
     double perf_delta_average;
@@ -1126,9 +1164,9 @@ typedef struct crosstalk_ctx
     uint8_t settings_applied_ok;
     uint8_t mp_busy;
     uint8_t lobby_member_pudding[6];
-    double mp_host_retry_next;
-    double serial_access_last;
-    double serial_access_grant_next;
+    uint64_t mp_host_retry_next;
+    uint64_t serial_access_last;
+    uint64_t serial_access_grant_next;
     uint64_t serial_access_owner;
     crosstalk_game_chat_ctx_t chat;
     crosstalk_game_hub_ctx_t hub;
@@ -1138,7 +1176,7 @@ typedef struct crosstalk_ctx
     uint32_t board_sel_confirm_row;
     uint32_t extras_cunt;
     uint32_t credits_cunt;
-    double caption_clock;
+    uint64_t caption_clk;
     uint8_t extras_playing;
     char extras_items[CROSSTALK_CORE_EXTRAS_ITEMS_CAP];
     char credits_items[CROSSTALK_CORE_CREDITS_ITEMS_CAP];

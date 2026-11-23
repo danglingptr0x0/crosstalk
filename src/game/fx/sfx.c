@@ -80,7 +80,7 @@ static uint64_t crosstalk_game_fx_sfx_cw_key_frames_get(const ldg_proto_cw_key_t
     return key->dur * (uint64_t)CROSSTALK_GAME_FX_SFX_RATE / (uint64_t)LDG_NS_PER_SEC;
 }
 
-static void crosstalk_game_fx_sfx_cw_advance(crosstalk_game_fx_sfx_ctx_t *ctx)
+static void crosstalk_game_fx_sfx_cw_adv(crosstalk_game_fx_sfx_ctx_t *ctx)
 {
     while (ctx->cw_run_frames == 0)
     {
@@ -109,7 +109,7 @@ static void crosstalk_game_fx_sfx_stream_render(crosstalk_game_fx_sfx_ctx_t *ctx
     {
         if (ctx->tone_cw == LDG_TRUTH_TRUE)
         {
-            if (ctx->cw_run_frames == 0 && ctx->cw_done != LDG_TRUTH_TRUE) { crosstalk_game_fx_sfx_cw_advance(ctx); }
+            if (ctx->cw_run_frames == 0 && ctx->cw_done != LDG_TRUTH_TRUE) { crosstalk_game_fx_sfx_cw_adv(ctx); }
 
             if (ctx->cw_run_frames > 0) { ctx->cw_run_frames = ctx->cw_run_frames - (uint64_t)CROSSTALK_GAME_FX_SFX_CW_STEP; }
 
@@ -281,7 +281,7 @@ static uint32_t crosstalk_game_fx_sfx_ping_ld(crosstalk_game_fx_sfx_ctx_t *ctx)
 
     crosstalk_game_fx_sfx_ping_render((int16_t *)buff, CROSSTALK_GAME_FX_SFX_PING_FRAMES);
     ret = ldg_audio_mix_clip_ld(ctx->mix, (const int16_t *)buff, (uint64_t)CROSSTALK_GAME_FX_SFX_PING_FRAMES, (uint32_t)CROSSTALK_GAME_FX_SFX_RATE, &ctx->clip_ping);
-    if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx ping buff dealloc failed"); }
+    if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx ping buff dealloc failed"); }
 
     return ret;
 }
@@ -296,7 +296,7 @@ static uint32_t crosstalk_game_fx_sfx_chirp_ld(crosstalk_game_fx_sfx_ctx_t *ctx)
 
     crosstalk_game_fx_sfx_chirp_render((int16_t *)buff, CROSSTALK_GAME_FX_SFX_CHIRP_FRAMES);
     ret = ldg_audio_mix_clip_ld(ctx->mix, (const int16_t *)buff, (uint64_t)CROSSTALK_GAME_FX_SFX_CHIRP_FRAMES, (uint32_t)CROSSTALK_GAME_FX_SFX_RATE, &ctx->clip_chirp);
-    if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx chirp buff dealloc failed"); }
+    if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx chirp buff dealloc failed"); }
 
     return ret;
 }
@@ -344,26 +344,26 @@ uint32_t crosstalk_game_fx_sfx_init(crosstalk_game_fx_sfx_ctx_t *ctx)
     ret = ldg_audio_mix_attach(ctx->mix);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        if (ldg_audio_mix_destroy(ctx->mix) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx mix destroy failed"); }
+        if (ldg_audio_mix_destroy(ctx->mix) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx mix destroy failed"); }
 
         ctx->mix = 0x0;
         return ret;
     }
 
     ret = crosstalk_game_fx_sfx_rotary_ld(ctx, CROSSTALK_GAME_FX_SFX_ROTARY_CW_BODY_HZ, &ctx->clip_rotary_cw);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx rotary cw ld failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx rotary cw ld failed; err: %u32", ret); }
 
     ret = crosstalk_game_fx_sfx_rotary_ld(ctx, CROSSTALK_GAME_FX_SFX_ROTARY_CCW_BODY_HZ, &ctx->clip_rotary_ccw);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx rotary ccw ld failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx rotary ccw ld failed; err: %u32", ret); }
 
     ret = crosstalk_game_fx_sfx_rotary_ld(ctx, CROSSTALK_GAME_FX_SFX_LEVER_BODY_HZ, &ctx->clip_lever);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx lever ld failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx lever ld failed; err: %u32", ret); }
 
     ret = crosstalk_game_fx_sfx_chirp_ld(ctx);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx chirp ld failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx chirp ld failed; err: %u32", ret); }
 
     ret = crosstalk_game_fx_sfx_ping_ld(ctx);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx ping ld failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx ping ld failed; err: %u32", ret); }
 
     ctx->ready = LDG_TRUTH_TRUE;
     return LDG_ERR_AOK;
@@ -377,9 +377,9 @@ uint32_t crosstalk_game_fx_sfx_shutdown(crosstalk_game_fx_sfx_ctx_t *ctx)
 
     if (ctx->ready != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    if (ctx->tone_on == LDG_TRUTH_TRUE && ldg_audio_mix_stream_clear(ctx->mix) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx stream clear failed"); }
+    if (ctx->tone_on == LDG_TRUTH_TRUE && ldg_audio_mix_stream_clear(ctx->mix) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx stream clear failed"); }
 
-    if (ldg_audio_mix_detach(ctx->mix) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx mix detach failed"); }
+    if (ldg_audio_mix_detach(ctx->mix) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sfx mix detach failed"); }
 
     ret = ldg_audio_mix_destroy(ctx->mix);
     ctx->mix = 0x0;

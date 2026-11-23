@@ -11,7 +11,7 @@
 #define CROSSTALK_GAME_MUSIC_ACTION_PREV 0
 #define CROSSTALK_GAME_MUSIC_ACTION_TOGGLE 1
 #define CROSSTALK_GAME_MUSIC_ACTION_NEXT 2
-#define CROSSTALK_GAME_MUSIC_POLL_INTERVAL 0.5
+#define CROSSTALK_GAME_MUSIC_POLL_INTERVAL ((uint64_t)500)
 
 #define CROSSTALK_GAME_MUSIC_SRC_STEAM 0
 #define CROSSTALK_GAME_MUSIC_SRC_NATIVE 1
@@ -52,7 +52,7 @@ typedef struct crosstalk_game_music_ctx
     char artist[CROSSTALK_GAME_MUSIC_TITLE_CAP];
     crosstalk_game_music_snap_t back;
     const libresteam_backend_set_t *set;
-    double poll_next;
+    uint64_t poll_next;
     uint32_t track_idx;
     uint32_t track_cunt;
     uint32_t done;
@@ -69,7 +69,7 @@ typedef struct crosstalk_game_music_ctx
 
 uint32_t crosstalk_game_music_init(crosstalk_game_music_ctx_t *ctx, const libresteam_backend_set_t *set);
 uint32_t crosstalk_game_music_src_set(crosstalk_game_music_ctx_t *ctx, uint8_t src);
-uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, double dt);
+uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, uint64_t dt);
 uint8_t crosstalk_game_music_poll_due_is(const crosstalk_game_music_ctx_t *ctx);
 uint32_t crosstalk_game_music_poll_run(crosstalk_game_music_ctx_t *ctx);
 uint32_t crosstalk_game_music_draw(const crosstalk_game_music_ctx_t *ctx, ldg_term_render_t *render, uint32_t col, uint32_t row, uint32_t col_cap);

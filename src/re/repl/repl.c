@@ -62,7 +62,7 @@ uint32_t crosstalk_re_repl_emit(crosstalk_re_repl_ctx_t *ctx, const char *fmt, .
     if (LDG_UNLIKELY(ctx == 0x0 || fmt == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     va_start(args, fmt);
-    ret = ldg_str_variable_fmt(ctx->line, (uint64_t)sizeof(ctx->line), &len, fmt, args);
+    ret = ldg_str_var_fmt(ctx->line, (uint64_t)sizeof(ctx->line), &len, fmt, args);
     va_end(args);
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }

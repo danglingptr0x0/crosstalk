@@ -173,7 +173,7 @@ uint32_t crosstalk_eda_ui_display_crt_gamma_set(crosstalk_eda_ui_display_crt_ctx
         ctx->gamma_lut[at] = (uint8_t)(lit > (double)LDG_BYTE_MASK ? (double)LDG_BYTE_MASK : lit);
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: gamma set; gamma: %.2f", gamma);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: gamma set; gamma: %.2f", gamma);
 
     return LDG_ERR_AOK;
 }
@@ -186,7 +186,7 @@ uint32_t crosstalk_eda_ui_display_crt_init(crosstalk_eda_ui_display_crt_ctx_t *c
 
     ctx->kind = (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_KIND_CRT;
 
-    if (crosstalk_eda_ui_display_crt_gamma_set(ctx, CROSSTALK_EDA_UI_DISPLAY_CRT_GAMMA_DEFAULT) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt gamma seed failed"); }
+    if (crosstalk_eda_ui_display_crt_gamma_set(ctx, CROSSTALK_EDA_UI_DISPLAY_CRT_GAMMA_DEFAULT) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt gamma seed failed"); }
 
     return LDG_ERR_AOK;
 }
@@ -231,7 +231,7 @@ uint32_t crosstalk_eda_ui_display_crt_text_bind(crosstalk_eda_ui_display_crt_ctx
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
     ctx->text_base = base;
-    ctx->text_next = 0.0;
+    ctx->text_next = 0;
     ctx->text_native = LDG_TRUTH_FALSE;
     ctx->cell_cunt = 0;
     ctx->src = (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_SRC_TEXT;
@@ -239,7 +239,7 @@ uint32_t crosstalk_eda_ui_display_crt_text_bind(crosstalk_eda_ui_display_crt_ctx
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_eda_ui_display_crt_text_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now)
+uint32_t crosstalk_eda_ui_display_crt_text_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now)
 {
     if (LDG_UNLIKELY(ctx == 0x0 || fpga == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -249,7 +249,7 @@ uint32_t crosstalk_eda_ui_display_crt_text_tick(crosstalk_eda_ui_display_crt_ctx
 
     if (now < ctx->text_next) { return LDG_ERR_AOK; }
 
-    ctx->text_next = now + CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_REFRESH_SECS;
+    ctx->text_next = now + CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_REFRESH;
 
     return crosstalk_eda_ic_fpga_mem_rd(fpga, slot_idx, ctx->text_sig, ctx->text_base, ctx->cell, (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_BYTE_CUNT, &ctx->cell_cunt);
 }
@@ -354,7 +354,7 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_bind(crosstalk_eda_ui_display_crt_ctx_
     ctx->gfx_base = base;
     ctx->gfx_w = gfx_w;
     ctx->gfx_h = gfx_h;
-    ctx->gfx_next = 0.0;
+    ctx->gfx_next = 0;
     ctx->gfx_ok = LDG_TRUTH_FALSE;
     ctx->gfx_geom_ok = LDG_TRUTH_TRUE;
     ctx->src = (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_SRC_GFX;
@@ -517,7 +517,7 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_dev_bind(crosstalk_eda_ui_display_crt_
         ret = ldg_str_rbrcpy(ctx->text_sig, sig_name, sizeof(ctx->text_sig));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
-        ctx->gfx_next = 0.0;
+        ctx->gfx_next = 0;
         return LDG_ERR_AOK;
     }
 
@@ -528,7 +528,7 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_dev_bind(crosstalk_eda_ui_display_crt_
 
         if (crt_fb_active_get(fpga, slot_idx, &active) == LDG_ERR_AOK && crt_fb_drawable_is(&active) == LDG_TRUTH_TRUE)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: the display describes itself; addr: 0x%X64; width: %u64; height: %u64; frame: %u64", active.addr, active.width, active.height, active.frame);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: the display describes itself; addr: 0x%X64; width: %u64; height: %u64; frame: %u64", active.addr, active.width, active.height, active.frame);
 
             return crosstalk_eda_ui_display_crt_gfx_bind(ctx, fpga, slot_idx, sig_name, active.addr / (uint64_t)CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_BYTES_PER_PX, (uint32_t)active.width, (uint32_t)active.height);
         }
@@ -539,14 +539,14 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_dev_bind(crosstalk_eda_ui_display_crt_
 
     if (fmt == (uint64_t)CROSSTALK_HDL_ABI_FB_FMT_NONE)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt: the display has no framebuffer configured; fmt: %u64", fmt);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt: the display has no framebuffer configured; fmt: %u64", fmt);
 
         return CROSSTALK_EDA_UI_DISPLAY_CRT_ERR_BIND;
     }
 
     if (fmt != (uint64_t)CROSSTALK_HDL_ABI_FB_FMT_XRGB8888)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt: unknown framebuffer format; fmt: %u64", fmt);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt: unknown framebuffer format; fmt: %u64", fmt);
 
         return CROSSTALK_EDA_UI_DISPLAY_CRT_ERR_BIND;
     }
@@ -557,12 +557,12 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_dev_bind(crosstalk_eda_ui_display_crt_
     ret = crosstalk_eda_ic_fpga_sig_peek(fpga, slot_idx, CROSSTALK_EDA_UI_DISPLAY_CRT_DDU_BASE_SIG, &base, &elem_width);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: the display describes itself; fmt: %u64; w: %u64; h: %u64; base: 0x%X64", fmt, mode & (uint64_t)CROSSTALK_HDL_ABI_FB_MODE_W_MASK, mode >> (uint64_t)CROSSTALK_HDL_ABI_FB_MODE_H_SHIFT, base);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: the display describes itself; fmt: %u64; w: %u64; h: %u64; base: 0x%X64", fmt, mode & (uint64_t)CROSSTALK_HDL_ABI_FB_MODE_W_MASK, mode >> (uint64_t)CROSSTALK_HDL_ABI_FB_MODE_H_SHIFT, base);
 
     return crosstalk_eda_ui_display_crt_gfx_bind(ctx, fpga, slot_idx, sig_name, base / (uint64_t)CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_BYTES_PER_PX, (uint32_t)(mode & (uint64_t)CROSSTALK_HDL_ABI_FB_MODE_W_MASK), (uint32_t)(mode >> (uint64_t)CROSSTALK_HDL_ABI_FB_MODE_H_SHIFT));
 }
 
-uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now)
+uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now)
 {
     uint64_t buff[CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_CHUNK];
     uint64_t total = 0;
@@ -576,7 +576,7 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_
 
     if (now < ctx->gfx_next) { return LDG_ERR_AOK; }
 
-    ctx->gfx_next = now + CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_REFRESH_SECS;
+    ctx->gfx_next = now + CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_REFRESH;
 
     ret = crt_native_frame_get(ctx, fpga, slot_idx);
     if (ret == LDG_ERR_AOK) { return LDG_ERR_AOK; }
@@ -602,10 +602,10 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_
             {
                 if (ctx->src == (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_SRC_GFX && ctx->text_base != 0)
                 {
-                    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: video mode left graphics; the console is live; fmt: %u64", active.fmt);
+                    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: video mode left graphics; the console is live; fmt: %u64", active.fmt);
 
                     ctx->src = (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_SRC_TEXT;
-                    ctx->text_next = 0.0;
+                    ctx->text_next = 0;
                     ctx->gfx_ok = LDG_TRUTH_FALSE;
                     ctx->gfx_geom_ok = LDG_TRUTH_FALSE;
                 }
@@ -626,12 +626,12 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_
 
                 if (width == UINT64_MAX || fb_base + span > width)
                 {
-                    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt: active framebuffer out of range; addr: 0x%X64; width: %u64; height: %u64; mem width: %u64", active.addr, active.width, active.height, width);
+                    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "crt: active framebuffer out of range; addr: 0x%X64; width: %u64; height: %u64; mem width: %u64", active.addr, active.width, active.height, width);
 
                     return LDG_ERR_AOK;
                 }
 
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: active framebuffer changed; addr: 0x%X64; width: %u64; height: %u64", active.addr, active.width, active.height);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: active framebuffer changed; addr: 0x%X64; width: %u64; height: %u64", active.addr, active.width, active.height);
 
                 ctx->gfx_geom_ok = LDG_TRUTH_TRUE;
             }
@@ -640,7 +640,7 @@ uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_
 
             if (ctx->src != (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_SRC_GFX)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: video mode entered graphics; width: %u64; height: %u64", active.width, active.height);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "crt: video mode entered graphics; width: %u64; height: %u64", active.width, active.height);
 
                 ctx->src = (uint32_t)CROSSTALK_EDA_UI_DISPLAY_CRT_SRC_GFX;
                 ctx->gfx_ok = LDG_TRUTH_FALSE;
@@ -960,8 +960,8 @@ uint32_t crosstalk_eda_ui_display_crt_state_deserialize(crosstalk_eda_ui_display
     memcpy(&ctx->text_sig[0], &buff[off], sizeof(ctx->text_sig));
     ctx->text_sig[sizeof(ctx->text_sig) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
 
-    ctx->text_next = 0.0;
-    ctx->gfx_next = 0.0;
+    ctx->text_next = 0;
+    ctx->gfx_next = 0;
     ctx->gfx_ok = LDG_TRUTH_FALSE;
     ctx->cell_cunt = 0;
 

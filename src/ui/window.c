@@ -32,6 +32,9 @@
 #define WINDOW_FOCUS_BG_BLUE 0x32
 #define WINDOW_MODAL_CENTER_DIV 2
 #define WINDOW_MODAL_PAD_COLS 2
+#define WINDOW_STALE_TEXT "PROFILING OFF"
+#define WINDOW_STALE_ROW 0
+#define WINDOW_STALE_FG_RGBA 0x000000FFU
 
 static uint8_t window_dir_ahead_is(uint32_t dir, double from_x, double from_y, double to_x, double to_y)
 {
@@ -176,7 +179,7 @@ uint32_t crosstalk_ui_window_init(crosstalk_ui_window_ctx_t *ctx, crosstalk_core
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        if (ldg_term_focus_destroy(ctx->focus) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window focus destroy failed"); }
+        if (ldg_term_focus_destroy(ctx->focus) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window focus destroy failed"); }
 
         ctx->focus = 0x0;
 
@@ -362,7 +365,7 @@ uint32_t crosstalk_ui_window_focus_slot(crosstalk_ui_window_ctx_t *ctx, uint32_t
     ret = crosstalk_ui_window_id_get(ctx, slot, &win_id);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "window: focus slot; slot: %u32; id: 0x%X64", slot, win_id);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "window: focus slot; slot: %u32; id: 0x%X64", slot, win_id);
 
     ctx->kbd_pending = LDG_TRUTH_TRUE;
 
@@ -443,7 +446,7 @@ uint32_t crosstalk_ui_window_digit_put(crosstalk_ui_window_ctx_t *ctx, uint32_t 
 
     if (ctx->digit_on != LDG_TRUTH_TRUE) { ctx->digit_val = (uint32_t)CROSSTALK_UI_WINDOW_DIGIT_NONE; }
 
-    ctx->digit_val = ctx->digit_val * (uint32_t)CROSSTALK_UI_WINDOW_DIGIT_BASE + digit;
+    ctx->digit_val = ctx->digit_val * (uint32_t)LDG_BASE_DEC + digit;
     ctx->digit_deadline_ms = now_ms + (uint64_t)CROSSTALK_UI_WINDOW_DIGIT_HOLD_MS;
     ctx->digit_on = LDG_TRUTH_TRUE;
 
@@ -513,6 +516,7 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
     ldg_term_rect_t rect = LDG_STRUCT_ZERO_INIT;
     ldg_term_rect_t inner = LDG_STRUCT_ZERO_INIT;
     uint32_t frame_span = (uint32_t)CROSSTALK_UI_WINDOW_FRAME_CELLS * (uint32_t)WINDOW_FRAME_SIDES;
+    uint32_t stale_len = (uint32_t)sizeof(WINDOW_STALE_TEXT) - (uint32_t)LDG_STR_TERM_SIZE;
     uint32_t bottom = WINDOW_SCROLL_TOP;
     uint64_t title_len = 0;
     uint32_t ret = 0;
@@ -579,9 +583,20 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
 
     if (ret == LDG_ERR_AOK) { ret = ldg_term_render_frame_draw(render, title, title_len, &style); }
 
+    if (ret == LDG_ERR_AOK && slot->stale == LDG_TRUTH_TRUE && rect.col_cunt > frame_span + stale_len)
+    {
+        ldg_term_render_color_t stale_fg = LDG_STRUCT_ZERO_INIT;
+        ldg_term_render_color_t stale_bg = LDG_STRUCT_ZERO_INIT;
+
+        ret = crosstalk_ui_cell_color_get((uint32_t)WINDOW_STALE_FG_RGBA, &stale_fg);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_DANGER_RGBA, &stale_bg); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_text_put(render, rect.col_cunt - (uint32_t)CROSSTALK_UI_WINDOW_FRAME_CELLS - stale_len, (uint32_t)WINDOW_STALE_ROW, WINDOW_STALE_TEXT, (uint64_t)sizeof(WINDOW_STALE_TEXT), &stale_fg, &stale_bg); }
+    }
+
     if (ret != LDG_ERR_AOK)
     {
-        if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
+        if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
 
         return ret;
     }
@@ -600,7 +615,7 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
     ret = ldg_term_render_clip_set(render, &inner, (uint32_t)WINDOW_SCROLL_COL_NONE, state->scroll_row);
     if (ret == LDG_ERR_AOK) { ret = slot->draw_cb(slot->id, slot->user, render, inner.col_cunt, inner.row_cunt); }
 
-    if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
+    if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
 
     return ret;
 }
@@ -711,7 +726,7 @@ uint32_t crosstalk_ui_window_modal_draw(ldg_term_render_t *render, const ldg_ter
         ret = crosstalk_ui_cell_rgba_put(render, (uint32_t)WINDOW_MODAL_PAD_COLS, at, line[at], (uint64_t)CROSSTALK_UI_CELL_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, 0x0);
     }
 
-    if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
+    if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
 
     return ret;
 }
@@ -727,14 +742,30 @@ uint32_t crosstalk_ui_window_flash_set(crosstalk_ui_window_ctx_t *ctx, uint64_t 
     return LDG_ERR_AOK;
 }
 
+uint32_t crosstalk_ui_window_stale_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, uint8_t on)
+{
+    uint32_t slot = UINT32_MAX;
+    uint32_t res = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    res = crosstalk_ui_window_slot_get(ctx, win_id, &slot);
+    if (res != LDG_ERR_AOK) { return res; }
+
+    slot = slot - (uint32_t)CROSSTALK_UI_WINDOW_SLOT_FIRST;
+    ctx->slot[slot].stale = on == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    return LDG_ERR_AOK;
+}
+
 static void window_draw_report(crosstalk_ui_window_ctx_t *ctx, uint32_t at, uint32_t ret)
 {
     crosstalk_ui_window_slot_t *slot = &ctx->slot[at];
 
     if (ret == slot->draw_fault) { return; }
 
-    if (ret == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "window: draw recovered; id: 0x%X64; err was: %u32", slot->id, slot->draw_fault); }
-    else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window: draw failed; id: 0x%X64; err: %u32", slot->id, ret); }
+    if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "window: draw recovered; id: 0x%X64; err was: %u32", slot->id, slot->draw_fault); }
+    else { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window: draw failed; id: 0x%X64; err: %u32", slot->id, ret); }
 
     slot->draw_fault = ret;
 }

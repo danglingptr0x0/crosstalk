@@ -17,7 +17,7 @@ static void inventory_res_drop(crosstalk_net_inventory_ctx_t *ctx, uint32_t *res
 
     if (*res == LIBRESTEAM_INVENTORY_RES_INVALID) { return; }
 
-    if (libresteam_inventory_res_destroy(ctx->set, *res) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: result destroy failed; res: %u32", *res); }
+    if (libresteam_inventory_res_destroy(ctx->set, *res) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: result destroy failed; res: %u32", *res); }
 
     *res = LIBRESTEAM_INVENTORY_RES_INVALID;
 }
@@ -42,7 +42,7 @@ static uint32_t inventory_res_done_get(const crosstalk_net_inventory_ctx_t *ctx,
     *out_done = LDG_TRUTH_TRUE;
     *out_ok = eres == CROSSTALK_NET_INVENTORY_ERES_OK ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
-    if (*out_ok != LDG_TRUTH_TRUE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: result failed; res: %u32; eres: %u32", res, eres); }
+    if (*out_ok != LDG_TRUTH_TRUE) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: result failed; res: %u32; eres: %u32", res, eres); }
 
     return LDG_ERR_AOK;
 }
@@ -88,7 +88,7 @@ uint32_t crosstalk_net_inventory_refresh(crosstalk_net_inventory_ctx_t *ctx)
         if (ret != LDG_ERR_AOK)
         {
             ctx->res_grant = LIBRESTEAM_INVENTORY_RES_INVALID;
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: promo grant failed; err: %u32", ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: promo grant failed; err: %u32", ret);
         }
     }
 
@@ -128,7 +128,7 @@ void crosstalk_net_inventory_poll(crosstalk_net_inventory_ctx_t *ctx)
             ctx->item_cunt = cunt > CROSSTALK_NET_INVENTORY_ITEM_CAP ? CROSSTALK_NET_INVENTORY_ITEM_CAP : cunt;
             ctx->fetched = LDG_TRUTH_TRUE;
         }
-        else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: items read failed; err: %u32", ret); }
+        else { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "inventory: items read failed; err: %u32", ret); }
     }
 
     inventory_res_drop(ctx, &ctx->res_all);

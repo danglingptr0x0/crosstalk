@@ -74,7 +74,7 @@ static uint32_t mngr_argv_fmt_push(mngr_argv_t *argv, const char *fmt, ...)
     room = (uint64_t)sizeof(argv->st) - argv->st_off;
 
     va_start(args, fmt);
-    ret = ldg_str_variable_fmt(at, room, &written, fmt, args);
+    ret = ldg_str_var_fmt(at, room, &written, fmt, args);
     va_end(args);
 
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -161,14 +161,14 @@ uint32_t crosstalk_mngr_init(crosstalk_mngr_ctx_t *ctx)
     ret = mngr_data_dir_resolve(ctx->dir, (uint64_t)sizeof(ctx->dir));
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: machine directory not resolved; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: machine directory not resolved; err: %u32", ret);
 
         return ret;
     }
 
     ctx->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine directory; path: %.191s", ctx->dir);
+    ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine directory; path: %.191s", ctx->dir);
 
     return LDG_ERR_AOK;
 }
@@ -204,7 +204,7 @@ uint32_t crosstalk_mngr_scan(crosstalk_mngr_ctx_t *ctx)
 
         if (crosstalk_mngr_conf_rd(&ctx->machine[ctx->cunt], ctx->path[ctx->cunt]) != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine not read; path: %.191s", ctx->path[ctx->cunt]);
+            ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine not read; path: %.191s", ctx->path[ctx->cunt]);
 
             continue;
         }
@@ -217,7 +217,7 @@ uint32_t crosstalk_mngr_scan(crosstalk_mngr_ctx_t *ctx)
     if (ctx->cunt == 0) { ctx->sel = (uint32_t)UINT32_MAX; }
     else if (ctx->sel == (uint32_t)UINT32_MAX || ctx->sel >= ctx->cunt) { ctx->sel = 0; }
 
-    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machines found; cunt: %u32", ctx->cunt);
+    ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machines found; cunt: %u32", ctx->cunt);
 
     return LDG_ERR_AOK;
 }
@@ -267,7 +267,7 @@ uint32_t crosstalk_mngr_machine_drop(crosstalk_mngr_ctx_t *ctx, uint32_t idx)
 
     if (idx >= ctx->cunt) { return LDG_ERR_BOUNDS; }
 
-    if (ldg_io_path_destroy(ctx->path[idx]) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine file not removed; path: %.191s", ctx->path[idx]); }
+    if (ldg_io_path_destroy(ctx->path[idx]) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine file not removed; path: %.191s", ctx->path[idx]); }
 
     for (at = idx; at + MNGR_STEP < ctx->cunt; at++)
     {
@@ -323,7 +323,7 @@ static uint32_t mngr_argv_build(const crosstalk_mngr_machine_t *machine, const c
 
     if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, MNGR_ARG_HZ); }
 
-    if (ret == LDG_ERR_AOK) { ret = mngr_argv_fmt_push(argv, MNGR_ARG_HZ_FMT, machine->f_op_hz); }
+    if (ret == LDG_ERR_AOK) { ret = mngr_argv_fmt_push(argv, MNGR_ARG_HZ_FMT, machine->f_op); }
 
     if (ret == LDG_ERR_AOK) { ret = mngr_argv_push(argv, MNGR_ARG_GAMMA); }
 
@@ -370,7 +370,7 @@ uint32_t crosstalk_mngr_launch(const crosstalk_mngr_ctx_t *ctx, uint32_t idx)
     ret = mngr_argv_build(machine, exe, &argv);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine args not built; name: %.47s; err: %u32", machine->name, ret);
+        ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine args not built; name: %.47s; err: %u32", machine->name, ret);
 
         return ret;
     }
@@ -378,17 +378,17 @@ uint32_t crosstalk_mngr_launch(const crosstalk_mngr_ctx_t *ctx, uint32_t idx)
     ret = ldg_sys_proc_spawn(exe, argv.arg, ctx->exe_dir, LDG_SYS_PROC_SPAWN_STDIO_INHERIT, &proc);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine would not start; name: %.47s; exe: %.191s; err: %u32", machine->name, exe, ret);
+        ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine would not start; name: %.47s; exe: %.191s; err: %u32", machine->name, exe, ret);
 
         return ret;
     }
 
-    ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine started; name: %.47s; pid: %u32", machine->name, proc.pid);
+    ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine started; name: %.47s; pid: %u32", machine->name, proc.pid);
 
     do { ret = ldg_sys_proc_wait(&proc, LDG_SYS_PROC_WAIT_INFINITE, &code); } while (ret == LDG_ERR_INTERRUPTED);
 
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine wait failed; name: %.47s; err: %u32", machine->name, ret); }
-    else { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine exited; name: %.47s; code: %u32", machine->name, code); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: machine wait failed; name: %.47s; err: %u32", machine->name, ret); }
+    else { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, "mngr: machine exited; name: %.47s; code: %u32", machine->name, code); }
 
     if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr process close failed"); }
 

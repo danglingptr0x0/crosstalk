@@ -24,7 +24,7 @@ uint32_t crosstalk_wshop_mount_core(crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t 
 
     ret = crosstalk_eda_ic_fpga_fileset_program(fpga, slot_idx, item->dir, item->manifest.files, item->manifest.top, caps, item->manifest.clk, &bytes);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop mount: core; id: %u64; slot: %u32; top: %.63s; isa: %.31s; bytes: %u32; err: %u32", item->file_id, slot_idx, item->manifest.top, item->manifest.isa, bytes, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop mount: core; id: %u64; slot: %u32; top: %.63s; isa: %.31s; bytes: %u32; err: %u32", item->file_id, slot_idx, item->manifest.top, item->manifest.isa, bytes, ret);
 
     return ret;
 }
@@ -48,13 +48,13 @@ uint32_t crosstalk_wshop_mount_img(crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t s
 
     if (img->manifest.tgt_core != 0 && img->manifest.tgt_core != core->file_id)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop mount: img pinned elsewhere; img: %u64; wants: %u64; got: %u64", img->file_id, img->manifest.tgt_core, core->file_id);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop mount: img pinned elsewhere; img: %u64; wants: %u64; got: %u64", img->file_id, img->manifest.tgt_core, core->file_id);
         return CROSSTALK_WSHOP_MOUNT_ERR_COMPAT;
     }
 
     if (crosstalk_wshop_manifest_isa_compat_is(&core->manifest, &img->manifest) != LDG_TRUTH_TRUE)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop mount: isa mismatch; core: %.31s; img wants: %.31s", core->manifest.isa, img->manifest.tgt_isa);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop mount: isa mismatch; core: %.31s; img wants: %.31s", core->manifest.isa, img->manifest.tgt_isa);
         return CROSSTALK_WSHOP_MOUNT_ERR_COMPAT;
     }
 
@@ -67,7 +67,7 @@ uint32_t crosstalk_wshop_mount_img(crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t s
 
         ret = crosstalk_eda_ic_fpga_mem_ld(fpga, slot_idx, ent->mem, path, ent->word_off, &words, &bytes);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop mount: img; id: %u64; slot: %u32; mem: %.63s; off: %u64; words: %u64; err: %u32", img->file_id, slot_idx, ent->mem, ent->word_off, words, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop mount: img; id: %u64; slot: %u32; mem: %.63s; off: %u64; words: %u64; err: %u32", img->file_id, slot_idx, ent->mem, ent->word_off, words, ret);
 
         if (ret != LDG_ERR_AOK) { return CROSSTALK_WSHOP_MOUNT_ERR_IMG; }
     }

@@ -117,7 +117,7 @@ uint32_t crosstalk_game_pack_file_add(crosstalk_game_pack_ctx_t *ctx, const char
         done = done + got;
     }
 
-    if (LDG_UNLIKELY(ldg_io_file_close(file) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pack file close failed"); }
+    if (LDG_UNLIKELY(ldg_io_file_close(file) != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pack file close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 

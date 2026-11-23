@@ -106,7 +106,7 @@ uint32_t crosstalk_eda_io_display_attach(crosstalk_eda_io_display_ctx_t *ctx, ui
     ctx->prev_vs = LDG_TRUTH_FALSE;
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: attached; slot: %u32; mode: %u32; hsync: %.31s; vsync: %.31s; video: %.31s", slot_idx, mode, hsync, vsync, video);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: attached; slot: %u32; mode: %u32; hsync: %.31s; vsync: %.31s; video: %.31s", slot_idx, mode, hsync, vsync, video);
 
     return LDG_ERR_AOK;
 }
@@ -117,7 +117,7 @@ uint32_t crosstalk_eda_io_display_detach(crosstalk_eda_io_display_ctx_t *ctx)
 
     ctx->live = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: detached; frames: %u64", ctx->frames);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: detached; frames: %u64", ctx->frames);
 
     return LDG_ERR_AOK;
 }
@@ -156,7 +156,7 @@ uint32_t crosstalk_eda_io_display_cycle_sample(crosstalk_eda_io_display_ctx_t *c
                 pin->abi_sig = abi->sig_find(pin->port);
                 pin->abi_ck = LDG_TRUTH_TRUE;
 
-                if (pin->abi_sig == (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "display: port absent from the compiled component; port: %.63s", pin->port); }
+                if (pin->abi_sig == (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "display: port absent from the compiled component; port: %.63s", pin->port); }
                 else if (abi->state_get((uint32_t)CROSSTALK_HDL_ABI_STATE_SIG_VALS, &base, &cunt) == LDG_ERR_AOK && base != 0x0 && pin->abi_sig < cunt) { pin->abi_vals = base; }
             }
 
@@ -202,7 +202,7 @@ uint32_t crosstalk_eda_io_display_cycle_sample(crosstalk_eda_io_display_ctx_t *c
         ctx->frames++;
         LDG_ST_RELEASE(ctx->front, ctx->front ^ DISPLAY_STEP);
 
-        if ((ctx->frames & DISPLAY_LOG_MASK) == 0) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: frame; cunt: %u64; w: %u32; h: %u32", ctx->frames, ctx->w_seen, ctx->h_seen); }
+        if ((ctx->frames & DISPLAY_LOG_MASK) == 0) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "display: frame; cunt: %u64; w: %u32; h: %u32", ctx->frames, ctx->w_seen, ctx->h_seen); }
     }
 
     ctx->prev_hs = hs_act;

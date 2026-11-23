@@ -83,7 +83,7 @@ static void relay_stream_drop(crosstalk_net_relay_ctx_t *ctx, uint32_t idx)
 {
     if (ctx->stream[idx].used != LDG_TRUTH_TRUE) { return; }
 
-    if (ldg_net_sock_close(&ctx->stream[idx].sock, (uint64_t)CROSSTALK_NET_RELAY_CLOSE_TIMEOUT) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: close failed; id: %u32", idx); }
+    if (ldg_net_sock_close(&ctx->stream[idx].sock, (uint64_t)CROSSTALK_NET_RELAY_CLOSE_TIMEOUT) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: close failed; id: %u32", idx); }
 
     memset(&ctx->stream[idx], 0x0, sizeof(ctx->stream[idx]));
 }
@@ -127,7 +127,7 @@ static void relay_open_service(crosstalk_net_relay_ctx_t *ctx, const uint8_t *pa
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: open failed; host: %.180s; port: %u32; err: %u32", host, (uint32_t)port, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: open failed; host: %.180s; port: %u32; err: %u32", host, (uint32_t)port, ret);
         memset(&ctx->stream[slot], 0x0, sizeof(ctx->stream[slot]));
         relay_reply_bare_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_OPEN, relay_conn_status_get(ret));
         return;
@@ -136,7 +136,7 @@ static void relay_open_service(crosstalk_net_relay_ctx_t *ctx, const uint8_t *pa
     ctx->stream[slot].used = LDG_TRUTH_TRUE;
     relay_word_wr(id_buff, slot);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: stream open; id: %u32; host: %.180s; port: %u32", slot, host, (uint32_t)port);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: stream open; id: %u32; host: %.180s; port: %u32", slot, host, (uint32_t)port);
     relay_reply_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_OPEN, (uint32_t)CROSSTALK_NET_RELAY_ST_OK, id_buff, (uint32_t)sizeof(id_buff));
 }
 
@@ -162,7 +162,7 @@ static void relay_send_service(crosstalk_net_relay_ctx_t *ctx, uint32_t id, cons
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: send failed; id: %u32; err: %u32", id, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: send failed; id: %u32; err: %u32", id, ret);
         relay_reply_bare_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_SEND, (uint32_t)CROSSTALK_NET_RELAY_ST_TRANSPORT);
         return;
     }
@@ -191,7 +191,7 @@ static void relay_poll_service(crosstalk_net_relay_ctx_t *ctx, uint32_t id)
 
     if (ret == LDG_ERR_CLOSED || ret == LDG_ERR_NET_RST)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: poll closed; id: %u32; err: %u32; got: %u64; wr total: %u64; rd total: %u64; serviced: %u64", id, ret, bytes_rd, ctx->stream[id].sock.wr_total, ctx->stream[id].sock.rd_total, ctx->serviced);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: poll closed; id: %u32; err: %u32; got: %u64; wr total: %u64; rd total: %u64; serviced: %u64", id, ret, bytes_rd, ctx->stream[id].sock.wr_total, ctx->stream[id].sock.rd_total, ctx->serviced);
         relay_stream_drop(ctx, id);
         relay_reply_bare_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_POLL, (uint32_t)CROSSTALK_NET_RELAY_ST_CLOSED);
         return;
@@ -199,7 +199,7 @@ static void relay_poll_service(crosstalk_net_relay_ctx_t *ctx, uint32_t id)
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: poll failed; id: %u32; err: %u32", id, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: poll failed; id: %u32; err: %u32", id, ret);
         relay_reply_bare_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_POLL, (uint32_t)CROSSTALK_NET_RELAY_ST_TRANSPORT);
         return;
     }
@@ -216,7 +216,7 @@ static void relay_close_service(crosstalk_net_relay_ctx_t *ctx, uint32_t id)
     }
 
     relay_stream_drop(ctx, id);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: stream closed; id: %u32", id);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: stream closed; id: %u32", id);
     relay_reply_bare_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_CLOSE, (uint32_t)CROSSTALK_NET_RELAY_ST_OK);
 }
 
@@ -251,12 +251,12 @@ static void relay_post_service(crosstalk_net_relay_ctx_t *ctx, const uint8_t *pa
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: curl ctx failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: curl ctx failed; err: %u32", ret);
         relay_reply_bare_set(ctx, (uint32_t)CROSSTALK_NET_RELAY_OP_POST, (uint32_t)CROSSTALK_NET_RELAY_ST_TRANSPORT);
         return;
     }
 
-    if (ldg_net_curl_hdr_append(&hdrs, CROSSTALK_NET_RELAY_CONTENT_HDR) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay content header failed"); }
+    if (ldg_net_curl_hdr_append(&hdrs, CROSSTALK_NET_RELAY_CONTENT_HDR) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay content header failed"); }
 
     ldg_net_curl_resp_init(&resp);
     ret = ldg_net_curl_easy_raw_post(&curl, url, body, (uint64_t)body_len, hdrs, &resp);
@@ -267,7 +267,7 @@ static void relay_post_service(crosstalk_net_relay_ctx_t *ctx, const uint8_t *pa
         memcpy(ctx->body, resp.data, (uint64_t)ctx->body_len);
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: post done; payload len: %u32; url len: %u32; body len: %u32; url: %.180s; err: %u32; status: %u32; bytes: %u32", len, url_len, body_len, url, ret, resp.status, ctx->body_len);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: post done; payload len: %u32; url len: %u32; body len: %u32; url: %.180s; err: %u32; status: %u32; bytes: %u32", len, url_len, body_len, url, ret, resp.status, ctx->body_len);
 
     ldg_net_curl_resp_free(&resp);
     ldg_net_curl_hdr_destroy(&hdrs);
@@ -331,7 +331,7 @@ static void relay_req_service(crosstalk_net_relay_ctx_t *ctx, const uint8_t *req
 
     if (len > got - (uint32_t)CROSSTALK_NET_RELAY_HDR_BYTES)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: request length mismatch; op: %u32; id: %u32; declared: %u32; got: %u32", op, id, len, got);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: request length mismatch; op: %u32; id: %u32; declared: %u32; got: %u32", op, id, len, got);
         relay_reply_bare_set(ctx, op, (uint32_t)CROSSTALK_NET_RELAY_ST_BAD_REQ);
         return;
     }
@@ -357,7 +357,7 @@ uint32_t crosstalk_net_relay_init(crosstalk_net_relay_ctx_t *ctx)
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: sock init failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: sock init failed; err: %u32", ret);
         return ret;
     }
 
@@ -365,7 +365,7 @@ uint32_t crosstalk_net_relay_init(crosstalk_net_relay_ctx_t *ctx)
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: mutex init failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: mutex init failed; err: %u32", ret);
         ldg_net_sock_shutdown();
 
         return ret;
@@ -375,7 +375,7 @@ uint32_t crosstalk_net_relay_init(crosstalk_net_relay_ctx_t *ctx)
     ctx->payload_cap = (uint32_t)CROSSTALK_NET_RELAY_PAYLOAD_CAP;
     ctx->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: ready; streams: %u32; payload cap: %u32", (uint32_t)CROSSTALK_NET_RELAY_STREAM_CAP, ctx->payload_cap);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: ready; streams: %u32; payload cap: %u32", (uint32_t)CROSSTALK_NET_RELAY_STREAM_CAP, ctx->payload_cap);
 
     return LDG_ERR_AOK;
 }
@@ -395,12 +395,12 @@ uint32_t crosstalk_net_relay_shutdown(crosstalk_net_relay_ctx_t *ctx)
 
     if (ctx->mut_ok == LDG_TRUTH_TRUE)
     {
-        if (ldg_mut_destroy(&ctx->mut) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay mutex destroy failed"); }
+        if (ldg_mut_destroy(&ctx->mut) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay mutex destroy failed"); }
 
         ctx->mut_ok = LDG_TRUTH_FALSE;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: shutdown; serviced: %u64", ctx->serviced);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "relay: shutdown; serviced: %u64", ctx->serviced);
 
     return ldg_net_sock_shutdown();
 }
@@ -442,7 +442,7 @@ static uint32_t relay_tick_locked(crosstalk_net_relay_ctx_t *ctx, const crosstal
 
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: reply push failed; err: %u32; len: %u32", ret, ctx->reply_len);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: reply push failed; err: %u32; len: %u32", ret, ctx->reply_len);
                 return ret;
             }
 
@@ -454,7 +454,7 @@ static uint32_t relay_tick_locked(crosstalk_net_relay_ctx_t *ctx, const crosstal
 
         if (ret == LDG_ERR_BOUNDS)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: request over cap; cap: %u32", ctx->payload_cap);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay: request over cap; cap: %u32", ctx->payload_cap);
             return ret;
         }
 
@@ -491,7 +491,7 @@ uint32_t crosstalk_net_relay_tick(crosstalk_net_relay_ctx_t *ctx, const crosstal
 
     ret = relay_tick_locked(ctx, abi, blk_ok);
 
-    if (ldg_mut_unlock(&ctx->mut) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay mutex unlock failed"); }
+    if (ldg_mut_unlock(&ctx->mut) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "relay mutex unlock failed"); }
 
     return ret;
 }

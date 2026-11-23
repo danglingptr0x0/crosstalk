@@ -109,7 +109,7 @@ typedef struct crosstalk_eda_ic_fpga_comp
     uint64_t ram_bits;
     uint64_t blk_ram;
     uint64_t global_clks;
-    uint64_t f_op_hz;
+    uint64_t f_op;
 } crosstalk_eda_ic_fpga_comp_t;
 
 typedef struct crosstalk_eda_ic_fpga_refused
@@ -157,7 +157,7 @@ typedef struct crosstalk_eda_ic_fpga_slot
     crosstalk_hdl_systask_ctx_t *systask;
     char *src;
     char *elab_src;
-    uint64_t acc_ns;
+    uint64_t acc;
     uint64_t cycles_run;
     uint64_t prog_ring[CROSSTALK_EDA_IC_FPGA_PROG_RING_CAP];
     uint32_t prog_rd;
@@ -212,6 +212,7 @@ typedef struct crosstalk_eda_ic_fpga_mem_watch
 } crosstalk_eda_ic_fpga_mem_watch_t;
 
 typedef void (*crosstalk_eda_ic_fpga_step_cb_t)(const crosstalk_hdl_abi_t *abi, void *user);
+typedef uint32_t (*crosstalk_eda_ic_fpga_cycle_cb_t)(uint32_t slot_idx, const crosstalk_hdl_exec_ctx_t *exec, const crosstalk_hdl_abi_t *abi, void *user);
 
 typedef struct crosstalk_eda_ic_fpga_ctx
 {
@@ -227,6 +228,8 @@ typedef struct crosstalk_eda_ic_fpga_ctx
     void *include_user;
     crosstalk_eda_ic_fpga_step_cb_t step_cb;
     void *step_user;
+    crosstalk_eda_ic_fpga_cycle_cb_t cycle_cb;
+    void *cycle_user;
     crosstalk_hdl_systask_out_cb_t systask_cb;
     void *systask_user;
     uint64_t step_cb_acc;
@@ -261,6 +264,7 @@ uint32_t crosstalk_eda_ic_fpga_receptacle_bind(crosstalk_eda_ic_fpga_ctx_t *ctx,
 uint32_t crosstalk_eda_ic_fpga_midi_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_io_midi_ctx_t *midi);
 uint32_t crosstalk_eda_ic_fpga_guard_bind(crosstalk_eda_ic_fpga_ctx_t *ctx, ldg_sys_guard_t *guard);
 uint32_t crosstalk_eda_ic_fpga_step_cb_set(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fpga_step_cb_t cb, void *user);
+uint32_t crosstalk_eda_ic_fpga_cycle_cb_set(crosstalk_eda_ic_fpga_ctx_t *ctx, crosstalk_eda_ic_fpga_cycle_cb_t cb, void *user);
 uint32_t crosstalk_eda_ic_fpga_slot_exec_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_exec_ctx_t **out_exec);
 uint32_t crosstalk_eda_ic_fpga_slot_gate_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint8_t on);
 uint32_t crosstalk_eda_ic_fpga_slot_ir_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_ir_t **out_ir, const char **out_src);
@@ -270,10 +274,10 @@ uint8_t crosstalk_eda_ic_fpga_slot_hlt_is(const crosstalk_eda_ic_fpga_ctx_t *ctx
 uint32_t crosstalk_eda_ic_fpga_slot_freq_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint64_t *out);
 uint32_t crosstalk_eda_ic_fpga_program(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const char *src, uint32_t src_len, const char *top, const crosstalk_eda_ic_fpga_comp_t *caps, const char *clk_name);
 uint32_t crosstalk_eda_ic_fpga_unprogram(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx);
-uint32_t crosstalk_eda_ic_fpga_advance(crosstalk_eda_ic_fpga_ctx_t *ctx, double dt_secs, uint64_t budget_cycles);
+uint32_t crosstalk_eda_ic_fpga_adv(crosstalk_eda_ic_fpga_ctx_t *ctx, uint64_t dt, uint64_t budget_cycles);
 uint32_t crosstalk_eda_ic_fpga_clk_domain_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint32_t domain);
 uint32_t crosstalk_eda_ic_fpga_abi_set(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_abi_t *abi);
-uint32_t crosstalk_eda_ic_fpga_emu_engage(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_abi_t *abi, const char *clk_name, uint64_t f_op_hz);
+uint32_t crosstalk_eda_ic_fpga_emu_engage(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const crosstalk_hdl_abi_t *abi, const char *clk_name, uint64_t f_op);
 uint32_t crosstalk_eda_ic_fpga_cycles_run(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint64_t cycles, uint64_t *out_done);
 uint32_t crosstalk_eda_ic_fpga_cycles_total_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint64_t *out_cycles);
 uint32_t crosstalk_eda_ic_fpga_mem_rd(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const char *sig_name, uint64_t addr, uint64_t *out, uint32_t cunt, uint32_t *out_rd);

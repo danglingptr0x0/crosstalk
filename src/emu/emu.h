@@ -63,7 +63,7 @@ typedef struct crosstalk_emu_conf
     const char *mem_sig;
     const char *font_path;
     const char *net_path;
-    uint64_t f_op_hz;
+    uint64_t f_op;
     uint32_t win_w;
     uint32_t win_h;
     uint32_t key_mode;
@@ -88,7 +88,7 @@ typedef struct crosstalk_emu_ctx
     uint32_t ld_pudding;
     uint8_t serial[CROSSTALK_EMU_SERIAL_CHUNK];
     char font_path[LDG_IO_PATH_MAX];
-    uint64_t f_op_hz;
+    uint64_t f_op;
     uint64_t cycles_total;
     uint64_t cycles_mark;
     uint64_t cycles_gen;

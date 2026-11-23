@@ -103,7 +103,7 @@ uint32_t crosstalk_wshop_publish_fileset_scan(const char *dir, char *out_files, 
         (*out_cunt)++;
     }
 
-    if (ldg_io_dir_close(dh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish dir close failed"); }
+    if (ldg_io_dir_close(dh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish dir close failed"); }
 
     if (*out_cunt == 0) { return CROSSTALK_WSHOP_PUBLISH_ERR_EMPTY; }
 
@@ -181,9 +181,9 @@ uint32_t crosstalk_wshop_publish_manifest_wr(const char *dir, const crosstalk_ws
         }
     }
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish manifest close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish manifest close failed"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop publish: manifest; path: %.255s; kind: %u32; err: %u32", path, manifest->kind, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop publish: manifest; path: %.255s; kind: %u32; err: %u32", path, manifest->kind, ret);
 
     return ret;
 }
@@ -224,7 +224,7 @@ uint32_t crosstalk_wshop_publish_stage(const char *stage_root, const char *top, 
 
     ret = ldg_io_file_wr(fh, src, (uint64_t)src_len, &put);
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish stage close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop publish stage close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -235,7 +235,7 @@ uint32_t crosstalk_wshop_publish_stage(const char *stage_root, const char *top, 
 
     manifest->fingerprint = (uint64_t)ldg_emiemi_fnv1a_compute((const ldg_byte_t *)src, (ldg_dword_t)src_len);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop publish: staged; dir: %.191s; src: %.63s; bytes: %u32; fingerprint: %u64", out_dir, name, src_len, manifest->fingerprint);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop publish: staged; dir: %.191s; src: %.63s; bytes: %u32; fingerprint: %u64", out_dir, name, src_len, manifest->fingerprint);
 
     return crosstalk_wshop_publish_manifest_wr(out_dir, manifest);
 }

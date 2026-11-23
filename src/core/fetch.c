@@ -266,7 +266,7 @@ uint32_t crosstalk_core_fetch_start(crosstalk_core_fetch_ctx_t *ctx, const char 
 
     ctx->phase = CROSSTALK_CORE_FETCH_PHASE_RUN;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: git started; op: %.15s; dir: %.191s; url: %.191s", argv[1][0] == '-' ? "pull" : "clone", ctx->repo_dir, url);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: git started; op: %.15s; dir: %.191s; url: %.191s", argv[1][0] == '-' ? "pull" : "clone", ctx->repo_dir, url);
 
     return LDG_ERR_AOK;
 }
@@ -291,7 +291,7 @@ uint32_t crosstalk_core_fetch_tick(crosstalk_core_fetch_ctx_t *ctx, uint32_t *ou
         ctx->phase = CROSSTALK_CORE_FETCH_PHASE_FAIL;
         *out_phase = ctx->phase;
 
-        if (crosstalk_hdl_proc_stop(&ctx->proc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: git stop failed"); }
+        if (crosstalk_hdl_proc_stop(&ctx->proc) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: git stop failed"); }
 
         return ret;
     }
@@ -306,9 +306,9 @@ uint32_t crosstalk_core_fetch_tick(crosstalk_core_fetch_ctx_t *ctx, uint32_t *ou
 
     if (ctx->phase == CROSSTALK_CORE_FETCH_PHASE_FAIL && crosstalk_hdl_proc_err_get(&ctx->proc, &text, &text_len) == LDG_ERR_AOK) { fetch_reason_set(ctx, (const char *)text, (uint64_t)text_len); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: git exited; code: %u32; dir: %.191s", code, ctx->repo_dir);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: git exited; code: %u32; dir: %.191s", code, ctx->repo_dir);
 
-    if (crosstalk_hdl_proc_stop(&ctx->proc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: git stop failed"); }
+    if (crosstalk_hdl_proc_stop(&ctx->proc) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: git stop failed"); }
 
     *out_phase = ctx->phase;
 
@@ -412,7 +412,7 @@ static uint32_t fetch_tree_walk(crosstalk_core_fetch_ctx_t *ctx)
             ctx->file_cunt++;
         }
 
-        if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: dir close failed; dir: %.191s", abs); }
+        if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: dir close failed; dir: %.191s", abs); }
 
         dir = 0x0;
     }
@@ -592,7 +592,7 @@ static uint32_t fetch_def_add(crosstalk_core_fetch_ctx_t *ctx, const char *text,
 
         if (def->file_idx == file_idx) { return LDG_ERR_AOK; }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: defined twice; name: %.63s; one: %.127s; other: %.127s", def->name, ctx->file[def->file_idx], ctx->file[file_idx]);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: defined twice; name: %.63s; one: %.127s; other: %.127s", def->name, ctx->file[def->file_idx], ctx->file[file_idx]);
 
         if (fetch_file_better_is(ctx, file_idx, def->file_idx) == LDG_TRUTH_TRUE) { def->file_idx = file_idx; }
 
@@ -640,7 +640,7 @@ static uint32_t fetch_file_ld(crosstalk_core_fetch_ctx_t *ctx, uint32_t idx, uin
 
     ret = ldg_io_file_rd(fh, ctx->scan, st.size, &got);
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: file close failed; file: %.127s", ctx->file[idx]); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: file close failed; file: %.127s", ctx->file[idx]); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -775,7 +775,7 @@ uint32_t crosstalk_core_fetch_files_get(crosstalk_core_fetch_ctx_t *ctx, char *o
         ret = fetch_file_ld(ctx, idx, &len);
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: file unreadable; file: %.127s; err: %u32", ctx->file[idx], ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: file unreadable; file: %.127s; err: %u32", ctx->file[idx], ret);
             continue;
         }
 
@@ -786,7 +786,7 @@ uint32_t crosstalk_core_fetch_files_get(crosstalk_core_fetch_ctx_t *ctx, char *o
     ret = fetch_def_slot_find(ctx, ctx->top, fetch_len_get(ctx->top), fetch_hash_get(ctx->top, fetch_len_get(ctx->top)), &slot);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: top not defined; top: %.63s; files: %u32; defs: %u32", ctx->top, ctx->file_cunt, ctx->def_cunt);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "fetch: top not defined; top: %.63s; files: %u32; defs: %u32", ctx->top, ctx->file_cunt, ctx->def_cunt);
         return LDG_ERR_NOT_FOUND;
     }
 
@@ -811,7 +811,7 @@ uint32_t crosstalk_core_fetch_files_get(crosstalk_core_fetch_ctx_t *ctx, char *o
 
     *out_cunt = cunt;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: closure; top: %.63s; files: %u32; kept: %u32; defs: %u32; err: %u32", ctx->top, ctx->file_cunt, cunt, ctx->def_cunt, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "fetch: closure; top: %.63s; files: %u32; kept: %u32; defs: %u32; err: %u32", ctx->top, ctx->file_cunt, cunt, ctx->def_cunt, ret);
 
     return ret;
 }

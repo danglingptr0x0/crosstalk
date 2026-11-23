@@ -16,7 +16,7 @@
 #define CROSSTALK_EDA_IO_CAST_SIG_CAP 64
 #define CROSSTALK_EDA_IO_CAST_FRAME_CAP 2048
 #define CROSSTALK_EDA_IO_CAST_SRC_W_MAX 640
-#define CROSSTALK_EDA_IO_CAST_PERIOD_SECS 2.0
+#define CROSSTALK_EDA_IO_CAST_PERIOD ((uint64_t)2 * LDG_MS_PER_SEC)
 
 typedef struct crosstalk_eda_io_cast_ctx
 {
@@ -25,7 +25,7 @@ typedef struct crosstalk_eda_io_cast_ctx
     uint64_t base;
     uint64_t prev_hash;
     uint64_t frame_cunt;
-    double next;
+    uint64_t next;
     uint32_t src_w;
     uint32_t src_h;
     uint32_t frame_len;
@@ -38,6 +38,6 @@ uint32_t crosstalk_eda_io_cast_init(crosstalk_eda_io_cast_ctx_t *ctx);
 uint32_t crosstalk_eda_io_cast_start(crosstalk_eda_io_cast_ctx_t *ctx, const char *sig, uint64_t base, uint32_t src_w, uint32_t src_h);
 uint32_t crosstalk_eda_io_cast_stop(crosstalk_eda_io_cast_ctx_t *ctx);
 uint8_t crosstalk_eda_io_cast_on_is(const crosstalk_eda_io_cast_ctx_t *ctx);
-uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, crosstalk_eda_io_serial_ctx_t *serial, double now);
+uint32_t crosstalk_eda_io_cast_tick(crosstalk_eda_io_cast_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, crosstalk_eda_io_serial_ctx_t *serial, uint64_t now);
 
 #endif

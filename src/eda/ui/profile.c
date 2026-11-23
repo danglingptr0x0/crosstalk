@@ -387,7 +387,7 @@ static void profile_emu_pull(crosstalk_eda_ui_profile_ctx_t *ctx, const crosstal
     ctx->emu_bound = LDG_TRUTH_TRUE;
 }
 
-uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now)
+uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now)
 {
     uint32_t slot = 0;
     uint8_t pending_has = 0;
@@ -401,7 +401,7 @@ uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, cros
 
     if (now < ctx->refresh_next && pending_has == LDG_TRUTH_FALSE) { return LDG_ERR_AOK; }
 
-    ctx->refresh_next = now + CROSSTALK_EDA_UI_PROFILE_REFRESH_SECS;
+    ctx->refresh_next = now + CROSSTALK_EDA_UI_PROFILE_REFRESH;
 
     profile_prog_pull(ctx, fpga, slot_idx);
 

@@ -6,7 +6,7 @@
 #include <dangling/str/str.h>
 #include <dangling/logging/logging.h>
 
-#include <dangling/term/line.h>
+#include <dangling/term/ln.h>
 #include <dangling/term/render.h>
 #include <dangling/term/vt.h>
 
@@ -46,7 +46,7 @@ static uint32_t cmdline_hist_cb(void *user, uint32_t idx, const char **out)
     return ldg_shell_hist_get(ctx->shell, idx, out);
 }
 
-static uint32_t cmdline_candidate_cb(void *user, const char *text, uint32_t len, char (*out)[LDG_TERM_LINE_CANDIDATE_CAP], uint32_t cap, uint32_t *out_cunt, uint32_t *out_at, uint8_t *out_more)
+static uint32_t cmdline_candidate_cb(void *user, const char *text, uint32_t len, char (*out)[LDG_TERM_LN_CANDIDATE_CAP], uint32_t cap, uint32_t *out_cunt, uint32_t *out_at, uint8_t *out_more)
 {
     crosstalk_core_cmdline_ctx_t *ctx = (crosstalk_core_cmdline_ctx_t *)user;
     uint32_t at = 0;
@@ -95,7 +95,7 @@ static uint32_t cmdline_hist_ld_cb(void *user, char *dst, uint64_t cap, uint64_t
         if ((got & ((uint64_t)CROSSTALK_CORE_CMDLINE_IO_BLK - (uint64_t)CROSSTALK_CORE_CMDLINE_HIST_STEP)) != 0) { break; }
     }
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline hist close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline hist close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -164,7 +164,7 @@ uint32_t crosstalk_core_cmdline_verb_reg(crosstalk_core_cmdline_ctx_t *ctx, cons
     return ldg_shell_cmd_reg(ctx->shell, &cmd);
 }
 
-uint32_t crosstalk_core_cmdline_candidate_cb_set(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_line_candidate_cb_t cb, void *user)
+uint32_t crosstalk_core_cmdline_candidate_cb_set(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_ln_candidate_cb_t cb, void *user)
 {
     if (LDG_UNLIKELY(ctx == 0x0 || cb == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -180,20 +180,20 @@ uint32_t crosstalk_core_cmdline_prompt_set(crosstalk_core_cmdline_ctx_t *ctx, co
 
     if (ctx->edit == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    return ldg_term_line_prompt_set(ctx->edit, prompt);
+    return ldg_term_ln_prompt_set(ctx->edit, prompt);
 }
 
 static void cmdline_parts_drop(crosstalk_core_cmdline_ctx_t *ctx)
 {
-    if (ctx->edit != 0x0 && ldg_term_line_uncreate(&ctx->edit) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline line uncreate failed"); }
+    if (ctx->edit != 0x0 && ldg_term_ln_uncreate(&ctx->edit) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline line uncreate failed"); }
 
-    if (ctx->shell != 0x0 && ldg_shell_uncreate(&ctx->shell) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline shell uncreate failed"); }
+    if (ctx->shell != 0x0 && ldg_shell_uncreate(&ctx->shell) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline shell uncreate failed"); }
 
-    if (ctx->edit_pool != 0x0 && ldg_mem_pool_destroy(&ctx->edit_pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline line pool destroy failed"); }
+    if (ctx->edit_pool != 0x0 && ldg_mem_pool_destroy(&ctx->edit_pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline line pool destroy failed"); }
 
-    if (ctx->pool != 0x0 && ldg_mem_pool_destroy(&ctx->pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline shell pool destroy failed"); }
+    if (ctx->pool != 0x0 && ldg_mem_pool_destroy(&ctx->pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline shell pool destroy failed"); }
 
-    if (ctx->io_raw != 0x0 && ldg_mem_dealloc(ctx->io_raw) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline io buffer dealloc failed"); }
+    if (ctx->io_raw != 0x0 && ldg_mem_dealloc(ctx->io_raw) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline io buffer dealloc failed"); }
 
     ctx->io_raw = 0x0;
     ctx->io_buff = 0x0;
@@ -207,7 +207,7 @@ static void cmdline_parts_drop(crosstalk_core_cmdline_ctx_t *ctx)
 static uint32_t cmdline_parts_make(crosstalk_core_cmdline_ctx_t *ctx)
 {
     ldg_shell_conf_t shell_conf = LDG_STRUCT_ZERO_INIT;
-    ldg_term_line_conf_t edit_conf = LDG_STRUCT_ZERO_INIT;
+    ldg_term_ln_conf_t edit_conf = LDG_STRUCT_ZERO_INIT;
     uint64_t pool_size = 0;
     uint32_t ret = 0;
 
@@ -220,12 +220,12 @@ static uint32_t cmdline_parts_make(crosstalk_core_cmdline_ctx_t *ctx)
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    ret = ldg_term_line_conf_default_get(&edit_conf);
-    if (ret == LDG_ERR_AOK) { ret = ldg_term_line_pool_size_get(&edit_conf, &pool_size); }
+    ret = ldg_term_ln_conf_default_get(&edit_conf);
+    if (ret == LDG_ERR_AOK) { ret = ldg_term_ln_pool_size_get(&edit_conf, &pool_size); }
 
     if (ret == LDG_ERR_AOK) { ret = ldg_mem_pool_create(0x0, pool_size, &ctx->edit_pool); }
 
-    if (ret == LDG_ERR_AOK) { ret = ldg_term_line_create(ctx->edit_pool, &edit_conf, &ctx->edit); }
+    if (ret == LDG_ERR_AOK) { ret = ldg_term_ln_create(ctx->edit_pool, &edit_conf, &ctx->edit); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -235,10 +235,10 @@ static uint32_t cmdline_parts_make(crosstalk_core_cmdline_ctx_t *ctx)
     ctx->io_buff = (uint8_t *)(((uintptr_t)ctx->io_raw + (uintptr_t)CROSSTALK_CORE_CMDLINE_IO_BLK - (uintptr_t)CROSSTALK_CORE_CMDLINE_HIST_STEP) & ~((uintptr_t)CROSSTALK_CORE_CMDLINE_IO_BLK - (uintptr_t)CROSSTALK_CORE_CMDLINE_HIST_STEP));
     ctx->io_cap = (uint64_t)CROSSTALK_CORE_CMDLINE_IO_CAP;
 
-    ret = ldg_term_line_hist_cb_set(ctx->edit, cmdline_hist_cb, ctx);
+    ret = ldg_term_ln_hist_cb_set(ctx->edit, cmdline_hist_cb, ctx);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    return ldg_term_line_candidate_cb_set(ctx->edit, cmdline_candidate_cb, ctx);
+    return ldg_term_ln_candidate_cb_set(ctx->edit, cmdline_candidate_cb, ctx);
 }
 
 uint32_t crosstalk_core_cmdline_drawer_init(crosstalk_core_cmdline_ctx_t *ctx)
@@ -301,7 +301,7 @@ uint32_t crosstalk_core_cmdline_hist_ld(crosstalk_core_cmdline_ctx_t *ctx, const
 
     if (ldg_shell_hist_cunt_get(ctx->shell, &cunt) != LDG_ERR_AOK) { cunt = 0; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cmdline: hist loaded; entries: %u32; path: %.255s", cunt, path);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cmdline: hist loaded; entries: %u32; path: %.255s", cunt, path);
 
     return LDG_ERR_AOK;
 }
@@ -370,7 +370,7 @@ uint32_t crosstalk_core_cmdline_open(crosstalk_core_cmdline_ctx_t *ctx)
 
     if (ctx->edit == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    ret = ldg_term_line_rst(ctx->edit);
+    ret = ldg_term_ln_rst(ctx->edit);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ctx->open = LDG_TRUTH_TRUE;
@@ -386,7 +386,7 @@ uint32_t crosstalk_core_cmdline_close(crosstalk_core_cmdline_ctx_t *ctx)
 
     if (ctx->edit == 0x0) { return LDG_ERR_AOK; }
 
-    return ldg_term_line_rst(ctx->edit);
+    return ldg_term_ln_rst(ctx->edit);
 }
 
 uint8_t crosstalk_core_cmdline_open_is(const crosstalk_core_cmdline_ctx_t *ctx)
@@ -467,7 +467,7 @@ static uint32_t cmdline_drawer_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_
 
 uint32_t crosstalk_core_cmdline_drawer_overlay_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_render_t *render)
 {
-    ldg_term_line_view_t view = LDG_STRUCT_ZERO_INIT;
+    ldg_term_ln_view_t view = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t ghost_fg = LDG_STRUCT_ZERO_INIT;
     ldg_term_render_color_t bg = LDG_STRUCT_ZERO_INIT;
@@ -481,7 +481,7 @@ uint32_t crosstalk_core_cmdline_drawer_overlay_draw(crosstalk_core_cmdline_ctx_t
     ret = cmdline_color_get(&fg, &ghost_fg, &bg);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = ldg_term_line_view_get(ctx->edit, &view);
+    ret = ldg_term_ln_view_get(ctx->edit, &view);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (view.candidate_on != LDG_TRUTH_TRUE) { return cmdline_drawer_draw(ctx, render, &fg, &bg); }
@@ -489,7 +489,7 @@ uint32_t crosstalk_core_cmdline_drawer_overlay_draw(crosstalk_core_cmdline_ctx_t
     above = (uint32_t)CROSSTALK_CORE_CMDLINE_DRAWER_SHOW_CUNT;
     if (above > ctx->drawer_row) { above = ctx->drawer_row; }
 
-    return ldg_term_line_draw(ctx->edit, render, ctx->drawer_col, ctx->drawer_row - above, ctx->drawer_col_cunt, above + (uint32_t)CROSSTALK_CORE_CMDLINE_LINE_ROW_CUNT, &fg, &ghost_fg, &bg);
+    return ldg_term_ln_draw(ctx->edit, render, ctx->drawer_col, ctx->drawer_row - above, ctx->drawer_col_cunt, above + (uint32_t)CROSSTALK_CORE_CMDLINE_LINE_ROW_CUNT, &fg, &ghost_fg, &bg);
 }
 
 static uint32_t cmdline_lead_strip(crosstalk_core_cmdline_ctx_t *ctx)
@@ -500,7 +500,7 @@ static uint32_t cmdline_lead_strip(crosstalk_core_cmdline_ctx_t *ctx)
     uint32_t at = 0;
     uint32_t ret = 0;
 
-    ret = ldg_term_line_text_get(ctx->edit, &typed, &typed_len);
+    ret = ldg_term_ln_text_get(ctx->edit, &typed, &typed_len);
     if (ret != LDG_ERR_AOK) { return ret; }
 
     if (typed == 0x0 || typed_len == 0) { return LDG_ERR_AOK; }
@@ -512,7 +512,7 @@ static uint32_t cmdline_lead_strip(crosstalk_core_cmdline_ctx_t *ctx)
     ret = ldg_str_rbrcpy(text, &typed[at], (uint64_t)sizeof(text));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
-    return ldg_term_line_text_set(ctx->edit, text);
+    return ldg_term_ln_text_set(ctx->edit, text);
 }
 
 static uint32_t cmdline_line_collect(crosstalk_core_cmdline_ctx_t *ctx)
@@ -521,28 +521,28 @@ static uint32_t cmdline_line_collect(crosstalk_core_cmdline_ctx_t *ctx)
     uint32_t cunt = 0;
     uint8_t kept = LDG_TRUTH_FALSE;
 
-    if (ldg_term_line_take(ctx->edit, ctx->line, (uint64_t)sizeof(ctx->line)) != LDG_ERR_AOK) { ctx->line[0] = LDG_STR_TERM; }
+    if (ldg_term_ln_take(ctx->edit, ctx->line, (uint64_t)sizeof(ctx->line)) != LDG_ERR_AOK) { ctx->line[0] = LDG_STR_TERM; }
 
     if (ctx->line[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
 
-    if (ctx->echo_off != LDG_TRUTH_TRUE && ldg_shell_out_push(ctx->shell, ctx->line) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline echo push failed"); }
+    if (ctx->echo_off != LDG_TRUTH_TRUE && ldg_shell_out_push(ctx->shell, ctx->line) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline echo push failed"); }
 
     if (ldg_shell_hist_cunt_get(ctx->shell, &cunt) == LDG_ERR_AOK && cunt != 0 && ldg_shell_hist_get(ctx->shell, cunt - (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP, &last) == LDG_ERR_AOK && last != 0x0 && strncmp(last, ctx->line, (uint64_t)sizeof(ctx->line)) == 0) { kept = LDG_TRUTH_TRUE; }
 
-    if (kept != LDG_TRUTH_TRUE && ldg_shell_hist_push(ctx->shell, ctx->line) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline history push failed"); }
+    if (kept != LDG_TRUTH_TRUE && ldg_shell_hist_push(ctx->shell, ctx->line) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline history push failed"); }
 
-    if (kept != LDG_TRUTH_TRUE && ctx->hist_path[0] != LDG_STR_TERM && ldg_shell_hist_st(ctx->shell) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline: hist store failed"); }
+    if (kept != LDG_TRUTH_TRUE && ctx->hist_path[0] != LDG_STR_TERM && ldg_shell_hist_st(ctx->shell) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline: hist store failed"); }
 
     ctx->line_rdy = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "cmdline: handed to the script; line: %.128s", ctx->line);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "cmdline: handed to the script; line: %.128s", ctx->line);
 
     return crosstalk_core_cmdline_close(ctx);
 }
 
 uint32_t crosstalk_core_cmdline_key_isr(crosstalk_core_cmdline_ctx_t *ctx, const ldg_term_key_event_t *irq, uint8_t *consumed)
 {
-    ldg_term_line_view_t view = LDG_STRUCT_ZERO_INIT;
+    ldg_term_ln_view_t view = LDG_STRUCT_ZERO_INIT;
     uint32_t ret = 0;
     uint8_t plain = LDG_TRUTH_FALSE;
     uint8_t taken = LDG_TRUTH_FALSE;
@@ -559,7 +559,7 @@ uint32_t crosstalk_core_cmdline_key_isr(crosstalk_core_cmdline_ctx_t *ctx, const
 
     if (irq->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { return LDG_ERR_AOK; }
 
-    ret = ldg_term_line_view_get(ctx->edit, &view);
+    ret = ldg_term_ln_view_get(ctx->edit, &view);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     plain = (view.candidate_on != LDG_TRUTH_TRUE && view.search_on != LDG_TRUTH_TRUE) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
@@ -568,7 +568,7 @@ uint32_t crosstalk_core_cmdline_key_isr(crosstalk_core_cmdline_ctx_t *ctx, const
 
     if (plain == LDG_TRUTH_TRUE && irq->key == (uint8_t)LDG_TERM_KEY_ENTER && view.text_len == 0) { return crosstalk_core_cmdline_close(ctx); }
 
-    ret = ldg_term_line_key_put(ctx->edit, irq, &taken);
+    ret = ldg_term_ln_key_put(ctx->edit, irq, &taken);
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_FULL) { return ret; }
 
     if (ctx->edit->rdy == LDG_TRUTH_TRUE) { return cmdline_line_collect(ctx); }
@@ -609,7 +609,7 @@ uint32_t crosstalk_core_cmdline_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term
     ret = cmdline_color_get(&fg, &ghost_fg, &bg);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = ldg_term_line_draw(ctx->edit, render, col, row, col_cunt, (uint32_t)CROSSTALK_CORE_CMDLINE_LINE_ROW_CUNT, &fg, &ghost_fg, &bg);
+    ret = ldg_term_ln_draw(ctx->edit, render, col, row, col_cunt, (uint32_t)CROSSTALK_CORE_CMDLINE_LINE_ROW_CUNT, &fg, &ghost_fg, &bg);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ctx->drawer_col = col;
@@ -627,5 +627,5 @@ uint32_t crosstalk_core_cmdline_encode(crosstalk_core_cmdline_ctx_t *ctx, uint32
 
     if (ctx->edit == 0x0) { return LDG_ERR_NOT_INIT; }
 
-    return ldg_term_line_encode(ctx->edit, col_cunt, out, cap, out_len);
+    return ldg_term_ln_encode(ctx->edit, col_cunt, out, cap, out_len);
 }

@@ -302,9 +302,9 @@ static uint32_t crosstalk_hdl_parse_primary(crosstalk_hdl_parse_ctx_t *ctx, uint
     *out_idx = UINT32_MAX;
     *out_callable = LDG_TRUTH_FALSE;
 
-    if (ctx->cur.kind == CROSSTALK_HDL_TOK_LIT_DEC || ctx->cur.kind == CROSSTALK_HDL_TOK_LIT_BASED || ctx->cur.kind == CROSSTALK_HDL_TOK_LIT_UNBASED || ctx->cur.kind == CROSSTALK_HDL_TOK_LIT_REAL || ctx->cur.kind == CROSSTALK_HDL_TOK_LIT_STR)
+    if (ctx->cur.kind == CROSSTALK_HDL_TOK_LITERAL_DEC || ctx->cur.kind == CROSSTALK_HDL_TOK_LITERAL_BASED || ctx->cur.kind == CROSSTALK_HDL_TOK_LITERAL_UNBASED || ctx->cur.kind == CROSSTALK_HDL_TOK_LITERAL_REAL || ctx->cur.kind == CROSSTALK_HDL_TOK_LITERAL_STR || ctx->cur.kind == CROSSTALK_HDL_TOK_LITERAL_TIME)
     {
-        ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EXPR_LIT, &ctx->cur, out_idx);
+        ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EXPR_LITERAL, &ctx->cur, out_idx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         return crosstalk_hdl_parse_adv(ctx);
@@ -662,6 +662,66 @@ static uint32_t crosstalk_hdl_parse_expr(crosstalk_hdl_parse_ctx_t *ctx, uint32_
     return LDG_ERR_AOK;
 }
 
+static uint32_t crosstalk_hdl_parse_delay(crosstalk_hdl_parse_ctx_t *ctx, uint32_t *out_idx)
+{
+    uint32_t val_idx = 0;
+    uint32_t typ_idx = 0;
+    uint32_t max_idx = 0;
+    uint32_t res = 0;
+    uint8_t callable = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || out_idx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out_idx = UINT32_MAX;
+
+    res = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_DELAY, &ctx->cur, out_idx);
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    res = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_HASH);
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_LPAREN) != LDG_TRUTH_TRUE)
+    {
+        res = crosstalk_hdl_parse_primary(ctx, &val_idx, &callable);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        return crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, val_idx);
+    }
+
+    res = crosstalk_hdl_parse_adv(ctx);
+    if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+    while (LDG_TRUTH_TRUE)
+    {
+        res = crosstalk_hdl_parse_expr(ctx, &val_idx);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_COLON) == LDG_TRUTH_TRUE)
+        {
+            res = crosstalk_hdl_parse_adv(ctx);
+            if (res == LDG_ERR_AOK) { res = crosstalk_hdl_parse_expr(ctx, &typ_idx); }
+
+            if (res == LDG_ERR_AOK) { res = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_COLON); }
+
+            if (res == LDG_ERR_AOK) { res = crosstalk_hdl_parse_expr(ctx, &max_idx); }
+
+            if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+            val_idx = typ_idx;
+        }
+
+        res = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, val_idx);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_COMMA) != LDG_TRUTH_TRUE) { break; }
+
+        res = crosstalk_hdl_parse_adv(ctx);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+    }
+
+    return crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_RPAREN);
+}
+
 static uint32_t crosstalk_hdl_parse_range(crosstalk_hdl_parse_ctx_t *ctx, uint32_t kind, uint32_t *out_idx)
 {
     uint32_t msb_idx = 0;
@@ -936,6 +996,7 @@ static uint32_t crosstalk_hdl_parse_data_decl(crosstalk_hdl_parse_ctx_t *ctx, ui
 {
     uint32_t decl_kind = 0;
     uint32_t type_idx = 0;
+    uint32_t delay_idx = UINT32_MAX;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_idx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -956,8 +1017,64 @@ static uint32_t crosstalk_hdl_parse_data_decl(crosstalk_hdl_parse_ctx_t *ctx, ui
     ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, type_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
+    if (decl_kind == CROSSTALK_HDL_NODE_NET_DECL && crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_HASH) == LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_hdl_parse_delay(ctx, &delay_idx);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+    }
+
     ret = crosstalk_hdl_parse_decl_names(ctx, *out_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    if (delay_idx != UINT32_MAX)
+    {
+        crosstalk_hdl_ast_node_t *nodes = ctx->ast->nodes;
+        uint32_t name_idx = UINT32_MAX;
+        uint32_t walk = 0;
+        uint32_t prev_idx = UINT32_MAX;
+        uint32_t init_idx = 0;
+        uint32_t lhs_idx = 0;
+        uint32_t assign_idx = 0;
+
+        for (walk = nodes[*out_idx].first_child; walk != UINT32_MAX; walk = nodes[walk].next_sibling)
+        {
+            if (nodes[walk].kind != CROSSTALK_HDL_NODE_DECL_NAME) { continue; }
+
+            if (LDG_UNLIKELY(name_idx != UINT32_MAX)) { return CROSSTALK_HDL_ERR_PARSE_SUBSET; }
+
+            name_idx = walk;
+        }
+
+        if (LDG_UNLIKELY(name_idx == UINT32_MAX || nodes[name_idx].last_child == UINT32_MAX || nodes[nodes[name_idx].last_child].kind == CROSSTALK_HDL_NODE_UNPACKED_RANGE)) { return CROSSTALK_HDL_ERR_PARSE_SUBSET; }
+
+        init_idx = nodes[name_idx].last_child;
+
+        for (walk = nodes[name_idx].first_child; walk != init_idx; walk = nodes[walk].next_sibling) { prev_idx = walk; }
+
+        if (prev_idx == UINT32_MAX)
+        {
+            nodes[name_idx].first_child = UINT32_MAX;
+            nodes[name_idx].last_child = UINT32_MAX;
+        }
+        else
+        {
+            nodes[prev_idx].next_sibling = UINT32_MAX;
+            nodes[name_idx].last_child = prev_idx;
+        }
+
+        ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EXPR_IDENT, &nodes[name_idx].tok, &lhs_idx);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_CONT_ASSIGN, &nodes[*out_idx].tok, &assign_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, assign_idx, lhs_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, assign_idx, init_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, assign_idx, delay_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, assign_idx); }
+
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+    }
 
     return crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_SEMI);
 }
@@ -1072,7 +1189,7 @@ static uint32_t crosstalk_hdl_parse_port_group(crosstalk_hdl_parse_ctx_t *ctx, u
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_parse_sens(crosstalk_hdl_parse_ctx_t *ctx, uint32_t *out_idx)
+static uint32_t crosstalk_hdl_parse_event_expr(crosstalk_hdl_parse_ctx_t *ctx, uint32_t *out_idx)
 {
     crosstalk_hdl_tok_t edge_tok = LDG_STRUCT_ZERO_INIT;
     crosstalk_hdl_tok_t blank = LDG_STRUCT_ZERO_INIT;
@@ -1084,7 +1201,7 @@ static uint32_t crosstalk_hdl_parse_sens(crosstalk_hdl_parse_ctx_t *ctx, uint32_
 
     *out_idx = UINT32_MAX;
 
-    ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_SENS, 0x0, out_idx);
+    ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EVENT_EXPR, crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_AT) == LDG_TRUTH_TRUE ? &ctx->cur : 0x0, out_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_AT) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
@@ -1093,6 +1210,20 @@ static uint32_t crosstalk_hdl_parse_sens(crosstalk_hdl_parse_ctx_t *ctx, uint32_
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_STAR) == LDG_TRUTH_TRUE) { return crosstalk_hdl_parse_adv(ctx); }
+
+    if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_LPAREN) != LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EDGE, &blank, &edge_idx);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        ret = crosstalk_hdl_parse_postfix(ctx, &expr_idx);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        ret = crosstalk_hdl_ast_child_append(ctx->ast, edge_idx, expr_idx);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        return crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, edge_idx);
+    }
 
     ret = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_LPAREN);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1168,6 +1299,8 @@ static uint32_t crosstalk_hdl_parse_assign_tail(crosstalk_hdl_parse_ctx_t *ctx, 
 {
     crosstalk_hdl_tok_t op_tok = LDG_STRUCT_ZERO_INIT;
     uint32_t rhs_idx = 0;
+    uint32_t ctl_idx = UINT32_MAX;
+    uint32_t event_expr_idx = 0;
     uint32_t node_kind = 0;
     uint32_t ret = 0;
 
@@ -1201,6 +1334,24 @@ static uint32_t crosstalk_hdl_parse_assign_tail(crosstalk_hdl_parse_ctx_t *ctx, 
     ret = crosstalk_hdl_parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
+    if (op_tok.val == CROSSTALK_HDL_OP_ASSIGN || op_tok.val == CROSSTALK_HDL_OP_LE)
+    {
+        if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_HASH) == LDG_TRUTH_TRUE)
+        {
+            ret = crosstalk_hdl_parse_delay(ctx, &ctl_idx);
+            if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+        }
+        else if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_AT) == LDG_TRUTH_TRUE)
+        {
+            ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EVENT, &ctx->cur, &ctl_idx);
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_event_expr(ctx, &event_expr_idx); }
+
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, ctl_idx, event_expr_idx); }
+
+            if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+        }
+    }
+
     ret = crosstalk_hdl_parse_expr(ctx, &rhs_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -1212,6 +1363,12 @@ static uint32_t crosstalk_hdl_parse_assign_tail(crosstalk_hdl_parse_ctx_t *ctx, 
 
     ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, rhs_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    if (ctl_idx != UINT32_MAX)
+    {
+        ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, ctl_idx);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+    }
 
     if (expect_semi == LDG_TRUTH_TRUE) { return crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_SEMI); }
 
@@ -1504,6 +1661,72 @@ static uint32_t crosstalk_hdl_parse_stmt(crosstalk_hdl_parse_ctx_t *ctx, uint32_
         }
 
         if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_adv(ctx); }
+
+        crosstalk_hdl_parse_depth_leave(ctx);
+
+        return ret;
+    }
+
+    if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_HASH) == LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_hdl_parse_delay(ctx, out_idx);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_stmt(ctx, &sub_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, sub_idx); }
+
+        crosstalk_hdl_parse_depth_leave(ctx);
+
+        return ret;
+    }
+
+    if (crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_AT) == LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_EVENT, &ctx->cur, out_idx);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_event_expr(ctx, &cond_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, cond_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_stmt(ctx, &sub_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, sub_idx); }
+
+        crosstalk_hdl_parse_depth_leave(ctx);
+
+        return ret;
+    }
+
+    if (crosstalk_hdl_parse_kw_is(ctx, CROSSTALK_HDL_KW_WAIT) == LDG_TRUTH_TRUE)
+    {
+        kw_tok = ctx->cur;
+
+        ret = crosstalk_hdl_parse_adv(ctx);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_LPAREN); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_expr(ctx, &cond_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_RPAREN); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_WAIT, &kw_tok, out_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, cond_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_stmt(ctx, &sub_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, sub_idx); }
+
+        crosstalk_hdl_parse_depth_leave(ctx);
+
+        return ret;
+    }
+
+    if (crosstalk_hdl_parse_kw_is(ctx, CROSSTALK_HDL_KW_FOREVER) == LDG_TRUTH_TRUE)
+    {
+        ret = crosstalk_hdl_parse_mk(ctx, CROSSTALK_HDL_NODE_FOREVER, &ctx->cur, out_idx);
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_adv(ctx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_stmt(ctx, &sub_idx); }
+
+        if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, sub_idx); }
 
         crosstalk_hdl_parse_depth_leave(ctx);
 
@@ -1823,7 +2046,7 @@ static uint32_t crosstalk_hdl_parse_inst(crosstalk_hdl_parse_ctx_t *ctx, uint32_
 static uint32_t crosstalk_hdl_parse_always(crosstalk_hdl_parse_ctx_t *ctx, uint32_t *out_idx)
 {
     uint32_t proc_kind = 0;
-    uint32_t sens_idx = 0;
+    uint32_t event_expr_idx = 0;
     uint32_t stmt_idx = 0;
     uint32_t ret = 0;
 
@@ -1842,10 +2065,10 @@ static uint32_t crosstalk_hdl_parse_always(crosstalk_hdl_parse_ctx_t *ctx, uint3
     ret = crosstalk_hdl_parse_adv(ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = crosstalk_hdl_parse_sens(ctx, &sens_idx);
+    ret = crosstalk_hdl_parse_event_expr(ctx, &event_expr_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, sens_idx);
+    ret = crosstalk_hdl_ast_child_append(ctx->ast, *out_idx, event_expr_idx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = crosstalk_hdl_parse_stmt(ctx, &stmt_idx);
@@ -2548,8 +2771,11 @@ static uint32_t crosstalk_hdl_parse_module_item(crosstalk_hdl_parse_ctx_t *ctx, 
         crosstalk_hdl_tok_t assign_tok = ctx->cur;
         uint32_t lhs_idx = 0;
         uint32_t rhs_idx = 0;
+        uint32_t delay_idx = UINT32_MAX;
 
         ret = crosstalk_hdl_parse_adv(ctx);
+        if (ret == LDG_ERR_AOK && crosstalk_hdl_parse_op_is(ctx, CROSSTALK_HDL_OP_HASH) == LDG_TRUTH_TRUE) { ret = crosstalk_hdl_parse_delay(ctx, &delay_idx); }
+
         if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_postfix(ctx, &lhs_idx); }
 
         if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_ASSIGN); }
@@ -2561,6 +2787,8 @@ static uint32_t crosstalk_hdl_parse_module_item(crosstalk_hdl_parse_ctx_t *ctx, 
         if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, item_idx, lhs_idx); }
 
         if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_ast_child_append(ctx->ast, item_idx, rhs_idx); }
+
+        if (ret == LDG_ERR_AOK && delay_idx != UINT32_MAX) { ret = crosstalk_hdl_ast_child_append(ctx->ast, item_idx, delay_idx); }
 
         if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_parse_op_expect(ctx, CROSSTALK_HDL_OP_SEMI); }
     }

@@ -28,14 +28,14 @@ uint32_t crosstalk_core_scan_init(crosstalk_core_scan_ctx_t *ctx)
     {
         ctx->provider = 0x0;
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: no antimalware provider; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: no antimalware provider; err: %u32", ret);
 
         return CROSSTALK_CORE_SCAN_ERR_PROVIDER;
     }
 
     ctx->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "scan: antimalware provider bound");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "scan: antimalware provider bound");
 
     return LDG_ERR_AOK;
 }
@@ -44,7 +44,7 @@ uint32_t crosstalk_core_scan_shutdown(crosstalk_core_scan_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (ctx->provider != 0x0 && ldg_sys_scan_ctx_destroy(&ctx->provider) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan provider release failed"); }
+    if (ctx->provider != 0x0 && ldg_sys_scan_ctx_destroy(&ctx->provider) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan provider release failed"); }
 
     memset(ctx, 0x0, sizeof(*ctx));
 
@@ -71,7 +71,7 @@ uint32_t crosstalk_core_scan_file(crosstalk_core_scan_ctx_t *ctx, const char *pa
 
     if (st.size == 0 || st.size > (uint64_t)CROSSTALK_CORE_SCAN_SPAN_MAX)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: span refused; path: %.191s; bytes: %u64", path, st.size);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: span refused; path: %.191s; bytes: %u64", path, st.size);
 
         return CROSSTALK_CORE_SCAN_ERR_SPAN;
     }
@@ -84,14 +84,14 @@ uint32_t crosstalk_core_scan_file(crosstalk_core_scan_ctx_t *ctx, const char *pa
     {
         ret = ldg_io_file_rd(file, buff, st.size, &bytes_rd);
 
-        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan file close failed"); }
+        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan file close failed"); }
     }
 
     if (ret == LDG_ERR_AOK && bytes_rd != st.size) { ret = LDG_ERR_IO_RD; }
 
     if (ret != LDG_ERR_AOK)
     {
-        if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan buffer release failed"); }
+        if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan buffer release failed"); }
 
         return ret;
     }
@@ -100,13 +100,13 @@ uint32_t crosstalk_core_scan_file(crosstalk_core_scan_ctx_t *ctx, const char *pa
 
     clean = ldg_sys_scan_clean_is(ctx->provider, buff, st.size, CROSSTALK_CORE_SCAN_APP_NAME);
 
-    if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan buffer release failed"); }
+    if (ldg_mem_dealloc(buff) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan buffer release failed"); }
 
     if (clean == LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     if (clean != LDG_TRUTH_FALSE)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: provider call failed; path: %.191s; err: %u32", path, (uint32_t)clean);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: provider call failed; path: %.191s; err: %u32", path, (uint32_t)clean);
 
         return CROSSTALK_CORE_SCAN_ERR_EXIT;
     }
@@ -114,7 +114,7 @@ uint32_t crosstalk_core_scan_file(crosstalk_core_scan_ctx_t *ctx, const char *pa
     *out_verdict = (uint32_t)CROSSTALK_CORE_SCAN_VERDICT_DETECTED;
     ctx->hits = ctx->hits + (uint64_t)SCAN_STEP;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: detected; path: %.191s", path);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "scan: detected; path: %.191s", path);
 
     return LDG_ERR_AOK;
 }

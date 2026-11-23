@@ -74,7 +74,7 @@ uint32_t crosstalk_ui_cell_fmt_put(ldg_term_render_t *render, uint32_t col, uint
     if (LDG_UNLIKELY(render == 0x0 || fmt == 0x0 || fg == 0x0 || bg == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     va_start(args, fmt);
-    ret = ldg_str_variable_fmt(line, (uint64_t)sizeof(line), &len, fmt, args);
+    ret = ldg_str_var_fmt(line, (uint64_t)sizeof(line), &len, fmt, args);
     va_end(args);
 
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
@@ -121,7 +121,7 @@ uint32_t crosstalk_ui_cell_rgba_fmt_put(ldg_term_render_t *render, uint32_t col,
     if (out_w != 0x0) { *out_w = 0; }
 
     va_start(args, fmt);
-    ret = ldg_str_variable_fmt(line, (uint64_t)sizeof(line), &len, fmt, args);
+    ret = ldg_str_var_fmt(line, (uint64_t)sizeof(line), &len, fmt, args);
     va_end(args);
 
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
@@ -146,7 +146,7 @@ uint32_t crosstalk_ui_cell_line_draw(ldg_term_render_t *render, uint32_t x_lhs, 
     rhs.pos[0] = (ldg_term_render_fixed_t)(x_rhs << LDG_TERM_RENDER_FIXED_SHIFT);
     rhs.pos[1] = (ldg_term_render_fixed_t)(y_rhs << LDG_TERM_RENDER_FIXED_SHIFT);
 
-    return ldg_term_render_line_draw(render, &lhs, &rhs);
+    return ldg_term_render_ln_draw(render, &lhs, &rhs);
 }
 
 uint32_t crosstalk_ui_cell_sample_fill(ldg_term_render_t *render, uint32_t pos_x, uint32_t pos_y, uint32_t extent_w, uint32_t extent_h, uint32_t rgba)

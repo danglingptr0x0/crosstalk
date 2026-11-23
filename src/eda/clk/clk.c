@@ -180,9 +180,8 @@ uint32_t crosstalk_eda_clk_domain_en_set(crosstalk_eda_clk_ctx_t *ctx, uint32_t 
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_eda_clk_advance(crosstalk_eda_clk_ctx_t *ctx, double dt_secs, uint64_t *out)
+uint32_t crosstalk_eda_clk_adv(crosstalk_eda_clk_ctx_t *ctx, uint64_t dt, uint64_t *out)
 {
-    uint64_t dt_ns = 0;
     uint64_t steps = 0;
     uint32_t idx = 0;
 
@@ -192,11 +191,9 @@ uint32_t crosstalk_eda_clk_advance(crosstalk_eda_clk_ctx_t *ctx, double dt_secs,
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    if (dt_secs <= 0.0) { return LDG_ERR_AOK; }
+    if (dt == 0) { return LDG_ERR_AOK; }
 
-    dt_ns = (uint64_t)(dt_secs * (double)LDG_NS_PER_SEC);
-
-    ctx->acc = ctx->acc + dt_ns * ctx->step_hz;
+    ctx->acc = ctx->acc + dt * ctx->step_hz;
     steps = ctx->acc / (uint64_t)LDG_NS_PER_SEC;
     ctx->acc = ctx->acc % (uint64_t)LDG_NS_PER_SEC;
 

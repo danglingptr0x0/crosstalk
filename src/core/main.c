@@ -48,14 +48,14 @@ int main(int argc, char **argv)
     err = ldg_mem_init();
     if (LDG_UNLIKELY(err != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(LDG_LOGGING_CON, LDG_LOGGING_LVL_ERR, "crosstalk: mem init failed; err: %u32", err);
+        ldg_logging_ln_wr(LDG_LOGGING_CON, LDG_LOGGING_LVL_ERR, "crosstalk: mem init failed; err: %u32", err);
         return (int32_t)(err & 0xFFu);
     }
 
     err = crosstalk_core_create(&ctx);
     if (LDG_UNLIKELY(err != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "create failed");
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "create failed");
         ldg_mem_shutdown();
         return (int32_t)(err & 0xFFu);
     }
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     if (join_lobby != CROSSTALK_CONNECT_LOBBY_NONE) { crosstalk_core_join_lobby_set(ctx, join_lobby); }
 
     err = crosstalk_core_run(ctx);
-    if (err != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "run exited"); }
+    if (err != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "run exited"); }
 
     crosstalk_core_destroy(ctx);
     ldg_sys_notify_close();

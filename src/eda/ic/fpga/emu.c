@@ -34,7 +34,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_init(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
     ret = ldg_mem_pool_create((uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_POOL_VAR_SIZE, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, &ctx->pool_backing);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU mem refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU mem refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
 
         return ret;
     }
@@ -42,14 +42,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_init(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
     ret = ldg_mem_pool_alloc(ctx->pool_backing, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, (void **)&ctx->pool);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU mem alloc refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU mem alloc refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES, ret);
 
         return ret;
     }
 
     ctx->pool_span = (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_RAM_BYTES;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: DLU mem reserved; bytes: %u64", ctx->pool_span);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: DLU mem reserved; bytes: %u64", ctx->pool_span);
 
     return LDG_ERR_AOK;
 }
@@ -88,7 +88,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_bind(crosstalk_eda_ic_fpga_emu_ctx_t *ct
 
         if (blks * (uint64_t)width != span)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image is not a whole number of blocks; drive: %u32; path: %.127s; bytes: %u64; blk width: %u32; tail bytes: %u64", drive, ctx->disk_path[drive], span, width, span - blks * (uint64_t)width);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image is not a whole number of blocks; drive: %u32; path: %.127s; bytes: %u64; blk width: %u32; tail bytes: %u64", drive, ctx->disk_path[drive], span, width, span - blks * (uint64_t)width);
 
             span = blks * (uint64_t)width;
         }
@@ -96,7 +96,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_bind(crosstalk_eda_ic_fpga_emu_ctx_t *ct
 
     if (span == 0)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image is shorter than one block; drive: %u32; bytes: %u64; blk width: %u32", drive, ctx->disk_span[drive], width);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image is shorter than one block; drive: %u32; bytes: %u64; blk width: %u32", drive, ctx->disk_span[drive], width);
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_SPAN;
     }
@@ -105,19 +105,19 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_bind(crosstalk_eda_ic_fpga_emu_ctx_t *ct
     else if (drive == 0 && ctx->abi.disk_set != 0x0) { ret = ctx->abi.disk_set(ctx->disk[drive], span); }
     else
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the emulator has no drive export; drive: %u32", drive);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the emulator has no drive export; drive: %u32", drive);
 
         return LDG_ERR_UNSUPPORTED;
     }
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk set refused; drive: %u32; bytes: %u64; err: %u32", drive, span, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk set refused; drive: %u32; bytes: %u64; err: %u32", drive, span, ret);
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_DISK;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk attached; drive: %u32; path: %.127s; bytes: %u64; blk width: %u32; blks: %u64", drive, ctx->disk_path[drive], span, width, blks);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk attached; drive: %u32; path: %.127s; bytes: %u64; blk width: %u32; blks: %u64", drive, ctx->disk_path[drive], span, width, blks);
 
     return LDG_ERR_AOK;
 }
@@ -140,14 +140,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_ld(crosstalk_eda_ic_fpga_emu_ctx_t *ctx,
     ret = ldg_io_path_info_get(path, &st);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image not reachable; path: %.191s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image not reachable; path: %.191s; err: %u32", path, ret);
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_PATH;
     }
 
     if (st.size == 0)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image span refused; path: %.191s; bytes: %u64", path, st.size);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk image span refused; path: %.191s; bytes: %u64", path, st.size);
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_SPAN;
     }
@@ -155,7 +155,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_ld(crosstalk_eda_ic_fpga_emu_ctx_t *ctx,
     ret = ldg_mem_alloc(st.size, (void **)&media);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk buffer alloc refused; bytes: %u64; err: %u32", st.size, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk buffer alloc refused; bytes: %u64; err: %u32", st.size, ret);
 
         return ret;
     }
@@ -165,7 +165,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_ld(crosstalk_eda_ic_fpga_emu_ctx_t *ctx,
     {
         ret = ldg_io_file_rd(file, media, st.size, &bytes_rd);
 
-        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk image close failed"); }
+        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk image close failed"); }
     }
 
     if (ret == LDG_ERR_AOK && bytes_rd != st.size) { ret = LDG_ERR_IO_RD; }
@@ -182,9 +182,9 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_ld(crosstalk_eda_ic_fpga_emu_ctx_t *ctx,
     ctx->disk[drive] = media;
     ctx->disk_span[drive] = st.size;
 
-    if (ldg_str_rbrcpy(ctx->disk_path[drive], path, (uint64_t)sizeof(ctx->disk_path[drive])) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk path truncated"); }
+    if (ldg_str_rbrcpy(ctx->disk_path[drive], path, (uint64_t)sizeof(ctx->disk_path[drive])) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk path truncated"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk image rd; drive: %u32; path: %.127s; bytes: %u64", drive, path, ctx->disk_span[drive]);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk image rd; drive: %u32; path: %.127s; bytes: %u64", drive, path, ctx->disk_span[drive]);
 
     ret = crosstalk_eda_ic_fpga_emu_disk_bind(ctx, drive);
 
@@ -307,7 +307,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_prog_open(crosstalk_eda_ic_fpga_emu_stat
 
         memset(&stat->prog[slot], 0x0, sizeof(stat->prog[slot]));
 
-        if (ldg_str_rbrcpy(stat->prog[slot].name, name, (uint64_t)sizeof(stat->prog[slot].name)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu stat prog name truncated"); }
+        if (ldg_str_rbrcpy(stat->prog[slot].name, name, (uint64_t)sizeof(stat->prog[slot].name)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu stat prog name truncated"); }
     }
 
     if (slot == (uint32_t)UINT32_MAX)
@@ -326,7 +326,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_prog_open(crosstalk_eda_ic_fpga_emu_stat
 
         memset(&stat->prog[slot], 0x0, sizeof(stat->prog[slot]));
 
-        if (ldg_str_rbrcpy(stat->prog[slot].name, name, (uint64_t)sizeof(stat->prog[slot].name)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu stat prog name truncated"); }
+        if (ldg_str_rbrcpy(stat->prog[slot].name, name, (uint64_t)sizeof(stat->prog[slot].name)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu stat prog name truncated"); }
     }
 
     stat->prog[slot].launches++;
@@ -542,7 +542,7 @@ static uint32_t emu_disk_bkp_wr(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, uint32_t d
     {
         ret = ldg_io_file_rd(file, bytes, st.size, &got);
 
-        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk backup rd close failed"); }
+        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk backup rd close failed"); }
     }
 
     if (ret == LDG_ERR_AOK && got != st.size) { ret = LDG_ERR_IO_RD; }
@@ -554,7 +554,7 @@ static uint32_t emu_disk_bkp_wr(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, uint32_t d
         {
             ret = ldg_io_file_wr(file, bytes, st.size, &done_len);
 
-            if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk backup wr close failed"); }
+            if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk backup wr close failed"); }
         }
     }
 
@@ -564,7 +564,7 @@ static uint32_t emu_disk_bkp_wr(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, uint32_t d
 
     if (done_len != st.size) { return LDG_ERR_IO_WR; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk backed up before write; drive: %u32; path: %.191s; bytes: %u64", drive, bkp, st.size);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk backed up before write; drive: %u32; path: %.191s; bytes: %u64", drive, bkp, st.size);
 
     return LDG_ERR_AOK;
 }
@@ -591,7 +591,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_sync(crosstalk_eda_ic_fpga_emu_ctx_t *ct
 
         if (lo == UINT64_MAX || hi == UINT64_MAX)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk clean; drive: %u32; path: %.127s", drive, ctx->disk_path[drive]);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk clean; drive: %u32; path: %.127s", drive, ctx->disk_path[drive]);
 
             return LDG_ERR_AOK;
         }
@@ -608,7 +608,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_sync(crosstalk_eda_ic_fpga_emu_ctx_t *ct
         ret = emu_disk_bkp_wr(ctx, drive);
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back refused; the backup would not be written; drive: %u32; path: %.127s; err: %u32", drive, ctx->disk_path[drive], ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back refused; the backup would not be written; drive: %u32; path: %.127s; err: %u32", drive, ctx->disk_path[drive], ret);
 
             return ret;
         }
@@ -620,20 +620,20 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_sync(crosstalk_eda_ic_fpga_emu_ctx_t *ct
 
         if (ret == LDG_ERR_AOK) { ret = ldg_io_file_wr(file, ctx->disk[drive] + off, span, &bytes_wr); }
 
-        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk sync close failed"); }
+        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk sync close failed"); }
 
         if (ret != LDG_ERR_AOK) { return ret; }
 
         if (bytes_wr != span) { return LDG_ERR_IO_WR; }
 
-        if (ctx->abi.disk_dirty_clear != 0x0 && ctx->abi.disk_dirty_clear(drive) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk dirty clear failed"); }
+        if (ctx->abi.disk_dirty_clear != 0x0 && ctx->abi.disk_dirty_clear(drive) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu disk dirty clear failed"); }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk range wr; drive: %u32; path: %.127s; blk lo: %u64; blk hi: %u64; off: %u64; bytes: %u64", drive, ctx->disk_path[drive], lo, hi, off, span);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk range wr; drive: %u32; path: %.127s; blk lo: %u64; blk hi: %u64; off: %u64; bytes: %u64", drive, ctx->disk_path[drive], lo, hi, off, span);
 
         return LDG_ERR_AOK;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back skipped; the emulator cannot say which blocks are dirty, and a whole-image rewrite would drop anything past the block boundary; drive: %u32; path: %.127s; bytes: %u64", drive, ctx->disk_path[drive], ctx->disk_span[drive]);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back skipped; the emulator cannot say which blocks are dirty, and a whole-image rewrite would drop anything past the block boundary; drive: %u32; path: %.127s; bytes: %u64", drive, ctx->disk_path[drive], ctx->disk_span[drive]);
 
     return LDG_ERR_AOK;
 }
@@ -646,9 +646,9 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_eject(crosstalk_eda_ic_fpga_emu_ctx_t *c
 
     if (ctx->disk[drive] != 0x0)
     {
-        if (crosstalk_eda_ic_fpga_emu_disk_sync(ctx, drive) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back on eject failed; drive: %u32", drive); }
+        if (crosstalk_eda_ic_fpga_emu_disk_sync(ctx, drive) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back on eject failed; drive: %u32", drive); }
 
-        if (ctx->abi.ok == LDG_TRUTH_TRUE && ctx->abi.disk_drive_set != 0x0) { if (ctx->abi.disk_drive_set(drive, 0x0, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_DISK_SPAN_NONE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk unbind refused; media pointer still set in the emulator; drive: %u32", drive); } }
+        if (ctx->abi.ok == LDG_TRUTH_TRUE && ctx->abi.disk_drive_set != 0x0) { if (ctx->abi.disk_drive_set(drive, 0x0, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_DISK_SPAN_NONE) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk unbind refused; media pointer still set in the emulator; drive: %u32", drive); } }
 
         ldg_mem_dealloc(ctx->disk[drive]);
     }
@@ -657,7 +657,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_eject(crosstalk_eda_ic_fpga_emu_ctx_t *c
     ctx->disk_span[drive] = 0;
     ctx->disk_path[drive][0] = LDG_STR_TERM;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk ejected; drive: %u32", drive);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: disk ejected; drive: %u32", drive);
 
     return LDG_ERR_AOK;
 }
@@ -692,13 +692,13 @@ uint32_t crosstalk_eda_ic_fpga_emu_shutdown(crosstalk_eda_ic_fpga_emu_ctx_t *ctx
 
     ret = crosstalk_eda_ic_fpga_emu_detach(ctx);
 
-    if (ctx->pool_backing != 0x0) { if (ldg_mem_pool_destroy(&ctx->pool_backing) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU pool destroy failed"); } }
+    if (ctx->pool_backing != 0x0) { if (ldg_mem_pool_destroy(&ctx->pool_backing) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: DLU pool destroy failed"); } }
 
     for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
     {
         if (ctx->disk[drive] != 0x0)
         {
-            if (ctx->disk_persist == LDG_TRUTH_TRUE && crosstalk_eda_ic_fpga_emu_disk_sync(ctx, drive) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back on shutdown failed; drive: %u32", drive); }
+            if (ctx->disk_persist == LDG_TRUTH_TRUE && crosstalk_eda_ic_fpga_emu_disk_sync(ctx, drive) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk write back on shutdown failed; drive: %u32", drive); }
 
             ldg_mem_dealloc(ctx->disk[drive]);
         }
@@ -741,7 +741,7 @@ uint8_t crosstalk_eda_ic_fpga_emu_stale_is(crosstalk_eda_ic_fpga_emu_ctx_t *ctx,
 
     if (ldg_time_epoch_ns_get() - st.modified_ns < (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_SETTLE_NS) { return LDG_TRUTH_FALSE; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: the emulator changed on disk; path: %.127s; bytes: %u64 -> %u64", ctx->path, ctx->src_span, st.size);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: the emulator changed on disk; path: %.127s; bytes: %u64 -> %u64", ctx->path, ctx->src_span, st.size);
 
     return LDG_TRUTH_TRUE;
 }
@@ -772,14 +772,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_rst(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
     {
         if (LDG_IS_POW2(ctx->pool_span) == 0 || ctx->pool_span < (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_POOL_BYTES_MIN || ctx->pool_span > (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "emu: the DLU pool is not a legal mem width; bytes: %u64", ctx->pool_span);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "emu: the DLU pool is not a legal mem width; bytes: %u64", ctx->pool_span);
 
             return CROSSTALK_EDA_IC_FPGA_EMU_ERR_POOL;
         }
 
         ret = ctx->abi.mem_init(ctx->pool, ctx->pool_span, (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: DLU pool handed to the emulator; bytes: %u64; mem window top: 0x%X64; err: %u32", ctx->pool_span, (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: DLU pool handed to the emulator; bytes: %u64; mem window top: 0x%X64; err: %u32", ctx->pool_span, (uint64_t)CROSSTALK_EDA_IC_FPGA_RAM_WINDOW_TOP, ret);
 
         if (ret != LDG_ERR_AOK) { return CROSSTALK_EDA_IC_FPGA_EMU_ERR_POOL; }
     }
@@ -802,14 +802,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_rst(crosstalk_eda_ic_fpga_emu_ctx_t *ctx)
 
         memcpy((ldg_byte_t *)ctx->pool + mark_at, CROSSTALK_EDA_IC_FPGA_EMU_CAP_MARK, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_CAP_MARK_LEN);
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: cap mark wr; mark: %s; addr: 0x%X64; word: %u64; pool bytes: %u64", CROSSTALK_EDA_IC_FPGA_EMU_CAP_MARK, mark_at, mark_at / (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_ELEM_BYTES, ctx->pool_span);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: cap mark wr; mark: %s; addr: 0x%X64; word: %u64; pool bytes: %u64", CROSSTALK_EDA_IC_FPGA_EMU_CAP_MARK, mark_at, mark_at / (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_ELEM_BYTES, ctx->pool_span);
     }
 
     for (drive = 0; drive < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_DRIVE_MAX; drive++)
     {
         if (ctx->disk_span[drive] == 0) { continue; }
 
-        if (crosstalk_eda_ic_fpga_emu_disk_bind(ctx, drive) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk rebind failed; drive: %u32", drive); }
+        if (crosstalk_eda_ic_fpga_emu_disk_bind(ctx, drive) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: disk rebind failed; drive: %u32", drive); }
     }
 
     return LDG_ERR_AOK;
@@ -833,14 +833,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
     ret = ldg_io_path_info_get(path, &st);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: image not reachable; path: %.191s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: image not reachable; path: %.191s; err: %u32", path, ret);
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_PATH;
     }
 
     if (st.size == 0 || st.size > (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_SPAN_MAX)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: image span refused; path: %.191s; bytes: %u64", path, st.size);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: image span refused; path: %.191s; bytes: %u64", path, st.size);
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_SPAN;
     }
@@ -855,7 +855,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
     {
         ret = ldg_io_file_rd(file, ctx->blob, ctx->blob_span, &bytes_rd);
 
-        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu image close failed"); }
+        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu image close failed"); }
     }
 
     if (ret == LDG_ERR_AOK && bytes_rd != ctx->blob_span) { ret = LDG_ERR_IO_RD; }
@@ -868,14 +868,14 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: attach failed; path: %.127s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: attach failed; path: %.127s; err: %u32", path, ret);
 
-        if (crosstalk_eda_ic_fpga_emu_detach(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu detach after failure failed"); }
+        if (crosstalk_eda_ic_fpga_emu_detach(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu detach after failure failed"); }
 
         return ret;
     }
 
-    if (ldg_str_rbrcpy(ctx->path, path, (uint64_t)sizeof(ctx->path)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu path truncated"); }
+    if (ldg_str_rbrcpy(ctx->path, path, (uint64_t)sizeof(ctx->path)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu path truncated"); }
 
     ctx->src_mtime_ns = st.modified_ns;
     ctx->src_span = st.size;
@@ -883,9 +883,9 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
 
     if (ctx->abi.init == 0x0)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the emulator has no init export; path: %.127s", path);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu: the emulator has no init export; path: %.127s", path);
 
-        if (crosstalk_eda_ic_fpga_emu_detach(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu detach after failure failed"); }
+        if (crosstalk_eda_ic_fpga_emu_detach(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu detach after failure failed"); }
 
         return CROSSTALK_EDA_IC_FPGA_EMU_ERR_BIND;
     }
@@ -893,7 +893,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
     ret = crosstalk_eda_ic_fpga_emu_rst(ctx);
     if (ret != LDG_ERR_AOK)
     {
-        if (crosstalk_eda_ic_fpga_emu_detach(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu detach after failure failed"); }
+        if (crosstalk_eda_ic_fpga_emu_detach(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu detach after failure failed"); }
 
         return ret;
     }
@@ -902,7 +902,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_attach(crosstalk_eda_ic_fpga_emu_ctx_t *ctx, 
 
     if (ctx->abi.rev != 0x0) { rev = ctx->abi.rev(); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: attached and reset; path: %.127s; bytes: %u64; abi rev: %u32", path, ctx->blob_span, rev);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu: attached and reset; path: %.127s; bytes: %u64; abi rev: %u32", path, ctx->blob_span, rev);
 
     return LDG_ERR_AOK;
 }

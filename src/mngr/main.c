@@ -292,7 +292,7 @@ static uint32_t main_edit_begin(main_edit_t *edit, const crosstalk_mngr_ctx_t *m
     ret = ldg_str_fmt(edit->ram_text, (uint64_t)sizeof(edit->ram_text), &len, MAIN_UINT_FMT, edit->machine.ram_bytes / (uint64_t)LDG_MIB);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    ret = ldg_str_fmt(edit->hz_text, (uint64_t)sizeof(edit->hz_text), &len, MAIN_UINT_FMT, edit->machine.f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ);
+    ret = ldg_str_fmt(edit->hz_text, (uint64_t)sizeof(edit->hz_text), &len, MAIN_UINT_FMT, edit->machine.f_op / (uint64_t)MAIN_HZ_PER_MHZ);
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_str_fmt(edit->gamma_text, (uint64_t)sizeof(edit->gamma_text), &len, MAIN_GAMMA_FMT, edit->machine.gamma);
@@ -340,7 +340,7 @@ static uint32_t main_edit_commit(main_edit_t *edit, crosstalk_mngr_ctx_t *mngr)
     }
 
     ram_mib = main_uint_clamped_get(edit->ram_text, (uint64_t)sizeof(edit->ram_text), (uint64_t)MAIN_RAM_MIN_MIB, (uint64_t)MAIN_RAM_MAX_MIB, edit->machine.ram_bytes / (uint64_t)LDG_MIB);
-    hz_mhz = main_uint_clamped_get(edit->hz_text, (uint64_t)sizeof(edit->hz_text), (uint64_t)MAIN_HZ_MIN_MHZ, (uint64_t)MAIN_HZ_MAX_MHZ, edit->machine.f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ);
+    hz_mhz = main_uint_clamped_get(edit->hz_text, (uint64_t)sizeof(edit->hz_text), (uint64_t)MAIN_HZ_MIN_MHZ, (uint64_t)MAIN_HZ_MAX_MHZ, edit->machine.f_op / (uint64_t)MAIN_HZ_PER_MHZ);
 
     gamma = strtod(edit->gamma_text, &gamma_end);
 
@@ -351,7 +351,7 @@ static uint32_t main_edit_commit(main_edit_t *edit, crosstalk_mngr_ctx_t *mngr)
     if (gamma > MAIN_GAMMA_MAX) { gamma = MAIN_GAMMA_MAX; }
 
     edit->machine.ram_bytes = ram_mib * (uint64_t)LDG_MIB;
-    edit->machine.f_op_hz = hz_mhz * (uint64_t)MAIN_HZ_PER_MHZ;
+    edit->machine.f_op = hz_mhz * (uint64_t)MAIN_HZ_PER_MHZ;
     edit->machine.gamma = gamma;
     edit->machine.key_mode = edit->keys_raw == LDG_TRUTH_TRUE ? (uint32_t)CROSSTALK_EMU_INPUT_MODE_RAW : (uint32_t)CROSSTALK_EMU_INPUT_MODE_SCAN;
 
@@ -645,7 +645,7 @@ static uint32_t main_summary_draw(ldg_term_render_t *render, const crosstalk_mng
 
     row++;
 
-    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_HZ_FMT, machine->f_op_hz / (uint64_t)MAIN_HZ_PER_MHZ) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, MAIN_SUM_HZ_FMT, machine->f_op / (uint64_t)MAIN_HZ_PER_MHZ) == LDG_ERR_AOK) { if (main_text_put(render, col, row, line, (uint64_t)sizeof(line), &pal->fg, &pal->bg) != LDG_ERR_AOK) { LDG_ERRLOG_WARN("mngr summary row failed"); } }
 
     row++;
 
@@ -903,7 +903,7 @@ static uint32_t main_keys_drain(main_state_t *state, ldg_term_input_t *input)
     while (ldg_term_input_event_next(input, &key) == LDG_ERR_AOK)
     {
         ret = main_key_isr(state, &key);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: key isr failed; mode: %u32; key: %u32; codepoint: %u32; err: %u32", state->mode, (uint32_t)key.key, (uint32_t)key.codepoint, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: key isr failed; mode: %u32; key: %u32; codepoint: %u32; err: %u32", state->mode, (uint32_t)key.key, (uint32_t)key.codepoint, ret); }
     }
 
     return LDG_ERR_AOK;
@@ -918,10 +918,10 @@ static uint32_t main_launch(main_state_t *state, main_term_t *term)
     state->launch_req = LDG_TRUTH_FALSE;
 
     ret = main_term_close(term);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: terminal handover failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: terminal handover failed; err: %u32", ret); }
 
     ret = crosstalk_mngr_launch(state->mngr, state->mngr->sel);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: launch failed; sel: %u32; err: %u32", state->mngr->sel, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: launch failed; sel: %u32; err: %u32", state->mngr->sel, ret); }
 
     return main_term_open(term);
 }
@@ -971,7 +971,7 @@ int main(int argc, char **argv)
         return MAIN_EXIT_FAIL;
     }
 
-    ret = ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, MAIN_LOG_START);
+    ret = ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_INFO, MAIN_LOG_START);
     if (ret != LDG_ERR_AOK) { main_trace(MAIN_TRACE_LOGS, ret); }
 
     main_trace(MAIN_TRACE_MEM_OK, ret);
@@ -1034,19 +1034,19 @@ int main(int argc, char **argv)
             ret = main_launch(&state, &term);
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: terminal reopen failed; err: %u32", ret);
+                ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: terminal reopen failed; err: %u32", ret);
 
                 break;
             }
         }
 
         ret = main_frame_draw(&state, term.render);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: frame draw failed; mode: %u32; err: %u32", state.mode, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_WARN, "mngr: frame draw failed; mode: %u32; err: %u32", state.mode, ret); }
 
         ret = ldg_term_sesh_wr(term.sesh);
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: terminal write failed; err: %u32", ret);
+            ldg_logging_ln_wr(CROSSTALK_MNGR_LOG_PATH, LDG_LOGGING_LVL_ERR, "mngr: terminal write failed; err: %u32", ret);
 
             break;
         }

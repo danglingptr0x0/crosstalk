@@ -90,7 +90,7 @@ uint32_t crosstalk_net_presence_push(crosstalk_net_presence_ctx_t *ctx, const cr
     for (uint32_t idx = 0; idx < ctx->backend_cunt; idx++)
     {
         ret = ctx->backend[idx].push(ctx->backend[idx].backend_ctx, desc);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "presence: push failed; backend: %u32; err: %u32", idx, ret); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "presence: push failed; backend: %u32; err: %u32", idx, ret); }
     }
 
     return LDG_ERR_AOK;

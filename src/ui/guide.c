@@ -147,7 +147,7 @@ static uint8_t guide_step_done_is(crosstalk_ui_guide_ctx_t *ctx)
 
     ctx->done_mask = ctx->done_mask | bit;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: step done; name: %.31s; idx: %u32", ctx->live->name, ctx->step_idx);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: step done; name: %.31s; idx: %u32", ctx->live->name, ctx->step_idx);
 
     return LDG_TRUTH_TRUE;
 }
@@ -265,7 +265,7 @@ static uint32_t guide_key_isr(uint64_t win_id, void *user, const ldg_term_key_ev
     if (ctx->step_idx < ctx->live->step_cunt && key->key == (uint8_t)LDG_TERM_KEY_NONE && key->codepoint > (uint32_t)LDG_ASCII_DIGIT_ZERO && key->codepoint <= (uint32_t)LDG_ASCII_DIGIT_ZERO + ctx->live->step[ctx->step_idx].pick_cunt)
     {
         ctx->pick = key->codepoint - (uint32_t)LDG_ASCII_DIGIT_ZERO;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: pick; name: %.31s; step: %u32; pick: %u32", ctx->live->name, ctx->step_idx, ctx->pick);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: pick; name: %.31s; step: %u32; pick: %u32", ctx->live->name, ctx->step_idx, ctx->pick);
 
         return LDG_ERR_AOK;
     }
@@ -404,7 +404,7 @@ uint32_t crosstalk_ui_guide_step_set(crosstalk_ui_guide_ctx_t *ctx, uint32_t ste
     ctx->step_idx = step_idx;
     ctx->win.scroll_row = 0;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "guide: step; name: %.31s; idx: %u32; cunt: %u32", ctx->live->name, step_idx, ctx->live->step_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "guide: step; name: %.31s; idx: %u32; cunt: %u32", ctx->live->name, step_idx, ctx->live->step_cunt);
 
     return LDG_ERR_AOK;
 }
@@ -427,9 +427,9 @@ uint32_t crosstalk_ui_guide_at_start(crosstalk_ui_guide_ctx_t *ctx, uint32_t idx
     ret = crosstalk_ui_guide_step_set(ctx, (uint32_t)GUIDE_STEP_FIRST);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (ctx->nav != 0x0 && ldg_time_monotonic_get(&now_ms) == LDG_ERR_AOK) { if (crosstalk_ui_window_focus_set(ctx->nav, (uint64_t)CROSSTALK_UI_GUIDE_WINDOW_ID, now_ms) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide focus failed"); } }
+    if (ctx->nav != 0x0 && ldg_time_monotonic_get(&now_ms) == LDG_ERR_AOK) { if (crosstalk_ui_window_focus_set(ctx->nav, (uint64_t)CROSSTALK_UI_GUIDE_WINDOW_ID, now_ms) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide focus failed"); } }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: start; name: %.31s; steps: %u32", ctx->live->name, ctx->live->step_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "guide: start; name: %.31s; steps: %u32", ctx->live->name, ctx->live->step_cunt);
 
     return LDG_ERR_AOK;
 }
@@ -495,13 +495,13 @@ uint32_t crosstalk_ui_guide_show(crosstalk_ui_guide_ctx_t *ctx)
 
         if (ret == LDG_ERR_NOT_FOUND)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "guide: target unavailable; id: 0x%X64", tgt_id);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "guide: target unavailable; id: 0x%X64", tgt_id);
             return LDG_ERR_AOK;
         }
 
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide: target open failed; id: 0x%X64; err: %u32", tgt_id, ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "guide: target open failed; id: 0x%X64; err: %u32", tgt_id, ret);
             return ret;
         }
     }
@@ -510,7 +510,7 @@ uint32_t crosstalk_ui_guide_show(crosstalk_ui_guide_ctx_t *ctx)
 
     ret = crosstalk_ui_window_flash_set(ctx->nav, tgt_id, ldg_time_epoch_ms_get() + (uint64_t)GUIDE_FLASH_MS);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "guide: show; id: 0x%X64; err: %u32", tgt_id, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_DEBUG : LDG_LOGGING_LVL_WARN, "guide: show; id: 0x%X64; err: %u32", tgt_id, ret);
 
     return ret;
 }

@@ -26,22 +26,22 @@ static uint32_t crosstalk_hdl_netarr_text_wr(ldg_io_file_t *out_file, const char
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_netarr_lit_wr(ldg_io_file_t *out_file, uint32_t lit)
+static uint32_t crosstalk_hdl_netarr_literal_wr(ldg_io_file_t *out_file, uint32_t literal)
 {
     uint64_t fmt_len = 0;
     char line[CROSSTALK_HDL_NETARR_LINE_CAP] = LDG_ARR_ZERO_INIT;
     int32_t wrote = 0;
 
-    if ((lit >> 1) == 0x0) { wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%u32'b%u32", 1, (lit & 1) != 0x0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
-    else if ((lit & 1) != 0x0) { wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "~n%u32", lit >> 1) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
-    else { wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "n%u32", lit >> 1) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    if ((literal >> 1) == 0x0) { wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "%u32'b%u32", 1, (literal & 1) != 0x0 ? CROSSTALK_HDL_IR_BIT_HI : CROSSTALK_HDL_IR_BIT_LO) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else if ((literal & 1) != 0x0) { wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "~n%u32", literal >> 1) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
+    else { wrote = ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "n%u32", literal >> 1) == LDG_ERR_AOK ? (int32_t)fmt_len : -1; }
 
     if (wrote < 0x0) { return LDG_ERR_STR_FMT; }
 
     return crosstalk_hdl_netarr_text_wr(out_file, line);
 }
 
-static uint32_t crosstalk_hdl_netarr_lit_vec_wr(ldg_io_file_t *out_file, const uint32_t *lits, uint32_t width)
+static uint32_t crosstalk_hdl_netarr_literal_vec_wr(ldg_io_file_t *out_file, const uint32_t *lits, uint32_t width)
 {
     uint32_t bit_idx = 0;
     uint32_t ret = 0;
@@ -53,7 +53,7 @@ static uint32_t crosstalk_hdl_netarr_lit_vec_wr(ldg_io_file_t *out_file, const u
 
     for (bit_idx = width; bit_idx != 0; bit_idx--)
     {
-        ret = crosstalk_hdl_netarr_lit_wr(out_file, lits[bit_idx - 1]);
+        ret = crosstalk_hdl_netarr_literal_wr(out_file, lits[bit_idx - 1]);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (bit_idx != 1)
@@ -122,7 +122,7 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
         const crosstalk_hdl_ir_sig_t *sig = &ir_ctx->sigs[sig_idx];
         const char *dir = 0x0;
 
-        if (sig->port == CROSSTALK_HDL_IR_PORT_NONE || aig_ctx->lit_off[sig_idx] == UINT32_MAX) { continue; }
+        if (sig->port == CROSSTALK_HDL_IR_PORT_NONE || aig_ctx->literal_off[sig_idx] == UINT32_MAX) { continue; }
 
         if (sig->port == CROSSTALK_HDL_IR_PORT_IN) { dir = "input wire "; }
         else if (sig->port == CROSSTALK_HDL_IR_PORT_OUT) { dir = "output wire "; }
@@ -229,7 +229,7 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
 
         for (in_idx = lut->in_cunt; in_idx != 0x0 && ret == LDG_ERR_AOK; in_idx--)
         {
-            ret = crosstalk_hdl_netarr_lit_wr(out_file, lut->in_node[in_idx - 1] << 1);
+            ret = crosstalk_hdl_netarr_literal_wr(out_file, lut->in_node[in_idx - 1] << 1);
             if (ret == LDG_ERR_AOK && in_idx != 1) { ret = crosstalk_hdl_netarr_text_wr(out_file, ", "); }
         }
 
@@ -251,14 +251,14 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, "_q <= "); }
 
-            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_lit_vec_wr(out_file, aig_ctx->roots + root_at, sig->width); }
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_literal_vec_wr(out_file, aig_ctx->roots + root_at, sig->width); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, ";\n"); }
 
             root_at = root_at + sig->width;
         }
 
-        if (aig_ctx->lit_off[sig_idx] != UINT32_MAX && (sig->port == CROSSTALK_HDL_IR_PORT_OUT || sig->port == CROSSTALK_HDL_IR_PORT_INOUT))
+        if (aig_ctx->literal_off[sig_idx] != UINT32_MAX && (sig->port == CROSSTALK_HDL_IR_PORT_OUT || sig->port == CROSSTALK_HDL_IR_PORT_INOUT))
         {
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, "assign "); }
 
@@ -266,7 +266,7 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, " = "); }
 
-            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_lit_vec_wr(out_file, aig_ctx->roots + root_at, sig->width); }
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_literal_vec_wr(out_file, aig_ctx->roots + root_at, sig->width); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, ";\n"); }
 
@@ -297,7 +297,7 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
             if (ret == LDG_ERR_AOK) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, " rda%u32;\nassign rda%u32 = ", op_idx, op_idx) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; }
                 else { ret = crosstalk_hdl_netarr_text_wr(out_file, line); } }
 
-            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_lit_vec_wr(out_file, aig_ctx->roots + off, addr_w); }
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_literal_vec_wr(out_file, aig_ctx->roots + off, addr_w); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, ";\n"); }
 
@@ -323,14 +323,14 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
             if (ret == LDG_ERR_AOK) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, " wra%u32;\nassign wra%u32 = ", op_idx, op_idx) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; }
                 else { ret = crosstalk_hdl_netarr_text_wr(out_file, line); } }
 
-            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_lit_vec_wr(out_file, aig_ctx->roots + off + 1, addr_w); }
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_literal_vec_wr(out_file, aig_ctx->roots + off + 1, addr_w); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, ";\n"); }
 
             if (ret == LDG_ERR_AOK) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "always @(posedge %.63s) if (", clk_name) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; }
                 else { ret = crosstalk_hdl_netarr_text_wr(out_file, line); } }
 
-            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_lit_wr(out_file, aig_ctx->roots[off]); }
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_literal_wr(out_file, aig_ctx->roots[off]); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, ") "); }
 
@@ -339,7 +339,7 @@ uint32_t crosstalk_hdl_netarr_v_wr(const crosstalk_hdl_netarr_t *netarr, const c
             if (ret == LDG_ERR_AOK) { if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, "[wra%u32] <= ", op_idx) != LDG_ERR_AOK) { ret = LDG_ERR_STR_FMT; }
                 else { ret = crosstalk_hdl_netarr_text_wr(out_file, line); } }
 
-            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_lit_vec_wr(out_file, aig_ctx->roots + off + 1 + addr_w, val_w); }
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_literal_vec_wr(out_file, aig_ctx->roots + off + 1 + addr_w, val_w); }
 
             if (ret == LDG_ERR_AOK) { ret = crosstalk_hdl_netarr_text_wr(out_file, ";\n"); }
         }

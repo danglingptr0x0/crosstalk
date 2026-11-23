@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 #include <dangling/core/arith.h>
 #include <dangling/core/err.h>
@@ -32,6 +33,22 @@ uint32_t crosstalk_hdl_ir_init(crosstalk_hdl_ir_t *ir_ctx, void *pool, uint32_t 
 
     if (LDG_UNLIKELY(ir_ctx == 0x0 || pool == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
+    ir_ctx->pool = pool;
+    ir_ctx->time_unit = LDG_PS_PER_NS;
+    ir_ctx->proc = 0x0;
+    ir_ctx->seg = 0x0;
+    ir_ctx->event = 0x0;
+    ir_ctx->proc_op = 0x0;
+    ir_ctx->proc_cunt = 0;
+    ir_ctx->proc_cap = 0;
+    ir_ctx->seg_cunt = 0;
+    ir_ctx->seg_cap = 0;
+    ir_ctx->event_cunt = 0;
+    ir_ctx->event_cap = 0;
+    ir_ctx->proc_op_cunt = 0;
+    ir_ctx->proc_op_cap = 0;
+    ir_ctx->timed = LDG_TRUTH_FALSE;
+    memset(&ir_ctx->pudding[0], 0x0, sizeof(ir_ctx->pudding));
     ir_ctx->sigs = 0x0;
     ir_ctx->comb_ops = 0x0;
     ir_ctx->seq_ops = 0x0;
@@ -116,6 +133,137 @@ uint32_t crosstalk_hdl_ir_init(crosstalk_hdl_ir_t *ir_ctx, void *pool, uint32_t 
 
     ir_ctx->qual_text = (char *)raw;
     ir_ctx->qual_text_cap = sig_cap * (uint32_t)CROSSTALK_HDL_IR_QUAL_AVG;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_ir_proc_open(crosstalk_hdl_ir_t *ir_ctx, uint8_t rep, uint32_t *out)
+{
+    void *raw = 0x0;
+    crosstalk_hdl_ir_proc_t *proc = 0x0;
+    uint32_t res = 0;
+
+    if (LDG_UNLIKELY(ir_ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = UINT32_MAX;
+
+    if (LDG_UNLIKELY(ir_ctx->pool == 0x0)) { return LDG_ERR_NOT_INIT; }
+
+    if (ir_ctx->proc == 0x0)
+    {
+        res = crosstalk_hdl_ir_arr_alloc(ir_ctx->pool, CROSSTALK_HDL_IR_PROC_MAX, (uint64_t)sizeof(crosstalk_hdl_ir_proc_t), &raw);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        ir_ctx->proc = (crosstalk_hdl_ir_proc_t *)raw;
+
+        res = crosstalk_hdl_ir_arr_alloc(ir_ctx->pool, CROSSTALK_HDL_IR_SEG_MAX, (uint64_t)sizeof(crosstalk_hdl_ir_seg_t), &raw);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        ir_ctx->seg = (crosstalk_hdl_ir_seg_t *)raw;
+
+        res = crosstalk_hdl_ir_arr_alloc(ir_ctx->pool, CROSSTALK_HDL_IR_EVENT_MAX, (uint64_t)sizeof(crosstalk_hdl_ir_event_t), &raw);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        ir_ctx->event = (crosstalk_hdl_ir_event_t *)raw;
+
+        res = crosstalk_hdl_ir_arr_alloc(ir_ctx->pool, ir_ctx->comb_cap, (uint64_t)sizeof(crosstalk_hdl_ir_op_t), &raw);
+        if (LDG_UNLIKELY(res != LDG_ERR_AOK)) { return res; }
+
+        ir_ctx->proc_op = (crosstalk_hdl_ir_op_t *)raw;
+        ir_ctx->proc_cap = CROSSTALK_HDL_IR_PROC_MAX;
+        ir_ctx->seg_cap = CROSSTALK_HDL_IR_SEG_MAX;
+        ir_ctx->event_cap = CROSSTALK_HDL_IR_EVENT_MAX;
+        ir_ctx->proc_op_cap = ir_ctx->comb_cap;
+    }
+
+    if (LDG_UNLIKELY(ir_ctx->proc_cunt >= ir_ctx->proc_cap)) { return LDG_ERR_FULL; }
+
+    proc = &ir_ctx->proc[ir_ctx->proc_cunt];
+    proc->seg_start = ir_ctx->seg_cunt;
+    proc->seg_cunt = 0;
+    proc->rep = rep;
+    memset(&proc->pudding[0], 0x0, sizeof(proc->pudding));
+
+    *out = ir_ctx->proc_cunt;
+    ir_ctx->proc_cunt++;
+    ir_ctx->timed = LDG_TRUTH_TRUE;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_ir_seg_open(crosstalk_hdl_ir_t *ir_ctx, uint32_t proc_idx, uint32_t *out)
+{
+    crosstalk_hdl_ir_seg_t *seg = 0x0;
+
+    if (LDG_UNLIKELY(ir_ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = UINT32_MAX;
+
+    if (LDG_UNLIKELY(ir_ctx->seg == 0x0)) { return LDG_ERR_NOT_INIT; }
+
+    if (LDG_UNLIKELY(proc_idx >= ir_ctx->proc_cunt)) { return LDG_ERR_BOUNDS; }
+
+    if (LDG_UNLIKELY(ir_ctx->proc[proc_idx].seg_start + ir_ctx->proc[proc_idx].seg_cunt != ir_ctx->seg_cunt)) { return LDG_ERR_INVALID; }
+
+    if (LDG_UNLIKELY(ir_ctx->seg_cunt >= ir_ctx->seg_cap)) { return LDG_ERR_FULL; }
+
+    seg = &ir_ctx->seg[ir_ctx->seg_cunt];
+    seg->wake_imm = 0;
+    seg->op_start = ir_ctx->proc_op_cunt;
+    seg->op_cunt = 0;
+    seg->wake = CROSSTALK_HDL_IR_WAKE_NONE;
+    seg->wake_sig = UINT32_MAX;
+    seg->event_start = ir_ctx->event_cunt;
+    seg->event_cunt = 0;
+    seg->next = UINT32_MAX;
+    seg->next_alt = UINT32_MAX;
+
+    *out = ir_ctx->seg_cunt;
+    ir_ctx->seg_cunt++;
+    ir_ctx->proc[proc_idx].seg_cunt++;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_ir_event_add(crosstalk_hdl_ir_t *ir_ctx, uint32_t seg_idx, uint32_t sig, uint32_t edge)
+{
+    if (LDG_UNLIKELY(ir_ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (LDG_UNLIKELY(ir_ctx->event == 0x0)) { return LDG_ERR_NOT_INIT; }
+
+    if (LDG_UNLIKELY(seg_idx >= ir_ctx->seg_cunt)) { return LDG_ERR_BOUNDS; }
+
+    if (ir_ctx->seg[seg_idx].event_cunt == 0) { ir_ctx->seg[seg_idx].event_start = ir_ctx->event_cunt; }
+
+    if (LDG_UNLIKELY(ir_ctx->seg[seg_idx].event_start + ir_ctx->seg[seg_idx].event_cunt != ir_ctx->event_cunt)) { return LDG_ERR_INVALID; }
+
+    if (LDG_UNLIKELY(sig >= ir_ctx->sig_cunt || edge > CROSSTALK_HDL_IR_EDGE_ANY)) { return LDG_ERR_FUNC_ARG_INVALID; }
+
+    if (LDG_UNLIKELY(ir_ctx->event_cunt >= ir_ctx->event_cap)) { return LDG_ERR_FULL; }
+
+    ir_ctx->event[ir_ctx->event_cunt].sig = sig;
+    ir_ctx->event[ir_ctx->event_cunt].edge = edge;
+    ir_ctx->event_cunt++;
+    ir_ctx->seg[seg_idx].event_cunt++;
+
+    return LDG_ERR_AOK;
+}
+
+uint32_t crosstalk_hdl_ir_proc_op_add(crosstalk_hdl_ir_t *ir_ctx, uint32_t seg_idx, const crosstalk_hdl_ir_op_t *op)
+{
+    if (LDG_UNLIKELY(ir_ctx == 0x0 || op == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (LDG_UNLIKELY(ir_ctx->proc_op == 0x0)) { return LDG_ERR_NOT_INIT; }
+
+    if (LDG_UNLIKELY(seg_idx >= ir_ctx->seg_cunt)) { return LDG_ERR_BOUNDS; }
+
+    if (LDG_UNLIKELY(ir_ctx->seg[seg_idx].op_start + ir_ctx->seg[seg_idx].op_cunt != ir_ctx->proc_op_cunt)) { return LDG_ERR_INVALID; }
+
+    if (LDG_UNLIKELY(ir_ctx->proc_op_cunt >= ir_ctx->proc_op_cap)) { return LDG_ERR_FULL; }
+
+    ir_ctx->proc_op[ir_ctx->proc_op_cunt] = *op;
+    ir_ctx->proc_op_cunt++;
+    ir_ctx->seg[seg_idx].op_cunt++;
 
     return LDG_ERR_AOK;
 }

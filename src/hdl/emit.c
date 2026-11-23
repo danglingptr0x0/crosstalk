@@ -3377,6 +3377,8 @@ uint32_t crosstalk_hdl_emit_run(crosstalk_hdl_emit_ctx_t *ctx, const crosstalk_h
     *out_src = 0x0;
     *out_len = 0;
 
+    if (LDG_UNLIKELY(ir_ctx->timed == LDG_TRUTH_TRUE)) { return LDG_ERR_UNSUPPORTED; }
+
     memset(ctx, 0x0, sizeof(*ctx));
 
     ctx->pf_is = pf_is;

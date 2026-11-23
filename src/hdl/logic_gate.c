@@ -23,9 +23,9 @@ static uint32_t crosstalk_hdl_logic_gate_arr_alloc(void *pool, uint64_t cunt, ui
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_logic_gate_lit_bit_get(const crosstalk_hdl_logic_gate_ctx_t *ctx, uint32_t lit)
+static uint32_t crosstalk_hdl_logic_gate_literal_bit_get(const crosstalk_hdl_logic_gate_ctx_t *ctx, uint32_t literal)
 {
-    return (lit & 1) ^ (uint32_t)ctx->node_val[lit >> 1];
+    return (literal & 1) ^ (uint32_t)ctx->node_val[literal >> 1];
 }
 
 static uint64_t crosstalk_hdl_logic_gate_roots_word_get(const crosstalk_hdl_logic_gate_ctx_t *ctx, uint32_t off, uint32_t width)
@@ -33,7 +33,7 @@ static uint64_t crosstalk_hdl_logic_gate_roots_word_get(const crosstalk_hdl_logi
     uint64_t word = 0;
     uint32_t bit_idx = 0;
 
-    for (bit_idx = 0; bit_idx < width; bit_idx++) { word = word | ((uint64_t)crosstalk_hdl_logic_gate_lit_bit_get(ctx, ctx->aig_ctx->roots[off + bit_idx]) << bit_idx); }
+    for (bit_idx = 0; bit_idx < width; bit_idx++) { word = word | ((uint64_t)crosstalk_hdl_logic_gate_literal_bit_get(ctx, ctx->aig_ctx->roots[off + bit_idx]) << bit_idx); }
 
     return word;
 }
@@ -59,7 +59,7 @@ uint32_t crosstalk_hdl_logic_gate_init(crosstalk_hdl_logic_gate_ctx_t *ctx, cons
 
     for (sig_idx = 0; sig_idx < ir_ctx->sig_cunt; sig_idx++)
     {
-        if (aig_ctx->lit_off[sig_idx] == UINT32_MAX) { continue; }
+        if (aig_ctx->literal_off[sig_idx] == UINT32_MAX) { continue; }
 
         if (ir_ctx->sigs[sig_idx].width > (uint32_t)CROSSTALK_HDL_AIG_WIDTH_MAX) { return CROSSTALK_HDL_ERR_LOGIC_GATE_WIDTH; }
     }
@@ -77,7 +77,7 @@ uint32_t crosstalk_hdl_logic_gate_init(crosstalk_hdl_logic_gate_ctx_t *ctx, cons
     ret = crosstalk_hdl_logic_gate_arr_alloc(pool, ctx->latch_cunt, sizeof(uint32_t), (void **)&ctx->latch_pi_node);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = crosstalk_hdl_logic_gate_arr_alloc(pool, ctx->latch_cunt, sizeof(uint32_t), (void **)&ctx->latch_root_lit);
+    ret = crosstalk_hdl_logic_gate_arr_alloc(pool, ctx->latch_cunt, sizeof(uint32_t), (void **)&ctx->latch_root_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     root_at = aig_ctx->latch_root_base;
@@ -90,7 +90,7 @@ uint32_t crosstalk_hdl_logic_gate_init(crosstalk_hdl_logic_gate_ctx_t *ctx, cons
         {
             uint32_t found = (uint32_t)UINT32_MAX;
 
-            ctx->latch_root_lit[fill_at] = aig_ctx->roots[root_at];
+            ctx->latch_root_literal[fill_at] = aig_ctx->roots[root_at];
             root_at++;
             for (pi_idx = 0; pi_idx < aig_ctx->pi_cunt; pi_idx++)
             {
@@ -129,7 +129,7 @@ uint32_t crosstalk_hdl_logic_gate_init(crosstalk_hdl_logic_gate_ctx_t *ctx, cons
             fill_at++;
         }
 
-        if (aig_ctx->lit_off[sig_idx] != UINT32_MAX && (ir_ctx->sigs[sig_idx].port == CROSSTALK_HDL_IR_PORT_OUT || ir_ctx->sigs[sig_idx].port == CROSSTALK_HDL_IR_PORT_INOUT)) { root_at = root_at + ir_ctx->sigs[sig_idx].width; }
+        if (aig_ctx->literal_off[sig_idx] != UINT32_MAX && (ir_ctx->sigs[sig_idx].port == CROSSTALK_HDL_IR_PORT_OUT || ir_ctx->sigs[sig_idx].port == CROSSTALK_HDL_IR_PORT_INOUT)) { root_at = root_at + ir_ctx->sigs[sig_idx].width; }
     }
 
     mem_op_total = (uint64_t)aig_ctx->mem_rd_cunt + (uint64_t)aig_ctx->mem_wr_cunt;
@@ -248,7 +248,7 @@ uint32_t crosstalk_hdl_logic_gate_cycle_run(crosstalk_hdl_logic_gate_ctx_t *ctx,
 
         for (bit_idx = 0; bit_idx < ctx->latch_cunt; bit_idx++)
         {
-            uint8_t nxt = (uint8_t)crosstalk_hdl_logic_gate_lit_bit_get(ctx, ctx->latch_root_lit[bit_idx]);
+            uint8_t nxt = (uint8_t)crosstalk_hdl_logic_gate_literal_bit_get(ctx, ctx->latch_root_literal[bit_idx]);
 
             if (ctx->node_val[ctx->latch_pi_node[bit_idx]] != nxt)
             {
@@ -266,11 +266,11 @@ uint32_t crosstalk_hdl_logic_gate_cycle_run(crosstalk_hdl_logic_gate_ctx_t *ctx,
     for (sig_idx = 0; sig_idx < ir_ctx->sig_cunt; sig_idx++)
     {
         uint64_t word = 0;
-        uint32_t off = aig_ctx->lit_off[sig_idx];
+        uint32_t off = aig_ctx->literal_off[sig_idx];
 
         if (off == UINT32_MAX) { continue; }
 
-        for (bit_idx = 0; bit_idx < ir_ctx->sigs[sig_idx].width; bit_idx++) { word = word | ((uint64_t)crosstalk_hdl_logic_gate_lit_bit_get(ctx, aig_ctx->lit_arena[off + bit_idx]) << bit_idx); }
+        for (bit_idx = 0; bit_idx < ir_ctx->sigs[sig_idx].width; bit_idx++) { word = word | ((uint64_t)crosstalk_hdl_logic_gate_literal_bit_get(ctx, aig_ctx->literal_arena[off + bit_idx]) << bit_idx); }
 
         exec->vals[sig_idx] = word;
     }
@@ -283,7 +283,7 @@ uint32_t crosstalk_hdl_logic_gate_cycle_run(crosstalk_hdl_logic_gate_ctx_t *ctx,
 
         if (ent->wr_is != LDG_TRUTH_TRUE) { continue; }
 
-        if (crosstalk_hdl_logic_gate_lit_bit_get(ctx, aig_ctx->roots[ent->en_off]) == 0) { continue; }
+        if (crosstalk_hdl_logic_gate_literal_bit_get(ctx, aig_ctx->roots[ent->en_off]) == 0) { continue; }
 
         addr = crosstalk_hdl_logic_gate_roots_word_get(ctx, ent->addr_off, ent->addr_w);
         val = crosstalk_hdl_logic_gate_roots_word_get(ctx, ent->val_off, ent->val_w) & ent->val_mask;

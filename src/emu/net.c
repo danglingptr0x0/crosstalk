@@ -112,14 +112,14 @@ uint32_t crosstalk_emu_net_init(crosstalk_emu_net_ctx_t *ctx, const char *name)
     ret = ldg_io_ipc_connect(name, &ctx->ipc);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu net: endpoint open failed; name: %.95s; err: %u32", name, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu net: endpoint open failed; name: %.95s; err: %u32", name, ret);
 
         return ret;
     }
 
     ctx->open = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu net: endpoint open; name: %.95s", name);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu net: endpoint open; name: %.95s", name);
 
     return LDG_ERR_AOK;
 }
@@ -136,7 +136,7 @@ uint32_t crosstalk_emu_net_shutdown(crosstalk_emu_net_ctx_t *ctx)
 
     ctx->open = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu net: endpoint closed; sent: %u64; recv: %u64; err: %u32", ctx->sent_total, ctx->recv_total, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu net: endpoint closed; sent: %u64; recv: %u64; err: %u32", ctx->sent_total, ctx->recv_total, ret);
 
     return ret;
 }

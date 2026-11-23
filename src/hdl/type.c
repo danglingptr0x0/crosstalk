@@ -1654,7 +1654,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
             parse.str_off_base = (uint64_t)TYPE_STR_OFF_HDR_LEN;
             parse.addr_base = (uint64_t)TYPE_ADDR_HDR_LEN;
 
-            if (type_cu_walk(&parse, &build, cu_end, abbrev_base, &at) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "type cu walk failed"); }
+            if (type_cu_walk(&parse, &build, cu_end, abbrev_base, &at) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "type cu walk failed"); }
 
             at = cu_end;
         }
@@ -1722,11 +1722,11 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
 
     if (sect != 0x0) { ldg_mem_dealloc(sect); }
 
-    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "type close failed"); }
+    if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "type close failed"); }
 
     if (ret != LDG_ERR_AOK)
     {
-        if (crosstalk_hdl_type_clear(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "type clear failed"); }
+        if (crosstalk_hdl_type_clear(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "type clear failed"); }
 
         return ret;
     }

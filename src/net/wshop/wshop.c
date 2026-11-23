@@ -83,7 +83,7 @@ static uint32_t wshop_type_find(const char *path, uint32_t *out_type)
         }
     }
 
-    if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item dir close failed; path: %.191s", path); }
+    if (ldg_io_dir_close(dir) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item dir close failed; path: %.191s", path); }
 
     if (*out_type == CROSSTALK_NET_WSHOP_TYPE_NONE) { return LDG_ERR_NOT_FOUND; }
 
@@ -170,7 +170,7 @@ uint32_t crosstalk_net_wshop_init(crosstalk_net_wshop_ctx_t *ctx, const libreste
     ctx->set = set;
     ctx->init_ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "wshop: init; types: %u32", (uint32_t)CROSSTALK_NET_WSHOP_TYPE_CUNT);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "wshop: init; types: %u32", (uint32_t)CROSSTALK_NET_WSHOP_TYPE_CUNT);
 
     return LDG_ERR_AOK;
 }
@@ -217,7 +217,7 @@ uint32_t crosstalk_net_wshop_refresh(crosstalk_net_wshop_ctx_t *ctx)
 
         if ((item->state & LIBRESTEAM_WSHOP_ITEM_STATE_INSTALLED) == 0)
         {
-            if ((item->state & (LIBRESTEAM_WSHOP_ITEM_STATE_DOWNLOADING | LIBRESTEAM_WSHOP_ITEM_STATE_DOWNLOAD_PENDING)) == 0) { if (libresteam_wshop_item_download(ctx->set, item->file_id, WSHOP_DOWNLOAD_PRIO_NORMAL) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: download refused; id: %u64", item->file_id); } }
+            if ((item->state & (LIBRESTEAM_WSHOP_ITEM_STATE_DOWNLOADING | LIBRESTEAM_WSHOP_ITEM_STATE_DOWNLOAD_PENDING)) == 0) { if (libresteam_wshop_item_download(ctx->set, item->file_id, WSHOP_DOWNLOAD_PRIO_NORMAL) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: download refused; id: %u64", item->file_id); } }
 
             continue;
         }
@@ -238,7 +238,7 @@ uint32_t crosstalk_net_wshop_refresh(crosstalk_net_wshop_ctx_t *ctx)
         ctx->item_cunt++;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: refresh; subscribed: %u32; installed: %u32", file_cunt, ctx->item_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: refresh; subscribed: %u32; installed: %u32", file_cunt, ctx->item_cunt);
 
     return LDG_ERR_AOK;
 }
@@ -293,7 +293,7 @@ uint32_t crosstalk_net_wshop_item_pull(const crosstalk_net_wshop_ctx_t *ctx, con
 
     ret = libresteam_wshop_item_download(ctx->set, item->file_id, WSHOP_DOWNLOAD_PRIO_NORMAL);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: pull; id: %u64; state: %u32; err: %u32", item->file_id, item->state, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: pull; id: %u64; state: %u32; err: %u32", item->file_id, item->state, ret);
 
     if (ret == LDG_ERR_AOK) { return LDG_ERR_AGAIN; }
 
@@ -329,7 +329,7 @@ uint32_t crosstalk_net_wshop_upload_start(crosstalk_net_wshop_ctx_t *ctx, crosst
 
     up->state = ret == LDG_ERR_AOK ? CROSSTALK_NET_WSHOP_UPLOAD_CREATING : CROSSTALK_NET_WSHOP_UPLOAD_ERR;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop: upload start; type: %u32; title: %.63s; content: %.191s; err: %u32", type, title, content_path, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, ret == LDG_ERR_AOK ? LDG_LOGGING_LVL_INFO : LDG_LOGGING_LVL_WARN, "wshop: upload start; type: %u32; title: %.63s; content: %.191s; err: %u32", type, title, content_path, ret);
 
     return ret;
 }
@@ -363,7 +363,7 @@ uint32_t crosstalk_net_wshop_upload_state_get(crosstalk_net_wshop_ctx_t *ctx, cr
 
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item create failed; err: %u32", ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item create failed; err: %u32", ret);
             up->state = CROSSTALK_NET_WSHOP_UPLOAD_ERR;
         }
     }
@@ -374,12 +374,12 @@ uint32_t crosstalk_net_wshop_upload_state_get(crosstalk_net_wshop_ctx_t *ctx, cr
         {
             up->state = wshop_u32_rd(res + CROSSTALK_NET_WSHOP_RES_ERES_OFF) == CROSSTALK_NET_WSHOP_ERES_OK ? CROSSTALK_NET_WSHOP_UPLOAD_DONE : CROSSTALK_NET_WSHOP_UPLOAD_ERR;
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: item submitted; id: %u64; state: %u32", up->file_id, up->state);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: item submitted; id: %u64; state: %u32", up->file_id, up->state);
         }
 
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item submit failed; err: %u32", ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item submit failed; err: %u32", ret);
             up->state = CROSSTALK_NET_WSHOP_UPLOAD_ERR;
         }
     }

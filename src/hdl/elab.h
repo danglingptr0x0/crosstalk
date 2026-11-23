@@ -28,6 +28,10 @@
 #define CROSSTALK_HDL_ELAB_GEN_DEPTH_MAX 8
 #define CROSSTALK_HDL_ELAB_GEN_IDX_CAP 12
 #define CROSSTALK_HDL_ELAB_PATTERN_CAP 32
+#define CROSSTALK_HDL_ELAB_SYSFN_TIME_WIDTH 64
+#define CROSSTALK_HDL_ELAB_SYSFN_TIME_NAME "$time"
+#define CROSSTALK_HDL_ELAB_SYSFN_STIME_NAME "$stime"
+#define CROSSTALK_HDL_ELAB_SYSFN_REALTIME_NAME "$realtime"
 
 typedef enum crosstalk_hdl_elab_sym_kind
 {
@@ -45,7 +49,8 @@ typedef enum crosstalk_hdl_elab_mode
     CROSSTALK_HDL_ELAB_MODE_COMB = 0,
     CROSSTALK_HDL_ELAB_MODE_SEQ,
     CROSSTALK_HDL_ELAB_MODE_INITIAL,
-    CROSSTALK_HDL_ELAB_MODE_FINAL
+    CROSSTALK_HDL_ELAB_MODE_FINAL,
+    CROSSTALK_HDL_ELAB_MODE_PROC
 } crosstalk_hdl_elab_mode_t;
 
 typedef struct crosstalk_hdl_elab_sym
@@ -109,7 +114,7 @@ typedef struct crosstalk_hdl_elab_ctx
     const void *port_conn;
     uint32_t *current_map;
     uint32_t *next_map;
-    crosstalk_hdl_tok_t err_tok;
+    crosstalk_hdl_tok_t err;
     crosstalk_hdl_tok_t inst_name;
     crosstalk_hdl_tok_t inst_module;
     uint32_t sym_cunt;
@@ -125,6 +130,8 @@ typedef struct crosstalk_hdl_elab_ctx
     uint32_t call_styp;
     uint32_t call_base;
     uint32_t seq_blk;
+    uint32_t proc;
+    uint32_t seg;
     uint32_t mode;
     uint32_t depth;
     uint32_t warn_cunt;
@@ -147,10 +154,10 @@ typedef struct crosstalk_hdl_elab_ctx
 uint32_t crosstalk_hdl_elab_run(crosstalk_hdl_elab_ctx_t *ctx, const char *src, const crosstalk_hdl_ast_t *ast, void *pool, crosstalk_hdl_ir_t *ir_ctx, const char *top_name, uint32_t top_len);
 uint32_t crosstalk_hdl_elab_member_resolve(crosstalk_hdl_elab_ctx_t *ctx, uint32_t dot_idx, uint32_t *out_sig, uint32_t *out_width, uint32_t *out_addr_sig);
 
-uint8_t crosstalk_hdl_elab_tok_lit_eq_is(const char *src, const crosstalk_hdl_tok_t *tok, const char *lit);
+uint8_t crosstalk_hdl_elab_tok_literal_eq_is(const char *src, const crosstalk_hdl_tok_t *tok, const char *literal);
 uint8_t crosstalk_hdl_elab_tok_eq_is(const char *src, const crosstalk_hdl_tok_t *lhs, const crosstalk_hdl_tok_t *rhs);
-uint32_t crosstalk_hdl_elab_lit_decode(const char *src, const crosstalk_hdl_tok_t *tok, uint64_t *out_val, uint32_t *out_width);
-uint32_t crosstalk_hdl_elab_lit_mask_decode(const char *src, const crosstalk_hdl_tok_t *tok, uint64_t *out_val, uint64_t *out_mask, uint32_t *out_width);
+uint32_t crosstalk_hdl_elab_literal_decode(const char *src, const crosstalk_hdl_tok_t *tok, uint64_t *out_val, uint32_t *out_width);
+uint32_t crosstalk_hdl_elab_literal_mask_decode(const char *src, const crosstalk_hdl_tok_t *tok, uint64_t *out_val, uint64_t *out_mask, uint32_t *out_width);
 uint32_t crosstalk_hdl_elab_sym_add(crosstalk_hdl_elab_ctx_t *ctx, const crosstalk_hdl_tok_t *name, uint32_t kind, uint32_t sig, uint64_t val, uint32_t width);
 uint32_t crosstalk_hdl_elab_sym_find(crosstalk_hdl_elab_ctx_t *ctx, const crosstalk_hdl_tok_t *name, uint32_t *out_idx);
 uint32_t crosstalk_hdl_elab_const_eval(crosstalk_hdl_elab_ctx_t *ctx, uint32_t node_idx, uint64_t *out_val);

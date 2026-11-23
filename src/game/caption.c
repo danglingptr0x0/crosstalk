@@ -32,7 +32,7 @@ static uint8_t caption_digit_take(const char *src, uint32_t len, uint32_t *pos, 
 
     while (*pos < len && ldg_char_digit_is((uint8_t)src[*pos]) == LDG_TRUTH_TRUE)
     {
-        val = val * CROSSTALK_GAME_CAPTION_TS_RADIX + CROSSTALK_GAME_CAPTION_DIGIT_VAL(src[*pos]);
+        val = val * LDG_BASE_DEC + CROSSTALK_GAME_CAPTION_DIGIT_VAL(src[*pos]);
         (*pos)++;
         seen++;
     }
@@ -43,15 +43,13 @@ static uint8_t caption_digit_take(const char *src, uint32_t len, uint32_t *pos, 
     return LDG_TRUTH_TRUE;
 }
 
-static uint8_t caption_ts_parse(const char *src, uint32_t len, uint32_t *pos, double *out_secs)
+static uint8_t caption_ts_parse(const char *src, uint32_t len, uint32_t *pos, uint64_t *out)
 {
+    uint64_t whole = 0;
     uint32_t lhs = CROSSTALK_GAME_CAPTION_NONE;
     uint32_t mid = CROSSTALK_GAME_CAPTION_NONE;
     uint32_t rhs = CROSSTALK_GAME_CAPTION_NONE;
-    uint32_t ms = CROSSTALK_GAME_CAPTION_NONE;
-    uint32_t hours = CROSSTALK_GAME_CAPTION_NONE;
-    uint32_t mins = CROSSTALK_GAME_CAPTION_NONE;
-    uint32_t secs = CROSSTALK_GAME_CAPTION_NONE;
+    uint32_t frac = CROSSTALK_GAME_CAPTION_NONE;
 
     while (*pos < len && (src[*pos] == ' ' || src[*pos] == '\t')) { (*pos)++; }
 
@@ -67,31 +65,18 @@ static uint8_t caption_ts_parse(const char *src, uint32_t len, uint32_t *pos, do
         (*pos)++;
         if (caption_digit_take(src, len, pos, &rhs) != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
 
-        hours = lhs;
-        mins = mid;
-        secs = rhs;
+        whole = (uint64_t)lhs * LDG_SECS_PER_HOUR + (uint64_t)mid * LDG_SECS_PER_MIN + (uint64_t)rhs;
     }
-    else
-    {
-        mins = lhs;
-        secs = mid;
-    }
+    else { whole = (uint64_t)lhs * LDG_SECS_PER_MIN + (uint64_t)mid; }
 
     if (*pos < len && (src[*pos] == '.' || src[*pos] == ','))
     {
         (*pos)++;
-        if (caption_digit_take(src, len, pos, &ms) != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
+        if (caption_digit_take(src, len, pos, &frac) != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
     }
 
-    *out_secs = (double)hours * (double)LDG_SECS_PER_HOUR + (double)mins * (double)LDG_SECS_PER_MIN + (double)secs + (double)ms / CROSSTALK_GAME_CAPTION_MS_PER_SEC;
+    *out = whole * LDG_MS_PER_SEC + (uint64_t)frac;
     return LDG_TRUTH_TRUE;
-}
-
-static uint64_t caption_ns_get(double secs)
-{
-    if (secs <= 0.0) { return (uint64_t)CROSSTALK_GAME_CAPTION_NONE; }
-
-    return (uint64_t)(secs * (double)LDG_NS_PER_SEC);
 }
 
 static uint32_t caption_sound_push(crosstalk_game_caption_ctx_t *ctx, const char *text)
@@ -108,8 +93,8 @@ static uint32_t caption_sound_push(crosstalk_game_caption_ctx_t *ctx, const char
     cue.text_len = (uint64_t)strlen(text);
     cue.spkr = 0x0;
     cue.spkr_len = (uint64_t)CROSSTALK_GAME_CAPTION_NONE;
-    cue.start = caption_ns_get(ctx->clock);
-    cue.end = caption_ns_get(ctx->clock + CROSSTALK_GAME_CAPTION_SOUND_SECS);
+    cue.start = ctx->clk * LDG_NS_PER_MS;
+    cue.end = (ctx->clk + CROSSTALK_GAME_CAPTION_SOUND_SPAN) * LDG_NS_PER_MS;
     cue.kind = (uint32_t)LDG_TERM_CAPTION_KIND_SOUND;
     cue.pos_en = LDG_TRUTH_FALSE;
     cue.color_en = LDG_TRUTH_FALSE;
@@ -237,8 +222,8 @@ uint32_t crosstalk_game_caption_vtt_ld(crosstalk_game_caption_ctx_t *ctx, const 
     uint32_t pos = CROSSTALK_GAME_CAPTION_NONE;
     uint32_t text_len = CROSSTALK_GAME_CAPTION_NONE;
     uint32_t ret = 0;
-    double secs_in = 0.0;
-    double secs_out = 0.0;
+    uint64_t start = 0;
+    uint64_t end = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || path == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
@@ -283,14 +268,14 @@ uint32_t crosstalk_game_caption_vtt_ld(crosstalk_game_caption_ctx_t *ctx, const 
         }
 
         ts_pos = line_hd;
-        if (caption_ts_parse(ctx->raw, line_tail, &ts_pos, &secs_in) != LDG_TRUTH_TRUE) { continue; }
+        if (caption_ts_parse(ctx->raw, line_tail, &ts_pos, &start) != LDG_TRUTH_TRUE) { continue; }
 
         while (ts_pos < line_tail && ctx->raw[ts_pos] != '>') { ts_pos++; }
 
         if (ts_pos >= line_tail) { continue; }
 
         ts_pos++;
-        if (caption_ts_parse(ctx->raw, line_tail, &ts_pos, &secs_out) != LDG_TRUTH_TRUE) { continue; }
+        if (caption_ts_parse(ctx->raw, line_tail, &ts_pos, &end) != LDG_TRUTH_TRUE) { continue; }
 
         text_len = CROSSTALK_GAME_CAPTION_NONE;
         ctx->cue_text[0] = LDG_STR_TERM;
@@ -314,7 +299,7 @@ uint32_t crosstalk_game_caption_vtt_ld(crosstalk_game_caption_ctx_t *ctx, const 
 
         if (text_len == CROSSTALK_GAME_CAPTION_NONE) { continue; }
 
-        if (LDG_UNLIKELY(text_len >= LDG_TERM_CAPTION_TEXT_CAP - LDG_STR_TERM_SIZE)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption: vtt cue exceeds the text cap and is truncated; split the cue"); }
+        if (LDG_UNLIKELY(text_len >= LDG_TERM_CAPTION_TEXT_CAP - LDG_STR_TERM_SIZE)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption: vtt cue exceeds the text cap and is truncated; split the cue"); }
 
         cue.text = ctx->cue_text;
         cue.text_len = (uint64_t)text_len;
@@ -322,22 +307,22 @@ uint32_t crosstalk_game_caption_vtt_ld(crosstalk_game_caption_ctx_t *ctx, const 
         else { cue.spkr = (ctx->cue_spkr[0] != LDG_STR_TERM) ? ctx->cue_spkr : 0x0; }
 
         cue.spkr_len = cue.spkr != 0x0 ? (uint64_t)strlen(cue.spkr) : (uint64_t)CROSSTALK_GAME_CAPTION_NONE;
-        cue.start = caption_ns_get(secs_in);
-        cue.end = caption_ns_get(secs_out);
+        cue.start = start * LDG_NS_PER_MS;
+        cue.end = end * LDG_NS_PER_MS;
         cue.kind = (uint32_t)LDG_TERM_CAPTION_KIND_SPEECH;
         cue.pos_en = LDG_TRUTH_FALSE;
         cue.color_en = LDG_TRUTH_FALSE;
 
         if (LDG_UNLIKELY(ctx->vtt_cunt >= LDG_TERM_CAPTION_CUE_MAX))
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption: vtt exceeds the cue pool; trailing cues dropped");
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption: vtt exceeds the cue pool; trailing cues dropped");
             break;
         }
 
         ret = ldg_term_caption_cue_add(ctx->eng, &cue, &id);
         if (LDG_UNLIKELY(ret == LDG_ERR_STR_TRUNC))
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption: vtt cue rejected; text exceeds the cue cap; split the cue");
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption: vtt cue rejected; text exceeds the cue cap; split the cue");
             continue;
         }
 
@@ -350,10 +335,10 @@ uint32_t crosstalk_game_caption_vtt_ld(crosstalk_game_caption_ctx_t *ctx, const 
     {
         style.spkr_en = ctx->spkr_seen;
         ret = ldg_term_caption_style_set(ctx->eng, &style);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_FULL)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption style set failed"); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_FULL)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption style set failed"); }
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "caption: vtt loaded; path: %.255s; cues: %u32", path, ctx->vtt_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "caption: vtt loaded; path: %.255s; cues: %u32", path, ctx->vtt_cunt);
     return LDG_ERR_AOK;
 }
 
@@ -372,10 +357,10 @@ uint32_t crosstalk_game_caption_init(crosstalk_game_caption_ctx_t *ctx)
     ret = ldg_term_caption_style_default_get(&style);
     if (ret == LDG_ERR_AOK)
     {
-        style.line_shown[LDG_TERM_CAPTION_KIND_SPEECH] = CROSSTALK_GAME_CAPTION_SPEECH_LINE_SHOWN;
-        style.line_shown[LDG_TERM_CAPTION_KIND_SOUND] = CROSSTALK_GAME_CAPTION_SOUND_LINE_SHOWN;
-        style.line_frac[LDG_TERM_CAPTION_KIND_SPEECH] = CROSSTALK_GAME_CAPTION_SPEECH_LINE_FRAC;
-        style.line_frac[LDG_TERM_CAPTION_KIND_SOUND] = CROSSTALK_GAME_CAPTION_SOUND_LINE_FRAC;
+        style.ln_shown[LDG_TERM_CAPTION_KIND_SPEECH] = CROSSTALK_GAME_CAPTION_SPEECH_LINE_SHOWN;
+        style.ln_shown[LDG_TERM_CAPTION_KIND_SOUND] = CROSSTALK_GAME_CAPTION_SOUND_LINE_SHOWN;
+        style.ln_frac[LDG_TERM_CAPTION_KIND_SPEECH] = CROSSTALK_GAME_CAPTION_SPEECH_LINE_FRAC;
+        style.ln_frac[LDG_TERM_CAPTION_KIND_SOUND] = CROSSTALK_GAME_CAPTION_SOUND_LINE_FRAC;
         style.margin_frac = CROSSTALK_GAME_CAPTION_MARGIN_FRAC;
         style.anchor = (uint8_t)LDG_TERM_CAPTION_ANCHOR_BOTTOM;
         style.spkr_color.red = (uint8_t)CROSSTALK_GAME_CAPTION_SPKR_RED;
@@ -390,7 +375,7 @@ uint32_t crosstalk_game_caption_init(crosstalk_game_caption_ctx_t *ctx)
 
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        if (ldg_term_caption_destroy(ctx->eng) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption destroy failed"); }
+        if (ldg_term_caption_destroy(ctx->eng) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "caption destroy failed"); }
 
         ctx->eng = 0x0;
         return ret;
@@ -412,14 +397,14 @@ uint32_t crosstalk_game_caption_shutdown(crosstalk_game_caption_ctx_t *ctx)
     return ret;
 }
 
-uint32_t crosstalk_game_caption_tick(crosstalk_game_caption_ctx_t *ctx, double clock_secs)
+uint32_t crosstalk_game_caption_tick(crosstalk_game_caption_ctx_t *ctx, uint64_t clk)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (ctx->ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    ctx->clock = clock_secs;
-    return ldg_term_caption_clock_set(ctx->eng, caption_ns_get(clock_secs));
+    ctx->clk = clk;
+    return ldg_term_caption_clock_set(ctx->eng, clk * LDG_NS_PER_MS);
 }
 
 uint32_t crosstalk_game_caption_draw(crosstalk_game_caption_ctx_t *ctx, ldg_term_render_t *render, const ldg_term_rect_t *rect)

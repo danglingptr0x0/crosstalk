@@ -113,14 +113,14 @@ uint32_t crosstalk_re_spawn_run(const char *line, uint32_t *out_exit)
     ret = ldg_sys_proc_spawn(path, argv, 0x0, LDG_SYS_PROC_SPAWN_STDIO_INHERIT, &proc);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re spawn: failed; exe: %.255s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re spawn: failed; exe: %.255s; err: %u32", path, ret);
 
         return CROSSTALK_RE_SPAWN_ERR_SPAWN;
     }
 
     ret = ldg_sys_proc_wait(&proc, LDG_SYS_PROC_WAIT_INFINITE, &code);
 
-    if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re spawn: process close failed"); }
+    if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re spawn: process close failed"); }
 
     if (ret != LDG_ERR_AOK) { return CROSSTALK_RE_SPAWN_ERR_SPAWN; }
 

@@ -110,8 +110,8 @@ typedef struct crosstalk_game_ctx
     crosstalk_game_caption_ctx_t caption;
     uint64_t author_steam_id;
     uint64_t created_epoch_ms;
-    uint64_t bench_ms_total;
-    uint64_t sim_ms_total;
+    uint64_t bench_total;
+    uint64_t sim_total;
     char author_name[CROSSTALK_GAME_AUTHOR_NAME_CAP];
     crosstalk_game_screen_t screen;
     uint8_t quit;

@@ -649,20 +649,20 @@ uint32_t crosstalk_re_db_st(crosstalk_re_db_ctx_t *ctx, const char *path)
         ret = db_line_wr(fh, CROSSTALK_RE_DB_EOL);
     }
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db close failed"); }
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db: st failed; path: %.127s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db: st failed; path: %.127s; err: %u32", path, ret);
 
         return ret;
     }
 
-    if (ldg_str_rbrcpy(ctx->path, path, (uint64_t)sizeof(ctx->path)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db path truncated"); }
+    if (ldg_str_rbrcpy(ctx->path, path, (uint64_t)sizeof(ctx->path)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re db path truncated"); }
 
     ctx->dirty = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re db: st; path: %.127s; records: %u32; img: 0x%08X32", path, ctx->rec_cunt, ctx->img_hash);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re db: st; path: %.127s; records: %u32; img: 0x%08X32", path, ctx->rec_cunt, ctx->img_hash);
 
     return LDG_ERR_AOK;
 }

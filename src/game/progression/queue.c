@@ -29,12 +29,12 @@ static uint32_t progression_queue_res_note(crosstalk_game_progression_queue_ctx_
     if (ret == LDG_ERR_AOK)
     {
         ctx->sent_cunt++;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "progression: sent; name: %.31s", name);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "progression: sent; name: %.31s", name);
         return ret;
     }
 
     ctx->fail_cunt++;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "progression: send failed; name: %.31s; err: %u32", name, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "progression: send failed; name: %.31s; err: %u32", name, ret);
     return ret;
 }
 
@@ -86,7 +86,7 @@ uint32_t crosstalk_game_progression_queue_shutdown(crosstalk_game_progression_qu
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "progression: shutdown; sent: %u32; failed: %u32", ctx->sent_cunt, ctx->fail_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "progression: shutdown; sent: %u32; failed: %u32", ctx->sent_cunt, ctx->fail_cunt);
     ctx->ok = LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;

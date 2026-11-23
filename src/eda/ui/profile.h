@@ -18,7 +18,7 @@
 #define CROSSTALK_EDA_UI_PROFILE_NM_BYTES 32
 #define CROSSTALK_EDA_UI_PROFILE_EVT_CAP 8
 #define CROSSTALK_EDA_UI_PROFILE_EVT_NAME_CAP 24
-#define CROSSTALK_EDA_UI_PROFILE_REFRESH_SECS 0.25
+#define CROSSTALK_EDA_UI_PROFILE_REFRESH ((uint64_t)250)
 #define CROSSTALK_EDA_UI_PROFILE_PROG_TOP_CAP 512
 #define CROSSTALK_EDA_UI_PROFILE_PROG_FRAME_CAP 4096
 #define CROSSTALK_EDA_UI_PROFILE_PROG_DRAIN_CAP 512
@@ -81,7 +81,7 @@ typedef struct crosstalk_eda_ui_profile_ctx
     uint32_t fn_cunt;
     uint32_t fn_pudding;
     uint32_t prog_frame[CROSSTALK_EDA_UI_PROFILE_PROG_FRAME_CAP];
-    double refresh_next;
+    uint64_t refresh_next;
     uint32_t slot_cunt;
     uint32_t blk_cunt;
     uint32_t view_evt;
@@ -106,7 +106,7 @@ uint8_t crosstalk_eda_ui_profile_open_is(const crosstalk_eda_ui_profile_ctx_t *c
 uint32_t crosstalk_eda_ui_profile_mark_start(crosstalk_eda_ui_profile_ctx_t *ctx, const char *name);
 uint32_t crosstalk_eda_ui_profile_mark_end(crosstalk_eda_ui_profile_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_profile_rst(crosstalk_eda_ui_profile_ctx_t *ctx);
-uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now);
+uint32_t crosstalk_eda_ui_profile_tick(crosstalk_eda_ui_profile_ctx_t *ctx, crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now);
 uint32_t crosstalk_eda_ui_profile_elf_bind(crosstalk_eda_ui_profile_ctx_t *ctx, const crosstalk_hdl_elf_ctx_t *elf);
 uint32_t crosstalk_eda_ui_profile_fn_top_get(const crosstalk_eda_ui_profile_ctx_t *ctx, uint64_t *out);
 uint32_t crosstalk_eda_ui_profile_win_reg(crosstalk_eda_ui_profile_ctx_t *ctx, crosstalk_ui_window_ctx_t *win_nav, uint32_t *out_slot);

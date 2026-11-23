@@ -57,7 +57,7 @@ uint32_t crosstalk_eda_sound_shutdown(crosstalk_eda_sound_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (crosstalk_eda_sound_stream_stop(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound stream stop failed"); }
+    if (crosstalk_eda_sound_stream_stop(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound stream stop failed"); }
 
     memset(ctx, 0x0, sizeof(*ctx));
 
@@ -93,7 +93,7 @@ uint32_t crosstalk_eda_sound_bind(crosstalk_eda_sound_ctx_t *ctx, const char *po
     ctx->dropped = 0x0;
     ctx->underrun = 0x0;
     ctx->report_mark = 0x0;
-    ctx->report_acc = 0.0;
+    ctx->report_acc = 0;
 
     LDG_ST_RELEASE(ctx->hd, 0x0);
     LDG_ST_RELEASE(ctx->tl, 0x0);
@@ -107,7 +107,7 @@ uint32_t crosstalk_eda_sound_unbind(crosstalk_eda_sound_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (crosstalk_eda_sound_stream_stop(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound stream stop failed"); }
+    if (crosstalk_eda_sound_stream_stop(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound stream stop failed"); }
 
     ctx->live = LDG_TRUTH_FALSE;
     ctx->port[0] = LDG_STR_TERM;
@@ -200,23 +200,23 @@ uint32_t crosstalk_eda_sound_stream_start(crosstalk_eda_sound_ctx_t *ctx)
     ret = ldg_audio_sink_pcm_open(ctx->rate, (uint16_t)CROSSTALK_EDA_SOUND_CHANNEL_CUNT, (uint16_t)CROSSTALK_EDA_SOUND_BIT_DEPTH);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: pcm sink open failed; rate: %u32; err: %u32", ctx->rate, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: pcm sink open failed; rate: %u32; err: %u32", ctx->rate, ret);
         return ret;
     }
 
     ret = ldg_audio_sink_pcm_src_set(crosstalk_eda_sound_frames_pull, ctx);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: pcm src bind failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: pcm src bind failed; err: %u32", ret);
 
-        if (ldg_audio_sink_pcm_close() != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pcm sink close failed"); }
+        if (ldg_audio_sink_pcm_close() != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pcm sink close failed"); }
 
         return ret;
     }
 
     ctx->streaming = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: pass-through open; port: %.63s; rate: %u32; channels: %u32; depth: %u32", ctx->port, ctx->rate, (uint32_t)CROSSTALK_EDA_SOUND_CHANNEL_CUNT, (uint32_t)CROSSTALK_EDA_SOUND_BIT_DEPTH);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: pass-through open; port: %.63s; rate: %u32; channels: %u32; depth: %u32", ctx->port, ctx->rate, (uint32_t)CROSSTALK_EDA_SOUND_CHANNEL_CUNT, (uint32_t)CROSSTALK_EDA_SOUND_BIT_DEPTH);
 
     return LDG_ERR_AOK;
 }
@@ -261,9 +261,9 @@ uint32_t crosstalk_eda_sound_stream_stop(crosstalk_eda_sound_ctx_t *ctx)
     ctx->streaming = LDG_TRUTH_FALSE;
 
     ret = ldg_audio_sink_pcm_close();
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: pcm sink close failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: pcm sink close failed; err: %u32", ret); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: pass-through closed; pulled: %u64; underrun: %u64; dropped: %u64", ctx->pulled, ctx->underrun, ctx->dropped);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: pass-through closed; pulled: %u64; underrun: %u64; dropped: %u64", ctx->pulled, ctx->underrun, ctx->dropped);
 
     return ret;
 }
@@ -319,18 +319,18 @@ uint32_t crosstalk_eda_sound_bake(crosstalk_eda_sound_ctx_t *ctx, const ldg_byte
     ret = ldg_audio_wav_wrap(ctx->pcm, pcm_size, ctx->rate, (uint16_t)CROSSTALK_EDA_SOUND_CHANNEL_CUNT, (uint16_t)CROSSTALK_EDA_SOUND_BIT_DEPTH, ctx->blob, (uint64_t)CROSSTALK_EDA_SOUND_BLOB_CAP, out_size);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: wav wrap failed; pcm: %u64; err: %u32", pcm_size, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "sound: wav wrap failed; pcm: %u64; err: %u32", pcm_size, ret);
         return ret;
     }
 
     *out_blob = ctx->blob;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: baked; port: %.63s; frames: %u32; rate: %u32; blob: %u64 bytes", ctx->port, frames, ctx->rate, *out_size);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: baked; port: %.63s; frames: %u32; rate: %u32; blob: %u64 bytes", ctx->port, frames, ctx->rate, *out_size);
 
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_eda_sound_tick(crosstalk_eda_sound_ctx_t *ctx, double dt_secs)
+uint32_t crosstalk_eda_sound_tick(crosstalk_eda_sound_ctx_t *ctx, uint64_t dt)
 {
     uint64_t made = 0;
     uint32_t held = 0;
@@ -339,12 +339,12 @@ uint32_t crosstalk_eda_sound_tick(crosstalk_eda_sound_ctx_t *ctx, double dt_secs
 
     if (ctx->live != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    ctx->report_acc = ctx->report_acc + dt_secs;
-    if (ctx->report_acc < CROSSTALK_EDA_SOUND_REPORT_SECS) { return LDG_ERR_AOK; }
+    ctx->report_acc = ctx->report_acc + dt;
+    if (ctx->report_acc < CROSSTALK_EDA_SOUND_REPORT_PERIOD) { return LDG_ERR_AOK; }
 
     made = ctx->produced - ctx->report_mark;
     ctx->report_mark = ctx->produced;
-    ctx->report_acc = 0.0;
+    ctx->report_acc = 0;
 
     if (made == ctx->made_prev && ctx->dropped == ctx->dropped_prev && ctx->underrun == ctx->underrun_prev) { return LDG_ERR_AOK; }
 
@@ -355,7 +355,7 @@ uint32_t crosstalk_eda_sound_tick(crosstalk_eda_sound_ctx_t *ctx, double dt_secs
     held = LDG_LD_ACQUIRE(ctx->tl) - ctx->hd;
     if (held > (uint32_t)CROSSTALK_EDA_SOUND_RING_CAP) { held = (uint32_t)CROSSTALK_EDA_SOUND_RING_CAP; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: rate; port: %.63s; made: %u64/s; want: %u32/s; ring: %u32; dropped: %u64; underrun: %u64", ctx->port, made, ctx->rate, held, ctx->dropped, ctx->underrun);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "sound: rate; port: %.63s; made: %u64/s; want: %u32/s; ring: %u32; dropped: %u64; underrun: %u64", ctx->port, made, ctx->rate, held, ctx->dropped, ctx->underrun);
 
     return LDG_ERR_AOK;
 }

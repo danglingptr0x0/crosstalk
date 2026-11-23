@@ -43,7 +43,7 @@ static uint32_t build_pool_grow(crosstalk_eda_ic_fpga_build_ctx_t *ctx)
 
     if (grown > CROSSTALK_EDA_IC_FPGA_BUILD_POOL_BYTES_MAX)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build: emit pool at ceiling; cap: %u64; max: %u64", cap, CROSSTALK_EDA_IC_FPGA_BUILD_POOL_BYTES_MAX);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build: emit pool at ceiling; cap: %u64; max: %u64", cap, CROSSTALK_EDA_IC_FPGA_BUILD_POOL_BYTES_MAX);
         return LDG_ERR_FULL;
     }
 
@@ -53,14 +53,14 @@ static uint32_t build_pool_grow(crosstalk_eda_ic_fpga_build_ctx_t *ctx)
     ret = ldg_mem_pool_create(0x0, grown, &ctx->mem_pool);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build: emit pool grow failed; want: %u64; err: %u32", grown, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build: emit pool grow failed; want: %u64; err: %u32", grown, ret);
         ret = ldg_mem_pool_create(0x0, cap, &ctx->mem_pool);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         return LDG_ERR_FULL;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: emit pool grown; from: %u64; to: %u64", cap, grown);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: emit pool grown; from: %u64; to: %u64", cap, grown);
 
     return LDG_ERR_AOK;
 }
@@ -101,7 +101,7 @@ static uint32_t build_emit_wr(crosstalk_eda_ic_fpga_build_ctx_t *ctx)
 
     ret = ldg_io_file_wr(fh, text, (uint64_t)len, &wrote);
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build src close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build src close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -110,7 +110,7 @@ static uint32_t build_emit_wr(crosstalk_eda_ic_fpga_build_ctx_t *ctx)
     ctx->emit_mem_words = emit.mem_words;
     ctx->emit_len = len;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: emitted; top: %.63s; bytes: %u32; mem words: %u32", ctx->top, len, emit.mem_words);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: emitted; top: %.63s; bytes: %u32; mem words: %u32", ctx->top, len, emit.mem_words);
 
     return LDG_ERR_AOK;
 }
@@ -133,7 +133,7 @@ static uint32_t build_worker(uint32_t worker_id, void *arg)
 
         if (ctx->err == LDG_ERR_AOK)
         {
-            if (build_phase_set(ctx, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_CC) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build phase set failed"); }
+            if (build_phase_set(ctx, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_CC) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build phase set failed"); }
 
             ctx->err = crosstalk_hdl_cc_run(&ctx->cc, ctx->src_path, ctx->out_path);
         }
@@ -167,13 +167,13 @@ static uint32_t build_blob_rd(crosstalk_eda_ic_fpga_build_ctx_t *ctx)
 
     if (ret == LDG_ERR_AOK && got != st.size) { ret = CROSSTALK_EDA_IC_FPGA_BUILD_ERR_BLOB; }
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build blob close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build blob close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ctx->blob_span = got;
 
-    if (ldg_io_path_destroy(ctx->out_path) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build artifact unlink failed"); }
+    if (ldg_io_path_destroy(ctx->out_path) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build artifact unlink failed"); }
 
     return LDG_ERR_AOK;
 }
@@ -196,7 +196,7 @@ uint32_t crosstalk_eda_ic_fpga_build_init(crosstalk_eda_ic_fpga_build_ctx_t *ctx
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_sys_guard_init(&ctx->guard);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard init failed; design faults will not be contained"); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard init failed; design faults will not be contained"); }
 
     ret = ldg_thread_pool_init(&ctx->thread_pool, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_WORKERS);
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -219,38 +219,38 @@ uint32_t crosstalk_eda_ic_fpga_build_shutdown(crosstalk_eda_ic_fpga_build_ctx_t 
 
     LDG_ST_RELEASE(ctx->stop, LDG_TRUTH_TRUE);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: pool stop");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: pool stop");
 
-    if (ldg_thread_pool_stop(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build pool stop failed"); }
+    if (ldg_thread_pool_stop(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build pool stop failed"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: pool shutdown");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: pool shutdown");
 
-    if (ldg_thread_pool_shutdown(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build pool shutdown failed"); }
+    if (ldg_thread_pool_shutdown(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build pool shutdown failed"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: img unload");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: img unload");
 
-    if (crosstalk_hdl_img_unld(&ctx->img) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build img unload failed"); }
+    if (crosstalk_hdl_img_unld(&ctx->img) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build img unload failed"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: guard");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: guard");
 
-    if (ldg_sys_guard_shutdown(&ctx->guard) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard shutdown failed"); }
+    if (ldg_sys_guard_shutdown(&ctx->guard) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard shutdown failed"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: cc");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: cc");
 
-    if (crosstalk_hdl_cc_shutdown(&ctx->cc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build cc shutdown failed"); }
+    if (crosstalk_hdl_cc_shutdown(&ctx->cc) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build cc shutdown failed"); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: mem pool");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: mem pool");
 
     ret = ldg_mem_pool_destroy(&ctx->mem_pool);
-    if (ret == LDG_ERR_BUSY) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "build shutdown: mem pool busy; ops outstanding; pool leaked"); }
-    else if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build shutdown: mem pool destroy failed; err: %u32", ret); }
+    if (ret == LDG_ERR_BUSY) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "build shutdown: mem pool busy; ops outstanding; pool leaked"); }
+    else if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build shutdown: mem pool destroy failed; err: %u32", ret); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: blob");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: blob");
 
     ret = ldg_mem_dealloc(ctx->blob);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build shutdown: blob dealloc failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build shutdown: blob dealloc failed; err: %u32", ret); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: done");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build shutdown: done");
 
     memset(ctx, 0x0, sizeof(*ctx));
 
@@ -267,7 +267,7 @@ uint32_t crosstalk_eda_ic_fpga_build_start(crosstalk_eda_ic_fpga_build_ctx_t *ct
 
     if (ctx->live == LDG_TRUTH_TRUE) { return CROSSTALK_EDA_IC_FPGA_BUILD_ERR_LIVE; }
 
-    if (ldg_mem_pool_rst(ctx->mem_pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build pool reset failed"); }
+    if (ldg_mem_pool_rst(ctx->mem_pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build pool reset failed"); }
 
     ret = ldg_str_rbrcpy(ctx->src_path, src_path, (uint64_t)sizeof(ctx->src_path));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
@@ -278,9 +278,9 @@ uint32_t crosstalk_eda_ic_fpga_build_start(crosstalk_eda_ic_fpga_build_ctx_t *ct
     ret = ldg_str_rbrcpy(ctx->top, top, (uint64_t)sizeof(ctx->top));
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
-    if (crosstalk_hdl_img_unld(&ctx->img) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build img unload failed"); }
+    if (crosstalk_hdl_img_unld(&ctx->img) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build img unload failed"); }
 
-    if (ldg_sys_guard_range_drop(&ctx->guard, slot) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard drop failed"); }
+    if (ldg_sys_guard_range_drop(&ctx->guard, slot) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build guard drop failed"); }
 
     memset(&ctx->abi, 0x0, sizeof(ctx->abi));
 
@@ -301,7 +301,7 @@ uint32_t crosstalk_eda_ic_fpga_build_start(crosstalk_eda_ic_fpga_build_ctx_t *ct
     LDG_ST_RELEASE(ctx->done, LDG_TRUTH_FALSE);
     LDG_ST_RELEASE(ctx->busy, LDG_TRUTH_TRUE);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: started; top: %.63s; src: %.255s; out: %.255s", ctx->top, ctx->src_path, ctx->out_path);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: started; top: %.63s; src: %.255s; out: %.255s", ctx->top, ctx->src_path, ctx->out_path);
 
     return LDG_ERR_AOK;
 }
@@ -345,15 +345,15 @@ uint32_t crosstalk_eda_ic_fpga_build_tick(crosstalk_eda_ic_fpga_build_ctx_t *ctx
 
         if (ret == LDG_ERR_AOK)
         {
-            if (build_phase_set(ctx, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_READY) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build phase set failed"); }
+            if (build_phase_set(ctx, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_READY) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build phase set failed"); }
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: ready; top: %.63s; span: %u64; took: %u64 ms", ctx->top, ctx->img.span, ctx->phase_ms - ctx->start_ms);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "build: ready; top: %.63s; span: %u64; took: %u64 ms", ctx->top, ctx->img.span, ctx->phase_ms - ctx->start_ms);
         }
         else
         {
-            if (build_phase_set(ctx, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_FAIL) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build phase set failed"); }
+            if (build_phase_set(ctx, (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_FAIL) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build phase set failed"); }
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build: failed; top: %.63s; err: %u32; took: %u64 ms", ctx->top, ret, ctx->phase_ms - ctx->start_ms);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "build: failed; top: %.63s; err: %u32; took: %u64 ms", ctx->top, ret, ctx->phase_ms - ctx->start_ms);
         }
     }
 
@@ -381,7 +381,7 @@ uint32_t crosstalk_eda_ic_fpga_build_status_get(crosstalk_eda_ic_fpga_build_ctx_
 
     if (LDG_UNLIKELY(ctx->phase > (uint32_t)CROSSTALK_EDA_IC_FPGA_BUILD_PHASE_FAIL)) { return LDG_ERR_RANGE; }
 
-    secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_EDA_IC_FPGA_BUILD_MS_PER_SEC;
+    secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)LDG_MS_PER_SEC;
 
     memcpy(&top[0], ctx->top, sizeof(top));
     top[sizeof(top) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;

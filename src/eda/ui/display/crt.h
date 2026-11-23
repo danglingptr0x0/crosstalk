@@ -19,7 +19,7 @@
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_CELL_CUNT (CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_COL_CUNT * CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_ROW_CUNT)
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_BYTE_CUNT (CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_CELL_CUNT * 2)
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_BASE_DEFAULT 0xB8000
-#define CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_REFRESH_SECS 0.05
+#define CROSSTALK_EDA_UI_DISPLAY_CRT_TEXT_REFRESH ((uint64_t)50)
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_W_MAX 640
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_H_MAX 480
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_PX_CUNT (CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_W_MAX * CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_H_MAX)
@@ -30,7 +30,7 @@
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_GAMMA_UNIT 1.0
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_BYTES_PER_PX 4
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_CHUNK 256
-#define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_REFRESH_SECS 0.0
+#define CROSSTALK_EDA_UI_DISPLAY_CRT_GFX_REFRESH ((uint64_t)0)
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_DDU_CTRL_SIG "ddu.ctrl"
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_DDU_BASE_SIG "ddu.fb_base"
 #define CROSSTALK_EDA_UI_DISPLAY_CRT_DDU_MODE_SIG "ddu.fb_mode"
@@ -68,10 +68,10 @@ typedef struct crosstalk_eda_ui_display_crt_ctx
     uint8_t crop_pudding[5];
     char text_sig[CROSSTALK_EDA_UI_DISPLAY_CRT_SIG_CAP];
     uint64_t text_base;
-    double text_next;
+    uint64_t text_next;
     uint64_t gfx_base;
     uint64_t gfx_frame;
-    double gfx_next;
+    uint64_t gfx_next;
     uint64_t seen_frames;
     uint32_t cell_cunt;
     uint32_t gfx_w;
@@ -90,10 +90,10 @@ uint32_t crosstalk_eda_ui_display_crt_gamma_set(crosstalk_eda_ui_display_crt_ctx
 uint32_t crosstalk_eda_ui_display_crt_open_set(crosstalk_eda_ui_display_crt_ctx_t *ctx, uint8_t open);
 uint32_t crosstalk_eda_ui_display_crt_kind_set(crosstalk_eda_ui_display_crt_ctx_t *ctx, uint32_t kind);
 uint32_t crosstalk_eda_ui_display_crt_text_bind(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, const char *sig_name, uint64_t base);
-uint32_t crosstalk_eda_ui_display_crt_text_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now);
+uint32_t crosstalk_eda_ui_display_crt_text_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now);
 uint32_t crosstalk_eda_ui_display_crt_gfx_bind(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, const char *sig_name, uint64_t base, uint32_t gfx_w, uint32_t gfx_h);
 uint32_t crosstalk_eda_ui_display_crt_gfx_dev_bind(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, const char *sig_name);
-uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now);
+uint32_t crosstalk_eda_ui_display_crt_gfx_tick(crosstalk_eda_ui_display_crt_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now);
 uint32_t crosstalk_eda_ui_display_crt_state_serialize(const crosstalk_eda_ui_display_crt_ctx_t *ctx, uint8_t *buff, uint32_t cap, uint32_t *out_need);
 uint32_t crosstalk_eda_ui_display_crt_state_deserialize(crosstalk_eda_ui_display_crt_ctx_t *ctx, const uint8_t *buff, uint32_t len);
 uint32_t crosstalk_eda_ui_display_crt_win_reg(crosstalk_eda_ui_display_crt_ctx_t *ctx, crosstalk_ui_window_ctx_t *win_nav, const crosstalk_eda_io_display_ctx_t *src, uint32_t *out_slot);

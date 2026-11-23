@@ -13,20 +13,20 @@
 #include <dangling/shell/cmd.h>
 #include <dangling/shell/hist.h>
 
-#include <dangling/term/line.h>
+#include <dangling/term/ln.h>
 #include <dangling/term/render.h>
 #include <dangling/term/vt.h>
 
-#define CROSSTALK_CORE_CMDLINE_CAP LDG_TERM_LINE_CAP_DEFAULT
+#define CROSSTALK_CORE_CMDLINE_CAP LDG_TERM_LN_CAP_DEFAULT
 #define CROSSTALK_CORE_CMDLINE_VERB_CUNT LDG_SHELL_CMD_MAX_DEFAULT
 #define CROSSTALK_CORE_CMDLINE_HIST_FILE "cmd_hist.log"
 #define CROSSTALK_CORE_CMDLINE_HIST_MODE 0644
 #define CROSSTALK_CORE_CMDLINE_IO_BLK 4096
-#define CROSSTALK_CORE_CMDLINE_IO_CAP ((((uint64_t)LDG_SHELL_LINE_CAP_DEFAULT + (uint64_t)LDG_SHELL_HIST_ROW_EXTRA) * (uint64_t)LDG_SHELL_HIST_MAX_DEFAULT + (uint64_t)CROSSTALK_CORE_CMDLINE_IO_BLK - 1ULL) & ~((uint64_t)CROSSTALK_CORE_CMDLINE_IO_BLK - 1ULL))
-#define CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP LDG_SHELL_OUT_LINE_CAP_DEFAULT
+#define CROSSTALK_CORE_CMDLINE_IO_CAP ((((uint64_t)LDG_SHELL_LN_CAP_DEFAULT + (uint64_t)LDG_SHELL_HIST_ROW_EXTRA) * (uint64_t)LDG_SHELL_HIST_MAX_DEFAULT + (uint64_t)CROSSTALK_CORE_CMDLINE_IO_BLK - 1ULL) & ~((uint64_t)CROSSTALK_CORE_CMDLINE_IO_BLK - 1ULL))
+#define CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP LDG_SHELL_OUT_LN_CAP_DEFAULT
 #define CROSSTALK_CORE_CMDLINE_DRAWER_SHOW_CUNT 16
 #define CROSSTALK_CORE_CMDLINE_LOG_LVL_T __typeof__(1UL)
-#define CROSSTALK_CORE_CMDLINE_CANDIDATE_CAP LDG_TERM_LINE_CANDIDATE_CAP
+#define CROSSTALK_CORE_CMDLINE_CANDIDATE_CAP LDG_TERM_LN_CANDIDATE_CAP
 
 typedef struct crosstalk_core_cmdline_ctx
 {
@@ -35,8 +35,8 @@ typedef struct crosstalk_core_cmdline_ctx
     ldg_mem_pool_t *pool;
     ldg_mem_pool_t *edit_pool;
     ldg_shell_t *shell;
-    ldg_term_line_t *edit;
-    ldg_term_line_candidate_cb_t candidate_cb;
+    ldg_term_ln_t *edit;
+    ldg_term_ln_candidate_cb_t candidate_cb;
     void *candidate_user;
     void *io_raw;
     uint8_t *io_buff;
@@ -54,7 +54,7 @@ uint32_t crosstalk_core_cmdline_open(crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_close(crosstalk_core_cmdline_ctx_t *ctx);
 uint8_t crosstalk_core_cmdline_open_is(const crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_verb_reg(crosstalk_core_cmdline_ctx_t *ctx, const char *name, const char *help, uint32_t arg_max);
-uint32_t crosstalk_core_cmdline_candidate_cb_set(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_line_candidate_cb_t cb, void *user);
+uint32_t crosstalk_core_cmdline_candidate_cb_set(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_ln_candidate_cb_t cb, void *user);
 uint32_t crosstalk_core_cmdline_prompt_set(crosstalk_core_cmdline_ctx_t *ctx, const char *prompt);
 uint32_t crosstalk_core_cmdline_hist_ld(crosstalk_core_cmdline_ctx_t *ctx, const char *path);
 uint32_t crosstalk_core_cmdline_drawer_init(crosstalk_core_cmdline_ctx_t *ctx);

@@ -370,7 +370,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_wr(crosstalk_eda_ic_fpga_remote_t *remote,
 
     if (remote->on != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    if (ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: viewer write denied; func: %u32; slot: %u32", func, slot) != LDG_ERR_AOK) { return LDG_ERR_IO_WR; }
+    if (ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "remote: viewer write denied; func: %u32; slot: %u32", func, slot) != LDG_ERR_AOK) { return LDG_ERR_IO_WR; }
 
     return LDG_ERR_DENIED;
 }

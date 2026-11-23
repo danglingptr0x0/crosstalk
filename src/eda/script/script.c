@@ -41,7 +41,7 @@ uint32_t crosstalk_eda_script_shutdown(crosstalk_eda_script_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (crosstalk_eda_script_eval_shutdown(&ctx->eval) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script eval shutdown failed"); }
+    if (crosstalk_eda_script_eval_shutdown(&ctx->eval) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script eval shutdown failed"); }
 
     ctx->ok = LDG_TRUTH_FALSE;
 
@@ -148,7 +148,7 @@ uint32_t crosstalk_eda_script_exec(crosstalk_eda_script_ctx_t *ctx, const char *
     ret = crosstalk_eda_script_parse_program(&lex, &ctx->ast, &program, &ctx->diag);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: %.255s:%u32:%u32: %.159s", ctx->path, ctx->diag.line, ctx->diag.col, ctx->diag.msg);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: %.255s:%u32:%u32: %.159s", ctx->path, ctx->diag.line, ctx->diag.col, ctx->diag.msg);
 
         return ret;
     }
@@ -158,7 +158,7 @@ uint32_t crosstalk_eda_script_exec(crosstalk_eda_script_ctx_t *ctx, const char *
     {
         ctx->diag = ctx->eval.diag;
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: %.255s:%u32:%u32: %.159s", ctx->path, ctx->diag.line, ctx->diag.col, ctx->diag.msg);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: %.255s:%u32:%u32: %.159s", ctx->path, ctx->diag.line, ctx->diag.col, ctx->diag.msg);
 
         return ret;
     }
@@ -182,7 +182,7 @@ uint32_t crosstalk_eda_script_file_exec(crosstalk_eda_script_ctx_t *ctx, const c
 
     ret = ldg_io_file_rd(fh, (ldg_byte_t *)ctx->src, (uint64_t)CROSSTALK_EDA_SCRIPT_SRC_CAP - (uint64_t)LDG_STR_TERM_SIZE, &got);
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script file close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script file close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -191,7 +191,7 @@ uint32_t crosstalk_eda_script_file_exec(crosstalk_eda_script_ctx_t *ctx, const c
 
     if (ldg_str_fmt(ctx->run_path, (uint64_t)sizeof(ctx->run_path), &fmt_len, SCRIPT_PATH_FMT, path) != LDG_ERR_AOK) { return LDG_ERR_IO_FMT; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "script: run; bytes: %u32; path: %.255s", ctx->src_len, path);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "script: run; bytes: %u32; path: %.255s", ctx->src_len, path);
 
     return crosstalk_eda_script_exec(ctx, path, ctx->src, ctx->src_len);
 }
@@ -240,7 +240,7 @@ uint32_t crosstalk_eda_script_state_deserialize(crosstalk_eda_script_ctx_t *ctx,
 
     if (len < (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP || len % (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP != 0)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: state blob rejected; len: %u32; slot bytes: %u32", len, (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "script: state blob rejected; len: %u32; slot bytes: %u32", len, (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP);
 
         return LDG_ERR_INVALID;
     }
@@ -248,7 +248,7 @@ uint32_t crosstalk_eda_script_state_deserialize(crosstalk_eda_script_ctx_t *ctx,
     slot_cunt = len / (uint32_t)CROSSTALK_EDA_SCRIPT_PATH_CAP - 1;
     if (slot_cunt > (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT) { slot_cunt = (uint32_t)CROSSTALK_EDA_SCRIPT_EVENT_CUNT; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "script: state blob; len: %u32; event slots: %u32", len, slot_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "script: state blob; len: %u32; event slots: %u32", len, slot_cunt);
 
     memcpy(ctx->run_path, buff, CROSSTALK_EDA_SCRIPT_PATH_CAP);
     ctx->run_path[CROSSTALK_EDA_SCRIPT_PATH_CAP - LDG_STR_TERM_SIZE] = LDG_STR_TERM;

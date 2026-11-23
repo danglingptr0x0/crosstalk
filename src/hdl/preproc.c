@@ -7,6 +7,7 @@
 #include <dangling/str/str.h>
 
 #include "hdl/lex.h"
+#include "hdl/parse.h"
 #include "hdl/preproc.h"
 
 #define CROSSTALK_HDL_PREPROC_PRAGMA_NONE 0
@@ -785,6 +786,50 @@ static uint32_t crosstalk_hdl_preproc_directive(crosstalk_hdl_preproc_ctx_t *ctx
         return crosstalk_hdl_preproc_include_rd(ctx, src, len, pos);
     }
 
+    if (crosstalk_hdl_preproc_word_is(name, name_len, "timescale") == LDG_TRUTH_TRUE && live == LDG_TRUTH_TRUE)
+    {
+        uint64_t magnitude = 0;
+        char unit = 0;
+
+        while (*pos < len && (src[*pos] == ' ' || src[*pos] == '\t')) { (*pos)++; }
+
+        while (*pos < len && ldg_char_digit_is((uint8_t)src[*pos]) == LDG_TRUTH_TRUE)
+        {
+            byte_t nipple = 0;
+
+            ret = ldg_hex_to_nipple(src[*pos], &nipple);
+            if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+            magnitude = magnitude * LDG_BASE_DEC + (uint64_t)nipple;
+            (*pos)++;
+        }
+
+        while (*pos < len && (src[*pos] == ' ' || src[*pos] == '\t')) { (*pos)++; }
+
+        if (LDG_UNLIKELY(*pos >= len || magnitude == 0)) { return CROSSTALK_HDL_ERR_PREPROC_DIRECTIVE; }
+
+        unit = src[*pos];
+
+        if (unit == 'f') { return CROSSTALK_HDL_ERR_PARSE_SUBSET; }
+
+        if (unit == 'p') { ctx->time_unit = magnitude; }
+        else if (unit == 'n') { ctx->time_unit = magnitude * LDG_PS_PER_NS; }
+        else if (unit == 'u') { ctx->time_unit = magnitude * LDG_PS_PER_US; }
+        else if (unit == 'm') { ctx->time_unit = magnitude * LDG_PS_PER_MS; }
+        else if (unit == 's') { ctx->time_unit = magnitude * LDG_PS_PER_SEC; }
+        else { return CROSSTALK_HDL_ERR_PREPROC_DIRECTIVE; }
+
+        while (*pos < len && src[*pos] != '\n')
+        {
+            if (unit == 'f' && src[*pos] == 's') { return CROSSTALK_HDL_ERR_PARSE_SUBSET; }
+
+            unit = src[*pos];
+            (*pos)++;
+        }
+
+        return crosstalk_hdl_preproc_line_skip(ctx, src, len, pos);
+    }
+
     if (crosstalk_hdl_preproc_word_is(name, name_len, "timescale") == LDG_TRUTH_TRUE || crosstalk_hdl_preproc_word_is(name, name_len, "default_nettype") == LDG_TRUTH_TRUE || crosstalk_hdl_preproc_word_is(name, name_len, "resetall") == LDG_TRUTH_TRUE) { return crosstalk_hdl_preproc_line_skip(ctx, src, len, pos); }
 
     if (live != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
@@ -953,6 +998,7 @@ uint32_t crosstalk_hdl_preproc_init(crosstalk_hdl_preproc_ctx_t *ctx, void *pool
     ctx->macros = (crosstalk_hdl_preproc_macro_t *)raw;
     ctx->include_cb = include_cb;
     ctx->include_user = include_user;
+    ctx->time_unit = LDG_PS_PER_NS;
 
     return crosstalk_hdl_preproc_define_set(ctx, "CROSSTALK_HDL", 0xD, "\x31", 1);
 }

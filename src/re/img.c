@@ -98,7 +98,7 @@ static uint32_t img_file_rd(const char *path, ldg_byte_t **out, uint64_t *out_sp
     {
         ret = ldg_io_file_rd(file, buff, st.size, &got);
 
-        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img close failed"); }
+        if (ldg_io_file_close(file) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img close failed"); }
     }
 
     if (ret == LDG_ERR_AOK && got != st.size) { ret = LDG_ERR_IO_RD; }
@@ -240,7 +240,7 @@ static uint32_t img_elf_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *fi
     machine = (uint32_t)img_u16_get(file + IMG_ELF_MACHINE_AT);
 
     ret = img_elf_isa_get(machine, &ctx->isa);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img: elf machine unknown; machine: %u32", machine); return ret; }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img: elf machine unknown; machine: %u32", machine); return ret; }
 
     if (ctx->class_is64 == LDG_TRUTH_TRUE)
     {
@@ -442,7 +442,7 @@ uint32_t crosstalk_re_img_clear(crosstalk_re_img_ctx_t *ctx)
 
     if (ctx->pool != 0x0) { ret = ldg_mem_pool_destroy(&ctx->pool); }
 
-    if (crosstalk_hdl_elf_clear(&ctx->elf) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img elf clear failed"); }
+    if (crosstalk_hdl_elf_clear(&ctx->elf) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img elf clear failed"); }
 
     ctx->pool = 0x0;
     ctx->bytes = 0x0;
@@ -476,7 +476,7 @@ uint32_t crosstalk_re_img_shutdown(crosstalk_re_img_ctx_t *ctx)
 
     ret = crosstalk_re_img_clear(ctx);
 
-    if (crosstalk_hdl_elf_shutdown(&ctx->elf) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img elf shutdown failed"); }
+    if (crosstalk_hdl_elf_shutdown(&ctx->elf) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img elf shutdown failed"); }
 
     return ret;
 }
@@ -519,16 +519,16 @@ uint32_t crosstalk_re_img_ld(crosstalk_re_img_ctx_t *ctx, const char *path, uint
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img: ld failed; path: %.127s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img: ld failed; path: %.127s; err: %u32", path, ret);
 
-        if (crosstalk_re_img_clear(ctx) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img clear after failure failed"); }
+        if (crosstalk_re_img_clear(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img clear after failure failed"); }
 
         return ret;
     }
 
     ctx->file_span = span;
 
-    if (ldg_str_rbrcpy(ctx->path, path, (uint64_t)sizeof(ctx->path)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img path truncated"); }
+    if (ldg_str_rbrcpy(ctx->path, path, (uint64_t)sizeof(ctx->path)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img path truncated"); }
 
     ctx->ok = LDG_TRUTH_TRUE;
 
@@ -540,7 +540,7 @@ uint32_t crosstalk_re_img_ld(crosstalk_re_img_ctx_t *ctx, const char *path, uint
 
     if (crosstalk_re_img_isa_name_get(ctx->isa, &isa_name) != LDG_ERR_AOK) { isa_name = "?"; }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re img: loaded; path: %.127s; form: %s; isa: %s; bytes: %u64; base: 0x%X64; lo: 0x%X64; hi: 0x%X64; segs: %u32; entry: 0x%X64; class64: %u32; ring: %u32; pic: %u32; prog rev: %u32; hash: 0x%08X32; syms: %u32; syms path: %.127s; syms err: %u32", path, form_name, isa_name, span, ctx->base, ctx->lo, ctx->hi, ctx->seg_cunt, ctx->entry, (uint32_t)ctx->class_is64, (uint32_t)ctx->ring, (uint32_t)ctx->pic, ctx->prog_rev, ctx->hash, syms_cunt, ctx->syms_path, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re img: loaded; path: %.127s; form: %s; isa: %s; bytes: %u64; base: 0x%X64; lo: 0x%X64; hi: 0x%X64; segs: %u32; entry: 0x%X64; class64: %u32; ring: %u32; pic: %u32; prog rev: %u32; hash: 0x%08X32; syms: %u32; syms path: %.127s; syms err: %u32", path, form_name, isa_name, span, ctx->base, ctx->lo, ctx->hi, ctx->seg_cunt, ctx->entry, (uint32_t)ctx->class_is64, (uint32_t)ctx->ring, (uint32_t)ctx->pic, ctx->prog_rev, ctx->hash, syms_cunt, ctx->syms_path, ret);
 
     return LDG_ERR_AOK;
 }

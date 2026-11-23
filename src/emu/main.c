@@ -28,7 +28,6 @@
 #define MAIN_TITLE_SECS 1.0
 #define MAIN_TITLE_FMT "%.63s; %.2f MHz; %.2f ms"
 #define MAIN_HZ_PER_MHZ 1000000.0
-#define MAIN_MS_PER_SEC 1000.0
 #define MAIN_FRAME_MS 16
 #define MAIN_TIME_NONE 0.0
 #define MAIN_RATE_NONE 0.0
@@ -84,7 +83,7 @@ static uint32_t main_keys_drain(main_frame_ctx_t *frame)
         ret = crosstalk_ui_key_us_map(&key);
         if (ret == LDG_ERR_AOK) { ret = main_key_isr(frame, &key); }
 
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: key isr failed; key: %u32; codepoint: %u32; err: %u32", (uint32_t)key.key, key.codepoint, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: key isr failed; key: %u32; codepoint: %u32; err: %u32", (uint32_t)key.key, key.codepoint, ret); }
     }
 
     return LDG_ERR_AOK;
@@ -152,7 +151,7 @@ static uint32_t main_frame_draw(const crosstalk_emu_ctx_t *emu, const crosstalk_
         screen_row_cunt = render->row_cunt - (uint32_t)CROSSTALK_EMU_TOOLBAR_ROW_CUNT;
 
         ret = crosstalk_emu_screen_draw(&emu->screen, render, render->col_cunt, screen_row_cunt);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: screen draw failed; err: %u32", ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: screen draw failed; err: %u32", ret); }
     }
 
     return crosstalk_emu_toolbar_draw(toolbar, render, render->col_cunt, render->row_cunt);
@@ -208,9 +207,9 @@ int main(int argc, char **argv)
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: terminal session init failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: terminal session init failed; err: %u32", ret);
 
-        if (sesh != 0x0) { if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); } }
+        if (sesh != 0x0) { if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); } }
 
         return MAIN_EXIT_FAIL;
     }
@@ -220,44 +219,44 @@ int main(int argc, char **argv)
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: input init failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: input init failed; err: %u32", ret);
 
-        if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); }
+        if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); }
 
         return MAIN_EXIT_FAIL;
     }
 
-    if (main_size_sync(sesh, &render) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu size sync failed"); }
+    if (main_size_sync(sesh, &render) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu size sync failed"); }
 
     ret = ldg_audio_init();
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: audio init failed; sound stays off; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: audio init failed; sound stays off; err: %u32", ret); }
 
     if (conf.plugin_path != 0x0)
     {
         ret = crosstalk_emu_init(&emu, &conf);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: the core would not start; err: %u32", ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: the core would not start; err: %u32", ret); }
         else
         {
             ret = crosstalk_emu_run_start(&emu);
-            if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: the run worker would not start; err: %u32", ret); }
+            if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: the run worker would not start; err: %u32", ret); }
         }
     }
 
     ret = crosstalk_emu_screen_init(&emu.screen);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: screen init failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: screen init failed; err: %u32", ret);
 
-        if (ldg_term_input_destroy(input) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu input destroy failed"); }
+        if (ldg_term_input_destroy(input) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu input destroy failed"); }
 
-        if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); }
+        if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); }
 
         return MAIN_EXIT_FAIL;
     }
 
-    if (crosstalk_emu_screen_gamma_set(&emu.screen, gamma) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: gamma refused; gamma: %.2f", gamma); }
+    if (crosstalk_emu_screen_gamma_set(&emu.screen, gamma) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: gamma refused; gamma: %.2f", gamma); }
 
-    if (crosstalk_emu_toolbar_init(&toolbar, &emu) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu toolbar init failed"); }
+    if (crosstalk_emu_toolbar_init(&toolbar, &emu) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu toolbar init failed"); }
 
     frame.emu = &emu;
     frame.toolbar = &toolbar;
@@ -270,25 +269,25 @@ int main(int argc, char **argv)
 
         if (ldg_time_monotonic_get(&now_ms) != LDG_ERR_AOK) { now_ms = 0; }
 
-        now = (double)now_ms / MAIN_MS_PER_SEC;
+        now = (double)now_ms / (double)LDG_MS_PER_SEC;
 
-        if (main_size_sync(sesh, &render) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu size sync failed"); }
+        if (main_size_sync(sesh, &render) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu size sync failed"); }
 
-        if (main_keys_drain(&frame) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu key drain failed"); }
+        if (main_keys_drain(&frame) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu key drain failed"); }
 
         if (crosstalk_emu_live_is(&emu) == LDG_TRUTH_TRUE)
         {
             ret = crosstalk_emu_pump(&emu, now);
-            if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: pump failed; err: %u32", ret); }
+            if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: pump failed; err: %u32", ret); }
         }
 
         ret = main_frame_draw(&emu, &toolbar, render);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: frame draw failed; err: %u32", ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu: frame draw failed; err: %u32", ret); }
 
         ret = ldg_term_sesh_wr(sesh);
         if (ret != LDG_ERR_AOK)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: terminal write failed; err: %u32", ret);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "dangcsaemu: terminal write failed; err: %u32", ret);
 
             break;
         }
@@ -297,27 +296,27 @@ int main(int argc, char **argv)
 
         if (now >= title_next)
         {
-            if (title_next != MAIN_TIME_NONE && frames != 0 && now > title_mark) { if (main_title_put(sesh, &emu, (now - title_mark) * MAIN_MS_PER_SEC / (double)frames) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu title set failed"); } }
+            if (title_next != MAIN_TIME_NONE && frames != 0 && now > title_mark) { if (main_title_put(sesh, &emu, (now - title_mark) * (double)LDG_MS_PER_SEC / (double)frames) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu title set failed"); } }
 
             title_next = now + MAIN_TITLE_SECS;
             title_mark = now;
             frames = 0;
         }
 
-        if (main_frame_wait(now_ms) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu frame wait failed"); }
+        if (main_frame_wait(now_ms) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu frame wait failed"); }
     }
 
-    if (crosstalk_emu_screen_shutdown(&emu.screen) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu screen shutdown failed"); }
+    if (crosstalk_emu_screen_shutdown(&emu.screen) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu screen shutdown failed"); }
 
-    if (crosstalk_emu_shutdown(&emu) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu shutdown failed"); }
+    if (crosstalk_emu_shutdown(&emu) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu shutdown failed"); }
 
-    if (ldg_term_input_destroy(input) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu input destroy failed"); }
+    if (ldg_term_input_destroy(input) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu input destroy failed"); }
 
-    if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); }
+    if (ldg_term_sesh_destroy(sesh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu session destroy failed"); }
 
     ldg_audio_shutdown();
 
-    if (ldg_mem_shutdown() != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu memory shutdown failed"); }
+    if (ldg_mem_shutdown() != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "dangcsaemu memory shutdown failed"); }
 
     return MAIN_EXIT_OK;
 }

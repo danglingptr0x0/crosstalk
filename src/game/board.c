@@ -259,7 +259,7 @@ uint32_t crosstalk_game_board_remove(crosstalk_game_board_ctx_t *ctx, uint32_t i
 
     if (ret == LDG_ERR_AOK && ldg_io_path_exists_is(shot_full) == LDG_TRUTH_TRUE) { ret = ldg_io_path_destroy(shot_full); }
 
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "board shot remove failed"); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "board shot remove failed"); }
 
     return ldg_io_path_destroy(full);
 }

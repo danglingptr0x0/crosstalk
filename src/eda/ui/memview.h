@@ -36,17 +36,17 @@
 #define CROSSTALK_EDA_UI_MEMVIEW_HEX_LEAD "0x"
 #define CROSSTALK_EDA_UI_MEMVIEW_FIND_BUDGET 65536
 #define CROSSTALK_EDA_UI_MEMVIEW_HIT_CAP 512
-#define CROSSTALK_EDA_UI_MEMVIEW_REFRESH_SECS 0.25
-#define CROSSTALK_EDA_UI_MEMVIEW_CHURN_WINDOW_SECS 10.0
+#define CROSSTALK_EDA_UI_MEMVIEW_REFRESH ((uint64_t)250)
+#define CROSSTALK_EDA_UI_MEMVIEW_CHURN_WINDOW ((uint64_t)10 * LDG_MS_PER_SEC)
 #define CROSSTALK_EDA_UI_MEMVIEW_CHURN_MAX 24
 #define CROSSTALK_EDA_UI_MEMVIEW_IO_RANGE_CAP 16
 #define CROSSTALK_EDA_UI_MEMVIEW_IO_NAME_CAP 24
 #define CROSSTALK_EDA_UI_MEMVIEW_IO_FIRST 0x0001000000000000ULL
-#define CROSSTALK_EDA_UI_MEMVIEW_OVERVIEW_SECS 4.0
+#define CROSSTALK_EDA_UI_MEMVIEW_OVERVIEW_PERIOD ((uint64_t)4 * LDG_MS_PER_SEC)
 #define CROSSTALK_EDA_UI_MEMVIEW_HEAP_CAP 2048
 #define CROSSTALK_EDA_UI_MEMVIEW_HEAP_DEPTH 6
 #define CROSSTALK_EDA_UI_MEMVIEW_HEAP_REC_MAX 4096
-#define CROSSTALK_EDA_UI_MEMVIEW_HEAP_SECS 0.5
+#define CROSSTALK_EDA_UI_MEMVIEW_HEAP_PERIOD ((uint64_t)500)
 #define CROSSTALK_EDA_UI_MEMVIEW_FIND_MODE_PATTERN 0
 #define CROSSTALK_EDA_UI_MEMVIEW_FIND_MODE_REF 1
 #define CROSSTALK_EDA_UI_MEMVIEW_REF_WINDOW_DEFAULT 512
@@ -180,11 +180,11 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint32_t heap_type[CROSSTALK_EDA_UI_MEMVIEW_HEAP_CAP];
     uint32_t heap_cunt;
     uint8_t heap_pudding[4];
-    double heap_next;
+    uint64_t heap_next;
     uint32_t annot_pan;
     uint32_t annot_span;
     uint64_t churn_base;
-    double churn_next;
+    uint64_t churn_next;
     uint8_t churn_seeded;
     uint8_t churn_pudding[7];
     uint64_t hit[CROSSTALK_EDA_UI_MEMVIEW_HIT_CAP];
@@ -227,8 +227,8 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint32_t motion_span;
     uint8_t motion_pudding[4];
     uint64_t find_at;
-    double refresh_next;
-    double overview_next;
+    uint64_t refresh_next;
+    uint64_t overview_next;
     uint32_t page_cunt;
     uint32_t hit_cunt;
     uint32_t pattern_len;
@@ -293,8 +293,8 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint64_t hlt_mark_end;
     uint64_t brk_lo;
     uint64_t brk_hi;
-    double hlt_mark_start;
-    double hlt_now;
+    uint64_t hlt_mark_start;
+    uint64_t hlt_now;
     char dis_row[CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_CAP][CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_TEXT_CAP];
     uint64_t dis_row_addr[CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_CAP];
     uint32_t dis_row_cunt;
@@ -332,7 +332,7 @@ uint32_t crosstalk_eda_ui_memview_watch_hit_get(crosstalk_eda_ui_memview_ctx_t *
 uint32_t crosstalk_eda_ui_memview_hlt_mark_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t lo, uint64_t hi);
 uint32_t crosstalk_eda_ui_memview_brk_set(crosstalk_eda_ui_memview_ctx_t *ctx, uint64_t lo, uint64_t hi, uint8_t on);
 uint32_t crosstalk_eda_ui_memview_dis_loc_req(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t cunt);
-uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, double now);
+uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_eda_ic_fpga_ctx_t *fpga, uint32_t slot_idx, uint64_t now);
 uint32_t crosstalk_eda_ui_memview_win_reg(crosstalk_eda_ui_memview_ctx_t *ctx, crosstalk_ui_window_ctx_t *win_nav, uint32_t *out_slot);
 uint32_t crosstalk_eda_ui_memview_hit_jmp(crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t hit_idx);
 uint32_t crosstalk_eda_ui_memview_syms_bind(crosstalk_eda_ui_memview_ctx_t *ctx, const crosstalk_hdl_elf_ctx_t *prog_elf, const crosstalk_hdl_elf_ctx_t *elf, const crosstalk_hdl_type_ctx_t *types);

@@ -19,6 +19,20 @@ typedef struct crosstalk_hdl_exec_stage
     uint32_t mem_is;
 } crosstalk_hdl_exec_stage_t;
 
+typedef struct crosstalk_hdl_exec_sched_wr
+{
+    uint64_t at;
+    uint64_t val;
+    uint64_t val_hi;
+    uint64_t mask;
+    uint64_t mask_hi;
+    uint64_t addr;
+    uint32_t sig;
+    uint32_t seg;
+    uint8_t inertial;
+    uint8_t pudding[7];
+} crosstalk_hdl_exec_sched_wr_t;
+
 typedef struct crosstalk_hdl_exec_nrw
 {
     uint64_t op_mask;
@@ -50,12 +64,19 @@ typedef struct crosstalk_hdl_exec_ctx
     const crosstalk_hdl_level_res_t *level_res;
     void *gate;
     void *systask;
+    uint64_t *wake_at;
+    uint32_t *seg_at;
+    uint64_t *prev_event;
+    crosstalk_hdl_exec_sched_wr_t *sched_wr;
+    uint64_t now;
     uint64_t tick_cunt;
     uint64_t cycle_cunt;
     uint64_t act_op_cunt;
     uint64_t eval_cunt;
     uint32_t stage_cunt;
     uint32_t stage_cap;
+    uint32_t sched_wr_cunt;
+    uint32_t sched_wr_cap;
     uint32_t mem_words;
     uint32_t busy_sig;
     uint32_t busy_op;
@@ -65,7 +86,8 @@ typedef struct crosstalk_hdl_exec_ctx
     uint8_t fast_ok;
     uint8_t poke_dirty;
     uint8_t gate_on;
-    uint8_t pudding[9];
+    uint8_t done;
+    uint8_t pudding[8];
 } crosstalk_hdl_exec_ctx_t;
 
 uint32_t crosstalk_hdl_exec_init(crosstalk_hdl_exec_ctx_t *ctx, const crosstalk_hdl_ir_t *ir_ctx, const char *src, void *pool);
@@ -81,5 +103,7 @@ uint32_t crosstalk_hdl_exec_mem_ld(const crosstalk_hdl_exec_ctx_t *ctx, uint32_t
 uint32_t crosstalk_hdl_exec_eval(crosstalk_hdl_exec_ctx_t *ctx);
 uint32_t crosstalk_hdl_exec_step(crosstalk_hdl_exec_ctx_t *ctx);
 uint32_t crosstalk_hdl_exec_cycle(crosstalk_hdl_exec_ctx_t *ctx, uint32_t clk_sig);
+uint32_t crosstalk_hdl_exec_time_adv(crosstalk_hdl_exec_ctx_t *ctx, uint64_t until, uint64_t *out);
+uint8_t crosstalk_hdl_exec_timed_is(const crosstalk_hdl_exec_ctx_t *ctx);
 
 #endif

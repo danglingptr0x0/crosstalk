@@ -114,7 +114,7 @@ uint32_t crosstalk_emu_input_bind(crosstalk_emu_input_ctx_t *ctx, const crosstal
 
     if (ctx->data_sig == (uint32_t)CROSSTALK_HDL_ABI_SIG_NONE)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "input: the core has no data port; keystrokes are discarded; data: %.63s", data);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "input: the core has no data port; keystrokes are discarded; data: %.63s", data);
 
         ctx->live = LDG_TRUTH_FALSE;
 
@@ -123,7 +123,7 @@ uint32_t crosstalk_emu_input_bind(crosstalk_emu_input_ctx_t *ctx, const crosstal
 
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "input: bound; data: %.63s; rdy: %.63s; ack: %.63s; mode: %u32", data, rdy, ack != 0x0 ? ack : "", ctx->mode);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "input: bound; data: %.63s; rdy: %.63s; ack: %.63s; mode: %u32", data, rdy, ack != 0x0 ? ack : "", ctx->mode);
 
     return LDG_ERR_AOK;
 }

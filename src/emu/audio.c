@@ -117,7 +117,7 @@ uint32_t crosstalk_emu_audio_stop(crosstalk_emu_audio_ctx_t *ctx)
 
     if (ctx->streaming != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    if (ldg_audio_sink_pcm_close() != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu pcm sink close failed"); }
+    if (ldg_audio_sink_pcm_close() != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu pcm sink close failed"); }
 
     ctx->streaming = LDG_TRUTH_FALSE;
     ctx->live = LDG_TRUTH_FALSE;
@@ -125,7 +125,7 @@ uint32_t crosstalk_emu_audio_stop(crosstalk_emu_audio_ctx_t *ctx)
     ctx->hd = 0;
     ctx->tl = 0;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu audio: sound card released");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu audio: sound card released");
 
     return LDG_ERR_AOK;
 }
@@ -149,7 +149,7 @@ static uint32_t audio_start(crosstalk_emu_audio_ctx_t *ctx, uint32_t rate)
     ret = ldg_audio_sink_pcm_open(rate, (uint16_t)CROSSTALK_EMU_AUDIO_CHANNEL_CUNT, (uint16_t)CROSSTALK_EMU_AUDIO_BIT_DEPTH);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio: pcm sink open failed; rate: %u32; err: %u32", rate, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio: pcm sink open failed; rate: %u32; err: %u32", rate, ret);
 
         return CROSSTALK_EMU_AUDIO_ERR_OPEN;
     }
@@ -157,9 +157,9 @@ static uint32_t audio_start(crosstalk_emu_audio_ctx_t *ctx, uint32_t rate)
     ret = ldg_audio_sink_pcm_src_set(crosstalk_emu_audio_frames_pull, ctx);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio: pcm src bind failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio: pcm src bind failed; err: %u32", ret);
 
-        if (ldg_audio_sink_pcm_close() != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu pcm sink close failed"); }
+        if (ldg_audio_sink_pcm_close() != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu pcm sink close failed"); }
 
         return CROSSTALK_EMU_AUDIO_ERR_OPEN;
     }
@@ -168,7 +168,7 @@ static uint32_t audio_start(crosstalk_emu_audio_ctx_t *ctx, uint32_t rate)
     ctx->streaming = LDG_TRUTH_TRUE;
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu audio: sound card routed; rate: %u32 Hz; channels: %u32; depth: %u32", rate, (uint32_t)CROSSTALK_EMU_AUDIO_CHANNEL_CUNT, (uint32_t)CROSSTALK_EMU_AUDIO_BIT_DEPTH);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "emu audio: sound card routed; rate: %u32 Hz; channels: %u32; depth: %u32", rate, (uint32_t)CROSSTALK_EMU_AUDIO_CHANNEL_CUNT, (uint32_t)CROSSTALK_EMU_AUDIO_BIT_DEPTH);
 
     return LDG_ERR_AOK;
 }
@@ -259,12 +259,12 @@ uint32_t crosstalk_emu_audio_tick(crosstalk_emu_audio_ctx_t *ctx, const crosstal
         return LDG_ERR_AOK;
     }
 
-    if (curr >= ctx->curr) { if (audio_span_push(ctx, ram, ram_bytes, ctx->curr, curr) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio span push failed"); } }
+    if (curr >= ctx->curr) { if (audio_span_push(ctx, ram, ram_bytes, ctx->curr, curr) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio span push failed"); } }
     else
     {
-        if (audio_span_push(ctx, ram, ram_bytes, ctx->curr, tail) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio span push failed"); }
+        if (audio_span_push(ctx, ram, ram_bytes, ctx->curr, tail) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio span push failed"); }
 
-        if (audio_span_push(ctx, ram, ram_bytes, base, curr) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio span push failed"); }
+        if (audio_span_push(ctx, ram, ram_bytes, base, curr) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "emu audio span push failed"); }
     }
 
     ctx->curr = curr;

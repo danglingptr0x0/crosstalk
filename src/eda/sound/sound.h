@@ -17,7 +17,7 @@
 #define CROSSTALK_EDA_SOUND_BIT_DEPTH 16
 #define CROSSTALK_EDA_SOUND_SAMPLE_BYTES 2
 #define CROSSTALK_EDA_SOUND_PORT_CAP 64
-#define CROSSTALK_EDA_SOUND_REPORT_SECS 30.0
+#define CROSSTALK_EDA_SOUND_REPORT_PERIOD ((uint64_t)30 * LDG_MS_PER_SEC)
 #define CROSSTALK_EDA_SOUND_STEP 1
 #define CROSSTALK_EDA_SOUND_SILENCE 0
 #define CROSSTALK_EDA_SOUND_RING_MASK (CROSSTALK_EDA_SOUND_RING_CAP - CROSSTALK_EDA_SOUND_STEP)
@@ -39,7 +39,7 @@ typedef struct crosstalk_eda_sound_ctx
     uint64_t made_prev;
     uint64_t dropped_prev;
     uint64_t underrun_prev;
-    double report_acc;
+    uint64_t report_acc;
     uint32_t rate;
     uint32_t hd;
     uint32_t tl;
@@ -65,7 +65,7 @@ uint32_t crosstalk_eda_sound_stream_stop(crosstalk_eda_sound_ctx_t *ctx);
 uint8_t crosstalk_eda_sound_streaming_is(const crosstalk_eda_sound_ctx_t *ctx);
 uint32_t crosstalk_eda_sound_fmt_get(const crosstalk_eda_sound_ctx_t *ctx, uint32_t *out_rate, uint16_t *out_channel_cunt, uint16_t *out_bit_depth);
 uint32_t crosstalk_eda_sound_bake(crosstalk_eda_sound_ctx_t *ctx, const ldg_byte_t **out_blob, uint64_t *out_size);
-uint32_t crosstalk_eda_sound_tick(crosstalk_eda_sound_ctx_t *ctx, double dt_secs);
+uint32_t crosstalk_eda_sound_tick(crosstalk_eda_sound_ctx_t *ctx, uint64_t dt);
 uint8_t crosstalk_eda_sound_live_is(const crosstalk_eda_sound_ctx_t *ctx);
 
 #endif

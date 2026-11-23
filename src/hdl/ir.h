@@ -17,6 +17,9 @@
 #define CROSSTALK_HDL_IR_SYSTASK_ARG_MAX 4096
 #define CROSSTALK_HDL_IR_BIT_LO 0
 #define CROSSTALK_HDL_IR_BIT_HI 1
+#define CROSSTALK_HDL_IR_PROC_MAX 256
+#define CROSSTALK_HDL_IR_SEG_MAX 4096
+#define CROSSTALK_HDL_IR_EVENT_MAX 4096
 
 typedef enum crosstalk_hdl_ir_port
 {
@@ -78,14 +81,29 @@ typedef enum crosstalk_hdl_ir_op_kind
     CROSSTALK_HDL_IR_OP_SEXT,
     CROSSTALK_HDL_IR_OP_MEM_RD,
     CROSSTALK_HDL_IR_OP_MEM_WR,
-    CROSSTALK_HDL_IR_OP_REG_NEXT
+    CROSSTALK_HDL_IR_OP_REG_NEXT,
+    CROSSTALK_HDL_IR_OP_SCHED_WR,
+    CROSSTALK_HDL_IR_OP_TIME,
+    CROSSTALK_HDL_IR_OP_MEM_NEXT,
+    CROSSTALK_HDL_IR_OP_SCHED_DR,
+    CROSSTALK_HDL_IR_OP_SCHED_MEM_WR,
+    CROSSTALK_HDL_IR_OP_EVENT_WR
 } crosstalk_hdl_ir_op_kind_t;
 
 typedef enum crosstalk_hdl_ir_edge
 {
     CROSSTALK_HDL_IR_EDGE_POS = 0,
-    CROSSTALK_HDL_IR_EDGE_NEG
+    CROSSTALK_HDL_IR_EDGE_NEG,
+    CROSSTALK_HDL_IR_EDGE_ANY
 } crosstalk_hdl_ir_edge_t;
+
+typedef enum crosstalk_hdl_ir_wake
+{
+    CROSSTALK_HDL_IR_WAKE_NONE = 0,
+    CROSSTALK_HDL_IR_WAKE_TIME,
+    CROSSTALK_HDL_IR_WAKE_EDGE,
+    CROSSTALK_HDL_IR_WAKE_COND
+} crosstalk_hdl_ir_wake_t;
 
 typedef struct crosstalk_hdl_ir_sig
 {
@@ -149,7 +167,8 @@ typedef enum crosstalk_hdl_ir_systask_where
     CROSSTALK_HDL_IR_SYSTASK_WHERE_SEQ = 0,
     CROSSTALK_HDL_IR_SYSTASK_WHERE_COMB,
     CROSSTALK_HDL_IR_SYSTASK_WHERE_INITIAL,
-    CROSSTALK_HDL_IR_SYSTASK_WHERE_FINAL
+    CROSSTALK_HDL_IR_SYSTASK_WHERE_FINAL,
+    CROSSTALK_HDL_IR_SYSTASK_WHERE_SEG
 } crosstalk_hdl_ir_systask_where_t;
 
 typedef struct crosstalk_hdl_ir_systask
@@ -184,8 +203,40 @@ typedef struct crosstalk_hdl_ir_seq_blk
     uint32_t op_cunt;
 } crosstalk_hdl_ir_seq_blk_t;
 
+typedef struct crosstalk_hdl_ir_event
+{
+    uint32_t sig;
+    uint32_t edge;
+} crosstalk_hdl_ir_event_t;
+
+typedef struct crosstalk_hdl_ir_seg
+{
+    uint64_t wake_imm;
+    uint32_t op_start;
+    uint32_t op_cunt;
+    uint32_t wake;
+    uint32_t wake_sig;
+    uint32_t event_start;
+    uint32_t event_cunt;
+    uint32_t next;
+    uint32_t next_alt;
+} crosstalk_hdl_ir_seg_t;
+
+typedef struct crosstalk_hdl_ir_proc
+{
+    uint32_t seg_start;
+    uint32_t seg_cunt;
+    uint8_t rep;
+    uint8_t pudding[3];
+} crosstalk_hdl_ir_proc_t;
+
 typedef struct crosstalk_hdl_ir
 {
+    void *pool;
+    crosstalk_hdl_ir_proc_t *proc;
+    crosstalk_hdl_ir_seg_t *seg;
+    crosstalk_hdl_ir_event_t *event;
+    crosstalk_hdl_ir_op_t *proc_op;
     crosstalk_hdl_ir_sig_t *sigs;
     crosstalk_hdl_ir_op_t *comb_ops;
     crosstalk_hdl_ir_op_t *seq_ops;
@@ -196,6 +247,7 @@ typedef struct crosstalk_hdl_ir
     crosstalk_hdl_ir_systask_t *systasks;
     crosstalk_hdl_ir_systask_arg_t *systask_args;
     char *qual_text;
+    uint64_t time_unit;
     uint32_t qual_text_len;
     uint32_t qual_text_cap;
     uint32_t inst_cunt;
@@ -214,6 +266,16 @@ typedef struct crosstalk_hdl_ir
     uint32_t systask_arg_cunt;
     uint32_t final_cunt;
     uint32_t tmp_base;
+    uint32_t proc_cunt;
+    uint32_t proc_cap;
+    uint32_t seg_cunt;
+    uint32_t seg_cap;
+    uint32_t event_cunt;
+    uint32_t event_cap;
+    uint32_t proc_op_cunt;
+    uint32_t proc_op_cap;
+    uint8_t timed;
+    uint8_t pudding[7];
 } crosstalk_hdl_ir_t;
 
 uint32_t crosstalk_hdl_ir_init(crosstalk_hdl_ir_t *ir_ctx, void *pool, uint32_t sig_cap, uint32_t comb_cap, uint32_t seq_op_cap, uint32_t seq_blk_cap);
@@ -228,5 +290,9 @@ uint32_t crosstalk_hdl_ir_mem_init_add(crosstalk_hdl_ir_t *ir_ctx, uint32_t sig_
 uint32_t crosstalk_hdl_ir_sig_qual_set(crosstalk_hdl_ir_t *ir_ctx, uint32_t sig_idx, const char *text, uint32_t len);
 uint32_t crosstalk_hdl_ir_inst_add(crosstalk_hdl_ir_t *ir_ctx, const crosstalk_hdl_tok_t *name, const crosstalk_hdl_tok_t *module_name, uint32_t *out_idx);
 uint32_t crosstalk_hdl_ir_jack_add(crosstalk_hdl_ir_t *ir_ctx, const crosstalk_hdl_tok_t *name, uint32_t inst, uint32_t sig, uint32_t width, uint32_t dir);
+uint32_t crosstalk_hdl_ir_proc_open(crosstalk_hdl_ir_t *ir_ctx, uint8_t rep, uint32_t *out);
+uint32_t crosstalk_hdl_ir_seg_open(crosstalk_hdl_ir_t *ir_ctx, uint32_t proc_idx, uint32_t *out);
+uint32_t crosstalk_hdl_ir_event_add(crosstalk_hdl_ir_t *ir_ctx, uint32_t seg_idx, uint32_t sig, uint32_t edge);
+uint32_t crosstalk_hdl_ir_proc_op_add(crosstalk_hdl_ir_t *ir_ctx, uint32_t seg_idx, const crosstalk_hdl_ir_op_t *op);
 
 #endif

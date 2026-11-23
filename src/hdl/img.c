@@ -290,7 +290,7 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
 
     if (ret != LDG_ERR_AOK)
     {
-        if (ldg_mem_exec_unmap(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
+        if (ldg_mem_exec_unmap(base, want) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
 
         return ret;
     }
@@ -331,9 +331,9 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "img: load refused; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64; err: %u32", (void *)base, want, seg_cunt, out->sym_cunt, fixups, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "img: load refused; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64; err: %u32", (void *)base, want, seg_cunt, out->sym_cunt, fixups, ret);
 
-        if (ldg_mem_exec_unmap(base, want) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
+        if (ldg_mem_exec_unmap(base, want) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "img unmap failed"); }
 
         memset(out, 0x0, sizeof(*out));
 
@@ -342,7 +342,7 @@ uint32_t crosstalk_hdl_img_ld(const ldg_byte_t *raw, uint64_t span, crosstalk_hd
 
     out->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "img: mapped; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64", (void *)base, want, seg_cunt, out->sym_cunt, fixups);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "img: mapped; base: %p; span: %u64; segments: %u32; syms: %u32; fixups: %u64", (void *)base, want, seg_cunt, out->sym_cunt, fixups);
 
     return LDG_ERR_AOK;
 }

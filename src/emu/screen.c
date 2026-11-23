@@ -309,7 +309,7 @@ static uint32_t screen_ddu_text_get(crosstalk_emu_screen_ctx_t *ctx, const cross
 
     if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_TEXT)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: the console is live; source: core text");
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: the console is live; source: core text");
 
         ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_TEXT;
         ctx->gfx_ok = LDG_TRUTH_FALSE;
@@ -464,7 +464,7 @@ uint32_t crosstalk_emu_screen_init(crosstalk_emu_screen_ctx_t *ctx)
     ret = ldg_mem_alloc((uint64_t)CROSSTALK_EMU_SCREEN_PX_MAX * (uint64_t)CROSSTALK_EMU_SCREEN_BYTES_PER_PX, (void **)&ctx->gfx_px);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "screen: pixel buffer alloc refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EMU_SCREEN_PX_MAX * (uint64_t)CROSSTALK_EMU_SCREEN_BYTES_PER_PX, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "screen: pixel buffer alloc refused; bytes: %u64; err: %u32", (uint64_t)CROSSTALK_EMU_SCREEN_PX_MAX * (uint64_t)CROSSTALK_EMU_SCREEN_BYTES_PER_PX, ret);
 
         return ret;
     }
@@ -514,7 +514,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
 
         if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves DLU mem");
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves DLU mem");
 
             ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX;
         }
@@ -526,7 +526,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
     {
         if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves DLU mem");
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: card-resident framebuffer live; scanout leaves DLU mem");
 
             ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX;
         }
@@ -540,7 +540,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
 
         if (base != ctx->gfx_base || (uint32_t)width != ctx->gfx_w || (uint32_t)height != ctx->gfx_h)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: framebuffer changed; addr: 0x%X64; width: %u64; height: %u64; fmt: %u64", addr, width, height, fmt);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: framebuffer changed; addr: 0x%X64; width: %u64; height: %u64; fmt: %u64", addr, width, height, fmt);
 
             ctx->gfx_base = base;
             ctx->gfx_w = (uint32_t)width;
@@ -550,7 +550,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
 
         if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: graphics live; width: %u64; height: %u64", width, height);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: graphics live; width: %u64; height: %u64", width, height);
 
             ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_GFX;
             ctx->gfx_ok = LDG_TRUTH_FALSE;
@@ -571,7 +571,7 @@ uint32_t crosstalk_emu_screen_tick(crosstalk_emu_screen_ctx_t *ctx, const crosst
 
     if (ctx->src != (uint32_t)CROSSTALK_EMU_SCREEN_SRC_TEXT)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: the console is live; fmt: %u64", fmt);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "screen: the console is live; fmt: %u64", fmt);
 
         ctx->src = (uint32_t)CROSSTALK_EMU_SCREEN_SRC_TEXT;
         ctx->gfx_ok = LDG_TRUTH_FALSE;

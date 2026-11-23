@@ -98,7 +98,7 @@ uint32_t crosstalk_eda_io_midi_shutdown(crosstalk_eda_io_midi_ctx_t *ctx)
     if (ctx->dev_open == LDG_TRUTH_TRUE)
     {
         ret = ldg_io_midi_in_close(&ctx->dev);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
     }
 
     ctx->dev_open = LDG_TRUTH_FALSE;
@@ -165,13 +165,13 @@ uint32_t crosstalk_eda_io_midi_dev_close(crosstalk_eda_io_midi_ctx_t *ctx)
     if (ctx->dev_open != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     ret = ldg_io_midi_in_close(&ctx->dev);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
 
     ctx->dev_open = LDG_TRUTH_FALSE;
     ctx->dev_idx = (uint64_t)UINT64_MAX;
     ctx->dev_name[0] = LDG_STR_TERM;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: closed");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: closed");
 
     return LDG_ERR_AOK;
 }
@@ -192,7 +192,7 @@ uint32_t crosstalk_eda_io_midi_dev_open(crosstalk_eda_io_midi_ctx_t *ctx, uint32
     ret = ldg_io_midi_in_open((uint64_t)idx, &ctx->dev);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "midi: open failed; idx: %u32; name: %.63s; err: %u32", idx, ctx->port[idx].name, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_ERR, "midi: open failed; idx: %u32; name: %.63s; err: %u32", idx, ctx->port[idx].name, ret);
         return CROSSTALK_EDA_IO_MIDI_ERR_DEV;
     }
 
@@ -203,7 +203,7 @@ uint32_t crosstalk_eda_io_midi_dev_open(crosstalk_eda_io_midi_ctx_t *ctx, uint32
     ctx->dev_open = LDG_TRUTH_TRUE;
     ctx->busted = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: opened; idx: %u32; name: %.63s", idx, ctx->dev_name);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: opened; idx: %u32; name: %.63s", idx, ctx->dev_name);
 
     return LDG_ERR_AOK;
 }
@@ -223,10 +223,10 @@ static uint32_t midi_dev_resolve(crosstalk_eda_io_midi_ctx_t *ctx)
     {
         if (strncmp(ctx->port[idx].name, ctx->dev_name, sizeof(ctx->dev_name)) != 0) { continue; }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: device moved; name: %.63s; was: %u64; now: %u32", ctx->dev_name, ctx->dev_idx, idx);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: device moved; name: %.63s; was: %u64; now: %u32", ctx->dev_name, ctx->dev_idx, idx);
 
         ret = ldg_io_midi_in_close(&ctx->dev);
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
 
         ret = ldg_io_midi_in_open((uint64_t)idx, &ctx->dev);
         if (ret != LDG_ERR_AOK)
@@ -241,10 +241,10 @@ static uint32_t midi_dev_resolve(crosstalk_eda_io_midi_ctx_t *ctx)
         return LDG_ERR_AOK;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: device gone; name: %.63s", ctx->dev_name);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: device gone; name: %.63s", ctx->dev_name);
 
     ret = ldg_io_midi_in_close(&ctx->dev);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: close failed; err: %u32", ret); }
 
     ctx->dev_open = LDG_TRUTH_FALSE;
     ctx->dev_idx = (uint64_t)UINT64_MAX;
@@ -289,7 +289,7 @@ uint32_t crosstalk_eda_io_midi_attach(crosstalk_eda_io_midi_ctx_t *ctx, uint32_t
     ctx->rd_at = 0;
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: attached; slot: %u32; pin: %.63s; clk: %u64; baud: %u32", slot_idx, ctx->pin.port, freq, (uint32_t)CROSSTALK_EDA_IO_MIDI_BAUD);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: attached; slot: %u32; pin: %.63s; clk: %u64; baud: %u32", slot_idx, ctx->pin.port, freq, (uint32_t)CROSSTALK_EDA_IO_MIDI_BAUD);
 
     return LDG_ERR_AOK;
 }
@@ -546,7 +546,7 @@ static uint32_t midi_tick_fire(crosstalk_eda_io_midi_ctx_t *ctx)
     {
         ctx->playing = LDG_TRUTH_FALSE;
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: file done; tick: %u64; path: %.255s", ctx->play_tick, ctx->file_path);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: file done; tick: %u64; path: %.255s", ctx->play_tick, ctx->file_path);
 
         return crosstalk_eda_io_midi_quiet_put(ctx);
     }
@@ -562,7 +562,7 @@ uint32_t crosstalk_eda_io_midi_file_stop(crosstalk_eda_io_midi_ctx_t *ctx)
 
     ctx->playing = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: file stopped; tick: %u64", ctx->play_tick);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: file stopped; tick: %u64", ctx->play_tick);
 
     return crosstalk_eda_io_midi_quiet_put(ctx);
 }
@@ -595,7 +595,7 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
 
     ret = ldg_io_file_rd(fh, ctx->file, (uint64_t)CROSSTALK_EDA_IO_MIDI_FILE_CAP, &got);
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi file close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi file close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -648,13 +648,13 @@ uint32_t crosstalk_eda_io_midi_file_play(crosstalk_eda_io_midi_ctx_t *ctx, const
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return LDG_ERR_IO_FMT; }
 
     ctx->tempo = (uint64_t)CROSSTALK_EDA_IO_MIDI_TEMPO_DEFAULT;
-    ctx->tick_rate = (uint64_t)ctx->tick_div * (uint64_t)CROSSTALK_EDA_IO_MIDI_USEC_PER_SEC;
+    ctx->tick_rate = (uint64_t)ctx->tick_div * (uint64_t)LDG_US_PER_SEC;
     ctx->tick_span = ctx->freq * ctx->tempo;
     ctx->play_tick = 0;
     ctx->play_phase = 0;
     ctx->playing = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: file; bytes: %u32; fmt: %u32; tracks: %u32; per quarter: %u32; path: %.255s", ctx->file_len, fmt, ctx->track_cunt, ctx->tick_div, path);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "midi: file; bytes: %u32; fmt: %u32; tracks: %u32; per quarter: %u32; path: %.255s", ctx->file_len, fmt, ctx->track_cunt, ctx->tick_div, path);
 
     return midi_tick_fire(ctx);
 }
@@ -677,7 +677,7 @@ uint32_t crosstalk_eda_io_midi_pump(crosstalk_eda_io_midi_ctx_t *ctx)
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: poll failed; err: %u32", ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "midi: poll failed; err: %u32", ret);
         return CROSSTALK_EDA_IO_MIDI_ERR_DEV;
     }
 
@@ -692,7 +692,7 @@ uint32_t crosstalk_eda_io_midi_pump(crosstalk_eda_io_midi_ctx_t *ctx)
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_eda_io_midi_tick(crosstalk_eda_io_midi_ctx_t *ctx, double dt)
+uint32_t crosstalk_eda_io_midi_tick(crosstalk_eda_io_midi_ctx_t *ctx, uint64_t dt)
 {
     uint32_t ret = 0;
 
@@ -702,9 +702,9 @@ uint32_t crosstalk_eda_io_midi_tick(crosstalk_eda_io_midi_ctx_t *ctx, double dt)
 
     ctx->refresh_acc = ctx->refresh_acc + dt;
 
-    if (ctx->refresh_acc < (double)CROSSTALK_EDA_IO_MIDI_REFRESH_SECS) { return LDG_ERR_AOK; }
+    if (ctx->refresh_acc < CROSSTALK_EDA_IO_MIDI_REFRESH_PERIOD) { return LDG_ERR_AOK; }
 
-    ctx->refresh_acc = 0.0;
+    ctx->refresh_acc = 0;
 
     ret = crosstalk_eda_io_midi_ports_refresh(ctx);
     if (ret != LDG_ERR_AOK) { return ret; }

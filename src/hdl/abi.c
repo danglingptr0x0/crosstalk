@@ -24,7 +24,7 @@ static uint32_t abi_sym_bind(const crosstalk_hdl_img_t *img, const char *name, c
     ret = crosstalk_hdl_img_sym_get(img, name, out);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: symbol missing; name: %.63s", name);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: symbol missing; name: %.63s", name);
 
         return CROSSTALK_HDL_ERR_ABI_SYM;
     }
@@ -55,7 +55,7 @@ uint32_t crosstalk_hdl_abi_bind(const crosstalk_hdl_img_t *img, const uint32_t *
 
     if (rva != 0x0 && rva_cunt < (uint32_t)CROSSTALK_HDL_ABI_RVA_CUNT)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: rva table too small; given: %u32; wanted: %u32", rva_cunt, (uint32_t)CROSSTALK_HDL_ABI_RVA_CUNT);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: rva table too small; given: %u32; wanted: %u32", rva_cunt, (uint32_t)CROSSTALK_HDL_ABI_RVA_CUNT);
 
         return CROSSTALK_HDL_ERR_ABI_SYM;
     }
@@ -68,7 +68,7 @@ uint32_t crosstalk_hdl_abi_bind(const crosstalk_hdl_img_t *img, const uint32_t *
     rev = out->rev();
     if (rev != (uint32_t)CROSSTALK_HDL_ABI_REV)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: revision mismatch; binary: %u32; game: %u32", rev, (uint32_t)CROSSTALK_HDL_ABI_REV);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: revision mismatch; binary: %u32; game: %u32", rev, (uint32_t)CROSSTALK_HDL_ABI_REV);
 
         return CROSSTALK_HDL_ERR_ABI_REV;
     }
@@ -130,14 +130,14 @@ uint32_t crosstalk_hdl_abi_bind(const crosstalk_hdl_img_t *img, const uint32_t *
 
     if (out->cycle == 0x0 && out->n_cycle == 0x0)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: no stepping export; wanted: %s or %s", CROSSTALK_HDL_ABI_SYM_CYCLE, CROSSTALK_HDL_ABI_SYM_N_CYCLE);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "abi: no stepping export; wanted: %s or %s", CROSSTALK_HDL_ABI_SYM_CYCLE, CROSSTALK_HDL_ABI_SYM_N_CYCLE);
 
         return CROSSTALK_HDL_ERR_ABI_SYM;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "abi: bound; rva: %u32; rev: %u32; step: %u32; init mem: %u32; batch: %u32; serial drain: %u32", rva != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, rev, out->cycle != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->mem_init != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->n_cycle != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->serial_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "abi: bound io; hlt mask: %u32; disk: %u32; disk drives: %u32; audio: %u32; net drain: %u32; net feed: %u32; host time: %u32; watch: %u32; io peek: %u32; io poke: %u32", out->hlt_mask_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->disk_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->disk_drive_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->audio_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->net_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->net_feed != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->time_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->watch_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->io_rd != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->io_wr != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "abi: bound relay; req take: %u32; reply push: %u32; payload cap: %u32", out->relay_req_take != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->relay_reply_push != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->relay_payload_cap_get != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "abi: bound; rva: %u32; rev: %u32; step: %u32; init mem: %u32; batch: %u32; serial drain: %u32", rva != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, rev, out->cycle != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->mem_init != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->n_cycle != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->serial_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "abi: bound io; hlt mask: %u32; disk: %u32; disk drives: %u32; audio: %u32; net drain: %u32; net feed: %u32; host time: %u32; watch: %u32; io peek: %u32; io poke: %u32", out->hlt_mask_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->disk_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->disk_drive_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->audio_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->net_drain != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->net_feed != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->time_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->watch_set != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->io_rd != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->io_wr != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "abi: bound relay; req take: %u32; reply push: %u32; payload cap: %u32", out->relay_req_take != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->relay_reply_push != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE, out->relay_payload_cap_get != 0x0 ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE);
 
     out->ok = LDG_TRUTH_TRUE;
 

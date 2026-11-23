@@ -794,7 +794,7 @@ uint32_t crosstalk_reng_deserialize(crosstalk_reng_ctx_t *ctx, const uint8_t *bu
     ctx->gen++;
     ctx->dirty = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "reng: restored; projects: %u32; tasks: %u32; notes: %u32; marks: %u32; samples: %u32; sel: %u32", ctx->proj_cunt, ctx->task_cunt, ctx->note_cunt, ctx->mark_cunt, ctx->sample_cunt, ctx->sel);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "reng: restored; projects: %u32; tasks: %u32; notes: %u32; marks: %u32; samples: %u32; sel: %u32", ctx->proj_cunt, ctx->task_cunt, ctx->note_cunt, ctx->mark_cunt, ctx->sample_cunt, ctx->sel);
 
     return LDG_ERR_AOK;
 }

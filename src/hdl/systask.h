@@ -24,7 +24,7 @@ typedef struct crosstalk_hdl_systask_ctx
     uint64_t *comb_hi;
     uint8_t *comb_seen;
     uint8_t *comb_guard;
-    double ns_per_cycle;
+    uint64_t f_op;
     uint32_t comb_cunt;
     uint32_t pend_len;
     uint8_t initial_done;
@@ -37,8 +37,9 @@ typedef struct crosstalk_hdl_systask_ctx
 
 uint32_t crosstalk_hdl_systask_init(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_ir_t *ir_ctx, const char *src, void *pool);
 uint32_t crosstalk_hdl_systask_out_cb_set(crosstalk_hdl_systask_ctx_t *ctx, crosstalk_hdl_systask_out_cb_t cb, void *user);
-uint32_t crosstalk_hdl_systask_scope_set(crosstalk_hdl_systask_ctx_t *ctx, const char *scope, uint64_t f_op_hz);
+uint32_t crosstalk_hdl_systask_scope_set(crosstalk_hdl_systask_ctx_t *ctx, const char *scope, uint64_t f_op);
 uint32_t crosstalk_hdl_systask_blk_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_exec_ctx_t *exec, uint32_t blk_idx);
+uint32_t crosstalk_hdl_systask_seg_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_exec_ctx_t *exec, uint32_t seg_idx);
 uint32_t crosstalk_hdl_systask_settle_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_exec_ctx_t *exec);
 uint32_t crosstalk_hdl_systask_final_run(crosstalk_hdl_systask_ctx_t *ctx, const crosstalk_hdl_exec_ctx_t *exec);
 uint8_t crosstalk_hdl_systask_finish_is(const crosstalk_hdl_systask_ctx_t *ctx);

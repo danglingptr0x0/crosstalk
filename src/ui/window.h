@@ -17,7 +17,6 @@
 #define CROSSTALK_UI_WINDOW_SLOT_CAP 40
 #define CROSSTALK_UI_WINDOW_SLOT_FIRST 1
 #define CROSSTALK_UI_WINDOW_DIGIT_HOLD_MS 150
-#define CROSSTALK_UI_WINDOW_DIGIT_BASE 10
 #define CROSSTALK_UI_WINDOW_DIGIT_NONE 0
 #define CROSSTALK_UI_WINDOW_RECENT_BACK 1
 #define CROSSTALK_UI_WINDOW_NAME_CAP 64
@@ -61,7 +60,8 @@ typedef struct crosstalk_ui_window_slot
     void *user;
     uint64_t id;
     uint32_t draw_fault;
-    uint8_t pudding[4];
+    uint8_t stale;
+    uint8_t pudding[3];
 } crosstalk_ui_window_slot_t;
 
 typedef struct crosstalk_ui_window_ctx
@@ -106,6 +106,7 @@ uint32_t crosstalk_ui_window_focus_rect_get(const crosstalk_ui_window_ctx_t *ctx
 uint32_t crosstalk_ui_window_top_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id);
 uint32_t crosstalk_ui_window_modal_draw(ldg_term_render_t *render, const ldg_term_rect_t *screen, const char *title, const char *const *line, uint32_t line_cunt);
 uint32_t crosstalk_ui_window_flash_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, uint64_t until_ms);
+uint32_t crosstalk_ui_window_stale_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, uint8_t on);
 uint32_t crosstalk_ui_window_all_draw(crosstalk_ui_window_ctx_t *ctx, ldg_term_render_t *render, const ldg_term_rect_t *desk);
 
 #endif

@@ -239,7 +239,7 @@ static uint32_t tasks_key_isr(uint64_t win_id, void *user, const ldg_term_key_ev
         if (len != 0) { ret = tasks_add_apply(ctx); }
         else if (ctx->active != UINT32_MAX) { ret = tasks_action_apply(ctx, ctx->active); }
 
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "reng: task key failed; err: %u32", ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "reng: task key failed; err: %u32", ret); }
 
         return LDG_ERR_AOK;
     }

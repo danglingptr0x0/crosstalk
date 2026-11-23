@@ -363,7 +363,7 @@ uint32_t crosstalk_re_diff_snap_take(crosstalk_re_diff_ctx_t *ctx, uint32_t side
     at->ram_hash = hash;
     at->taken = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re diff: snapshot; side: %u32; nodes: %u32; mem words: %u32; ram pages: %u32; cycles: %u64; node hash: 0x%016X64; mem hash: 0x%016X64; ram hash: 0x%016X64", side, node_cunt, mem_words, at->page_cunt, cycles_ran, at->node_hash, at->mem_hash, at->ram_hash);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re diff: snapshot; side: %u32; nodes: %u32; mem words: %u32; ram pages: %u32; cycles: %u64; node hash: 0x%016X64; mem hash: 0x%016X64; ram hash: 0x%016X64", side, node_cunt, mem_words, at->page_cunt, cycles_ran, at->node_hash, at->mem_hash, at->ram_hash);
 
     return LDG_ERR_AOK;
 }

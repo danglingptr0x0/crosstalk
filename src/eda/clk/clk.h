@@ -46,7 +46,7 @@ uint32_t crosstalk_eda_clk_domain_find(const crosstalk_eda_clk_ctx_t *ctx, uint3
 uint32_t crosstalk_eda_clk_domain_freq_set(crosstalk_eda_clk_ctx_t *ctx, uint32_t idx, uint64_t f_hz);
 uint32_t crosstalk_eda_clk_domain_freq_get(const crosstalk_eda_clk_ctx_t *ctx, uint32_t idx, uint64_t *out);
 uint32_t crosstalk_eda_clk_domain_en_set(crosstalk_eda_clk_ctx_t *ctx, uint32_t idx, uint8_t en);
-uint32_t crosstalk_eda_clk_advance(crosstalk_eda_clk_ctx_t *ctx, double dt_secs, uint64_t *out);
+uint32_t crosstalk_eda_clk_adv(crosstalk_eda_clk_ctx_t *ctx, uint64_t dt, uint64_t *out);
 uint32_t crosstalk_eda_clk_cycles_get(const crosstalk_eda_clk_ctx_t *ctx, uint32_t idx, uint64_t *out);
 uint32_t crosstalk_eda_clk_step_cycles_get(const crosstalk_eda_clk_ctx_t *ctx, uint32_t idx, uint64_t *out);
 uint32_t crosstalk_eda_clk_edges_get(const crosstalk_eda_clk_ctx_t *ctx, uint32_t idx, uint64_t *out_rise, uint64_t *out_fall);

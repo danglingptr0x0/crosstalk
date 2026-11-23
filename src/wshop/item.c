@@ -70,7 +70,7 @@ static uint32_t item_marker_find(const char *dir, char *out_name, uint64_t out_c
         break;
     }
 
-    if (ldg_io_dir_close(dh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop item dir close failed"); }
+    if (ldg_io_dir_close(dh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop item dir close failed"); }
 
     if (hit != LDG_TRUTH_TRUE) { return CROSSTALK_WSHOP_ITEM_ERR_MARKER; }
 
@@ -100,7 +100,7 @@ static uint32_t item_src_rd(const char *path, char *src_buff, uint64_t src_cap, 
 
     ret = ldg_io_file_rd(fh, src_buff, st.size, &got);
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop item src close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop item src close failed"); }
 
     if (ret != LDG_ERR_AOK) { return ret; }
 
@@ -182,18 +182,18 @@ uint32_t crosstalk_wshop_list_build(crosstalk_wshop_list_t *out, const crosstalk
             ret = crosstalk_wshop_item_ld(ent->path, out->src, (uint64_t)sizeof(out->src), slot);
             if (ret != LDG_ERR_AOK)
             {
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item load failed; id: %u64; err: %u32; path: %.127s", ent->file_id, ret, ent->path);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "wshop: item load failed; id: %u64; err: %u32; path: %.127s", ent->file_id, ret, ent->path);
                 continue;
             }
 
             slot->file_id = ent->file_id;
             out->cunt++;
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: item; id: %u64; kind: %u32; isa: %.31s; name: %.63s", slot->file_id, slot->manifest.kind, slot->manifest.kind == CROSSTALK_WSHOP_MANIFEST_KIND_CORE ? slot->manifest.isa : slot->manifest.tgt_isa, slot->manifest.name);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: item; id: %u64; kind: %u32; isa: %.31s; name: %.63s", slot->file_id, slot->manifest.kind, slot->manifest.kind == CROSSTALK_WSHOP_MANIFEST_KIND_CORE ? slot->manifest.isa : slot->manifest.tgt_isa, slot->manifest.name);
         }
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: list built; items: %u32", out->cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: list built; items: %u32", out->cunt);
 
     return LDG_ERR_AOK;
 }

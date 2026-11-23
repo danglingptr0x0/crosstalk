@@ -100,7 +100,7 @@ uint32_t crosstalk_game_music_file_play(crosstalk_game_music_ctx_t *ctx, const c
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ctx->kind = kind;
-    ctx->poll_next = 0.0;
+    ctx->poll_next = 0;
 
     return ldg_audio_play_start();
 }
@@ -123,23 +123,23 @@ uint32_t crosstalk_game_music_theme_play(crosstalk_game_music_ctx_t *ctx, const 
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_audio_play_loop_set(LDG_TRUTH_TRUE);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music: theme loop set failed; err: %u32", ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music: theme loop set failed; err: %u32", ret); }
 
     ret = ldg_audio_play_vol_set(vol);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music: theme vol set before start failed; vol: %.3f; err: %u32", vol, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music: theme vol set before start failed; vol: %.3f; err: %u32", vol, ret); }
 
     ctx->kind = (uint8_t)CROSSTALK_GAME_MUSIC_KIND_THEME;
-    ctx->poll_next = 0.0;
+    ctx->poll_next = 0;
 
     ret = ldg_audio_play_start();
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ret = ldg_audio_play_vol_set(vol);
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music: theme vol set after start failed; vol: %.3f; err: %u32", vol, ret); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music: theme vol set after start failed; vol: %.3f; err: %u32", vol, ret); }
 
     ret = ldg_audio_play_vol_get(&vol_now);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "music: theme vol; want: %.3f; got: %.3f; err: %u32", vol, vol_now, ret);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "music: theme vol; want: %.3f; got: %.3f; err: %u32", vol, vol_now, ret);
 
     return LDG_ERR_AOK;
 }
@@ -152,11 +152,11 @@ uint32_t crosstalk_game_music_theme_stop(crosstalk_game_music_ctx_t *ctx)
 
     if (ctx->kind != (uint8_t)CROSSTALK_GAME_MUSIC_KIND_THEME) { return LDG_ERR_AOK; }
 
-    if (ldg_audio_play_loop_set(LDG_TRUTH_FALSE) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "theme loop clear failed"); }
+    if (ldg_audio_play_loop_set(LDG_TRUTH_FALSE) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "theme loop clear failed"); }
 
     ret = crosstalk_game_music_stop(ctx);
 
-    if (ldg_audio_play_vol_set(CROSSTALK_GAME_MUSIC_VOL_FULL) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "theme volume restore failed"); }
+    if (ldg_audio_play_vol_set(CROSSTALK_GAME_MUSIC_VOL_FULL) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "theme volume restore failed"); }
 
     return ret;
 }
@@ -178,7 +178,7 @@ uint32_t crosstalk_game_music_list_play(crosstalk_game_music_ctx_t *ctx, const c
     if (ret != LDG_ERR_AOK) { return ret; }
 
     ctx->kind = kind;
-    ctx->poll_next = 0.0;
+    ctx->poll_next = 0;
 
     return ldg_audio_play_start();
 }
@@ -191,7 +191,7 @@ uint32_t crosstalk_game_music_src_set(crosstalk_game_music_ctx_t *ctx, uint8_t s
 
     if (src == ctx->src) { return LDG_ERR_AOK; }
 
-    if (ctx->src == (uint8_t)CROSSTALK_GAME_MUSIC_SRC_NATIVE) { if (LDG_UNLIKELY(crosstalk_game_music_stop(ctx) != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music native stop on src change failed"); } }
+    if (ctx->src == (uint8_t)CROSSTALK_GAME_MUSIC_SRC_NATIVE) { if (LDG_UNLIKELY(crosstalk_game_music_stop(ctx) != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music native stop on src change failed"); } }
 
     ctx->src = src;
     ctx->title[0] = LDG_STR_TERM;
@@ -199,7 +199,7 @@ uint32_t crosstalk_game_music_src_set(crosstalk_game_music_ctx_t *ctx, uint8_t s
     ctx->state = (uint8_t)CROSSTALK_GAME_MUSIC_STATE_IDLE;
     ctx->track_idx = 0;
     ctx->track_cunt = 0;
-    ctx->poll_next = 0.0;
+    ctx->poll_next = 0;
 
     return LDG_ERR_AOK;
 }
@@ -318,14 +318,14 @@ uint8_t crosstalk_game_music_poll_due_is(const crosstalk_game_music_ctx_t *ctx)
 
     if (ctx->inflight != LDG_TRUTH_FALSE) { return LDG_TRUTH_FALSE; }
 
-    return (ctx->poll_next > 0.0) ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
+    return (ctx->poll_next > 0) ? LDG_TRUTH_FALSE : LDG_TRUTH_TRUE;
 }
 
-uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, double dt)
+uint32_t crosstalk_game_music_tick(crosstalk_game_music_ctx_t *ctx, uint64_t dt)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (ctx->poll_next > 0.0) { ctx->poll_next = ctx->poll_next - dt; }
+    ctx->poll_next = ctx->poll_next - (ctx->poll_next < dt ? ctx->poll_next : dt);
 
     if (ctx->inflight == LDG_TRUTH_FALSE) { return LDG_ERR_AOK; }
 
@@ -403,9 +403,9 @@ uint32_t crosstalk_game_music_transport(crosstalk_game_music_ctx_t *ctx, uint32_
         else if (ctx->state == (uint8_t)CROSSTALK_GAME_MUSIC_STATE_PLAYING) { ret = libresteam_music_pause(ctx->set); }
         else { ret = libresteam_music_play(ctx->set); } }
 
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music transport failed"); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "music transport failed"); }
 
-    ctx->poll_next = 0.0;
+    ctx->poll_next = 0;
 
     return ret;
 }

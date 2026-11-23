@@ -237,12 +237,12 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
 
         if (nonspace > 0 && rows_logged < (uint32_t)PTY_GRID_DUMP_ROWS_LOGGED)
         {
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: grid row; row: %u32; nonspace: %u32; fg: %u32 %u32 %u32; text: %s", row, nonspace, (uint32_t)cell[first_at].fg[0], (uint32_t)cell[first_at].fg[1], (uint32_t)cell[first_at].fg[2], text);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: grid row; row: %u32; nonspace: %u32; fg: %u32 %u32 %u32; text: %s", row, nonspace, (uint32_t)cell[first_at].fg[0], (uint32_t)cell[first_at].fg[1], (uint32_t)cell[first_at].fg[2], text);
             rows_logged++;
         }
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: grid dump; cursor col: %u32; cursor row: %u32; nonspace total: %u32; rows: %u32; cols: %u32", cursor_col, cursor_row, nonspace_total, ctx->row_cunt, ctx->col_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: grid dump; cursor col: %u32; cursor row: %u32; nonspace total: %u32; rows: %u32; cols: %u32", cursor_col, cursor_row, nonspace_total, ctx->row_cunt, ctx->col_cunt);
 
     {
         ldg_byte_t final[PTY_UNHANDLED_CAP] = LDG_ARR_ZERO_INIT;
@@ -262,7 +262,7 @@ static void pty_grid_dump(crosstalk_eda_io_pty_ctx_t *ctx)
             }
 
             final_text[text_at] = LDG_STR_TERM;
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: vt unhandled finals; cunt: %u64; finals: %s", final_cunt, final_text);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: vt unhandled finals; cunt: %u64; finals: %s", final_cunt, final_text);
         }
     }
 }
@@ -305,9 +305,9 @@ static uint32_t pty_clip_pump(crosstalk_eda_io_pty_ctx_t *ctx)
         ctx->clip_new = LDG_TRUTH_TRUE;
 
         ret = ldg_sys_clipboard_set(incoming, incoming_len);
-        if (ret != LDG_ERR_AOK && ret != LDG_ERR_UNSUPPORTED) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: clipboard set failed; err: %u32; len: %u64", ret, incoming_len); }
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_UNSUPPORTED) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: clipboard set failed; err: %u32; len: %u64", ret, incoming_len); }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: clipboard from editor; len: %u64", incoming_len);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: clipboard from editor; len: %u64", incoming_len);
         return LDG_ERR_AOK;
     }
 
@@ -328,7 +328,7 @@ static uint32_t pty_clip_pump(crosstalk_eda_io_pty_ctx_t *ctx)
 
         if (enc_len > 0) { ret = ldg_io_pty_wr(&ctx->pty, enc, enc_len, &sent); }
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: clipboard to editor; len: %u64; err: %u32", text_len, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: clipboard to editor; len: %u64; err: %u32", text_len, ret);
         return ret;
     }
 }
@@ -361,15 +361,15 @@ uint32_t crosstalk_eda_io_pty_open(crosstalk_eda_io_pty_ctx_t *ctx, const char *
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (ctx->pool == 0x0) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open refused; stage: pool; err: %u32", (uint32_t)LDG_ERR_NOT_INIT); return LDG_ERR_NOT_INIT; }
+    if (ctx->pool == 0x0) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open refused; stage: pool; err: %u32", (uint32_t)LDG_ERR_NOT_INIT); return LDG_ERR_NOT_INIT; }
 
-    if (ctx->live == LDG_TRUTH_TRUE) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open refused; stage: live; err: %u32", (uint32_t)LDG_ERR_BUSY); return LDG_ERR_BUSY; }
+    if (ctx->live == LDG_TRUTH_TRUE) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open refused; stage: live; err: %u32", (uint32_t)LDG_ERR_BUSY); return LDG_ERR_BUSY; }
 
     ret = ldg_mem_pool_rst(ctx->pool);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: pool rst; err: %u32", ret); return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: pool rst; err: %u32", ret); return ret; }
 
     ret = ldg_term_conf_default_get(&term_conf);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: term conf; err: %u32", ret); return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: term conf; err: %u32", ret); return ret; }
 
     term_conf.col_cunt = CROSSTALK_EDA_IO_PTY_COL_MAX;
     term_conf.row_cunt = CROSSTALK_EDA_IO_PTY_ROW_MAX;
@@ -378,13 +378,13 @@ uint32_t crosstalk_eda_io_pty_open(crosstalk_eda_io_pty_ctx_t *ctx, const char *
     term_conf.fg[2] = PTY_FG_B;
 
     ret = ldg_term_create(ctx->pool, &term_conf, &ctx->term);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: term create; err: %u32; cols: %u32; rows: %u32; pool left: %u64", ret, (uint32_t)term_conf.col_cunt, (uint32_t)term_conf.row_cunt, ldg_mem_pool_remaining_get(ctx->pool)); return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: term create; err: %u32; cols: %u32; rows: %u32; pool left: %u64", ret, (uint32_t)term_conf.col_cunt, (uint32_t)term_conf.row_cunt, ldg_mem_pool_remaining_get(ctx->pool)); return ret; }
 
     ret = ldg_term_vt_init(&ctx->vt, ctx->term);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: vt init; err: %u32", ret); return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: vt init; err: %u32", ret); return ret; }
 
     ret = ldg_io_pty_conf_default_get(&pty_conf);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: pty conf; err: %u32", ret); return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: pty conf; err: %u32", ret); return ret; }
 
     if (shell != 0x0 && shell[0] != LDG_STR_TERM) { pty_conf.shell = shell; }
 
@@ -397,11 +397,11 @@ uint32_t crosstalk_eda_io_pty_open(crosstalk_eda_io_pty_ctx_t *ctx, const char *
     ret = ldg_io_pty_open(&pty_conf, &ctx->pty);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: pty open; err: %u32; shell: %s", ret, pty_conf.shell != 0x0 ? pty_conf.shell : "default");
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: open failed; stage: pty open; err: %u32; shell: %s", ret, pty_conf.shell != 0x0 ? pty_conf.shell : "default");
         return ret;
     }
 
-    if (ldg_str_rbrcpy(ctx->title, PTY_TITLE_DEFAULT, (uint64_t)sizeof(ctx->title)) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty title copy failed"); }
+    if (ldg_str_rbrcpy(ctx->title, PTY_TITLE_DEFAULT, (uint64_t)sizeof(ctx->title)) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty title copy failed"); }
 
     ctx->col_cunt = term_conf.col_cunt;
     ctx->row_cunt = term_conf.row_cunt;
@@ -417,7 +417,7 @@ uint32_t crosstalk_eda_io_pty_open(crosstalk_eda_io_pty_ctx_t *ctx, const char *
     ctx->exited = LDG_TRUTH_FALSE;
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: open; pid: %u32; cols: %u32; rows: %u32; term: %s; passthrough: %u32", ctx->pty.pid, pty_conf.col_cunt, pty_conf.row_cunt, PTY_TERM_NAME, (uint32_t)ctx->pty.passthrough);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: open; pid: %u32; cols: %u32; rows: %u32; term: %s; passthrough: %u32", ctx->pty.pid, pty_conf.col_cunt, pty_conf.row_cunt, PTY_TERM_NAME, (uint32_t)ctx->pty.passthrough);
 
     return LDG_ERR_AOK;
 }
@@ -431,17 +431,17 @@ uint32_t crosstalk_eda_io_pty_close(crosstalk_eda_io_pty_ctx_t *ctx)
     if (ctx->live != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     ret = ldg_io_pty_close(&ctx->pty);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty close failed"); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty close failed"); }
 
     if (ctx->term != 0x0)
     {
         ret = ldg_term_destroy(&ctx->term);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty term destroy failed"); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty term destroy failed"); }
     }
 
     ctx->live = LDG_TRUTH_FALSE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: closed; exit: %u32", ctx->exit_code);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: closed; exit: %u32", ctx->exit_code);
 
     return LDG_ERR_AOK;
 }
@@ -470,7 +470,7 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
 
             ctx->exited = LDG_TRUTH_TRUE;
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: shell exited; code: %u32", ctx->exit_code);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: shell exited; code: %u32", ctx->exit_code);
 
             return LDG_ERR_AOK;
         }
@@ -484,7 +484,7 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
 
             for (scan_at = 0; scan_at + PTY_OSC52_MARK_LEN <= got; scan_at++) { if (memcmp(buff + scan_at, PTY_OSC52_MARK, (uint64_t)PTY_OSC52_MARK_LEN) == 0)
                 {
-                    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: osc52 in stream; at: %u64; got: %u64", scan_at, got);
+                    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: osc52 in stream; at: %u64; got: %u64", scan_at, got);
                     break;
                 }
             }
@@ -508,7 +508,7 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
                 dump[dump_at * (uint64_t)PTY_DUMP_STRIDE + 0x2] = ' ';
             }
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: first output; bytes: %u64; hex: %s", got, dump);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: first output; bytes: %u64; hex: %s", got, dump);
         }
 
         ctx->rd_total = ctx->rd_total + got;
@@ -524,7 +524,7 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
                 ret = ldg_term_vt_feed(&ctx->vt, fold, fold_len);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (ctx->tee_cb != 0x0) { if (ctx->tee_cb(ctx->tee_user, fold, (uint32_t)fold_len) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "pty: tee failed; len: %u64", fold_len); } }
+                if (ctx->tee_cb != 0x0) { if (ctx->tee_cb(ctx->tee_user, fold, (uint32_t)fold_len) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "pty: tee failed; len: %u64", fold_len); } }
             }
         }
 
@@ -535,10 +535,10 @@ uint32_t crosstalk_eda_io_pty_tick(crosstalk_eda_io_pty_ctx_t *ctx)
         }
 
         ret = pty_reply_pump(ctx);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: reply pump failed; err: %u32", ret); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: reply pump failed; err: %u32", ret); }
 
         ret = pty_clip_pump(ctx);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: clip pump failed; err: %u32", ret); }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: clip pump failed; err: %u32", ret); }
     }
 
     return LDG_ERR_AOK;
@@ -591,7 +591,7 @@ uint32_t crosstalk_eda_io_pty_grid_resize(crosstalk_eda_io_pty_ctx_t *ctx, uint3
     {
         ctx->refused_cols = col_cunt;
         ctx->refused_rows = row_cunt;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: term resize refused; cols: %u32; rows: %u32; from cols: %u32; from rows: %u32; err: %u32", col_cunt, row_cunt, ctx->col_cunt, ctx->row_cunt, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: term resize refused; cols: %u32; rows: %u32; from cols: %u32; from rows: %u32; err: %u32", col_cunt, row_cunt, ctx->col_cunt, ctx->row_cunt, ret);
         return ret;
     }
 
@@ -599,12 +599,12 @@ uint32_t crosstalk_eda_io_pty_grid_resize(crosstalk_eda_io_pty_ctx_t *ctx, uint3
     ctx->refused_rows = 0;
 
     ret = ldg_io_pty_resize(&ctx->pty, col_cunt, row_cunt);
-    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: child resize failed; err: %u32", ret); }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "pty: child resize failed; err: %u32", ret); }
 
     ctx->col_cunt = col_cunt;
     ctx->row_cunt = row_cunt;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: resized; cols: %u32; rows: %u32", col_cunt, row_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "pty: resized; cols: %u32; rows: %u32", col_cunt, row_cunt);
 
     return LDG_ERR_AOK;
 }

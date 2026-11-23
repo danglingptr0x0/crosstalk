@@ -113,7 +113,7 @@ static uint32_t cc_worker(uint32_t worker_id, void *arg)
             ret = crosstalk_re_cc_line_expand(ctx, ctx->step[idx], line, (uint32_t)sizeof(line));
             if (ret != LDG_ERR_AOK) { ctx->fail_step = idx; break; }
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re cc: step; idx: %u32; line: %.511s", idx, line);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re cc: step; idx: %u32; line: %.511s", idx, line);
 
             ret = crosstalk_re_spawn_run(line, &exit_code);
             if (ret != LDG_ERR_AOK) { ctx->fail_step = idx; break; }
@@ -170,9 +170,9 @@ uint32_t crosstalk_re_cc_shutdown(crosstalk_re_cc_ctx_t *ctx)
 
     LDG_ST_RELEASE(ctx->stop, LDG_TRUTH_TRUE);
 
-    if (ldg_thread_pool_stop(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc pool stop failed"); }
+    if (ldg_thread_pool_stop(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc pool stop failed"); }
 
-    if (ldg_thread_pool_shutdown(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc pool shutdown failed"); }
+    if (ldg_thread_pool_shutdown(&ctx->thread_pool) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc pool shutdown failed"); }
 
     memset(ctx, 0x0, sizeof(*ctx));
 
@@ -286,7 +286,7 @@ uint32_t crosstalk_re_cc_start(crosstalk_re_cc_ctx_t *ctx, const char *src, cons
     LDG_ST_RELEASE(ctx->done, LDG_TRUTH_FALSE);
     LDG_ST_RELEASE(ctx->busy, LDG_TRUTH_TRUE);
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re cc: started; src: %.255s; obj: %.255s; out: %.255s; steps: %u32", ctx->src, ctx->obj, ctx->out, ctx->step_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re cc: started; src: %.255s; obj: %.255s; out: %.255s; steps: %u32", ctx->src, ctx->obj, ctx->out, ctx->step_cunt);
 
     return LDG_ERR_AOK;
 }
@@ -306,8 +306,8 @@ uint32_t crosstalk_re_cc_tick(crosstalk_re_cc_ctx_t *ctx, uint8_t *out_done)
     ctx->live = LDG_TRUTH_FALSE;
     *out_done = LDG_TRUTH_TRUE;
 
-    if (ctx->err == LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re cc: built; out: %.255s; took: %u64 ms", ctx->out, ctx->end_ms - ctx->start_ms); }
-    else { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc: failed; step: %u32; exit: %u32; err: %u32; took: %u64 ms", ctx->fail_step, ctx->exit_code, ctx->err, ctx->end_ms - ctx->start_ms); }
+    if (ctx->err == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "re cc: built; out: %.255s; took: %u64 ms", ctx->out, ctx->end_ms - ctx->start_ms); }
+    else { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re cc: failed; step: %u32; exit: %u32; err: %u32; took: %u64 ms", ctx->fail_step, ctx->exit_code, ctx->err, ctx->end_ms - ctx->start_ms); }
 
     return LDG_ERR_AOK;
 }
@@ -323,7 +323,7 @@ uint32_t crosstalk_re_cc_status_get(crosstalk_re_cc_ctx_t *ctx, const char **out
 
     if (ctx->live != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
-    secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)CROSSTALK_RE_CC_MS_PER_SEC;
+    secs = (ldg_time_epoch_ms_get() - ctx->start_ms) / (uint64_t)LDG_MS_PER_SEC;
 
     if (ldg_str_fmt(ctx->status, (uint64_t)sizeof(ctx->status), &fmt_len, "re build: step %u32 of %u32; %u64s", ctx->step_at + 1, ctx->step_cunt, secs) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
 

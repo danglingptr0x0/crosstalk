@@ -87,11 +87,11 @@ uint32_t crosstalk_game_progression_achievement_once_req(crosstalk_game_progress
     ret = crosstalk_game_progression_achievement_unlock_req(name, appid, ctx);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK))
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "achievement: req failed; name: %s; err: %u32", name, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "achievement: req failed; name: %s; err: %u32", name, ret);
         return ret;
     }
 
     state->fired[word] = state->fired[word] | bit;
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "achievement: fired; name: %s", name);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "achievement: fired; name: %s", name);
     return LDG_ERR_AOK;
 }

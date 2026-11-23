@@ -130,12 +130,12 @@ static uint32_t totals_draw_cb(uint64_t win_id, void *user, ldg_term_render_t *r
     {
         uint64_t age_days = (now_ms - info->created_epoch_ms) / LDG_MS_PER_SEC / LDG_SECS_PER_HOUR / TOTALS_HOURS_PER_DAY;
 
-        totals_span_fmt(info->bench_ms_total, span, sizeof(span));
+        totals_span_fmt(info->bench_total, span, sizeof(span));
         if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "age: %u64 days; time on the bench: %.31s", age_days, span) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
 
         ret = totals_row_draw(render, &row, line);
 
-        totals_span_fmt(info->sim_ms_total, span, sizeof(span));
+        totals_span_fmt(info->sim_total, span, sizeof(span));
 
         if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, "time simulating: %.31s", span) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
 

@@ -68,7 +68,7 @@ static char crosstalk_hdl_lex_peek_get(const crosstalk_hdl_lex_ctx_t *ctx, uint3
     return ctx->src[ctx->pos + ahead];
 }
 
-static void crosstalk_hdl_lex_advance(crosstalk_hdl_lex_ctx_t *ctx)
+static void crosstalk_hdl_lex_adv(crosstalk_hdl_lex_ctx_t *ctx)
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return; }
 
@@ -96,21 +96,21 @@ static uint32_t crosstalk_hdl_lex_space_skip(crosstalk_hdl_lex_ctx_t *ctx)
 
         if (ldg_char_space_is((uint8_t)ch) == LDG_TRUTH_TRUE)
         {
-            crosstalk_hdl_lex_advance(ctx);
+            crosstalk_hdl_lex_adv(ctx);
             continue;
         }
 
         if (ch == '/' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) == '/')
         {
-            while (ctx->pos < ctx->len && ctx->src[ctx->pos] != '\n') { crosstalk_hdl_lex_advance(ctx); }
+            while (ctx->pos < ctx->len && ctx->src[ctx->pos] != '\n') { crosstalk_hdl_lex_adv(ctx); }
 
             continue;
         }
 
         if (ch == '/' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) == '*')
         {
-            crosstalk_hdl_lex_advance(ctx);
-            crosstalk_hdl_lex_advance(ctx);
+            crosstalk_hdl_lex_adv(ctx);
+            crosstalk_hdl_lex_adv(ctx);
 
             while (LDG_TRUTH_TRUE)
             {
@@ -118,12 +118,12 @@ static uint32_t crosstalk_hdl_lex_space_skip(crosstalk_hdl_lex_ctx_t *ctx)
 
                 if (ctx->src[ctx->pos] == '*' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) == '/')
                 {
-                    crosstalk_hdl_lex_advance(ctx);
-                    crosstalk_hdl_lex_advance(ctx);
+                    crosstalk_hdl_lex_adv(ctx);
+                    crosstalk_hdl_lex_adv(ctx);
                     break;
                 }
 
-                crosstalk_hdl_lex_advance(ctx);
+                crosstalk_hdl_lex_adv(ctx);
             }
 
             continue;
@@ -170,6 +170,8 @@ uint32_t crosstalk_hdl_lex_kw_get(const char *ptr, uint32_t len)
         if (memcmp(ptr, "enum", 4) == 0) { return CROSSTALK_HDL_KW_ENUM; }
 
         if (memcmp(ptr, "task", 4) == 0) { return CROSSTALK_HDL_KW_TASK; }
+
+        if (memcmp(ptr, "wait", 4) == 0) { return CROSSTALK_HDL_KW_WAIT; }
     }
 
     if (len == 5)
@@ -238,6 +240,8 @@ uint32_t crosstalk_hdl_lex_kw_get(const char *ptr, uint32_t len)
 
         if (memcmp(ptr, "posedge", 7) == 0) { return CROSSTALK_HDL_KW_POSEDGE; }
 
+        if (memcmp(ptr, "forever", 7) == 0) { return CROSSTALK_HDL_KW_FOREVER; }
+
         if (memcmp(ptr, "negedge", 7) == 0) { return CROSSTALK_HDL_KW_NEGEDGE; }
 
         if (memcmp(ptr, "endtask", 7) == 0) { return CROSSTALK_HDL_KW_ENDTASK; }
@@ -300,17 +304,17 @@ static uint32_t crosstalk_hdl_lex_based_tail_scan(crosstalk_hdl_lex_ctx_t *ctx)
     ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
     if (ch == 's' || ch == 'S')
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
         ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
     }
 
     if (crosstalk_hdl_lex_base_char_is(ch) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_LITERAL; }
 
-    crosstalk_hdl_lex_advance(ctx);
+    crosstalk_hdl_lex_adv(ctx);
 
     while (crosstalk_hdl_lex_val_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE)
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
         cunt++;
     }
 
@@ -326,14 +330,14 @@ static uint32_t crosstalk_hdl_lex_num_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_kind == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out_kind = CROSSTALK_HDL_TOK_LIT_DEC;
+    *out_kind = CROSSTALK_HDL_TOK_LITERAL_DEC;
 
     while (LDG_TRUTH_TRUE)
     {
         ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
         if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE || ch == '_')
         {
-            crosstalk_hdl_lex_advance(ctx);
+            crosstalk_hdl_lex_adv(ctx);
             continue;
         }
 
@@ -344,14 +348,14 @@ static uint32_t crosstalk_hdl_lex_num_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_
 
     if (ch == '.' && ldg_char_digit_is((uint8_t)crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT)) == LDG_TRUTH_TRUE)
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
 
         while (LDG_TRUTH_TRUE)
         {
             ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
             if (ldg_char_digit_is((uint8_t)ch) == LDG_TRUTH_TRUE || ch == '_')
             {
-                crosstalk_hdl_lex_advance(ctx);
+                crosstalk_hdl_lex_adv(ctx);
                 continue;
             }
 
@@ -361,34 +365,45 @@ static uint32_t crosstalk_hdl_lex_num_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_
         ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
         if (ch == 'e' || ch == 'E')
         {
-            crosstalk_hdl_lex_advance(ctx);
+            crosstalk_hdl_lex_adv(ctx);
             ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
             if (ch == '+' || ch == '-')
             {
-                crosstalk_hdl_lex_advance(ctx);
+                crosstalk_hdl_lex_adv(ctx);
                 ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
             }
 
             if (ldg_char_digit_is((uint8_t)ch) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_LITERAL; }
 
-            while (ldg_char_digit_is((uint8_t)crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_advance(ctx); }
+            while (ldg_char_digit_is((uint8_t)crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_adv(ctx); }
         }
 
-        *out_kind = CROSSTALK_HDL_TOK_LIT_REAL;
-
-        return LDG_ERR_AOK;
+        *out_kind = CROSSTALK_HDL_TOK_LITERAL_REAL;
     }
-
-    if (ch == '\'' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) != '(' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) != '{')
+    else if (ch == '\'' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) != '(' && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) != '{')
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
 
         ret = crosstalk_hdl_lex_based_tail_scan(ctx);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        *out_kind = CROSSTALK_HDL_TOK_LIT_BASED;
+        *out_kind = CROSSTALK_HDL_TOK_LITERAL_BASED;
 
         return LDG_ERR_AOK;
+    }
+
+    ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
+
+    if ((ch == 'm' || ch == 'u' || ch == 'n' || ch == 'p' || ch == 'f') && crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT) == 's' && crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT + CROSSTALK_HDL_LEX_NEXT)) != LDG_TRUTH_TRUE)
+    {
+        crosstalk_hdl_lex_adv(ctx);
+        crosstalk_hdl_lex_adv(ctx);
+        *out_kind = CROSSTALK_HDL_TOK_LITERAL_TIME;
+    }
+    else if (ch == 's' && crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT)) != LDG_TRUTH_TRUE)
+    {
+        crosstalk_hdl_lex_adv(ctx);
+        *out_kind = CROSSTALK_HDL_TOK_LITERAL_TIME;
     }
 
     return LDG_ERR_AOK;
@@ -481,7 +496,7 @@ static uint32_t crosstalk_hdl_lex_op_scan(crosstalk_hdl_lex_ctx_t *ctx, uint32_t
     else if (ch == '#') { op = CROSSTALK_HDL_OP_HASH; }
     else { return CROSSTALK_HDL_ERR_LEX_CHAR; }
 
-    for (idx = 0; idx < width; idx++) { crosstalk_hdl_lex_advance(ctx); }
+    for (idx = 0; idx < width; idx++) { crosstalk_hdl_lex_adv(ctx); }
 
     if (*out_kind == CROSSTALK_HDL_TOK_OP) { *out_val = op; }
 
@@ -526,7 +541,7 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
 
     if (crosstalk_hdl_lex_ident_start_is(ch) == LDG_TRUTH_TRUE)
     {
-        while (crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_advance(ctx); }
+        while (crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_adv(ctx); }
 
         kind = CROSSTALK_HDL_TOK_IDENT;
         kw = crosstalk_hdl_lex_kw_get(ctx->src + off, ctx->pos - off);
@@ -543,7 +558,7 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
     }
     else if (ch == '\'')
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
         ch = crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE);
 
         if (crosstalk_hdl_lex_base_char_is(ch) == LDG_TRUTH_TRUE || ch == 's' || ch == 'S')
@@ -551,12 +566,12 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
             ret = crosstalk_hdl_lex_based_tail_scan(ctx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            kind = CROSSTALK_HDL_TOK_LIT_BASED;
+            kind = CROSSTALK_HDL_TOK_LITERAL_BASED;
         }
         else if (crosstalk_hdl_lex_unbased_char_is(ch) == LDG_TRUTH_TRUE)
         {
-            crosstalk_hdl_lex_advance(ctx);
-            kind = CROSSTALK_HDL_TOK_LIT_UNBASED;
+            crosstalk_hdl_lex_adv(ctx);
+            kind = CROSSTALK_HDL_TOK_LITERAL_UNBASED;
         }
         else if (ch == '(' || ch == '{')
         {
@@ -567,7 +582,7 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
     }
     else if (ch == '"')
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
 
         while (LDG_TRUTH_TRUE)
         {
@@ -579,31 +594,31 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
 
             if (ch == '\\')
             {
-                crosstalk_hdl_lex_advance(ctx);
+                crosstalk_hdl_lex_adv(ctx);
                 if (ctx->pos >= ctx->len) { return CROSSTALK_HDL_ERR_LEX_STR_UNTERM; }
 
-                crosstalk_hdl_lex_advance(ctx);
+                crosstalk_hdl_lex_adv(ctx);
                 continue;
             }
 
             if (ch == '"')
             {
-                crosstalk_hdl_lex_advance(ctx);
+                crosstalk_hdl_lex_adv(ctx);
                 break;
             }
 
-            crosstalk_hdl_lex_advance(ctx);
+            crosstalk_hdl_lex_adv(ctx);
         }
 
-        kind = CROSSTALK_HDL_TOK_LIT_STR;
+        kind = CROSSTALK_HDL_TOK_LITERAL_STR;
     }
     else if (ch == '\\')
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
 
         while (ctx->pos < ctx->len && ldg_char_space_is((uint8_t)ctx->src[ctx->pos]) != LDG_TRUTH_TRUE)
         {
-            crosstalk_hdl_lex_advance(ctx);
+            crosstalk_hdl_lex_adv(ctx);
             cunt++;
         }
 
@@ -615,19 +630,19 @@ uint32_t crosstalk_hdl_lex_next(crosstalk_hdl_lex_ctx_t *ctx, crosstalk_hdl_tok_
     {
         if (crosstalk_hdl_lex_ident_start_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_NEXT)) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_CHAR; }
 
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
 
-        while (crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_advance(ctx); }
+        while (crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_adv(ctx); }
 
         kind = CROSSTALK_HDL_TOK_SYS_IDENT;
     }
     else if (ch == '`')
     {
-        crosstalk_hdl_lex_advance(ctx);
+        crosstalk_hdl_lex_adv(ctx);
 
         if (crosstalk_hdl_lex_ident_start_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) != LDG_TRUTH_TRUE) { return CROSSTALK_HDL_ERR_LEX_CHAR; }
 
-        while (crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_advance(ctx); }
+        while (crosstalk_hdl_lex_ident_char_is(crosstalk_hdl_lex_peek_get(ctx, CROSSTALK_HDL_LEX_HERE)) == LDG_TRUTH_TRUE) { crosstalk_hdl_lex_adv(ctx); }
 
         kind = CROSSTALK_HDL_TOK_DIRECTIVE;
     }

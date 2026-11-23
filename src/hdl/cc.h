@@ -13,7 +13,7 @@
 
 #define CROSSTALK_HDL_CC_EXE "clang"
 #define CROSSTALK_HDL_CC_EXE_WIN "clang.exe"
-#define CROSSTALK_HDL_CC_TGT "--tar" "get=x86_64-unknown-none"
+#define CROSSTALK_HDL_CC_TGT "--tar" "get=x86_64-unknown-linux-gnu"
 #define CROSSTALK_HDL_CC_OPT "-O3"
 #define CROSSTALK_HDL_CC_ARCH "-march=x86-64-v2"
 #define CROSSTALK_HDL_CC_FREE "-ffreestanding"

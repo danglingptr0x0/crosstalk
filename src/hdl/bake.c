@@ -92,13 +92,13 @@ uint32_t crosstalk_hdl_bake_wr(const crosstalk_hdl_abi_t *abi, const crosstalk_h
     if (ident->top[0] != LDG_STR_TERM)
     {
         ret = ldg_str_rbrcpy(hdr.top, ident->top, (uint64_t)sizeof(hdr.top));
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: top copy failed; err: %u32", ret); return ret; }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: top copy failed; err: %u32", ret); return ret; }
     }
 
     if (ident->comp[0] != LDG_STR_TERM)
     {
         ret = ldg_str_rbrcpy(hdr.comp, ident->comp, (uint64_t)sizeof(hdr.comp));
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: comp copy failed; err: %u32", ret); return ret; }
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: comp copy failed; err: %u32", ret); return ret; }
     }
 
     ret = bake_state_get(abi, (uint32_t)CROSSTALK_HDL_ABI_STATE_NODE, &base, &hdr.node_cunt);
@@ -113,14 +113,14 @@ uint32_t crosstalk_hdl_bake_wr(const crosstalk_hdl_abi_t *abi, const crosstalk_h
     ret = ldg_io_file_open(path, LDG_IO_WR_ONLY | LDG_IO_CREATE | LDG_IO_TRUNCATE, (uint32_t)CROSSTALK_HDL_BAKE_MODE, &fh);
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: open failed; path: %.255s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: open failed; path: %.255s; err: %u32", path, ret);
 
         return ret;
     }
 
     ret = ldg_io_file_wr(fh, &hdr, (uint64_t)sizeof(hdr), &wrote);
 
-    if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: header write failed; err: %u32; wrote: %u64", ret, wrote); }
+    if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: header write failed; err: %u32; wrote: %u64", ret, wrote); }
 
     for (kind = 0; ret == LDG_ERR_AOK && kind < (uint32_t)CROSSTALK_HDL_ABI_STATE_KIND_CUNT; kind = kind + (uint32_t)CROSSTALK_HDL_BAKE_STEP)
     {
@@ -128,19 +128,19 @@ uint32_t crosstalk_hdl_bake_wr(const crosstalk_hdl_abi_t *abi, const crosstalk_h
 
         ret = bake_kind_rw(fh, base, cunt, LDG_TRUTH_TRUE);
 
-        if (ret != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: kind write failed; kind: %u32; cunt: %u32; base: %p; err: %u32", kind, cunt, (void *)base, ret); }
+        if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: kind write failed; kind: %u32; cunt: %u32; base: %p; err: %u32", kind, cunt, (void *)base, ret); }
     }
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake close failed"); }
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: write failed; path: %.255s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: write failed; path: %.255s; err: %u32", path, ret);
 
         return ret;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "bake: written; path: %.255s; top: %.63s; nodes: %u32; mem: %u32; hash: %08X32", path, hdr.top, hdr.node_cunt, hdr.mem_cunt, hdr.src_hash);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "bake: written; path: %.255s; top: %.63s; nodes: %u32; mem: %u32; hash: %08X32", path, hdr.top, hdr.node_cunt, hdr.mem_cunt, hdr.src_hash);
 
     return LDG_ERR_AOK;
 }
@@ -192,18 +192,18 @@ uint32_t crosstalk_hdl_bake_rd(const crosstalk_hdl_abi_t *abi, const crosstalk_h
         ret = bake_kind_rw(fh, base, cunt, LDG_TRUTH_FALSE);
     }
 
-    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake close failed"); }
+    if (ldg_io_file_close(fh) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake close failed"); }
 
     if (ret != LDG_ERR_AOK)
     {
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: resume refused; path: %.255s; err: %u32", path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "bake: resume refused; path: %.255s; err: %u32", path, ret);
 
         return ret;
     }
 
     if (abi->touch != 0x0) { abi->touch(); }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "bake: resumed; path: %.255s; top: %.63s; nodes: %u32; mem: %u32", path, hdr.top, hdr.node_cunt, hdr.mem_cunt);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "bake: resumed; path: %.255s; top: %.63s; nodes: %u32; mem: %u32", path, hdr.top, hdr.node_cunt, hdr.mem_cunt);
 
     return LDG_ERR_AOK;
 }

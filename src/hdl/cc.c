@@ -104,7 +104,7 @@ uint32_t crosstalk_hdl_cc_init(crosstalk_hdl_cc_ctx_t *ctx, const char *dir)
         {
             ctx->ok = LDG_TRUTH_TRUE;
 
-            ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: shipped compiler; path: %.255s", ctx->exe);
+            ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: shipped compiler; path: %.255s", ctx->exe);
 
             return LDG_ERR_AOK;
         }
@@ -120,7 +120,7 @@ uint32_t crosstalk_hdl_cc_init(crosstalk_hdl_cc_ctx_t *ctx, const char *dir)
 
     ctx->ok = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: no shipped compiler; falling back to PATH; exe: %.255s", ctx->exe);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: no shipped compiler; falling back to PATH; exe: %.255s", ctx->exe);
 
     return LDG_ERR_AOK;
 }
@@ -157,14 +157,14 @@ uint32_t crosstalk_hdl_cc_run(crosstalk_hdl_cc_ctx_t *ctx, const char *src_path,
     {
         ctx->fails = ctx->fails + (uint64_t)CROSSTALK_HDL_CC_STEP;
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: spawn failed; exe: %.255s; err: %u32", ctx->exe, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: spawn failed; exe: %.255s; err: %u32", ctx->exe, ret);
 
         return CROSSTALK_HDL_ERR_CC_SPAWN;
     }
 
     ret = ldg_sys_proc_wait(&proc, LDG_SYS_PROC_WAIT_INFINITE, &code);
 
-    if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: process close failed"); }
+    if (ldg_sys_proc_close(&proc) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: process close failed"); }
 
     if (ret != LDG_ERR_AOK)
     {
@@ -179,7 +179,7 @@ uint32_t crosstalk_hdl_cc_run(crosstalk_hdl_cc_ctx_t *ctx, const char *src_path,
     {
         ctx->fails = ctx->fails + (uint64_t)CROSSTALK_HDL_CC_STEP;
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: compile failed; src: %.255s; exit: %u32", src_path, code);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: compile failed; src: %.255s; exit: %u32", src_path, code);
 
         return CROSSTALK_HDL_ERR_CC_EXIT;
     }
@@ -188,12 +188,12 @@ uint32_t crosstalk_hdl_cc_run(crosstalk_hdl_cc_ctx_t *ctx, const char *src_path,
     {
         ctx->fails = ctx->fails + (uint64_t)CROSSTALK_HDL_CC_STEP;
 
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: compiler exited clean but wrote nothing; out: %.255s", out_path);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cc: compiler exited clean but wrote nothing; out: %.255s", out_path);
 
         return CROSSTALK_HDL_ERR_CC_MISSING;
     }
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: compiled; src: %.255s; out: %.255s; runs: %u64", src_path, out_path, ctx->runs);
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "cc: compiled; src: %.255s; out: %.255s; runs: %u64", src_path, out_path, ctx->runs);
 
     return LDG_ERR_AOK;
 }

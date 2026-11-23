@@ -46,6 +46,7 @@ typedef struct crosstalk_hdl_preproc_ctx
     char *out;
     crosstalk_hdl_preproc_include_cb_t include_cb;
     void *include_user;
+    uint64_t time_unit;
     crosstalk_hdl_preproc_cond_t cond[CROSSTALK_HDL_PREPROC_COND_MAX];
     uint32_t macro_cunt;
     uint32_t cond_depth;

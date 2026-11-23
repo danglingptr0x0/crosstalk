@@ -27,27 +27,27 @@ static uint32_t crosstalk_hdl_aig_arr_alloc(void *pool, uint64_t cunt, uint64_t 
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_lit_not_get(uint32_t lit)
+static uint32_t crosstalk_hdl_aig_literal_not_get(uint32_t literal)
 {
-    return lit ^ 1;
+    return literal ^ 1;
 }
 
-static uint32_t crosstalk_hdl_aig_pi_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_pi_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t *out_literal)
 {
-    if (LDG_UNLIKELY(ctx == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(ctx == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
+    *out_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
     if (LDG_UNLIKELY(ctx->node_cunt >= ctx->node_cap)) { return CROSSTALK_HDL_ERR_AIG_CAP; }
 
     ctx->nodes[ctx->node_cunt].fanin0 = UINT32_MAX;
     ctx->nodes[ctx->node_cunt].fanin1 = UINT32_MAX;
-    *out_lit = ctx->node_cunt << 1;
+    *out_literal = ctx->node_cunt << 1;
     ctx->node_cunt++;
     ctx->pi_cunt++;
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_pi_note(crosstalk_hdl_aig_ctx_t *ctx, uint32_t kind, uint32_t sig, uint32_t bit, uint32_t op_idx, uint32_t lit)
+static uint32_t crosstalk_hdl_aig_pi_note(crosstalk_hdl_aig_ctx_t *ctx, uint32_t kind, uint32_t sig, uint32_t bit, uint32_t op_idx, uint32_t literal)
 {
     uint32_t pi_idx = 0;
 
@@ -56,7 +56,7 @@ static uint32_t crosstalk_hdl_aig_pi_note(crosstalk_hdl_aig_ctx_t *ctx, uint32_t
     if (LDG_UNLIKELY(ctx->pi_cunt == 0 || ctx->pi_cunt > ctx->pi_cap)) { return CROSSTALK_HDL_ERR_AIG_CAP; }
 
     pi_idx = ctx->pi_cunt - 1;
-    ctx->pi_node[pi_idx] = lit >> 1;
+    ctx->pi_node[pi_idx] = literal >> 1;
     ctx->pi_sig[pi_idx] = sig;
     ctx->pi_bit[pi_idx] = bit;
     ctx->pi_op[pi_idx] = op_idx;
@@ -65,39 +65,39 @@ static uint32_t crosstalk_hdl_aig_pi_note(crosstalk_hdl_aig_ctx_t *ctx, uint32_t
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_and_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t lhs_lit, uint32_t rhs_lit, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_and_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t lhs_literal, uint32_t rhs_literal, uint32_t *out_literal)
 {
-    uint32_t swap_lit = 0;
+    uint32_t swap_literal = 0;
     uint32_t hash_idx = 0;
     uint32_t node_idx = 0;
 
-    if (LDG_UNLIKELY(ctx == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(ctx == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
-    if (lhs_lit == CROSSTALK_HDL_AIG_LIT_FALSE || rhs_lit == CROSSTALK_HDL_AIG_LIT_FALSE) { return LDG_ERR_AOK; }
+    *out_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
+    if (lhs_literal == CROSSTALK_HDL_AIG_LITERAL_FALSE || rhs_literal == CROSSTALK_HDL_AIG_LITERAL_FALSE) { return LDG_ERR_AOK; }
 
-    if (lhs_lit == CROSSTALK_HDL_AIG_LIT_TRUE) { *out_lit = rhs_lit; return LDG_ERR_AOK; }
+    if (lhs_literal == CROSSTALK_HDL_AIG_LITERAL_TRUE) { *out_literal = rhs_literal; return LDG_ERR_AOK; }
 
-    if (rhs_lit == CROSSTALK_HDL_AIG_LIT_TRUE) { *out_lit = lhs_lit; return LDG_ERR_AOK; }
+    if (rhs_literal == CROSSTALK_HDL_AIG_LITERAL_TRUE) { *out_literal = lhs_literal; return LDG_ERR_AOK; }
 
-    if (lhs_lit == rhs_lit) { *out_lit = lhs_lit; return LDG_ERR_AOK; }
+    if (lhs_literal == rhs_literal) { *out_literal = lhs_literal; return LDG_ERR_AOK; }
 
-    if (lhs_lit == crosstalk_hdl_aig_lit_not_get(rhs_lit)) { return LDG_ERR_AOK; }
+    if (lhs_literal == crosstalk_hdl_aig_literal_not_get(rhs_literal)) { return LDG_ERR_AOK; }
 
-    if (lhs_lit > rhs_lit)
+    if (lhs_literal > rhs_literal)
     {
-        swap_lit = lhs_lit;
-        lhs_lit = rhs_lit;
-        rhs_lit = swap_lit;
+        swap_literal = lhs_literal;
+        lhs_literal = rhs_literal;
+        rhs_literal = swap_literal;
     }
 
-    hash_idx = (lhs_lit * 0x9E3779B1 + rhs_lit * 0x85EBCA77) & (ctx->hash_cap - 1);
+    hash_idx = (lhs_literal * 0x9E3779B1 + rhs_literal * 0x85EBCA77) & (ctx->hash_cap - 1);
     while (ctx->hash_tbl[hash_idx] != UINT32_MAX)
     {
         node_idx = ctx->hash_tbl[hash_idx];
-        if (ctx->nodes[node_idx].fanin0 == lhs_lit && ctx->nodes[node_idx].fanin1 == rhs_lit)
+        if (ctx->nodes[node_idx].fanin0 == lhs_literal && ctx->nodes[node_idx].fanin1 == rhs_literal)
         {
-            *out_lit = node_idx << 1;
+            *out_literal = node_idx << 1;
             return LDG_ERR_AOK;
         }
 
@@ -107,113 +107,113 @@ static uint32_t crosstalk_hdl_aig_and_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t
     if (LDG_UNLIKELY(ctx->node_cunt >= ctx->node_cap)) { return CROSSTALK_HDL_ERR_AIG_CAP; }
 
     node_idx = ctx->node_cunt;
-    ctx->nodes[node_idx].fanin0 = lhs_lit;
-    ctx->nodes[node_idx].fanin1 = rhs_lit;
+    ctx->nodes[node_idx].fanin0 = lhs_literal;
+    ctx->nodes[node_idx].fanin1 = rhs_literal;
     ctx->node_cunt++;
     ctx->hash_tbl[hash_idx] = node_idx;
-    *out_lit = node_idx << 1;
+    *out_literal = node_idx << 1;
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_or_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t lhs_lit, uint32_t rhs_lit, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_or_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t lhs_literal, uint32_t rhs_literal, uint32_t *out_literal)
 {
-    uint32_t and_lit = 0;
+    uint32_t and_literal = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_lit_not_get(lhs_lit), crosstalk_hdl_aig_lit_not_get(rhs_lit), &and_lit);
+    ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_literal_not_get(lhs_literal), crosstalk_hdl_aig_literal_not_get(rhs_literal), &and_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *out_lit = crosstalk_hdl_aig_lit_not_get(and_lit);
+    *out_literal = crosstalk_hdl_aig_literal_not_get(and_literal);
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_xor_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t lhs_lit, uint32_t rhs_lit, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_xor_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t lhs_literal, uint32_t rhs_literal, uint32_t *out_literal)
 {
-    uint32_t hi_lit = 0;
-    uint32_t lo_lit = 0;
+    uint32_t hi_literal = 0;
+    uint32_t lo_literal = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ret = crosstalk_hdl_aig_and_get(ctx, lhs_lit, crosstalk_hdl_aig_lit_not_get(rhs_lit), &hi_lit);
+    ret = crosstalk_hdl_aig_and_get(ctx, lhs_literal, crosstalk_hdl_aig_literal_not_get(rhs_literal), &hi_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_lit_not_get(lhs_lit), rhs_lit, &lo_lit);
+    ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_literal_not_get(lhs_literal), rhs_literal, &lo_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    return crosstalk_hdl_aig_or_get(ctx, hi_lit, lo_lit, out_lit);
+    return crosstalk_hdl_aig_or_get(ctx, hi_literal, lo_literal, out_literal);
 }
 
-static uint32_t crosstalk_hdl_aig_mux_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t sel_lit, uint32_t true_lit, uint32_t false_lit, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_mux_get(crosstalk_hdl_aig_ctx_t *ctx, uint32_t sel_literal, uint32_t true_literal, uint32_t false_literal, uint32_t *out_literal)
 {
-    uint32_t hi_lit = 0;
-    uint32_t lo_lit = 0;
+    uint32_t hi_literal = 0;
+    uint32_t lo_literal = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ret = crosstalk_hdl_aig_and_get(ctx, sel_lit, true_lit, &hi_lit);
+    ret = crosstalk_hdl_aig_and_get(ctx, sel_literal, true_literal, &hi_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_lit_not_get(sel_lit), false_lit, &lo_lit);
+    ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_literal_not_get(sel_literal), false_literal, &lo_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    return crosstalk_hdl_aig_or_get(ctx, hi_lit, lo_lit, out_lit);
+    return crosstalk_hdl_aig_or_get(ctx, hi_literal, lo_literal, out_literal);
 }
 
-static uint32_t crosstalk_hdl_aig_red_or_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t lit_cunt, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_red_or_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t literal_cunt, uint32_t *out_literal)
 {
-    uint32_t acc_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
+    uint32_t acc_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(lits == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(lits == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < lit_cunt; idx++)
+    for (idx = 0; idx < literal_cunt; idx++)
     {
-        ret = crosstalk_hdl_aig_or_get(ctx, acc_lit, lits[idx], &acc_lit);
+        ret = crosstalk_hdl_aig_or_get(ctx, acc_literal, lits[idx], &acc_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    *out_lit = acc_lit;
+    *out_literal = acc_literal;
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_red_and_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t lit_cunt, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_red_and_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t literal_cunt, uint32_t *out_literal)
 {
-    uint32_t acc_lit = CROSSTALK_HDL_AIG_LIT_TRUE;
+    uint32_t acc_literal = CROSSTALK_HDL_AIG_LITERAL_TRUE;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(lits == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(lits == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < lit_cunt; idx++)
+    for (idx = 0; idx < literal_cunt; idx++)
     {
-        ret = crosstalk_hdl_aig_and_get(ctx, acc_lit, lits[idx], &acc_lit);
+        ret = crosstalk_hdl_aig_and_get(ctx, acc_literal, lits[idx], &acc_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    *out_lit = acc_lit;
+    *out_literal = acc_literal;
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_red_xor_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t lit_cunt, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_red_xor_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t literal_cunt, uint32_t *out_literal)
 {
-    uint32_t acc_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
+    uint32_t acc_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(lits == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(lits == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < lit_cunt; idx++)
+    for (idx = 0; idx < literal_cunt; idx++)
     {
-        ret = crosstalk_hdl_aig_xor_get(ctx, acc_lit, lits[idx], &acc_lit);
+        ret = crosstalk_hdl_aig_xor_get(ctx, acc_literal, lits[idx], &acc_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    *out_lit = acc_lit;
+    *out_literal = acc_literal;
     return LDG_ERR_AOK;
 }
 
@@ -227,14 +227,14 @@ static uint32_t crosstalk_hdl_aig_vec_rd(const crosstalk_hdl_aig_ctx_t *ctx, uin
 
     if (LDG_UNLIKELY(ctx == 0x0 || out_lits == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < width; idx++) { out_lits[idx] = CROSSTALK_HDL_AIG_LIT_FALSE; }
+    for (idx = 0; idx < width; idx++) { out_lits[idx] = CROSSTALK_HDL_AIG_LITERAL_FALSE; }
 
     if (sig_idx == UINT32_MAX) { return LDG_ERR_AOK; }
 
-    if (ctx->lit_off[sig_idx] == UINT32_MAX) { return LDG_ERR_AOK; }
+    if (ctx->literal_off[sig_idx] == UINT32_MAX) { return LDG_ERR_AOK; }
 
     sig_w = ctx->ir_ctx->sigs[sig_idx].width;
-    src_lits = ctx->lit_arena + ctx->lit_off[sig_idx];
+    src_lits = ctx->literal_arena + ctx->literal_off[sig_idx];
     if (ctx->comb_mode != LDG_TRUTH_FALSE) { for (slot_idx = 0; slot_idx < CROSSTALK_HDL_AIG_RD_SLOT_CUNT; slot_idx++)
         {
             if (ctx->rd_dep_sig[ctx->cur_op * CROSSTALK_HDL_AIG_RD_SLOT_CUNT + slot_idx] != sig_idx) { continue; }
@@ -259,20 +259,20 @@ static uint32_t crosstalk_hdl_aig_vec_wr(crosstalk_hdl_aig_ctx_t *ctx, uint32_t 
 
     if (LDG_UNLIKELY(ctx == 0x0 || lits == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (sig_idx == UINT32_MAX || ctx->lit_off[sig_idx] == UINT32_MAX) { return LDG_ERR_AOK; }
+    if (sig_idx == UINT32_MAX || ctx->literal_off[sig_idx] == UINT32_MAX) { return LDG_ERR_AOK; }
 
     sig_w = ctx->ir_ctx->sigs[sig_idx].width;
-    dst_lits = ctx->comb_mode != LDG_TRUTH_FALSE ? ctx->op_out + (uint64_t)ctx->cur_op * CROSSTALK_HDL_AIG_WIDTH_MAX : ctx->lit_arena + ctx->lit_off[sig_idx];
-    for (idx = 0; idx < sig_w; idx++) { dst_lits[idx] = idx < width ? lits[idx] : CROSSTALK_HDL_AIG_LIT_FALSE; }
+    dst_lits = ctx->comb_mode != LDG_TRUTH_FALSE ? ctx->op_out + (uint64_t)ctx->cur_op * CROSSTALK_HDL_AIG_WIDTH_MAX : ctx->literal_arena + ctx->literal_off[sig_idx];
+    for (idx = 0; idx < sig_w; idx++) { dst_lits[idx] = idx < width ? lits[idx] : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
 
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_add_vec(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t carry_lit, uint32_t *out_lits)
+static uint32_t crosstalk_hdl_aig_add_vec(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t carry_literal, uint32_t *out_lits)
 {
-    uint32_t axb_lit = 0;
-    uint32_t gen_lit = 0;
-    uint32_t prop_lit = 0;
+    uint32_t axb_literal = 0;
+    uint32_t gen_literal = 0;
+    uint32_t prop_literal = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
@@ -280,19 +280,19 @@ static uint32_t crosstalk_hdl_aig_add_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
 
     for (idx = 0; idx < width; idx++)
     {
-        ret = crosstalk_hdl_aig_xor_get(ctx, lhs[idx], rhs[idx], &axb_lit);
+        ret = crosstalk_hdl_aig_xor_get(ctx, lhs[idx], rhs[idx], &axb_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_and_get(ctx, lhs[idx], rhs[idx], &gen_lit);
+        ret = crosstalk_hdl_aig_and_get(ctx, lhs[idx], rhs[idx], &gen_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_xor_get(ctx, axb_lit, carry_lit, &out_lits[idx]);
+        ret = crosstalk_hdl_aig_xor_get(ctx, axb_literal, carry_literal, &out_lits[idx]);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_and_get(ctx, axb_lit, carry_lit, &prop_lit);
+        ret = crosstalk_hdl_aig_and_get(ctx, axb_literal, carry_literal, &prop_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_or_get(ctx, gen_lit, prop_lit, &carry_lit);
+        ret = crosstalk_hdl_aig_or_get(ctx, gen_literal, prop_literal, &carry_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
@@ -306,49 +306,49 @@ static uint32_t crosstalk_hdl_aig_sub_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
 
     if (LDG_UNLIKELY(lhs == 0x0 || rhs == 0x0 || out_lits == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    for (idx = 0; idx < width; idx++) { rhs_not[idx] = crosstalk_hdl_aig_lit_not_get(rhs[idx]); }
+    for (idx = 0; idx < width; idx++) { rhs_not[idx] = crosstalk_hdl_aig_literal_not_get(rhs[idx]); }
 
-    return crosstalk_hdl_aig_add_vec(ctx, lhs, rhs_not, width, CROSSTALK_HDL_AIG_LIT_TRUE, out_lits);
+    return crosstalk_hdl_aig_add_vec(ctx, lhs, rhs_not, width, CROSSTALK_HDL_AIG_LITERAL_TRUE, out_lits);
 }
 
-static uint32_t crosstalk_hdl_aig_lt_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_lt_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t *out_literal)
 {
-    uint32_t borrow_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
-    uint32_t diff_lit = 0;
-    uint32_t low_lit = 0;
-    uint32_t keep_lit = 0;
+    uint32_t borrow_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
+    uint32_t diff_literal = 0;
+    uint32_t low_literal = 0;
+    uint32_t keep_literal = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(lhs == 0x0 || rhs == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(lhs == 0x0 || rhs == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     for (idx = 0; idx < width; idx++)
     {
-        ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_lit_not_get(lhs[idx]), rhs[idx], &low_lit);
+        ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_literal_not_get(lhs[idx]), rhs[idx], &low_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_xor_get(ctx, lhs[idx], rhs[idx], &diff_lit);
+        ret = crosstalk_hdl_aig_xor_get(ctx, lhs[idx], rhs[idx], &diff_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_lit_not_get(diff_lit), borrow_lit, &keep_lit);
+        ret = crosstalk_hdl_aig_and_get(ctx, crosstalk_hdl_aig_literal_not_get(diff_literal), borrow_literal, &keep_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_or_get(ctx, low_lit, keep_lit, &borrow_lit);
+        ret = crosstalk_hdl_aig_or_get(ctx, low_literal, keep_literal, &borrow_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    *out_lit = borrow_lit;
+    *out_literal = borrow_literal;
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_eq_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_eq_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t *out_literal)
 {
     uint32_t diff_lits[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
-    uint32_t any_lit = 0;
+    uint32_t any_literal = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
-    if (LDG_UNLIKELY(lhs == 0x0 || rhs == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(lhs == 0x0 || rhs == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     for (idx = 0; idx < width; idx++)
     {
@@ -356,14 +356,14 @@ static uint32_t crosstalk_hdl_aig_eq_get(crosstalk_hdl_aig_ctx_t *ctx, const uin
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
-    ret = crosstalk_hdl_aig_red_or_get(ctx, diff_lits, width, &any_lit);
+    ret = crosstalk_hdl_aig_red_or_get(ctx, diff_lits, width, &any_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    *out_lit = crosstalk_hdl_aig_lit_not_get(any_lit);
+    *out_literal = crosstalk_hdl_aig_literal_not_get(any_literal);
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_mux_vec(crosstalk_hdl_aig_ctx_t *ctx, uint32_t sel_lit, const uint32_t *true_lits, const uint32_t *false_lits, uint32_t width, uint32_t *out_lits)
+static uint32_t crosstalk_hdl_aig_mux_vec(crosstalk_hdl_aig_ctx_t *ctx, uint32_t sel_literal, const uint32_t *true_lits, const uint32_t *false_lits, uint32_t width, uint32_t *out_lits)
 {
     uint32_t idx = 0;
     uint32_t ret = 0;
@@ -372,29 +372,29 @@ static uint32_t crosstalk_hdl_aig_mux_vec(crosstalk_hdl_aig_ctx_t *ctx, uint32_t
 
     for (idx = 0; idx < width; idx++)
     {
-        ret = crosstalk_hdl_aig_mux_get(ctx, sel_lit, true_lits[idx], false_lits[idx], &out_lits[idx]);
+        ret = crosstalk_hdl_aig_mux_get(ctx, sel_literal, true_lits[idx], false_lits[idx], &out_lits[idx]);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_hdl_aig_shift_hi_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *sh_lits, uint32_t sh_w, uint32_t *out_lit)
+static uint32_t crosstalk_hdl_aig_shift_hi_get(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *sh_lits, uint32_t sh_w, uint32_t *out_literal)
 {
-    if (LDG_UNLIKELY(sh_lits == 0x0 || out_lit == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    if (LDG_UNLIKELY(sh_lits == 0x0 || out_literal == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *out_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
+    *out_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
     if (sh_w <= CROSSTALK_HDL_AIG_SHIFT_LAYER_CUNT) { return LDG_ERR_AOK; }
 
-    return crosstalk_hdl_aig_red_or_get(ctx, sh_lits + CROSSTALK_HDL_AIG_SHIFT_LAYER_CUNT, sh_w - CROSSTALK_HDL_AIG_SHIFT_LAYER_CUNT, out_lit);
+    return crosstalk_hdl_aig_red_or_get(ctx, sh_lits + CROSSTALK_HDL_AIG_SHIFT_LAYER_CUNT, sh_w - CROSSTALK_HDL_AIG_SHIFT_LAYER_CUNT, out_literal);
 }
 
-static uint32_t crosstalk_hdl_aig_shr_vec(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *in_lits, uint32_t width, const uint32_t *sh_lits, uint32_t sh_w, uint32_t fill_lit, uint32_t *out_lits)
+static uint32_t crosstalk_hdl_aig_shr_vec(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *in_lits, uint32_t width, const uint32_t *sh_lits, uint32_t sh_w, uint32_t fill_literal, uint32_t *out_lits)
 {
     uint32_t current[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t next[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t fill_vec[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
-    uint32_t hi_lit = 0;
+    uint32_t hi_literal = 0;
     uint32_t stride = 0;
     uint32_t layer_idx = 0;
     uint32_t idx = 0;
@@ -409,19 +409,19 @@ static uint32_t crosstalk_hdl_aig_shr_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
         stride = (uint32_t)1 << layer_idx;
         for (idx = 0; idx < width; idx++)
         {
-            ret = crosstalk_hdl_aig_mux_get(ctx, sh_lits[layer_idx], idx + stride < width ? current[idx + stride] : fill_lit, current[idx], &next[idx]);
+            ret = crosstalk_hdl_aig_mux_get(ctx, sh_lits[layer_idx], idx + stride < width ? current[idx + stride] : fill_literal, current[idx], &next[idx]);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
         for (idx = 0; idx < width; idx++) { current[idx] = next[idx]; }
     }
 
-    ret = crosstalk_hdl_aig_shift_hi_get(ctx, sh_lits, sh_w, &hi_lit);
+    ret = crosstalk_hdl_aig_shift_hi_get(ctx, sh_lits, sh_w, &hi_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    for (idx = 0; idx < width; idx++) { fill_vec[idx] = fill_lit; }
+    for (idx = 0; idx < width; idx++) { fill_vec[idx] = fill_literal; }
 
-    return crosstalk_hdl_aig_mux_vec(ctx, hi_lit, fill_vec, current, width, out_lits);
+    return crosstalk_hdl_aig_mux_vec(ctx, hi_literal, fill_vec, current, width, out_lits);
 }
 
 static uint32_t crosstalk_hdl_aig_shl_vec(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *in_lits, uint32_t width, const uint32_t *sh_lits, uint32_t sh_w, uint32_t *out_lits)
@@ -429,7 +429,7 @@ static uint32_t crosstalk_hdl_aig_shl_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
     uint32_t current[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t next[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t zero_vec[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
-    uint32_t hi_lit = 0;
+    uint32_t hi_literal = 0;
     uint32_t stride = 0;
     uint32_t layer_idx = 0;
     uint32_t idx = 0;
@@ -444,17 +444,17 @@ static uint32_t crosstalk_hdl_aig_shl_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
         stride = (uint32_t)1 << layer_idx;
         for (idx = 0; idx < width; idx++)
         {
-            ret = crosstalk_hdl_aig_mux_get(ctx, sh_lits[layer_idx], idx >= stride ? current[idx - stride] : CROSSTALK_HDL_AIG_LIT_FALSE, current[idx], &next[idx]);
+            ret = crosstalk_hdl_aig_mux_get(ctx, sh_lits[layer_idx], idx >= stride ? current[idx - stride] : CROSSTALK_HDL_AIG_LITERAL_FALSE, current[idx], &next[idx]);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
         for (idx = 0; idx < width; idx++) { current[idx] = next[idx]; }
     }
 
-    ret = crosstalk_hdl_aig_shift_hi_get(ctx, sh_lits, sh_w, &hi_lit);
+    ret = crosstalk_hdl_aig_shift_hi_get(ctx, sh_lits, sh_w, &hi_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    return crosstalk_hdl_aig_mux_vec(ctx, hi_lit, zero_vec, current, width, out_lits);
+    return crosstalk_hdl_aig_mux_vec(ctx, hi_literal, zero_vec, current, width, out_lits);
 }
 
 static uint32_t crosstalk_hdl_aig_mul_vec(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lhs, const uint32_t *rhs, uint32_t width, uint32_t *out_lits)
@@ -471,7 +471,7 @@ static uint32_t crosstalk_hdl_aig_mul_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
     {
         for (idx = 0; idx < width; idx++)
         {
-            addend[idx] = CROSSTALK_HDL_AIG_LIT_FALSE;
+            addend[idx] = CROSSTALK_HDL_AIG_LITERAL_FALSE;
             if (idx >= bit_idx)
             {
                 ret = crosstalk_hdl_aig_and_get(ctx, lhs[idx - bit_idx], rhs[bit_idx], &addend[idx]);
@@ -479,7 +479,7 @@ static uint32_t crosstalk_hdl_aig_mul_vec(crosstalk_hdl_aig_ctx_t *ctx, const ui
             }
         }
 
-        ret = crosstalk_hdl_aig_add_vec(ctx, acc, addend, width, CROSSTALK_HDL_AIG_LIT_FALSE, acc);
+        ret = crosstalk_hdl_aig_add_vec(ctx, acc, addend, width, CROSSTALK_HDL_AIG_LITERAL_FALSE, acc);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
@@ -493,10 +493,10 @@ static uint32_t crosstalk_hdl_aig_divmod_vec(crosstalk_hdl_aig_ctx_t *ctx, const
     uint32_t rem[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t diff[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
     uint32_t zero_vec[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
-    uint32_t lt_lit = 0;
-    uint32_t ge_lit = 0;
-    uint32_t any_lit = 0;
-    uint32_t zero_lit = 0;
+    uint32_t lt_literal = 0;
+    uint32_t ge_literal = 0;
+    uint32_t any_literal = 0;
+    uint32_t zero_literal = 0;
     uint32_t quo_idx = 0;
     uint32_t bit_idx = 0;
     uint32_t idx = 0;
@@ -510,38 +510,38 @@ static uint32_t crosstalk_hdl_aig_divmod_vec(crosstalk_hdl_aig_ctx_t *ctx, const
         for (idx = width - 1; idx > 0; idx--) { rem[idx] = rem[idx - 1]; }
 
         rem[0] = lhs[quo_idx];
-        ret = crosstalk_hdl_aig_lt_get(ctx, rem, rhs, width, &lt_lit);
+        ret = crosstalk_hdl_aig_lt_get(ctx, rem, rhs, width, &lt_literal);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ge_lit = crosstalk_hdl_aig_lit_not_get(lt_lit);
+        ge_literal = crosstalk_hdl_aig_literal_not_get(lt_literal);
         ret = crosstalk_hdl_aig_sub_vec(ctx, rem, rhs, width, diff);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ret = crosstalk_hdl_aig_mux_vec(ctx, ge_lit, diff, rem, width, rem);
+        ret = crosstalk_hdl_aig_mux_vec(ctx, ge_literal, diff, rem, width, rem);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        out_quo[quo_idx] = ge_lit;
+        out_quo[quo_idx] = ge_literal;
     }
 
-    ret = crosstalk_hdl_aig_red_or_get(ctx, rhs, width, &any_lit);
+    ret = crosstalk_hdl_aig_red_or_get(ctx, rhs, width, &any_literal);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    zero_lit = crosstalk_hdl_aig_lit_not_get(any_lit);
-    ret = crosstalk_hdl_aig_mux_vec(ctx, zero_lit, zero_vec, out_quo, width, out_quo);
+    zero_literal = crosstalk_hdl_aig_literal_not_get(any_literal);
+    ret = crosstalk_hdl_aig_mux_vec(ctx, zero_literal, zero_vec, out_quo, width, out_quo);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    return crosstalk_hdl_aig_mux_vec(ctx, zero_lit, zero_vec, rem, width, out_rem);
+    return crosstalk_hdl_aig_mux_vec(ctx, zero_literal, zero_vec, rem, width, out_rem);
 }
 
-static uint32_t crosstalk_hdl_aig_root_add(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t lit_cunt)
+static uint32_t crosstalk_hdl_aig_root_add(crosstalk_hdl_aig_ctx_t *ctx, const uint32_t *lits, uint32_t literal_cunt)
 {
     uint32_t idx = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0 || lits == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (LDG_UNLIKELY(ctx->root_cunt + lit_cunt > ctx->root_cap)) { return CROSSTALK_HDL_ERR_AIG_CAP; }
+    if (LDG_UNLIKELY(ctx->root_cunt + literal_cunt > ctx->root_cap)) { return CROSSTALK_HDL_ERR_AIG_CAP; }
 
-    for (idx = 0; idx < lit_cunt; idx++)
+    for (idx = 0; idx < literal_cunt; idx++)
     {
         ctx->roots[ctx->root_cunt] = lits[idx];
         ctx->root_cunt++;
@@ -563,7 +563,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
     uint32_t src2_w = 0;
     uint32_t work_w = 0;
     uint32_t msb_idx = 0;
-    uint32_t bit_lit = 0;
+    uint32_t bit_literal = 0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
@@ -577,19 +577,19 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
 
     if (op->kind == CROSSTALK_HDL_IR_OP_MEM_WR)
     {
-        uint32_t en_lit = CROSSTALK_HDL_AIG_LIT_TRUE;
+        uint32_t en_literal = CROSSTALK_HDL_AIG_LITERAL_TRUE;
 
         if (op->dst != UINT32_MAX)
         {
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->dst, ctx->ir_ctx->sigs[op->dst].width, src0_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_red_or_get(ctx, src0_lits, ctx->ir_ctx->sigs[op->dst].width, &en_lit);
+            ret = crosstalk_hdl_aig_red_or_get(ctx, src0_lits, ctx->ir_ctx->sigs[op->dst].width, &en_literal);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
         ctx->op_root_off[ctx->cur_op] = ctx->root_cunt;
-        ret = crosstalk_hdl_aig_root_add(ctx, &en_lit, 1);
+        ret = crosstalk_hdl_aig_root_add(ctx, &en_literal, 1);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, src1_w, src1_lits);
@@ -650,7 +650,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
     {
         case CROSSTALK_HDL_IR_OP_CONST:
         {
-            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = ((op->imm >> idx) & 1) != 0 ? CROSSTALK_HDL_AIG_LIT_TRUE : CROSSTALK_HDL_AIG_LIT_FALSE; }
+            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = ((op->imm >> idx) & 1) != 0 ? CROSSTALK_HDL_AIG_LITERAL_TRUE : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
 
             break;
         }
@@ -696,7 +696,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
 
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (op->kind == CROSSTALK_HDL_IR_OP_XNOR) { res_lits[idx] = crosstalk_hdl_aig_lit_not_get(res_lits[idx]); }
+                if (op->kind == CROSSTALK_HDL_IR_OP_XNOR) { res_lits[idx] = crosstalk_hdl_aig_literal_not_get(res_lits[idx]); }
             }
 
             break;
@@ -706,7 +706,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src0, dst_w, res_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = crosstalk_hdl_aig_lit_not_get(res_lits[idx]); }
+            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = crosstalk_hdl_aig_literal_not_get(res_lits[idx]); }
 
             break;
         }
@@ -719,7 +719,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, dst_w, src1_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            if (op->kind == CROSSTALK_HDL_IR_OP_ADD) { ret = crosstalk_hdl_aig_add_vec(ctx, src0_lits, src1_lits, dst_w, CROSSTALK_HDL_AIG_LIT_FALSE, res_lits); }
+            if (op->kind == CROSSTALK_HDL_IR_OP_ADD) { ret = crosstalk_hdl_aig_add_vec(ctx, src0_lits, src1_lits, dst_w, CROSSTALK_HDL_AIG_LITERAL_FALSE, res_lits); }
             else { ret = crosstalk_hdl_aig_sub_vec(ctx, src0_lits, src1_lits, dst_w, res_lits); }
 
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -764,8 +764,8 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_divmod_vec(ctx, src0_lits, src1_lits, work_w, src2_lits, aux_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            for (idx = 0; idx < dst_w; idx++) { if (op->kind == CROSSTALK_HDL_IR_OP_DIV) { res_lits[idx] = idx < work_w ? src2_lits[idx] : CROSSTALK_HDL_AIG_LIT_FALSE; }
-                else { res_lits[idx] = idx < work_w ? aux_lits[idx] : CROSSTALK_HDL_AIG_LIT_FALSE; } }
+            for (idx = 0; idx < dst_w; idx++) { if (op->kind == CROSSTALK_HDL_IR_OP_DIV) { res_lits[idx] = idx < work_w ? src2_lits[idx] : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
+                else { res_lits[idx] = idx < work_w ? aux_lits[idx] : CROSSTALK_HDL_AIG_LITERAL_FALSE; } }
 
             break;
         }
@@ -791,16 +791,16 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, src1_w, src1_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_shr_vec(ctx, src0_lits, work_w, src1_lits, src1_w, CROSSTALK_HDL_AIG_LIT_FALSE, aux_lits);
+            ret = crosstalk_hdl_aig_shr_vec(ctx, src0_lits, work_w, src1_lits, src1_w, CROSSTALK_HDL_AIG_LITERAL_FALSE, aux_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = idx < work_w ? aux_lits[idx] : CROSSTALK_HDL_AIG_LIT_FALSE; }
+            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = idx < work_w ? aux_lits[idx] : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
 
             break;
         }
         case CROSSTALK_HDL_IR_OP_ASHR:
         {
-            uint32_t sign_lit = 0;
+            uint32_t sign_literal = 0;
 
             work_w = op->width > dst_w ? op->width : dst_w;
             if (work_w == 0 || work_w > CROSSTALK_HDL_AIG_WIDTH_MAX) { work_w = dst_w; }
@@ -808,22 +808,22 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src0, work_w, src0_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            sign_lit = CROSSTALK_HDL_AIG_LIT_FALSE;
+            sign_literal = CROSSTALK_HDL_AIG_LITERAL_FALSE;
             if (op->width > 0 && op->width <= work_w)
             {
                 msb_idx = op->width - 1;
-                sign_lit = src0_lits[msb_idx];
+                sign_literal = src0_lits[msb_idx];
             }
 
-            for (idx = op->width; idx < work_w; idx++) { src0_lits[idx] = sign_lit; }
+            for (idx = op->width; idx < work_w; idx++) { src0_lits[idx] = sign_literal; }
 
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, src1_w, src1_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_shr_vec(ctx, src0_lits, work_w, src1_lits, src1_w, sign_lit, aux_lits);
+            ret = crosstalk_hdl_aig_shr_vec(ctx, src0_lits, work_w, src1_lits, src1_w, sign_literal, aux_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = idx < work_w ? aux_lits[idx] : sign_lit; }
+            for (idx = 0; idx < dst_w; idx++) { res_lits[idx] = idx < work_w ? aux_lits[idx] : sign_literal; }
 
             break;
         }
@@ -845,22 +845,22 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
 
             if (op->kind == CROSSTALK_HDL_IR_OP_EQ || op->kind == CROSSTALK_HDL_IR_OP_NEQ)
             {
-                ret = crosstalk_hdl_aig_eq_get(ctx, src0_lits, src1_lits, work_w, &bit_lit);
+                ret = crosstalk_hdl_aig_eq_get(ctx, src0_lits, src1_lits, work_w, &bit_literal);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (op->kind == CROSSTALK_HDL_IR_OP_NEQ) { bit_lit = crosstalk_hdl_aig_lit_not_get(bit_lit); }
+                if (op->kind == CROSSTALK_HDL_IR_OP_NEQ) { bit_literal = crosstalk_hdl_aig_literal_not_get(bit_literal); }
             }
             else
             {
-                if (op->kind == CROSSTALK_HDL_IR_OP_LT || op->kind == CROSSTALK_HDL_IR_OP_GE) { ret = crosstalk_hdl_aig_lt_get(ctx, src0_lits, src1_lits, work_w, &bit_lit); }
-                else { ret = crosstalk_hdl_aig_lt_get(ctx, src1_lits, src0_lits, work_w, &bit_lit); }
+                if (op->kind == CROSSTALK_HDL_IR_OP_LT || op->kind == CROSSTALK_HDL_IR_OP_GE) { ret = crosstalk_hdl_aig_lt_get(ctx, src0_lits, src1_lits, work_w, &bit_literal); }
+                else { ret = crosstalk_hdl_aig_lt_get(ctx, src1_lits, src0_lits, work_w, &bit_literal); }
 
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                if (op->kind == CROSSTALK_HDL_IR_OP_GE || op->kind == CROSSTALK_HDL_IR_OP_LE) { bit_lit = crosstalk_hdl_aig_lit_not_get(bit_lit); }
+                if (op->kind == CROSSTALK_HDL_IR_OP_GE || op->kind == CROSSTALK_HDL_IR_OP_LE) { bit_literal = crosstalk_hdl_aig_literal_not_get(bit_literal); }
             }
 
-            res_lits[0] = bit_lit;
+            res_lits[0] = bit_literal;
             break;
         }
         case CROSSTALK_HDL_IR_OP_LT_S:
@@ -878,16 +878,16 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             msb_idx = work_w - 1;
-            src0_lits[msb_idx] = crosstalk_hdl_aig_lit_not_get(src0_lits[msb_idx]);
-            src1_lits[msb_idx] = crosstalk_hdl_aig_lit_not_get(src1_lits[msb_idx]);
-            if (op->kind == CROSSTALK_HDL_IR_OP_LT_S || op->kind == CROSSTALK_HDL_IR_OP_GE_S) { ret = crosstalk_hdl_aig_lt_get(ctx, src0_lits, src1_lits, work_w, &bit_lit); }
-            else { ret = crosstalk_hdl_aig_lt_get(ctx, src1_lits, src0_lits, work_w, &bit_lit); }
+            src0_lits[msb_idx] = crosstalk_hdl_aig_literal_not_get(src0_lits[msb_idx]);
+            src1_lits[msb_idx] = crosstalk_hdl_aig_literal_not_get(src1_lits[msb_idx]);
+            if (op->kind == CROSSTALK_HDL_IR_OP_LT_S || op->kind == CROSSTALK_HDL_IR_OP_GE_S) { ret = crosstalk_hdl_aig_lt_get(ctx, src0_lits, src1_lits, work_w, &bit_literal); }
+            else { ret = crosstalk_hdl_aig_lt_get(ctx, src1_lits, src0_lits, work_w, &bit_literal); }
 
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            if (op->kind == CROSSTALK_HDL_IR_OP_GE_S || op->kind == CROSSTALK_HDL_IR_OP_LE_S) { bit_lit = crosstalk_hdl_aig_lit_not_get(bit_lit); }
+            if (op->kind == CROSSTALK_HDL_IR_OP_GE_S || op->kind == CROSSTALK_HDL_IR_OP_LE_S) { bit_literal = crosstalk_hdl_aig_literal_not_get(bit_literal); }
 
-            res_lits[0] = bit_lit;
+            res_lits[0] = bit_literal;
             break;
         }
         case CROSSTALK_HDL_IR_OP_LAND:
@@ -920,10 +920,10 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src0, src0_w, src0_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_red_or_get(ctx, src0_lits, src0_w, &bit_lit);
+            ret = crosstalk_hdl_aig_red_or_get(ctx, src0_lits, src0_w, &bit_literal);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            res_lits[0] = crosstalk_hdl_aig_lit_not_get(bit_lit);
+            res_lits[0] = crosstalk_hdl_aig_literal_not_get(bit_literal);
             break;
         }
         case CROSSTALK_HDL_IR_OP_RED_AND:
@@ -984,7 +984,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
 
             for (idx = 0; idx < dst_w; idx++)
             {
-                res_lits[idx] = CROSSTALK_HDL_AIG_LIT_FALSE;
+                res_lits[idx] = CROSSTALK_HDL_AIG_LITERAL_FALSE;
                 if (idx < op->width && lo_bit + idx < src0_w) { res_lits[idx] = src0_lits[lo_bit + idx]; }
             }
 
@@ -998,12 +998,12 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, src1_w, src1_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_shr_vec(ctx, src0_lits, src0_w, src1_lits, src1_w, CROSSTALK_HDL_AIG_LIT_FALSE, aux_lits);
+            ret = crosstalk_hdl_aig_shr_vec(ctx, src0_lits, src0_w, src1_lits, src1_w, CROSSTALK_HDL_AIG_LITERAL_FALSE, aux_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             for (idx = 0; idx < dst_w; idx++)
             {
-                res_lits[idx] = CROSSTALK_HDL_AIG_LIT_FALSE;
+                res_lits[idx] = CROSSTALK_HDL_AIG_LITERAL_FALSE;
                 if (idx < op->width && idx < src0_w) { res_lits[idx] = aux_lits[idx]; }
             }
 
@@ -1031,7 +1031,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
         {
             uint32_t mask_lits[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
             uint32_t field_lits[CROSSTALK_HDL_AIG_WIDTH_MAX] = LDG_ARR_ZERO_INIT;
-            uint32_t mix_lit = 0;
+            uint32_t mix_literal = 0;
 
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src0, dst_w, src0_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1042,7 +1042,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src2, src2_w, src2_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            for (idx = 0; idx < dst_w; idx++) { aux_lits[idx] = idx < op->width ? CROSSTALK_HDL_AIG_LIT_TRUE : CROSSTALK_HDL_AIG_LIT_FALSE; }
+            for (idx = 0; idx < dst_w; idx++) { aux_lits[idx] = idx < op->width ? CROSSTALK_HDL_AIG_LITERAL_TRUE : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
 
             ret = crosstalk_hdl_aig_shl_vec(ctx, aux_lits, dst_w, src2_lits, src2_w, mask_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1052,10 +1052,10 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
 
             for (idx = 0; idx < dst_w; idx++)
             {
-                ret = crosstalk_hdl_aig_mux_get(ctx, mask_lits[idx], field_lits[idx], src0_lits[idx], &mix_lit);
+                ret = crosstalk_hdl_aig_mux_get(ctx, mask_lits[idx], field_lits[idx], src0_lits[idx], &mix_literal);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                res_lits[idx] = mix_lit;
+                res_lits[idx] = mix_literal;
             }
 
             break;
@@ -1065,7 +1065,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src0, src0_w, src0_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_red_or_get(ctx, src0_lits, src0_w, &bit_lit);
+            ret = crosstalk_hdl_aig_red_or_get(ctx, src0_lits, src0_w, &bit_literal);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, dst_w, src1_lits);
@@ -1074,7 +1074,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             ret = crosstalk_hdl_aig_vec_rd(ctx, op->src2, dst_w, src2_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_mux_vec(ctx, bit_lit, src1_lits, src2_lits, dst_w, res_lits);
+            ret = crosstalk_hdl_aig_mux_vec(ctx, bit_literal, src1_lits, src2_lits, dst_w, res_lits);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             break;
@@ -1209,12 +1209,12 @@ static uint32_t crosstalk_hdl_aig_comb_place(crosstalk_hdl_aig_ctx_t *ctx)
 
             if (latch_sig == UINT32_MAX) { break; }
 
-            if (ctx->lit_off[latch_sig] != UINT32_MAX) { for (bit_idx = 0; bit_idx < ir_ctx->sigs[latch_sig].width; bit_idx++)
+            if (ctx->literal_off[latch_sig] != UINT32_MAX) { for (bit_idx = 0; bit_idx < ir_ctx->sigs[latch_sig].width; bit_idx++)
                 {
-                    ret = crosstalk_hdl_aig_pi_get(ctx, &ctx->lit_arena[ctx->lit_off[latch_sig] + bit_idx]);
+                    ret = crosstalk_hdl_aig_pi_get(ctx, &ctx->literal_arena[ctx->literal_off[latch_sig] + bit_idx]);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                    ret = crosstalk_hdl_aig_pi_note(ctx, CROSSTALK_HDL_AIG_PI_KIND_LATCH, latch_sig, bit_idx, UINT32_MAX, ctx->lit_arena[ctx->lit_off[latch_sig] + bit_idx]);
+                    ret = crosstalk_hdl_aig_pi_note(ctx, CROSSTALK_HDL_AIG_PI_KIND_LATCH, latch_sig, bit_idx, UINT32_MAX, ctx->literal_arena[ctx->literal_off[latch_sig] + bit_idx]);
                     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
                 }
             }
@@ -1250,9 +1250,9 @@ static uint32_t crosstalk_hdl_aig_comb_place(crosstalk_hdl_aig_ctx_t *ctx)
         uint32_t sig_w = ir_ctx->sigs[idx].width;
         uint32_t bit_idx = 0;
 
-        if (fin_op == UINT32_MAX || ctx->op_placed[fin_op] == LDG_TRUTH_FALSE || ctx->lit_off[idx] == UINT32_MAX) { continue; }
+        if (fin_op == UINT32_MAX || ctx->op_placed[fin_op] == LDG_TRUTH_FALSE || ctx->literal_off[idx] == UINT32_MAX) { continue; }
 
-        for (bit_idx = 0; bit_idx < sig_w; bit_idx++) { ctx->lit_arena[ctx->lit_off[idx] + bit_idx] = ctx->op_out[(uint64_t)fin_op * CROSSTALK_HDL_AIG_WIDTH_MAX + bit_idx]; }
+        for (bit_idx = 0; bit_idx < sig_w; bit_idx++) { ctx->literal_arena[ctx->literal_off[idx] + bit_idx] = ctx->op_out[(uint64_t)fin_op * CROSSTALK_HDL_AIG_WIDTH_MAX + bit_idx]; }
     }
 
     ctx->residue_cunt = ir_ctx->comb_cunt - placed_cunt;
@@ -1263,7 +1263,7 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
 {
     const crosstalk_hdl_ir_sig_t *sig = 0x0;
     const crosstalk_hdl_ir_op_t *op = 0x0;
-    uint64_t lit_total = 0;
+    uint64_t literal_total = 0;
     uint64_t ff_total = 0;
     uint64_t root_total = 0;
     uint32_t mem_op_total = 0;
@@ -1289,7 +1289,7 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
 
     memset(ctx->hash_tbl, CROSSTALK_HDL_AIG_HASH_BYTE_FILL, (uint64_t)ctx->hash_cap * sizeof(uint32_t));
 
-    ret = crosstalk_hdl_aig_arr_alloc(pool, ir_ctx->sig_cunt, sizeof(uint32_t), (void **)&ctx->lit_off);
+    ret = crosstalk_hdl_aig_arr_alloc(pool, ir_ctx->sig_cunt, sizeof(uint32_t), (void **)&ctx->literal_off);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     ret = crosstalk_hdl_aig_arr_alloc(pool, ir_ctx->sig_cunt, sizeof(uint32_t), (void **)&ctx->ff_off);
@@ -1319,7 +1319,7 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
     for (idx = 0; idx < ir_ctx->sig_cunt; idx++)
     {
         sig = &ir_ctx->sigs[idx];
-        ctx->lit_off[idx] = UINT32_MAX;
+        ctx->literal_off[idx] = UINT32_MAX;
         ctx->ff_off[idx] = UINT32_MAX;
         if (sig->kind == CROSSTALK_HDL_IR_SIG_MEM)
         {
@@ -1327,12 +1327,12 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
             continue;
         }
 
-        ctx->lit_off[idx] = (uint32_t)lit_total;
-        lit_total = lit_total + sig->width;
+        ctx->literal_off[idx] = (uint32_t)literal_total;
+        literal_total = literal_total + sig->width;
         if (sig->port != CROSSTALK_HDL_IR_PORT_NONE) { ctx->io_bits = ctx->io_bits + sig->width; }
     }
 
-    ret = crosstalk_hdl_aig_arr_alloc(pool, lit_total, sizeof(uint32_t), (void **)&ctx->lit_arena);
+    ret = crosstalk_hdl_aig_arr_alloc(pool, literal_total, sizeof(uint32_t), (void **)&ctx->literal_arena);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
     for (op_idx = 0; op_idx < ir_ctx->seq_op_cunt; op_idx++)
@@ -1402,23 +1402,23 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
     for (idx = 0; idx < ir_ctx->sig_cunt; idx++)
     {
         sig = &ir_ctx->sigs[idx];
-        if (ctx->lit_off[idx] == UINT32_MAX) { continue; }
+        if (ctx->literal_off[idx] == UINT32_MAX) { continue; }
 
         if (sig->port == CROSSTALK_HDL_IR_PORT_IN || sig->port == CROSSTALK_HDL_IR_PORT_INOUT || ctx->ff_off[idx] != UINT32_MAX)
         {
             for (bit_idx = 0; bit_idx < sig->width; bit_idx++)
             {
-                ret = crosstalk_hdl_aig_pi_get(ctx, &ctx->lit_arena[ctx->lit_off[idx] + bit_idx]);
+                ret = crosstalk_hdl_aig_pi_get(ctx, &ctx->literal_arena[ctx->literal_off[idx] + bit_idx]);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                ret = crosstalk_hdl_aig_pi_note(ctx, ctx->ff_off[idx] != UINT32_MAX ? CROSSTALK_HDL_AIG_PI_KIND_FF : CROSSTALK_HDL_AIG_PI_KIND_IN, idx, bit_idx, UINT32_MAX, ctx->lit_arena[ctx->lit_off[idx] + bit_idx]);
+                ret = crosstalk_hdl_aig_pi_note(ctx, ctx->ff_off[idx] != UINT32_MAX ? CROSSTALK_HDL_AIG_PI_KIND_FF : CROSSTALK_HDL_AIG_PI_KIND_IN, idx, bit_idx, UINT32_MAX, ctx->literal_arena[ctx->literal_off[idx] + bit_idx]);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
             }
 
             continue;
         }
 
-        for (bit_idx = 0; bit_idx < sig->width; bit_idx++) { ctx->lit_arena[ctx->lit_off[idx] + bit_idx] = ((sig->init_val >> bit_idx) & 1) != 0 ? CROSSTALK_HDL_AIG_LIT_TRUE : CROSSTALK_HDL_AIG_LIT_FALSE; }
+        for (bit_idx = 0; bit_idx < sig->width; bit_idx++) { ctx->literal_arena[ctx->literal_off[idx] + bit_idx] = ((sig->init_val >> bit_idx) & 1) != 0 ? CROSSTALK_HDL_AIG_LITERAL_TRUE : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
     }
 
     ctx->comb_mode = LDG_TRUTH_TRUE;
@@ -1444,9 +1444,9 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
         }
 
         sig = &ir_ctx->sigs[idx];
-        if (ctx->lit_off[idx] != UINT32_MAX && (sig->port == CROSSTALK_HDL_IR_PORT_OUT || sig->port == CROSSTALK_HDL_IR_PORT_INOUT))
+        if (ctx->literal_off[idx] != UINT32_MAX && (sig->port == CROSSTALK_HDL_IR_PORT_OUT || sig->port == CROSSTALK_HDL_IR_PORT_INOUT))
         {
-            ret = crosstalk_hdl_aig_root_add(ctx, ctx->lit_arena + ctx->lit_off[idx], sig->width);
+            ret = crosstalk_hdl_aig_root_add(ctx, ctx->literal_arena + ctx->literal_off[idx], sig->width);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
     }

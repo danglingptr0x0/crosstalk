@@ -86,7 +86,7 @@ uint32_t crosstalk_eda_io_receptacle_attach(crosstalk_eda_io_receptacle_ctx_t *c
     ctx->rdy_warned = LDG_TRUTH_FALSE;
     ctx->live = LDG_TRUTH_TRUE;
 
-    ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "receptacle: attached; slot: %u32; data: %.63s; rdy: %.63s; ack: %.63s; mode: %s", slot_idx, data, rdy, ctx->ack_has == LDG_TRUTH_TRUE ? ack : "none", mode == (uint32_t)CROSSTALK_EDA_IO_RECEPTACLE_MODE_SCAN ? "scan" : "raw");
+    ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "receptacle: attached; slot: %u32; data: %.63s; rdy: %.63s; ack: %.63s; mode: %s", slot_idx, data, rdy, ctx->ack_has == LDG_TRUTH_TRUE ? ack : "none", mode == (uint32_t)CROSSTALK_EDA_IO_RECEPTACLE_MODE_SCAN ? "scan" : "raw");
 
     return LDG_ERR_AOK;
 }
@@ -225,7 +225,7 @@ uint32_t crosstalk_eda_io_receptacle_cycle_drive(crosstalk_eda_io_receptacle_ctx
             if (ctx->rdy_warned != LDG_TRUTH_TRUE)
             {
                 ctx->rdy_warned = LDG_TRUTH_TRUE;
-                ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "receptacle: the design has no ready line; writing straight to the data port; data: %.63s; rdy: %.63s", data_pin->port, rdy_pin->port);
+                ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "receptacle: the design has no ready line; writing straight to the data port; data: %.63s; rdy: %.63s", data_pin->port, rdy_pin->port);
             }
 
             abi->poke(data_pin->abi_sig, (uint64_t)ctx->queue[ctx->rd_at]);

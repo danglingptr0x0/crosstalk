@@ -59,7 +59,7 @@ static uint8_t regview_reg_val_get(crosstalk_eda_ui_regview_ctx_t *ctx, uint32_t
     if (ctx->miss_logged != LDG_TRUTH_TRUE)
     {
         ctx->miss_logged = LDG_TRUTH_TRUE;
-        ldg_logging_line_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "regview: register signal unreadable; slot: %u32; path: %.31s; err: %u32", ctx->slot, path, ret);
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "regview: register signal unreadable; slot: %u32; path: %.31s; err: %u32", ctx->slot, path, ret);
     }
 
     return LDG_TRUTH_FALSE;
