@@ -58,5 +58,6 @@ uint32_t crosstalk_re_repl_thread_tick(crosstalk_re_repl_ctx_t *ctx);
 uint32_t crosstalk_re_repl_thread_cmd(crosstalk_re_repl_ctx_t *ctx, uint32_t argc, char **args);
 uint32_t crosstalk_re_repl_thread_ptr_get(const crosstalk_re_repl_ctx_t *ctx, const crosstalk_re_repl_thread_t **out);
 uint32_t crosstalk_re_repl_thread_reg_name_get(uint32_t idx, const char **out);
+uint32_t crosstalk_re_repl_thread_cunt_get(crosstalk_re_repl_ctx_t *ctx, uint64_t *out);
 
 #endif

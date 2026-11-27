@@ -14,6 +14,7 @@
 #define CROSSTALK_GAME_HUB_COL_CUNT 64
 #define CROSSTALK_GAME_HUB_NAME_CAP 64
 #define CROSSTALK_GAME_HUB_STATUS_CAP 32
+#define CROSSTALK_GAME_HUB_ROW_PUDDING_SIZE 5
 
 typedef enum crosstalk_game_hub_src
 {
@@ -38,7 +39,8 @@ typedef enum crosstalk_game_hub_action
     CROSSTALK_GAME_HUB_ACTION_NONE = 0,
     CROSSTALK_GAME_HUB_ACTION_DM,
     CROSSTALK_GAME_HUB_ACTION_INVITE,
-    CROSSTALK_GAME_HUB_ACTION_JOIN
+    CROSSTALK_GAME_HUB_ACTION_JOIN,
+    CROSSTALK_GAME_HUB_ACTION_XOXO
 } crosstalk_game_hub_action_t;
 
 typedef struct crosstalk_game_hub_row
@@ -49,7 +51,8 @@ typedef struct crosstalk_game_hub_row
     char status[CROSSTALK_GAME_HUB_STATUS_CAP];
     uint8_t src;
     uint8_t reach;
-    uint8_t pudding[6];
+    uint8_t xoxo;
+    uint8_t pudding[CROSSTALK_GAME_HUB_ROW_PUDDING_SIZE];
 } crosstalk_game_hub_row_t;
 
 typedef struct crosstalk_game_hub_ctx
@@ -67,6 +70,7 @@ typedef struct crosstalk_game_hub_ctx
     uint8_t sel_on;
     uint8_t pick_src;
     uint8_t pick_on;
+    uint8_t pick_xoxo;
     uint64_t sel_user_id;
 } crosstalk_game_hub_ctx_t;
 
@@ -75,7 +79,7 @@ uint32_t crosstalk_game_hub_open_set(crosstalk_game_hub_ctx_t *ctx, uint8_t open
 uint8_t crosstalk_game_hub_open_is(const crosstalk_game_hub_ctx_t *ctx);
 uint32_t crosstalk_game_hub_reach_col_get(uint8_t reach);
 uint32_t crosstalk_game_hub_rows_rst(crosstalk_game_hub_ctx_t *ctx);
-uint32_t crosstalk_game_hub_row_add(crosstalk_game_hub_ctx_t *ctx, uint64_t user_id, const char *name, const char *status, uint8_t src, uint8_t reach, uint64_t lobby_id);
+uint32_t crosstalk_game_hub_row_add(crosstalk_game_hub_ctx_t *ctx, uint64_t user_id, const char *name, const char *status, uint8_t src, uint8_t reach, uint64_t lobby_id, uint8_t xoxo);
 uint32_t crosstalk_game_hub_rows_sort(crosstalk_game_hub_ctx_t *ctx);
 uint32_t crosstalk_game_hub_extent_get(const crosstalk_game_hub_ctx_t *ctx, uint32_t *out_row_cunt);
 uint32_t crosstalk_game_hub_win_reg(crosstalk_game_hub_ctx_t *ctx, crosstalk_ui_window_ctx_t *win_nav, uint32_t *out_slot);

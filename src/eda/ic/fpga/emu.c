@@ -193,7 +193,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_disk_ld(crosstalk_eda_ic_fpga_emu_ctx_t *ctx,
     return ret;
 }
 
-static void emu_stat_u32_put(uint8_t *at, uint32_t val)
+static void emu_stat_uint32_put(uint8_t *at, uint32_t val)
 {
     at[0] = (uint8_t)(val & (uint32_t)LDG_BYTE_MASK);
     at[1] = (uint8_t)((val >> 8) & (uint32_t)LDG_BYTE_MASK);
@@ -201,20 +201,20 @@ static void emu_stat_u32_put(uint8_t *at, uint32_t val)
     at[3] = (uint8_t)((val >> 24) & (uint32_t)LDG_BYTE_MASK);
 }
 
-static uint32_t emu_stat_u32_get(const uint8_t *at)
+static uint32_t emu_stat_uint32_get(const uint8_t *at)
 {
     return (uint32_t)at[0] | ((uint32_t)at[1] << 8) | ((uint32_t)at[2] << 16) | ((uint32_t)at[3] << 24);
 }
 
-static void emu_stat_u64_put(uint8_t *at, uint64_t val)
+static void emu_stat_uint64_put(uint8_t *at, uint64_t val)
 {
-    emu_stat_u32_put(at, (uint32_t)(val & (uint64_t)UINT32_MAX));
-    emu_stat_u32_put(at + 0x4, (uint32_t)(val >> 32));
+    emu_stat_uint32_put(at, (uint32_t)(val & (uint64_t)UINT32_MAX));
+    emu_stat_uint32_put(at + 0x4, (uint32_t)(val >> 32));
 }
 
-static uint64_t emu_stat_u64_get(const uint8_t *at)
+static uint64_t emu_stat_uint64_get(const uint8_t *at)
 {
-    return (uint64_t)emu_stat_u32_get(at) | ((uint64_t)emu_stat_u32_get(at + 0x4) << 32);
+    return (uint64_t)emu_stat_uint32_get(at) | ((uint64_t)emu_stat_uint32_get(at + 0x4) << 32);
 }
 
 uint32_t crosstalk_eda_ic_fpga_emu_stat_init(crosstalk_eda_ic_fpga_emu_stat_t *stat)
@@ -223,7 +223,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_init(crosstalk_eda_ic_fpga_emu_stat_t *s
 
     memset(stat, 0x0, sizeof(*stat));
 
-    stat->cur = (uint32_t)UINT32_MAX;
+    stat->curr = (uint32_t)UINT32_MAX;
 
     return LDG_ERR_AOK;
 }
@@ -263,10 +263,10 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_step(crosstalk_eda_ic_fpga_emu_stat_t *s
     if (hlt_is == LDG_TRUTH_TRUE) { stat->hlt_ms = stat->hlt_ms + delta; }
     else { stat->run_ms = stat->run_ms + delta; }
 
-    if (stat->cur >= stat->prog_cunt) { return LDG_ERR_AOK; }
+    if (stat->curr >= stat->prog_cunt) { return LDG_ERR_AOK; }
 
-    if (hlt_is == LDG_TRUTH_TRUE) { stat->prog[stat->cur].hlt_ms = stat->prog[stat->cur].hlt_ms + delta; }
-    else { stat->prog[stat->cur].run_ms = stat->prog[stat->cur].run_ms + delta; }
+    if (hlt_is == LDG_TRUTH_TRUE) { stat->prog[stat->curr].hlt_ms = stat->prog[stat->curr].hlt_ms + delta; }
+    else { stat->prog[stat->curr].run_ms = stat->prog[stat->curr].run_ms + delta; }
 
     return LDG_ERR_AOK;
 }
@@ -275,7 +275,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_prog_close(crosstalk_eda_ic_fpga_emu_sta
 {
     if (LDG_UNLIKELY(stat == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    stat->cur = (uint32_t)UINT32_MAX;
+    stat->curr = (uint32_t)UINT32_MAX;
 
     return LDG_ERR_AOK;
 }
@@ -287,7 +287,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_prog_open(crosstalk_eda_ic_fpga_emu_stat
 
     if (LDG_UNLIKELY(stat == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    stat->cur = (uint32_t)UINT32_MAX;
+    stat->curr = (uint32_t)UINT32_MAX;
 
     if (name[0] == LDG_STR_TERM) { return LDG_ERR_FUNC_ARG_INVALID; }
 
@@ -331,7 +331,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_prog_open(crosstalk_eda_ic_fpga_emu_stat
 
     stat->prog[slot].launches++;
     stat->prog[slot].last_epoch_ms = now_ms;
-    stat->cur = slot;
+    stat->curr = slot;
 
     return LDG_ERR_AOK;
 }
@@ -378,28 +378,28 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_serialize(const crosstalk_eda_ic_fpga_em
 
     if (cap < need) { return LDG_ERR_BOUNDS; }
 
-    emu_stat_u32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_MAGIC);
-    emu_stat_u32_put(out + pos + 0x4, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_REV);
-    emu_stat_u32_put(out + pos + 0x8, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_CUNT);
+    emu_stat_uint32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_MAGIC);
+    emu_stat_uint32_put(out + pos + 0x4, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_REV);
+    emu_stat_uint32_put(out + pos + 0x8, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_CUNT);
     pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_HDR_BYTES;
 
-    emu_stat_u32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TOTALS);
-    emu_stat_u32_put(out + pos + 0x4, totals_bytes);
+    emu_stat_uint32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TOTALS);
+    emu_stat_uint32_put(out + pos + 0x4, totals_bytes);
     pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES;
 
-    emu_stat_u64_put(out + pos, stat->run_ms);
-    emu_stat_u64_put(out + pos + 0x8, stat->hlt_ms);
-    emu_stat_u64_put(out + pos + 0x10, stat->sesh_cunt);
-    emu_stat_u64_put(out + pos + 0x18, stat->instr);
-    emu_stat_u64_put(out + pos + 0x20, stat->cycles);
-    emu_stat_u64_put(out + pos + 0x28, stat->first_epoch_ms);
+    emu_stat_uint64_put(out + pos, stat->run_ms);
+    emu_stat_uint64_put(out + pos + 0x8, stat->hlt_ms);
+    emu_stat_uint64_put(out + pos + 0x10, stat->sesh_cunt);
+    emu_stat_uint64_put(out + pos + 0x18, stat->instr);
+    emu_stat_uint64_put(out + pos + 0x20, stat->cycles);
+    emu_stat_uint64_put(out + pos + 0x28, stat->first_epoch_ms);
     pos = pos + totals_bytes;
 
-    emu_stat_u32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_PROGS);
-    emu_stat_u32_put(out + pos + 0x4, progs_bytes);
+    emu_stat_uint32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_PROGS);
+    emu_stat_uint32_put(out + pos + 0x4, progs_bytes);
     pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES;
 
-    emu_stat_u32_put(out + pos, stat->prog_cunt);
+    emu_stat_uint32_put(out + pos, stat->prog_cunt);
     pos = pos + (uint32_t)sizeof(uint32_t);
 
     for (at = 0; at < stat->prog_cunt; at++)
@@ -407,22 +407,22 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_serialize(const crosstalk_eda_ic_fpga_em
         memcpy(out + pos, stat->prog[at].name, (uint64_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_NAME_CAP);
         pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_NAME_CAP;
 
-        emu_stat_u64_put(out + pos, stat->prog[at].run_ms);
-        emu_stat_u64_put(out + pos + 0x8, stat->prog[at].hlt_ms);
-        emu_stat_u64_put(out + pos + 0x10, stat->prog[at].launches);
-        emu_stat_u64_put(out + pos + 0x18, stat->prog[at].last_epoch_ms);
-        emu_stat_u64_put(out + pos + 0x20, stat->prog[at].instr);
+        emu_stat_uint64_put(out + pos, stat->prog[at].run_ms);
+        emu_stat_uint64_put(out + pos + 0x8, stat->prog[at].hlt_ms);
+        emu_stat_uint64_put(out + pos + 0x10, stat->prog[at].launches);
+        emu_stat_uint64_put(out + pos + 0x18, stat->prog[at].last_epoch_ms);
+        emu_stat_uint64_put(out + pos + 0x20, stat->prog[at].instr);
         pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_PROG_WORDS * (uint32_t)sizeof(uint64_t);
     }
 
-    emu_stat_u32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TYPING);
-    emu_stat_u32_put(out + pos + 0x4, typing_bytes);
+    emu_stat_uint32_put(out + pos, (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TYPING);
+    emu_stat_uint32_put(out + pos + 0x4, typing_bytes);
     pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES;
 
-    emu_stat_u64_put(out + pos, stat->chars);
-    emu_stat_u64_put(out + pos + 0x8, stat->keys);
-    emu_stat_u64_put(out + pos + 0x10, stat->backspaces);
-    emu_stat_u64_put(out + pos + 0x18, stat->rate_peak);
+    emu_stat_uint64_put(out + pos, stat->chars);
+    emu_stat_uint64_put(out + pos + 0x8, stat->keys);
+    emu_stat_uint64_put(out + pos + 0x10, stat->backspaces);
+    emu_stat_uint64_put(out + pos + 0x18, stat->rate_peak);
 
     return LDG_ERR_AOK;
 }
@@ -438,11 +438,11 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_deserialize(crosstalk_eda_ic_fpga_emu_st
 
     if (len < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_HDR_BYTES) { return LDG_ERR_BOUNDS; }
 
-    if (emu_stat_u32_get(buff) != (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_MAGIC) { return LDG_ERR_IO_FMT; }
+    if (emu_stat_uint32_get(buff) != (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_MAGIC) { return LDG_ERR_IO_FMT; }
 
-    if (emu_stat_u32_get(buff + 0x4) != (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_REV) { return LDG_ERR_UNSUPPORTED; }
+    if (emu_stat_uint32_get(buff + 0x4) != (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_REV) { return LDG_ERR_UNSUPPORTED; }
 
-    blk_cunt = emu_stat_u32_get(buff + 0x8);
+    blk_cunt = emu_stat_uint32_get(buff + 0x8);
     pos = (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_HDR_BYTES;
 
     if (blk_cunt > (len - pos) / (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES) { return LDG_ERR_IO_FMT; }
@@ -454,31 +454,31 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_deserialize(crosstalk_eda_ic_fpga_emu_st
 
         if (len - pos < (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES) { break; }
 
-        tag = emu_stat_u32_get(buff + pos);
-        span = emu_stat_u32_get(buff + pos + 0x4);
+        tag = emu_stat_uint32_get(buff + pos);
+        span = emu_stat_uint32_get(buff + pos + 0x4);
         pos = pos + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_HDR_BYTES;
 
         if (span > len - pos) { break; }
 
         if (tag == (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TOTALS && span >= (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_TOTALS_WORDS * (uint32_t)sizeof(uint64_t))
         {
-            stat->run_ms = emu_stat_u64_get(buff + pos);
-            stat->hlt_ms = emu_stat_u64_get(buff + pos + 0x8);
-            stat->sesh_cunt = emu_stat_u64_get(buff + pos + 0x10);
-            stat->instr = emu_stat_u64_get(buff + pos + 0x18);
-            stat->cycles = emu_stat_u64_get(buff + pos + 0x20);
-            stat->first_epoch_ms = emu_stat_u64_get(buff + pos + 0x28);
+            stat->run_ms = emu_stat_uint64_get(buff + pos);
+            stat->hlt_ms = emu_stat_uint64_get(buff + pos + 0x8);
+            stat->sesh_cunt = emu_stat_uint64_get(buff + pos + 0x10);
+            stat->instr = emu_stat_uint64_get(buff + pos + 0x18);
+            stat->cycles = emu_stat_uint64_get(buff + pos + 0x20);
+            stat->first_epoch_ms = emu_stat_uint64_get(buff + pos + 0x28);
         }
         else if (tag == (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_TYPING && span >= (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_TYPING_WORDS * (uint32_t)sizeof(uint64_t))
         {
-            stat->chars = emu_stat_u64_get(buff + pos);
-            stat->keys = emu_stat_u64_get(buff + pos + 0x8);
-            stat->backspaces = emu_stat_u64_get(buff + pos + 0x10);
-            stat->rate_peak = emu_stat_u64_get(buff + pos + 0x18);
+            stat->chars = emu_stat_uint64_get(buff + pos);
+            stat->keys = emu_stat_uint64_get(buff + pos + 0x8);
+            stat->backspaces = emu_stat_uint64_get(buff + pos + 0x10);
+            stat->rate_peak = emu_stat_uint64_get(buff + pos + 0x18);
         }
         else if (tag == (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_BLK_PROGS && span >= (uint32_t)sizeof(uint32_t))
         {
-            uint32_t cunt = emu_stat_u32_get(buff + pos);
+            uint32_t cunt = emu_stat_uint32_get(buff + pos);
             uint32_t rec_at = pos + (uint32_t)sizeof(uint32_t);
             uint32_t at = 0;
 
@@ -492,11 +492,11 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_deserialize(crosstalk_eda_ic_fpga_emu_st
                 stat->prog[at].name[(uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_NAME_CAP - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
                 rec_at = rec_at + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_NAME_CAP;
 
-                stat->prog[at].run_ms = emu_stat_u64_get(buff + rec_at);
-                stat->prog[at].hlt_ms = emu_stat_u64_get(buff + rec_at + 0x8);
-                stat->prog[at].launches = emu_stat_u64_get(buff + rec_at + 0x10);
-                stat->prog[at].last_epoch_ms = emu_stat_u64_get(buff + rec_at + 0x18);
-                stat->prog[at].instr = emu_stat_u64_get(buff + rec_at + 0x20);
+                stat->prog[at].run_ms = emu_stat_uint64_get(buff + rec_at);
+                stat->prog[at].hlt_ms = emu_stat_uint64_get(buff + rec_at + 0x8);
+                stat->prog[at].launches = emu_stat_uint64_get(buff + rec_at + 0x10);
+                stat->prog[at].last_epoch_ms = emu_stat_uint64_get(buff + rec_at + 0x18);
+                stat->prog[at].instr = emu_stat_uint64_get(buff + rec_at + 0x20);
                 rec_at = rec_at + (uint32_t)CROSSTALK_EDA_IC_FPGA_EMU_STAT_PROG_WORDS * (uint32_t)sizeof(uint64_t);
 
                 stat->prog_cunt = at + 1;
@@ -506,7 +506,7 @@ uint32_t crosstalk_eda_ic_fpga_emu_stat_deserialize(crosstalk_eda_ic_fpga_emu_st
         pos = pos + span;
     }
 
-    stat->cur = (uint32_t)UINT32_MAX;
+    stat->curr = (uint32_t)UINT32_MAX;
     stat->live_prev = LDG_TRUTH_FALSE;
     stat->step_at_ms = 0;
 

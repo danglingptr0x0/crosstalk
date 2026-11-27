@@ -35,6 +35,7 @@
 #define CROSSTALK_NET_DISCORD_PARTY_ID_CAP 64
 #define CROSSTALK_NET_DISCORD_SECRET_CAP 128
 #define CROSSTALK_NET_DISCORD_ASSET_CAP 64
+#define CROSSTALK_NET_DISCORD_KBD_CAP 64
 #define CROSSTALK_NET_DISCORD_ASSET_URL_CAP 128
 #define CROSSTALK_NET_DISCORD_NAME_CAP 64
 #define CROSSTALK_NET_DISCORD_ERR_CAP 160
@@ -159,6 +160,7 @@ typedef struct crosstalk_net_discord_presence
     char asset_small_url[CROSSTALK_NET_DISCORD_ASSET_URL_CAP];
     char music[CROSSTALK_NET_DISCORD_STATE_CAP];
     char activity[CROSSTALK_NET_DISCORD_STATE_CAP];
+    char kbd[CROSSTALK_NET_DISCORD_KBD_CAP];
     uint32_t party_cunt;
     uint32_t party_cunt_max;
     uint32_t kind;

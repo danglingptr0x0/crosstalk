@@ -567,7 +567,7 @@ static void remote_key_name_put(remote_key_t *key, const char *name)
     if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { key->name[0] = LDG_STR_TERM; }
 }
 
-static uint32_t remote_u64_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t func, uint32_t slot, const remote_key_t *key, uint64_t *out)
+static uint32_t remote_uint64_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t func, uint32_t slot, const remote_key_t *key, uint64_t *out)
 {
     return remote_fetch(ctx, func, slot, key, out, (uint32_t)sizeof(*out), 0x0);
 }
@@ -683,21 +683,21 @@ uint32_t crosstalk_eda_ic_fpga_remote_run_rate_get(const crosstalk_eda_ic_fpga_c
 {
     remote_key_t key = LDG_STRUCT_ZERO_INIT;
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_RUN_RATE_GET, REMOTE_SLOT_NONE, &key, out_hz);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_RUN_RATE_GET, REMOTE_SLOT_NONE, &key, out_hz);
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_run_pin_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint64_t *out)
 {
     remote_key_t key = LDG_STRUCT_ZERO_INIT;
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_RUN_PIN_GET, REMOTE_SLOT_NONE, &key, out);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_RUN_PIN_GET, REMOTE_SLOT_NONE, &key, out);
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_run_cycles_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint64_t *out_cycles)
 {
     remote_key_t key = LDG_STRUCT_ZERO_INIT;
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_RUN_CYCLES_GET, REMOTE_SLOT_NONE, &key, out_cycles);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_RUN_CYCLES_GET, REMOTE_SLOT_NONE, &key, out_cycles);
 }
 
 uint8_t crosstalk_eda_ic_fpga_remote_run_live_is(const crosstalk_eda_ic_fpga_ctx_t *ctx)
@@ -709,7 +709,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_slot_freq_get(const crosstalk_eda_ic_fpga_
 {
     remote_key_t key = LDG_STRUCT_ZERO_INIT;
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_SLOT_FREQ_GET, slot_idx, &key, out);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_SLOT_FREQ_GET, slot_idx, &key, out);
 }
 
 uint8_t crosstalk_eda_ic_fpga_remote_slot_hlt_is(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx)
@@ -744,7 +744,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_cycles_total_get(const crosstalk_eda_ic_fp
 {
     remote_key_t key = LDG_STRUCT_ZERO_INIT;
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_CYCLES_TOTAL_GET, slot_idx, &key, out_cycles);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_CYCLES_TOTAL_GET, slot_idx, &key, out_cycles);
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_verdict_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, crosstalk_eda_ic_fpga_verdict_t *out)
@@ -760,7 +760,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_pin_rd(const crosstalk_eda_ic_fpga_ctx_t *
 
     remote_key_name_put(&key, port);
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_PIN_RD, slot_idx, &key, out_val);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_PIN_RD, slot_idx, &key, out_val);
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_sig_peek(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const char *sig_name, uint64_t *out_val, uint32_t *out_width)
@@ -799,7 +799,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_mem_offset_get(const crosstalk_eda_ic_fpga
 
     remote_key_name_put(&key, sig_name);
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_MEM_OFFSET_GET, slot_idx, &key, out);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_MEM_OFFSET_GET, slot_idx, &key, out);
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_mem_rd(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, const char *sig_name, uint64_t addr, uint64_t *out, uint32_t cunt, uint32_t *out_rd)
@@ -922,7 +922,7 @@ uint32_t crosstalk_eda_ic_fpga_remote_io_rd(const crosstalk_eda_ic_fpga_ctx_t *c
 
     key.arg0 = addr;
 
-    return remote_u64_get(ctx, (uint32_t)REMOTE_FUNC_IO_RD, slot_idx, &key, out);
+    return remote_uint64_get(ctx, (uint32_t)REMOTE_FUNC_IO_RD, slot_idx, &key, out);
 }
 
 uint32_t crosstalk_eda_ic_fpga_remote_io_map_get(const crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, uint32_t idx, uint64_t *out_base, uint64_t *out_span, const char **out_name)

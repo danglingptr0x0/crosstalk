@@ -28,6 +28,7 @@ typedef struct crosstalk_net_presence_desc
     const char *att;
     const char *state;
     const char *music;
+    const char *kbd;
     uint64_t lobby_id;
     uint64_t group_id;
     uint64_t connect_lobby_id;

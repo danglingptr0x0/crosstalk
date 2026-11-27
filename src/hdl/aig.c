@@ -237,9 +237,9 @@ static uint32_t crosstalk_hdl_aig_vec_rd(const crosstalk_hdl_aig_ctx_t *ctx, uin
     src_lits = ctx->literal_arena + ctx->literal_off[sig_idx];
     if (ctx->comb_mode != LDG_TRUTH_FALSE) { for (slot_idx = 0; slot_idx < CROSSTALK_HDL_AIG_RD_SLOT_CUNT; slot_idx++)
         {
-            if (ctx->rd_dep_sig[ctx->cur_op * CROSSTALK_HDL_AIG_RD_SLOT_CUNT + slot_idx] != sig_idx) { continue; }
+            if (ctx->rd_dep_sig[ctx->curr_op * CROSSTALK_HDL_AIG_RD_SLOT_CUNT + slot_idx] != sig_idx) { continue; }
 
-            dep_op = ctx->rd_dep_op[ctx->cur_op * CROSSTALK_HDL_AIG_RD_SLOT_CUNT + slot_idx];
+            dep_op = ctx->rd_dep_op[ctx->curr_op * CROSSTALK_HDL_AIG_RD_SLOT_CUNT + slot_idx];
             if (dep_op != UINT32_MAX) { src_lits = ctx->op_out + (uint64_t)dep_op * CROSSTALK_HDL_AIG_WIDTH_MAX; }
 
             break;
@@ -262,7 +262,7 @@ static uint32_t crosstalk_hdl_aig_vec_wr(crosstalk_hdl_aig_ctx_t *ctx, uint32_t 
     if (sig_idx == UINT32_MAX || ctx->literal_off[sig_idx] == UINT32_MAX) { return LDG_ERR_AOK; }
 
     sig_w = ctx->ir_ctx->sigs[sig_idx].width;
-    dst_lits = ctx->comb_mode != LDG_TRUTH_FALSE ? ctx->op_out + (uint64_t)ctx->cur_op * CROSSTALK_HDL_AIG_WIDTH_MAX : ctx->literal_arena + ctx->literal_off[sig_idx];
+    dst_lits = ctx->comb_mode != LDG_TRUTH_FALSE ? ctx->op_out + (uint64_t)ctx->curr_op * CROSSTALK_HDL_AIG_WIDTH_MAX : ctx->literal_arena + ctx->literal_off[sig_idx];
     for (idx = 0; idx < sig_w; idx++) { dst_lits[idx] = idx < width ? lits[idx] : CROSSTALK_HDL_AIG_LITERAL_FALSE; }
 
     return LDG_ERR_AOK;
@@ -588,7 +588,7 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
-        ctx->op_root_off[ctx->cur_op] = ctx->root_cunt;
+        ctx->op_root_off[ctx->curr_op] = ctx->root_cunt;
         ret = crosstalk_hdl_aig_root_add(ctx, &en_literal, 1);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -627,17 +627,17 @@ static uint32_t crosstalk_hdl_aig_op_proc(crosstalk_hdl_aig_ctx_t *ctx, const cr
         ret = crosstalk_hdl_aig_vec_rd(ctx, op->src1, src1_w, src1_lits);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ctx->op_root_off[ctx->cur_op] = ctx->root_cunt;
+        ctx->op_root_off[ctx->curr_op] = ctx->root_cunt;
         ret = crosstalk_hdl_aig_root_add(ctx, src1_lits, src1_w);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        ctx->op_pi_base[ctx->cur_op] = ctx->pi_cunt;
+        ctx->op_pi_base[ctx->curr_op] = ctx->pi_cunt;
         for (idx = 0; idx < dst_w; idx++)
         {
             ret = crosstalk_hdl_aig_pi_get(ctx, &res_lits[idx]);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_hdl_aig_pi_note(ctx, CROSSTALK_HDL_AIG_PI_KIND_MEM_RD, op->dst, idx, ctx->cur_op, res_lits[idx]);
+            ret = crosstalk_hdl_aig_pi_note(ctx, CROSSTALK_HDL_AIG_PI_KIND_MEM_RD, op->dst, idx, ctx->curr_op, res_lits[idx]);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
@@ -1174,7 +1174,7 @@ static uint32_t crosstalk_hdl_aig_comb_place(crosstalk_hdl_aig_ctx_t *ctx)
 
             if (ready == 0) { continue; }
 
-            ctx->cur_op = op_idx;
+            ctx->curr_op = op_idx;
             ret = crosstalk_hdl_aig_op_proc(ctx, op);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
@@ -1428,7 +1428,7 @@ uint32_t crosstalk_hdl_aig_build(crosstalk_hdl_aig_ctx_t *ctx, const crosstalk_h
 
     for (blk_idx = 0; blk_idx < ir_ctx->seq_blk_cunt; blk_idx++) { for (op_idx = 0; op_idx < ir_ctx->seq_blks[blk_idx].op_cunt; op_idx++)
         {
-            ctx->cur_op = ir_ctx->comb_cunt + ir_ctx->seq_blks[blk_idx].op_start + op_idx;
+            ctx->curr_op = ir_ctx->comb_cunt + ir_ctx->seq_blks[blk_idx].op_start + op_idx;
             ret = crosstalk_hdl_aig_op_proc(ctx, &ir_ctx->seq_ops[ir_ctx->seq_blks[blk_idx].op_start + op_idx]);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }

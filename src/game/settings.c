@@ -9,32 +9,26 @@
 #include <dangling/core/err.h>
 #include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
+#include <dangling/str/str.h>
 
 #define SETTINGS_DOUBLE_CUNT 40
 #define SETTINGS_UINT32_CUNT 8
 #define SETTINGS_TOGGLE_CUNT 22
 #define SETTINGS_KEYBIND_CUNT CROSSTALK_GAME_KEYBIND_CUNT
-#define SETTINGS_BLOB_LEN_V7 (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT)
-#define SETTINGS_BLOB_LEN (SETTINGS_BLOB_LEN_V7 + SETTINGS_KEYBIND_CUNT * 4)
+#define SETTINGS_WHITELIST_LEN (CROSSTALK_GAME_SETTINGS_WHITELIST_CAP * CROSSTALK_GAME_SETTINGS_WHITELIST_NAME_CAP)
+#define SETTINGS_DISCORD_ASK_LEN 1
+#define SETTINGS_XOXO_ID_LEN (CROSSTALK_GAME_SETTINGS_XOXO_CAP * 8)
+#define SETTINGS_XOXO_SRC_LEN CROSSTALK_GAME_SETTINGS_XOXO_CAP
+#define SETTINGS_BLOB_LEN (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT + SETTINGS_KEYBIND_CUNT * 4 + SETTINGS_WHITELIST_LEN + SETTINGS_DISCORD_ASK_LEN + SETTINGS_XOXO_ID_LEN + SETTINGS_XOXO_SRC_LEN)
 #define SETTINGS_KEYBIND_CTRL_FIRST 0x01U
 #define SETTINGS_KEYBIND_CTRL_LAST 0x1AU
 #define SETTINGS_KEYBIND_CTRL_BASE 'a'
-#define SETTINGS_KEYBIND_UPPER_FIRST 'A'
-#define SETTINGS_KEYBIND_UPPER_LAST 'Z'
-#define SETTINGS_KEYBIND_LOWER_FIRST 'a'
-#define SETTINGS_KEYBIND_LOWER_LAST 'z'
-#define SETTINGS_KEYBIND_CASE_GAP 0x20U
-#define SETTINGS_KEYBIND_PRINT_FIRST 0x20U
-#define SETTINGS_KEYBIND_PRINT_LAST 0x7EU
-#define SETTINGS_KEYBIND_SPACE ' '
 #define SETTINGS_KEYBIND_SHIFTED "~!@#$%^&*()_+{}|:\"<>?"
 #define SETTINGS_KEYBIND_UNSHIFTED "`1234567890-=[]\\;',./"
 #define SETTINGS_KEYBIND_SET_NONE 0x0U
 #define SETTINGS_KEYBIND_SET_ARROWS 0x1U
 #define SETTINGS_KEYBIND_SET_DIGITS 0x2U
 #define SETTINGS_KEYBIND_SET_HJKL 0x4U
-#define SETTINGS_KEYBIND_DIGIT_FIRST '0'
-#define SETTINGS_KEYBIND_DIGIT_LAST '9'
 #define SETTINGS_KEYBIND_LHS_CODE 'h'
 #define SETTINGS_KEYBIND_DOWN_CODE 'j'
 #define SETTINGS_KEYBIND_UP_CODE 'k'
@@ -49,19 +43,6 @@
 #define SETTINGS_KEYBIND_OPEN_CODE 'o'
 #define SETTINGS_KEYBIND_FKEY_FIRST_NUM 1U
 #define SETTINGS_KEYBIND_KEY_TEXT_CAP 16
-#define SETTINGS_DOUBLE_CUNT_V1 38
-#define SETTINGS_TOGGLE_CUNT_V1 11
-#define SETTINGS_BLOB_LEN_V1 (SETTINGS_DOUBLE_CUNT_V1 * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT_V1)
-#define SETTINGS_TOGGLE_CUNT_V2 16
-#define SETTINGS_BLOB_LEN_V2 (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT_V2)
-#define SETTINGS_TOGGLE_CUNT_V3 18
-#define SETTINGS_BLOB_LEN_V3 (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT_V3)
-#define SETTINGS_TOGGLE_CUNT_V4 19
-#define SETTINGS_BLOB_LEN_V4 (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT_V4)
-#define SETTINGS_TOGGLE_CUNT_V5 20
-#define SETTINGS_BLOB_LEN_V5 (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT_V5)
-#define SETTINGS_TOGGLE_CUNT_V6 21
-#define SETTINGS_BLOB_LEN_V6 (SETTINGS_DOUBLE_CUNT * 8 + SETTINGS_UINT32_CUNT * 4 + SETTINGS_TOGGLE_CUNT_V6)
 #define SETTINGS_QUANT_SCALE 10000.0
 #define LAST_STATE_DOUBLE_CUNT 20
 #define LAST_STATE_BLOB_LEN (LAST_STATE_DOUBLE_CUNT * 8)
@@ -164,6 +145,11 @@ uint32_t crosstalk_game_settings_serialize(const crosstalk_game_settings_t *sett
 
     for (idx = 0; idx < SETTINGS_KEYBIND_CUNT; idx++) { buff_wr(out, &offset, &settings->keybind[idx], 4); }
 
+    buff_wr(out, &offset, settings->music_whitelist, (uint32_t)SETTINGS_WHITELIST_LEN);
+    buff_wr(out, &offset, &settings->discord_ask_done, (uint32_t)SETTINGS_DISCORD_ASK_LEN);
+    buff_wr(out, &offset, settings->xoxo_id, (uint32_t)SETTINGS_XOXO_ID_LEN);
+    buff_wr(out, &offset, settings->xoxo_src, (uint32_t)SETTINGS_XOXO_SRC_LEN);
+
     return LDG_ERR_AOK;
 }
 
@@ -171,92 +157,8 @@ uint32_t crosstalk_game_settings_deserialize(crosstalk_game_settings_t *settings
 {
     uint32_t offset = 0;
     uint32_t idx = 0;
-    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(settings == 0x0 || buff == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
-
-    if (len != SETTINGS_BLOB_LEN)
-    {
-        ret = crosstalk_game_settings_keybind_default_fill(settings->keybind, (uint32_t)SETTINGS_KEYBIND_CUNT);
-        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V1)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT_V1; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V1; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V2)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V2; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V3)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V3; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V4)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V4; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V5)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V5; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V6)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT_V6; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
-
-    if (len == SETTINGS_BLOB_LEN_V7)
-    {
-        for (idx = 0; idx < SETTINGS_DOUBLE_CUNT; idx++) { buff_rd(buff, &offset, settings_double_at_wr_get(settings, idx), 8); }
-
-        for (idx = 0; idx < SETTINGS_UINT32_CUNT; idx++) { buff_rd(buff, &offset, settings_uint32_at_wr_get(settings, idx), 4); }
-
-        for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
-
-        return LDG_ERR_AOK;
-    }
 
     if (len != SETTINGS_BLOB_LEN) { return LDG_ERR_IO_FMT; }
 
@@ -267,6 +169,15 @@ uint32_t crosstalk_game_settings_deserialize(crosstalk_game_settings_t *settings
     for (idx = 0; idx < SETTINGS_TOGGLE_CUNT; idx++) { buff_rd(buff, &offset, settings_toggle_at_wr_get(settings, idx), 1); }
 
     for (idx = 0; idx < SETTINGS_KEYBIND_CUNT; idx++) { buff_rd(buff, &offset, &settings->keybind[idx], 4); }
+
+    buff_rd(buff, &offset, settings->music_whitelist, (uint32_t)SETTINGS_WHITELIST_LEN);
+    buff_rd(buff, &offset, &settings->discord_ask_done, (uint32_t)SETTINGS_DISCORD_ASK_LEN);
+    buff_rd(buff, &offset, settings->xoxo_id, (uint32_t)SETTINGS_XOXO_ID_LEN);
+    buff_rd(buff, &offset, settings->xoxo_src, (uint32_t)SETTINGS_XOXO_SRC_LEN);
+
+    if (settings->discord_ask_done != LDG_TRUTH_FALSE) { settings->discord_ask_done = LDG_TRUTH_TRUE; }
+
+    for (idx = 0; idx < (uint32_t)CROSSTALK_GAME_SETTINGS_WHITELIST_CAP; idx++) { settings->music_whitelist[idx][CROSSTALK_GAME_SETTINGS_WHITELIST_NAME_CAP - LDG_STR_TERM_SIZE] = LDG_STR_TERM; }
 
     return LDG_ERR_AOK;
 }
@@ -328,7 +239,7 @@ static uint8_t settings_keybind_in_set_is(uint32_t set, uint32_t chord)
         return LDG_TRUTH_FALSE;
     }
 
-    if ((set & (uint32_t)SETTINGS_KEYBIND_SET_DIGITS) != 0 && code >= (uint32_t)SETTINGS_KEYBIND_DIGIT_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_DIGIT_LAST) { return LDG_TRUTH_TRUE; }
+    if ((set & (uint32_t)SETTINGS_KEYBIND_SET_DIGITS) != 0 && code <= (uint32_t)LDG_ASCII_MAX && ldg_char_digit_is((uint8_t)code) == LDG_TRUTH_TRUE) { return LDG_TRUTH_TRUE; }
 
     if ((set & (uint32_t)SETTINGS_KEYBIND_SET_HJKL) != 0 && (code == (uint32_t)SETTINGS_KEYBIND_LHS_CODE || code == (uint32_t)SETTINGS_KEYBIND_DOWN_CODE || code == (uint32_t)SETTINGS_KEYBIND_UP_CODE || code == (uint32_t)SETTINGS_KEYBIND_RHS_CODE)) { return LDG_TRUTH_TRUE; }
 
@@ -452,9 +363,9 @@ uint32_t crosstalk_game_settings_keybind_chord_get(const ldg_term_key_event_t *i
         mods = mods | (uint32_t)CROSSTALK_GAME_KEYBIND_CTRL;
     }
 
-    if (cp >= (uint32_t)SETTINGS_KEYBIND_UPPER_FIRST && cp <= (uint32_t)SETTINGS_KEYBIND_UPPER_LAST)
+    if (cp <= (uint32_t)LDG_ASCII_MAX && ldg_char_upper_is((uint8_t)cp) == LDG_TRUTH_TRUE)
     {
-        cp = cp + (uint32_t)SETTINGS_KEYBIND_CASE_GAP;
+        cp = (uint32_t)(uint8_t)ldg_char_lower_get((char)cp);
         mods = mods | (uint32_t)CROSSTALK_GAME_KEYBIND_SHIFT;
     }
 
@@ -467,7 +378,7 @@ uint32_t crosstalk_game_settings_keybind_chord_get(const ldg_term_key_event_t *i
         break;
     }
 
-    if (cp < (uint32_t)SETTINGS_KEYBIND_PRINT_FIRST || cp > (uint32_t)SETTINGS_KEYBIND_PRINT_LAST) { return LDG_ERR_AOK; }
+    if (cp > (uint32_t)LDG_ASCII_MAX || ldg_char_printable_is((uint8_t)cp) != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     *out = mods | cp;
 
@@ -615,7 +526,7 @@ static uint32_t settings_keybind_shifted_get(uint32_t code)
     const char *unshifted = SETTINGS_KEYBIND_UNSHIFTED;
     uint32_t at = 0;
 
-    if (code >= (uint32_t)SETTINGS_KEYBIND_LOWER_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_LOWER_LAST) { return code - (uint32_t)SETTINGS_KEYBIND_CASE_GAP; }
+    if (code <= (uint32_t)LDG_ASCII_MAX && ldg_char_lower_is((uint8_t)code) == LDG_TRUTH_TRUE) { return (uint32_t)(uint8_t)ldg_char_upper_get((char)code); }
 
     for (at = 0; unshifted[at] != LDG_STR_TERM; at++) { if (code == (uint32_t)(uint8_t)unshifted[at]) { return (uint32_t)(uint8_t)shifted[at]; } }
 
@@ -624,7 +535,7 @@ static uint32_t settings_keybind_shifted_get(uint32_t code)
 
 static uint32_t settings_keybind_upper_get(uint32_t code)
 {
-    if (code >= (uint32_t)SETTINGS_KEYBIND_LOWER_FIRST && code <= (uint32_t)SETTINGS_KEYBIND_LOWER_LAST) { return code - (uint32_t)SETTINGS_KEYBIND_CASE_GAP; }
+    if (code <= (uint32_t)LDG_ASCII_MAX && ldg_char_lower_is((uint8_t)code) == LDG_TRUTH_TRUE) { return (uint32_t)(uint8_t)ldg_char_upper_get((char)code); }
 
     return code;
 }
@@ -659,7 +570,7 @@ uint32_t crosstalk_game_settings_keybind_vim_fmt(uint32_t action, uint32_t chord
 
         if (name == 0x0) { name = "?"; }
     }
-    else if (code == (uint32_t)SETTINGS_KEYBIND_SPACE) { name = "Space"; }
+    else if (code == (uint32_t)LDG_ASCII_SPACE) { name = "Space"; }
     else
     {
         key[0] = (char)code;
@@ -711,7 +622,7 @@ uint32_t crosstalk_game_settings_keybind_unix_fmt(uint32_t action, uint32_t chor
 
         if (name == 0x0) { name = "?"; }
     }
-    else if (code == (uint32_t)SETTINGS_KEYBIND_SPACE) { name = "Space"; }
+    else if (code == (uint32_t)LDG_ASCII_SPACE) { name = "Space"; }
     else if (ctrl_on == LDG_TRUTH_TRUE)
     {
         key[0] = (char)settings_keybind_upper_get(code);

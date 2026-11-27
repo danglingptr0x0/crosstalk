@@ -131,7 +131,7 @@ static void systask_fill_put(crosstalk_hdl_systask_ctx_t *ctx, char ch, uint32_t
 
 static uint32_t systask_digits_make(uint64_t lo, uint64_t hi, uint32_t radix, char *out, uint32_t *out_len)
 {
-    ldg_uint128_t cur = LDG_STRUCT_ZERO_INIT;
+    ldg_uint128_t curr = LDG_STRUCT_ZERO_INIT;
     ldg_uint128_t base = LDG_STRUCT_ZERO_INIT;
     ldg_uint128_t quot = LDG_STRUCT_ZERO_INIT;
     ldg_uint128_t rem = LDG_STRUCT_ZERO_INIT;
@@ -140,30 +140,30 @@ static uint32_t systask_digits_make(uint64_t lo, uint64_t hi, uint32_t radix, ch
 
     *out_len = 0;
 
-    cur.limb[SYSTASK_LIMB_LO] = lo;
-    cur.limb[SYSTASK_LIMB_HI] = hi;
+    curr.limb[SYSTASK_LIMB_LO] = lo;
+    curr.limb[SYSTASK_LIMB_HI] = hi;
     base.limb[SYSTASK_LIMB_LO] = (uint64_t)radix;
 
     do
     {
         if (len >= (uint32_t)SYSTASK_DIGIT_CAP) { return LDG_ERR_FULL; }
 
-        if (cur.limb[SYSTASK_LIMB_HI] == 0)
+        if (curr.limb[SYSTASK_LIMB_HI] == 0)
         {
-            out[len] = SYSTASK_DIGITS[cur.limb[SYSTASK_LIMB_LO] % (uint64_t)radix];
-            cur.limb[SYSTASK_LIMB_LO] = cur.limb[SYSTASK_LIMB_LO] / (uint64_t)radix;
+            out[len] = SYSTASK_DIGITS[curr.limb[SYSTASK_LIMB_LO] % (uint64_t)radix];
+            curr.limb[SYSTASK_LIMB_LO] = curr.limb[SYSTASK_LIMB_LO] / (uint64_t)radix;
         }
         else
         {
-            ret = ldg_arith_uint128_div_compute(&cur, &base, &quot, &rem);
+            ret = ldg_arith_uint128_div_compute(&curr, &base, &quot, &rem);
             if (ret != LDG_ERR_AOK) { return ret; }
 
             out[len] = SYSTASK_DIGITS[rem.limb[SYSTASK_LIMB_LO]];
-            cur = quot;
+            curr = quot;
         }
 
         len++;
-    } while (cur.limb[SYSTASK_LIMB_LO] != 0 || cur.limb[SYSTASK_LIMB_HI] != 0);
+    } while (curr.limb[SYSTASK_LIMB_LO] != 0 || curr.limb[SYSTASK_LIMB_HI] != 0);
 
     *out_len = len;
 

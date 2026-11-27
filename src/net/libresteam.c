@@ -137,14 +137,14 @@ static void net_libresteam_notice_tick(crosstalk_net_libresteam_ctx_t *ctx, doub
     }
 }
 
-static uint32_t net_libresteam_u32_rd(const uint8_t *at)
+static uint32_t net_libresteam_uint32_rd(const uint8_t *at)
 {
     return (uint32_t)at[0] | ((uint32_t)at[1] << (uint32_t)LDG_BYTE_BITS) | ((uint32_t)at[2] << (uint32_t)LDG_BYTE_SHIFT_2) | ((uint32_t)at[3] << (uint32_t)LDG_BYTE_SHIFT_3);
 }
 
-static uint64_t net_libresteam_u64_rd(const uint8_t *at)
+static uint64_t net_libresteam_uint64_rd(const uint8_t *at)
 {
-    return (uint64_t)net_libresteam_u32_rd(at) | ((uint64_t)net_libresteam_u32_rd(at + (uint64_t)LDG_WORD_BYTES) << (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES));
+    return (uint64_t)net_libresteam_uint32_rd(at) | ((uint64_t)net_libresteam_uint32_rd(at + (uint64_t)LDG_WORD_BYTES) << (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES));
 }
 
 static libresteam_steam_id_t net_libresteam_id_make(uint64_t raw)
@@ -336,8 +336,8 @@ static void net_libresteam_cb_msg(void *content, uint32_t user, uint32_t cb_id, 
 
     if (cb_id == NET_LIBRESTEAM_CB_JOIN_LOBBY_REQ && param_size >= NET_LIBRESTEAM_OFF_SECOND_ID + (uint32_t)sizeof(uint64_t))
     {
-        ctx->join_lobby_id = net_libresteam_u64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
-        ctx->join_friend_id = net_libresteam_u64_rd(param + NET_LIBRESTEAM_OFF_SECOND_ID);
+        ctx->join_lobby_id = net_libresteam_uint64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
+        ctx->join_friend_id = net_libresteam_uint64_rd(param + NET_LIBRESTEAM_OFF_SECOND_ID);
         ctx->join_pending = LDG_TRUTH_TRUE;
     }
     else if (cb_id == NET_LIBRESTEAM_CB_JOIN_CONNECT_REQ && param_size > NET_LIBRESTEAM_OFF_SECOND_ID)
@@ -346,7 +346,7 @@ static void net_libresteam_cb_msg(void *content, uint32_t user, uint32_t cb_id, 
         if (copy_len > (uint32_t)(sizeof(connect) - LDG_STR_TERM_SIZE)) { copy_len = (uint32_t)(sizeof(connect) - LDG_STR_TERM_SIZE); }
 
         memcpy(connect, param + NET_LIBRESTEAM_OFF_SECOND_ID, copy_len);
-        net_libresteam_join_connect_parse(ctx, net_libresteam_u64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD), connect);
+        net_libresteam_join_connect_parse(ctx, net_libresteam_uint64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD), connect);
     }
     else if (cb_id == NET_LIBRESTEAM_CB_FRIEND_CHAT_MSG && param_size >= NET_LIBRESTEAM_OFF_SECOND_ID + (uint32_t)sizeof(uint32_t))
     {
@@ -357,13 +357,13 @@ static void net_libresteam_cb_msg(void *content, uint32_t user, uint32_t cb_id, 
         }
 
         slot = (ctx->friend_msg_hd + ctx->friend_msg_cunt) % CROSSTALK_NET_FRIEND_MSG_RING;
-        ctx->friend_msg_ring[slot].steam_id = net_libresteam_u64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
-        ctx->friend_msg_ring[slot].msg_id = net_libresteam_u32_rd(param + NET_LIBRESTEAM_OFF_SECOND_ID);
+        ctx->friend_msg_ring[slot].steam_id = net_libresteam_uint64_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
+        ctx->friend_msg_ring[slot].msg_id = net_libresteam_uint32_rd(param + NET_LIBRESTEAM_OFF_SECOND_ID);
         ctx->friend_msg_cunt++;
     }
     else if (cb_id == NET_LIBRESTEAM_CB_CONN_STATUS && param_size >= (uint32_t)sizeof(uint32_t))
     {
-        conn = net_libresteam_u32_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
+        conn = net_libresteam_uint32_rd(param + NET_LIBRESTEAM_OFF_FIRST_FIELD);
 
         if (libresteam_net_socks_conn_info_get(ctx->set, conn, &info) != LDG_ERR_AOK) { return; }
 
@@ -525,7 +525,7 @@ static void net_libresteam_friend_detail_fill(const crosstalk_net_libresteam_ctx
         return;
     }
 
-    if (strcmp(display, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB) == 0 || strcmp(display, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_SOLO) == 0)
+    if (strcmp(display, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB) == 0 || strcmp(display, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_SOLO) == 0 || strcmp(display, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_KBD) == 0 || strcmp(display, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_SOLO_KBD) == 0)
     {
         if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.47s", CROSSTALK_NET_FRIEND_DETAIL_SANDBOX) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; }
 
@@ -783,12 +783,12 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
 
         lobby_off = ldg_io_path_sep_get() == NET_LIBRESTEAM_WIN_SEP ? NET_LIBRESTEAM_OFF_CREATED_LOBBY_PACK8 : NET_LIBRESTEAM_OFF_CREATED_LOBBY_PACK4;
 
-        if (ret == LDG_ERR_AOK && net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD) == NET_LIBRESTEAM_ERES_OK) { net_libresteam_lobby_entered(ctx, net_libresteam_u64_rd(res + lobby_off), LDG_TRUTH_TRUE); }
+        if (ret == LDG_ERR_AOK && net_libresteam_uint32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD) == NET_LIBRESTEAM_ERES_OK) { net_libresteam_lobby_entered(ctx, net_libresteam_uint64_rd(res + lobby_off), LDG_TRUTH_TRUE); }
         else
         {
             ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
 
-            if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby create refused; steam res: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD)); }
+            if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby create refused; steam res: %u32", net_libresteam_uint32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD)); }
         }
     }
     else if (ctx->lobby_pending == CROSSTALK_NET_LOBBY_PENDING_JOIN)
@@ -796,12 +796,12 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
         ret = net_libresteam_call_res_get(ctx, NET_LIBRESTEAM_CB_LOBBY_ENTER, res, &done);
         if (ret == LDG_ERR_AOK && done != LDG_TRUTH_TRUE) { return; }
 
-        if (ret == LDG_ERR_AOK && net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP) == NET_LIBRESTEAM_LOBBY_ENTER_OK) { net_libresteam_lobby_entered(ctx, net_libresteam_u64_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD), LDG_TRUTH_FALSE); }
+        if (ret == LDG_ERR_AOK && net_libresteam_uint32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP) == NET_LIBRESTEAM_LOBBY_ENTER_OK) { net_libresteam_lobby_entered(ctx, net_libresteam_uint64_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD), LDG_TRUTH_FALSE); }
         else
         {
             ctx->lobby_state = (uint32_t)CROSSTALK_NET_LIBRESTEAM_LOBBY_STATE_NONE;
 
-            if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby join refused; enter resp: %u32", net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP)); }
+            if (ret == LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "libresteam: lobby join refused; enter resp: %u32", net_libresteam_uint32_rd(res + NET_LIBRESTEAM_OFF_LOBBY_ENTER_RESP)); }
         }
     }
     else if (ctx->lobby_pending == CROSSTALK_NET_LOBBY_PENDING_LIST)
@@ -811,7 +811,7 @@ static void net_libresteam_lobby_pending_poll(crosstalk_net_libresteam_ctx_t *ct
 
         if (ret == LDG_ERR_AOK)
         {
-            uint32_t match_cunt = net_libresteam_u32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD);
+            uint32_t match_cunt = net_libresteam_uint32_rd(res + NET_LIBRESTEAM_OFF_FIRST_FIELD);
 
             if (match_cunt > (uint32_t)CROSSTALK_NET_LOBBY_LIST_MAX) { match_cunt = (uint32_t)CROSSTALK_NET_LOBBY_LIST_MAX; }
 
@@ -1514,7 +1514,7 @@ static void net_libresteam_presence_lines_set(const libresteam_backend_set_t *se
     net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, display);
 }
 
-static void net_libresteam_presence_players_set(const libresteam_backend_set_t *set, uint32_t players, uint32_t players_max, uint8_t in_lobby)
+static void net_libresteam_presence_players_set(const libresteam_backend_set_t *set, uint32_t players, uint32_t players_max, uint8_t in_lobby, uint8_t kbd_on)
 {
     uint64_t fmt_len = 0;
     char players_str[CROSSTALK_NET_LIBRESTEAM_PRESENCE_NUM_CAP] = LDG_ARR_ZERO_INIT;
@@ -1522,7 +1522,7 @@ static void net_libresteam_presence_players_set(const libresteam_backend_set_t *
 
     if (in_lobby == LDG_TRUTH_FALSE && players <= CROSSTALK_NET_LIBRESTEAM_PRESENCE_PLAYERS_SOLO)
     {
-        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_SOLO);
+        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, kbd_on == LDG_TRUTH_TRUE ? CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_SOLO_KBD : CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_SOLO);
         return;
     }
 
@@ -1532,7 +1532,7 @@ static void net_libresteam_presence_players_set(const libresteam_backend_set_t *
 
     if (in_lobby == LDG_TRUTH_FALSE)
     {
-        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB);
+        net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, kbd_on == LDG_TRUTH_TRUE ? CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_KBD : CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB);
         return;
     }
 
@@ -1591,8 +1591,13 @@ uint32_t crosstalk_net_libresteam_presence_push(void *backend_ctx, const crossta
     const libresteam_backend_set_t *set = (const libresteam_backend_set_t *)backend_ctx;
     uint8_t in_lobby = LDG_TRUTH_FALSE;
     uint8_t lines_on = LDG_TRUTH_FALSE;
+    uint8_t kbd_on = LDG_TRUTH_FALSE;
 
     if (LDG_UNLIKELY(set == 0x0 || desc == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    kbd_on = (desc->kbd != 0x0 && desc->kbd[0] != LDG_STR_TERM) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_KBD, kbd_on == LDG_TRUTH_TRUE ? desc->kbd : CROSSTALK_NET_LIBRESTEAM_PRESENCE_VAL_CLEAR);
 
     if (desc->transponder_off == LDG_TRUTH_TRUE)
     {
@@ -1616,8 +1621,9 @@ uint32_t crosstalk_net_libresteam_presence_push(void *backend_ctx, const crossta
         case CROSSTALK_NET_PRESENCE_SCREEN_SANDBOX:
         case CROSSTALK_NET_PRESENCE_SCREEN_LOBBY:
             if (lines_on == LDG_TRUTH_TRUE) { net_libresteam_presence_lines_set(set, desc->op, desc->att, in_lobby); }
-            else if (desc->paused == LDG_TRUTH_TRUE) { net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, in_lobby == LDG_TRUTH_TRUE ? CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_LOBBY_PAUSED : CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_PAUSED); }
-            else { net_libresteam_presence_players_set(set, desc->members, desc->members_max, in_lobby); }
+            else if (desc->paused == LDG_TRUTH_TRUE && in_lobby == LDG_TRUTH_TRUE) { net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_LOBBY_PAUSED); }
+            else if (desc->paused == LDG_TRUTH_TRUE) { net_libresteam_presence_kv_set(set, CROSSTALK_NET_LIBRESTEAM_PRESENCE_KEY_DISPLAY, kbd_on == LDG_TRUTH_TRUE ? CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_PAUSED_KBD : CROSSTALK_NET_LIBRESTEAM_PRESENCE_DISPLAY_KB_PAUSED); }
+            else { net_libresteam_presence_players_set(set, desc->members, desc->members_max, in_lobby, kbd_on); }
 
             break;
         case CROSSTALK_NET_PRESENCE_SCREEN_LD:

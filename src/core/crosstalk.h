@@ -25,6 +25,8 @@
 #include <dangling/term/input.h>
 #include <dangling/term/sesh.h>
 #include <dangling/logging/logging.h>
+#include <dangling/sys/info.h>
+#include <dangling/sys/mod.h>
 
 #include <libresteam/apps/apps.h>
 #include <libresteam/backend/backend.h>
@@ -46,6 +48,9 @@
 #include "re/re.h"
 #include "re/repl/repl.h"
 #include "re/repl/sesh.h"
+#include "re/repl/native.h"
+#include "re/repl/scan.h"
+#include "re/repl/thread.h"
 #include "reng/reng.h"
 #include "reng/progress.h"
 #include "reng/tasks.h"
@@ -362,6 +367,35 @@
 #define CROSSTALK_CORE_JOIN_ASK_LINE_CUNT 3
 #define CROSSTALK_CORE_JOIN_ASK_LINE_NAME 0
 #define CROSSTALK_CORE_JOIN_ASK_LINE_KEYS 2
+#define CROSSTALK_CORE_DISCORD_ASK_TITLE "Discord"
+#define CROSSTALK_CORE_DISCORD_ASK_INTRO_TEXT "Crosstalk supports connecting to Discord."
+#define CROSSTALK_CORE_DISCORD_ASK_GAIN_TEXT "This brings chat and notifs inside the TUI."
+#define CROSSTALK_CORE_DISCORD_ASK_KEYS_TEXT "Connect now? Y/N"
+#define CROSSTALK_CORE_DISCORD_ASK_LINE_CUNT 3
+#define CROSSTALK_CORE_DISCORD_ASK_LINE_INTRO 0
+#define CROSSTALK_CORE_DISCORD_ASK_LINE_GAIN 1
+#define CROSSTALK_CORE_DISCORD_ASK_LINE_KEYS 2
+#define CROSSTALK_CORE_DISCORD_ASK_PROC_CAP 4096
+#define CROSSTALK_CORE_DISCORD_PROC_PATTERN "Discord"
+#define CROSSTALK_CORE_DISCORD_PROC_PATTERN_LOWER "discord"
+#define CROSSTALK_CORE_DISCORD_PUDDING_SIZE 4
+#define CROSSTALK_CORE_KBD_NAME_CAP 64
+#define CROSSTALK_CORE_KBD_LIST_CAP 8
+#define CROSSTALK_CORE_KBD_PERIOD 10000
+#define CROSSTALK_CORE_KBD_SKIP_TEXT "Receiver"
+#define CROSSTALK_CORE_XOXO_PERIOD 1000
+#define CROSSTALK_CORE_XOXO_FLASH_SPAN 3000
+#define CROSSTALK_CORE_XOXO_REACH_UNSEEN UINT8_MAX
+#define CROSSTALK_CORE_XOXO_ID_NONE 0
+#define CROSSTALK_CORE_XOXO_NOTICE_FMT "%.63s is now %.15s"
+#define CROSSTALK_CORE_XOXO_NOTICE_CAP 96
+#define CROSSTALK_CORE_XOXO_FULL_TEXT "no room for another XOXO"
+#define CROSSTALK_CORE_XOXO_REACH_JOINABLE_TEXT "joinable"
+#define CROSSTALK_CORE_XOXO_REACH_IN_GAME_TEXT "in Crosstalk"
+#define CROSSTALK_CORE_XOXO_REACH_OTHER_GAME_TEXT "in another game"
+#define CROSSTALK_CORE_XOXO_REACH_ONLINE_TEXT "online"
+#define CROSSTALK_CORE_XOXO_REACH_AWAY_TEXT "away"
+#define CROSSTALK_CORE_XOXO_REACH_OFFLINE_TEXT "offline"
 #define CROSSTALK_CORE_TERM_ASK_TITLE "Terminal request"
 #define CROSSTALK_CORE_TERM_ASK_BODY_TEXT "the remote asks to control the terminal this session"
 #define CROSSTALK_CORE_TERM_ASK_ALLOW_TEXT "terminal allowed"
@@ -566,7 +600,7 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_SESH_SAMPLE_ROW 16
 #define CROSSTALK_CORE_SESH_COL_MAX 512
 #define CROSSTALK_CORE_SESH_ROW_MAX 192
-#define CROSSTALK_CORE_MUSIC_COL_CAP 40
+#define CROSSTALK_CORE_MUSIC_COL_CAP 80
 #define CROSSTALK_CORE_TEXT_CLIP_CAP 1024
 #define CROSSTALK_CORE_MENU_MNEMONIC_CAP 16
 #define CROSSTALK_CORE_MENU_ACTION_NONE 0U
@@ -797,6 +831,11 @@ typedef struct crosstalk_core_win_nav_entry
 #define CROSSTALK_CORE_FPGA_PRESENCE_FMT "Simulating \"%.31s\""
 #define CROSSTALK_CORE_FPGA_PRESENCE_RATE_FMT "Simulating \"%.31s\" @ %.7s Hz; %.7s cycles in"
 #define CROSSTALK_CORE_EXEC_PRESENCE_FMT "Executing \"%.31s\""
+#define CROSSTALK_CORE_ATTACH_PRESENCE_FMT "attached: %.31s (%.7s; %u64 thr)"
+#define CROSSTALK_CORE_ATTACH_PRESENCE_ARCH "amd64"
+#define CROSSTALK_CORE_ATTACH_CUNT_REFRESH 1000
+#define CROSSTALK_CORE_ATTACH_CELL_CAP 6
+#define CROSSTALK_CORE_ATTACH_CELL_TEXT_CAP 96
 #define CROSSTALK_CORE_EXEC_PRESENCE_RATE_FMT "Executing \"%.31s\" @ %.7s Hz; %.7s cycles in"
 #define CROSSTALK_CORE_EMU_PRESENCE_TEXT "Running the DLU"
 #define CROSSTALK_CORE_EMU_PRESENCE_RATE_FMT "Running the DLU @ %.7s Hz; %.7s cycles in"
@@ -905,7 +944,16 @@ typedef struct crosstalk_ctx
     uint8_t discord_restore_req;
     uint8_t discord_relink_req;
     uint8_t libresteam_live;
-    uint8_t discord_pudding[6];
+    uint8_t discord_ask_due;
+    uint8_t discord_ask_open;
+    uint8_t discord_pudding[CROSSTALK_CORE_DISCORD_PUDDING_SIZE];
+    uint64_t xoxo_next;
+    uint64_t statusline_flash_from;
+    uint64_t statusline_flash_until;
+    uint8_t xoxo_reach[CROSSTALK_GAME_SETTINGS_XOXO_CAP];
+    char kbd_name[CROSSTALK_CORE_KBD_NAME_CAP];
+    ldg_sys_kb_t kbd_list[CROSSTALK_CORE_KBD_LIST_CAP];
+    uint64_t kbd_next;
     uint64_t join_lobby_pending;
     uint64_t discord_invite_prev;
     crosstalk_game_progression_queue_ctx_t progression_queue;
@@ -930,6 +978,13 @@ typedef struct crosstalk_ctx
     uint64_t presence_rate;
     uint64_t presence_cyc;
     uint64_t presence_num_next_ms;
+    uint64_t attach_mod_cunt;
+    uint64_t attach_thr_cunt;
+    uint64_t attach_cunt_next;
+    uint64_t attach_since;
+    uint64_t attach_mem_mod_base;
+    char attach_mem_mod[LDG_SYS_MOD_NAME_MAX];
+    char attach_cell[CROSSTALK_CORE_ATTACH_CELL_CAP][CROSSTALK_CORE_ATTACH_CELL_TEXT_CAP];
     uint64_t hub_sync_next_ms;
     uint64_t water_period_ms;
     uint64_t water_next_ms;
@@ -1095,6 +1150,8 @@ typedef struct crosstalk_ctx
     uint8_t prog_pub_pudding[4];
     crosstalk_hdl_type_ctx_t prog_type;
     crosstalk_eda_ic_fpga_emu_stat_t emu_stat;
+    crosstalk_re_stat_t re_stat;
+    uint8_t re_stat_blob[CROSSTALK_RE_STAT_BLOB_CAP];
     char memview_title[CROSSTALK_EDA_UI_MEMVIEW_TITLE_CAP];
     uint64_t freeze_addr[CROSSTALK_CORE_FREEZE_MAX];
     uint64_t freeze_val[CROSSTALK_CORE_FREEZE_MAX][CROSSTALK_CORE_FREEZE_LEN_MAX];

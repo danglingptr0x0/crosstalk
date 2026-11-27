@@ -67,6 +67,7 @@
 #define CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_CAP 32
 #define CROSSTALK_EDA_UI_MEMVIEW_DIS_ROW_TEXT_CAP 96
 #define CROSSTALK_EDA_UI_MEMVIEW_PROC_BLK_CAP 4096
+#define CROSSTALK_EDA_UI_MEMVIEW_BRK_PUDDING_SIZE 8
 
 typedef enum crosstalk_eda_ui_memview_res
 {
@@ -274,7 +275,6 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint8_t watch_hit;
     uint8_t watch_hit_mut;
     uint8_t watch_seeded;
-    uint8_t open;
     uint8_t bound;
     uint8_t finding;
     uint8_t overview_ok;
@@ -287,7 +287,7 @@ typedef struct crosstalk_eda_ui_memview_ctx
     uint8_t hlt_mark;
     uint8_t hlt_mark_seen;
     uint8_t brk_on;
-    uint8_t brk_pudding[7];
+    uint8_t brk_pudding[CROSSTALK_EDA_UI_MEMVIEW_BRK_PUDDING_SIZE];
     uint64_t go_addr;
     uint64_t hlt_mark_addr;
     uint64_t hlt_mark_end;

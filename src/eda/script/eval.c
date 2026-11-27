@@ -831,15 +831,15 @@ static uint32_t eval_assign_node(crosstalk_eda_script_eval_t *ctx, const crossta
     }
     else
     {
-        uint64_t cur = 0;
-        uint32_t cur_width = 0;
+        uint64_t curr = 0;
+        uint32_t curr_width = 0;
         uint32_t base_op = (uint32_t)CROSSTALK_EDA_SCRIPT_OP_ADD;
 
-        ret = eval_lv_ld(ctx, node, &lv, &cur, &cur_width);
+        ret = eval_lv_ld(ctx, node, &lv, &curr, &curr_width);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHL_ASSIGN) { ret = eval_shift_apply((uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHL, cur, rhs.val, cur_width, &new_val); }
-        else if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHR_ASSIGN) { ret = eval_shift_apply((uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHR, cur, rhs.val, cur_width, &new_val); }
+        if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHL_ASSIGN) { ret = eval_shift_apply((uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHL, curr, rhs.val, curr_width, &new_val); }
+        else if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHR_ASSIGN) { ret = eval_shift_apply((uint32_t)CROSSTALK_EDA_SCRIPT_OP_SHR, curr, rhs.val, curr_width, &new_val); }
         else
         {
             if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SUB_ASSIGN) { base_op = (uint32_t)CROSSTALK_EDA_SCRIPT_OP_SUB; }
@@ -850,9 +850,9 @@ static uint32_t eval_assign_node(crosstalk_eda_script_eval_t *ctx, const crossta
             else if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_OR_ASSIGN) { base_op = (uint32_t)CROSSTALK_EDA_SCRIPT_OP_BOR; }
             else if (node->op == (uint32_t)CROSSTALK_EDA_SCRIPT_OP_XOR_ASSIGN) { base_op = (uint32_t)CROSSTALK_EDA_SCRIPT_OP_BXOR; }
 
-            if (LDG_UNLIKELY(rhs.width != cur_width)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_WIDTH, "operand widths differ", "make both sides the same width"); }
+            if (LDG_UNLIKELY(rhs.width != curr_width)) { return eval_diag_set(ctx, node, CROSSTALK_EDA_SCRIPT_ERR_WIDTH, "operand widths differ", "make both sides the same width"); }
 
-            ret = eval_bin_apply(ctx, node, base_op, cur, rhs.val, cur_width, &new_val);
+            ret = eval_bin_apply(ctx, node, base_op, curr, rhs.val, curr_width, &new_val);
         }
 
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -1364,16 +1364,16 @@ uint32_t crosstalk_eda_script_eval_run(crosstalk_eda_script_eval_t *ctx, crossta
         if (stmt->kind == (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_INC || stmt->kind == (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_DEC)
         {
             eval_lv_t lv = LDG_STRUCT_ZERO_INIT;
-            uint64_t cur = 0;
-            uint32_t cur_width = 0;
+            uint64_t curr = 0;
+            uint32_t curr_width = 0;
 
             ret = eval_lv_resolve(ctx, stmt->lhs, &lv);
             if (ret != LDG_ERR_AOK) { return ret; }
 
-            ret = eval_lv_ld(ctx, stmt, &lv, &cur, &cur_width);
+            ret = eval_lv_ld(ctx, stmt, &lv, &curr, &curr_width);
             if (ret != LDG_ERR_AOK) { return ret; }
 
-            ret = eval_lv_st(ctx, stmt, &lv, stmt->kind == (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_INC ? cur + (uint64_t)EVAL_STEP : cur - (uint64_t)EVAL_STEP);
+            ret = eval_lv_st(ctx, stmt, &lv, stmt->kind == (uint32_t)CROSSTALK_EDA_SCRIPT_NODE_INC ? curr + (uint64_t)EVAL_STEP : curr - (uint64_t)EVAL_STEP);
             if (ret != LDG_ERR_AOK) { return ret; }
 
             pc = pc + (uint32_t)EVAL_STEP;

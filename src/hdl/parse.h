@@ -16,8 +16,8 @@ typedef struct crosstalk_hdl_parse_ctx
 {
     crosstalk_hdl_lex_ctx_t lex;
     crosstalk_hdl_tok_t prev;
-    crosstalk_hdl_tok_t cur;
-    crosstalk_hdl_tok_t nxt;
+    crosstalk_hdl_tok_t curr;
+    crosstalk_hdl_tok_t next;
     crosstalk_hdl_ast_t *ast;
     uint32_t depth;
     uint8_t pudding[4];

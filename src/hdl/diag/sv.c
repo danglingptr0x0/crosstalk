@@ -57,9 +57,9 @@ uint32_t crosstalk_hdl_diag_sv_entry_find(const crosstalk_hdl_parse_ctx_t *parse
     }
     else
     {
-        out->line = parse->cur.line;
-        out->col = parse->cur.col;
-        pos = parse->cur.off;
+        out->line = parse->curr.line;
+        out->col = parse->curr.col;
+        pos = parse->curr.off;
     }
 
     if (pos > src_len) { pos = src_len; }
@@ -82,7 +82,7 @@ uint32_t crosstalk_hdl_diag_sv_entry_find(const crosstalk_hdl_parse_ctx_t *parse
 
         if (diag_sv_tok_match_is(src, src_len, &parse->prev, entry[idx].prev_text) != LDG_TRUTH_TRUE) { continue; }
 
-        if (diag_sv_tok_match_is(src, src_len, &parse->cur, entry[idx].cur_text) != LDG_TRUTH_TRUE) { continue; }
+        if (diag_sv_tok_match_is(src, src_len, &parse->curr, entry[idx].curr_text) != LDG_TRUTH_TRUE) { continue; }
 
         out->entry = &entry[idx];
         break;

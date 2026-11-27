@@ -17,12 +17,14 @@
 #define CROSSTALK_GAME_HUB_INVITE_TEXT "Invite"
 #define CROSSTALK_GAME_HUB_JOIN_TEXT "Join"
 #define CROSSTALK_GAME_HUB_EMPTY_TEXT "nobody yet"
-#define CROSSTALK_GAME_HUB_ROW_FMT "%c%u32 %-24.24s %.31s"
+#define CROSSTALK_GAME_HUB_ROW_FMT "%c%u32 %-24.24s %.7s%.31s"
+#define CROSSTALK_GAME_HUB_XOXO_TAG "[XOXO] "
+#define CROSSTALK_GAME_HUB_XOXO_SEQ "xoxo"
+#define CROSSTALK_GAME_HUB_XOXO_SEQ_LEN 4
 #define CROSSTALK_GAME_HUB_ACTION_FMT "[%.7s] [%.7s]"
 #define CROSSTALK_GAME_HUB_ACTION_DM_FMT "[%.7s]"
 #define CROSSTALK_GAME_HUB_LINE_CAP 160
 #define CROSSTALK_GAME_HUB_ROW_STEP 1
-#define CROSSTALK_GAME_HUB_CASE_SHIFT 32
 #define CROSSTALK_GAME_HUB_ORIG_COL 0
 #define CROSSTALK_GAME_HUB_SECTION_GAP 1
 #define CROSSTALK_GAME_HUB_KEY_RHS_ACTION 'i'
@@ -75,12 +77,8 @@ static uint8_t crosstalk_game_hub_row_after_is(const crosstalk_game_hub_row_t *l
 
     for (uint32_t idx = 0; idx < CROSSTALK_GAME_HUB_NAME_CAP; idx++)
     {
-        char lhs_ch = lhs->name[idx];
-        char rhs_ch = rhs->name[idx];
-
-        if (lhs_ch >= 'A' && lhs_ch <= 'Z') { lhs_ch = (char)(lhs_ch + CROSSTALK_GAME_HUB_CASE_SHIFT); }
-
-        if (rhs_ch >= 'A' && rhs_ch <= 'Z') { rhs_ch = (char)(rhs_ch + CROSSTALK_GAME_HUB_CASE_SHIFT); }
+        char lhs_ch = ldg_char_lower_get(lhs->name[idx]);
+        char rhs_ch = ldg_char_lower_get(rhs->name[idx]);
 
         if (lhs_ch != rhs_ch) { return (lhs_ch > rhs_ch) ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE; }
 
@@ -114,7 +112,7 @@ uint32_t crosstalk_game_hub_rows_sort(crosstalk_game_hub_ctx_t *ctx)
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_game_hub_row_add(crosstalk_game_hub_ctx_t *ctx, uint64_t user_id, const char *name, const char *status, uint8_t src, uint8_t reach, uint64_t lobby_id)
+uint32_t crosstalk_game_hub_row_add(crosstalk_game_hub_ctx_t *ctx, uint64_t user_id, const char *name, const char *status, uint8_t src, uint8_t reach, uint64_t lobby_id, uint8_t xoxo)
 {
     crosstalk_game_hub_row_t *slot = 0x0;
     uint32_t ret = 0;
@@ -132,6 +130,7 @@ uint32_t crosstalk_game_hub_row_add(crosstalk_game_hub_ctx_t *ctx, uint64_t user
     slot->lobby_id = lobby_id;
     slot->src = src;
     slot->reach = reach;
+    slot->xoxo = xoxo == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     slot->name[0] = LDG_STR_TERM;
     slot->status[0] = LDG_STR_TERM;
@@ -229,7 +228,7 @@ static uint32_t crosstalk_game_hub_row_draw(const crosstalk_game_hub_row_t *row_
     uint64_t len = 0;
     uint32_t ret = 0;
 
-    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, CROSSTALK_GAME_HUB_ROW_FMT, tag, pick, row_data->name, row_data->status) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
+    if (ldg_str_fmt(line, (uint64_t)sizeof(line), &len, CROSSTALK_GAME_HUB_ROW_FMT, tag, pick, row_data->name, row_data->xoxo == LDG_TRUTH_TRUE ? CROSSTALK_GAME_HUB_XOXO_TAG : "", row_data->status) != LDG_ERR_AOK) { line[0] = LDG_STR_TERM; }
 
     ret = crosstalk_ui_cell_color_get(crosstalk_game_hub_reach_col_get(row_data->reach), &fg_col);
     if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get(bg, &bg_col); }
@@ -328,9 +327,11 @@ static uint32_t crosstalk_game_hub_act(crosstalk_game_hub_ctx_t *ctx, const cros
     return LDG_ERR_AOK;
 }
 
-static uint32_t crosstalk_game_hub_pick(crosstalk_game_hub_ctx_t *ctx, uint8_t src, uint32_t pick)
+static uint32_t crosstalk_game_hub_shown_find(const crosstalk_game_hub_ctx_t *ctx, uint8_t src, uint32_t pick, uint32_t *out_idx)
 {
     uint32_t shown = 0;
+
+    *out_idx = UINT32_MAX;
 
     for (uint32_t idx = 0; idx < ctx->row_cunt && shown < (uint32_t)CROSSTALK_GAME_HUB_COL_CAP; idx++)
     {
@@ -338,15 +339,43 @@ static uint32_t crosstalk_game_hub_pick(crosstalk_game_hub_ctx_t *ctx, uint8_t s
 
         if (shown == pick)
         {
-            ctx->sel_on = LDG_TRUTH_TRUE;
-            ctx->sel_user_id = ctx->row[idx].user_id;
-            ctx->sel_src = ctx->row[idx].src;
-
-            return crosstalk_game_hub_act(ctx, &ctx->row[idx], LDG_TRUTH_FALSE);
+            *out_idx = idx;
+            return LDG_ERR_AOK;
         }
 
         shown++;
     }
+
+    return LDG_ERR_NOT_FOUND;
+}
+
+static uint32_t crosstalk_game_hub_pick(crosstalk_game_hub_ctx_t *ctx, uint8_t src, uint32_t pick)
+{
+    uint32_t idx = UINT32_MAX;
+
+    if (crosstalk_game_hub_shown_find(ctx, src, pick, &idx) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
+
+    ctx->sel_on = LDG_TRUTH_TRUE;
+    ctx->sel_user_id = ctx->row[idx].user_id;
+    ctx->sel_src = ctx->row[idx].src;
+
+    return crosstalk_game_hub_act(ctx, &ctx->row[idx], LDG_TRUTH_FALSE);
+}
+
+static uint32_t crosstalk_game_hub_xoxo_pick(crosstalk_game_hub_ctx_t *ctx, uint8_t src, uint32_t pick)
+{
+    uint32_t idx = UINT32_MAX;
+    uint32_t ret = 0;
+
+    if (crosstalk_game_hub_shown_find(ctx, src, pick, &idx) != LDG_ERR_AOK) { return LDG_ERR_AOK; }
+
+    ctx->out_action = CROSSTALK_GAME_HUB_ACTION_XOXO;
+    ctx->out_user_id = ctx->row[idx].user_id;
+    ctx->out_lobby_id = ctx->row[idx].lobby_id;
+    ctx->out_src = ctx->row[idx].src;
+
+    ret = ldg_str_rbrcpy(ctx->out_name, ctx->row[idx].name, (uint64_t)sizeof(ctx->out_name));
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
 
     return LDG_ERR_AOK;
 }
@@ -372,18 +401,34 @@ static uint32_t hub_key_isr(uint64_t win_id, void *user, const ldg_term_key_even
 
     if (ctx->pick_on == LDG_TRUTH_TRUE)
     {
-        ctx->pick_on = LDG_TRUTH_FALSE;
+        uint8_t seq = ctx->pick_xoxo;
 
-        if (key->codepoint >= (uint32_t)LDG_ASCII_DIGIT_ZERO && key->codepoint < (uint32_t)LDG_ASCII_DIGIT_ZERO + (uint32_t)LDG_BASE_DEC)
+        if (seq < (uint8_t)CROSSTALK_GAME_HUB_XOXO_SEQ_LEN && key->codepoint == (uint32_t)(uint8_t)CROSSTALK_GAME_HUB_XOXO_SEQ[seq])
+        {
+            ctx->pick_xoxo++;
+            *consumed = LDG_TRUTH_TRUE;
+            return LDG_ERR_AOK;
+        }
+
+        ctx->pick_on = LDG_TRUTH_FALSE;
+        ctx->pick_xoxo = 0;
+
+        if (key->codepoint <= (uint32_t)LDG_ASCII_MAX && ldg_char_digit_is((uint8_t)key->codepoint) == LDG_TRUTH_TRUE)
         {
             *consumed = LDG_TRUTH_TRUE;
-            return crosstalk_game_hub_pick(ctx, ctx->pick_src, key->codepoint - (uint32_t)LDG_ASCII_DIGIT_ZERO);
+
+            if (seq == (uint8_t)CROSSTALK_GAME_HUB_XOXO_SEQ_LEN) { return crosstalk_game_hub_xoxo_pick(ctx, ctx->pick_src, key->codepoint - (uint32_t)LDG_ASCII_DIGIT_ZERO); }
+
+            if (seq == 0) { return crosstalk_game_hub_pick(ctx, ctx->pick_src, key->codepoint - (uint32_t)LDG_ASCII_DIGIT_ZERO); }
+
+            return LDG_ERR_AOK;
         }
     }
 
     if (key->codepoint == (uint32_t)CROSSTALK_GAME_HUB_KEY_STEAM || key->codepoint == (uint32_t)CROSSTALK_GAME_HUB_KEY_STEAM_SHIFTED)
     {
         ctx->pick_on = LDG_TRUTH_TRUE;
+        ctx->pick_xoxo = 0;
         ctx->pick_src = (uint8_t)CROSSTALK_GAME_HUB_SRC_STEAM;
         *consumed = LDG_TRUTH_TRUE;
 
@@ -393,6 +438,7 @@ static uint32_t hub_key_isr(uint64_t win_id, void *user, const ldg_term_key_even
     if (key->codepoint == (uint32_t)CROSSTALK_GAME_HUB_KEY_DISCORD || key->codepoint == (uint32_t)CROSSTALK_GAME_HUB_KEY_DISCORD_SHIFTED)
     {
         ctx->pick_on = LDG_TRUTH_TRUE;
+        ctx->pick_xoxo = 0;
         ctx->pick_src = (uint8_t)CROSSTALK_GAME_HUB_SRC_DISCORD;
         *consumed = LDG_TRUTH_TRUE;
 

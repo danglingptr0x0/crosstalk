@@ -88,9 +88,9 @@ typedef struct calc_env
     uint64_t rate_hz;
 } calc_env_t;
 
-static void calc_space_skip(calc_cursor_t *cur)
+static void calc_space_skip(calc_cursor_t *curr)
 {
-    while (cur->text[cur->at] == ' ' || cur->text[cur->at] == '\t') { cur->at++; }
+    while (curr->text[curr->at] == ' ' || curr->text[curr->at] == '\t') { curr->at++; }
 }
 
 static uint8_t calc_digit_zero_is(char ch)
@@ -118,19 +118,19 @@ static uint8_t calc_ident_rest_is(char ch)
     return ch == '_' || ch == '.' ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
-static uint32_t calc_ident_parse(calc_cursor_t *cur, char *out, uint32_t cap)
+static uint32_t calc_ident_parse(calc_cursor_t *curr, char *out, uint32_t cap)
 {
     uint32_t len = 0;
 
-    if (calc_ident_first_is(cur->text[cur->at]) != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
+    if (calc_ident_first_is(curr->text[curr->at]) != LDG_TRUTH_TRUE) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-    while (calc_ident_rest_is(cur->text[cur->at]) == LDG_TRUTH_TRUE)
+    while (calc_ident_rest_is(curr->text[curr->at]) == LDG_TRUTH_TRUE)
     {
         if (len + LDG_STR_TERM_SIZE >= cap) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-        out[len] = cur->text[cur->at];
+        out[len] = curr->text[curr->at];
         len++;
-        cur->at++;
+        curr->at++;
     }
 
     out[len] = LDG_STR_TERM;
@@ -189,18 +189,18 @@ static uint8_t calc_group_digit_is(char ch, uint32_t mode)
     return ldg_char_digit_is((uint8_t)ch);
 }
 
-static void calc_group_skip(calc_cursor_t *cur, uint32_t mode)
+static void calc_group_skip(calc_cursor_t *curr, uint32_t mode)
 {
-    uint32_t at = cur->at;
+    uint32_t at = curr->at;
 
-    while (cur->text[at] == CALC_GROUP_SEP_BAR || (cur->text[at] == LDG_ASCII_SPACE && mode != (uint32_t)CALC_GROUP_DEC)) { at++; }
+    while (curr->text[at] == CALC_GROUP_SEP_BAR || (curr->text[at] == LDG_ASCII_SPACE && mode != (uint32_t)CALC_GROUP_DEC)) { at++; }
 
-    if (at == cur->at) { return; }
+    if (at == curr->at) { return; }
 
-    if (calc_group_digit_is(cur->text[at], mode) == LDG_TRUTH_TRUE) { cur->at = at; }
+    if (calc_group_digit_is(curr->text[at], mode) == LDG_TRUTH_TRUE) { curr->at = at; }
 }
 
-static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64_t *out)
+static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *curr, uint64_t *out)
 {
     double frac = 0.0;
     double frac_div = 1.0;
@@ -211,41 +211,41 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
 
     *out = 0;
 
-    if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 1] == 'x' || cur->text[cur->at + 1] == 'X'))
+    if (calc_digit_zero_is(curr->text[curr->at]) == LDG_TRUTH_TRUE && (curr->text[curr->at + 1] == 'x' || curr->text[curr->at + 1] == 'X'))
     {
-        cur->at = cur->at + 0x2;
+        curr->at = curr->at + 0x2;
         while (LDG_TRUTH_TRUE)
         {
             uint8_t nibble = 0;
 
-            if (digits != 0) { calc_group_skip(cur, (uint32_t)CALC_GROUP_HEX); }
+            if (digits != 0) { calc_group_skip(curr, (uint32_t)CALC_GROUP_HEX); }
 
-            if (ldg_char_hex_is((uint8_t)cur->text[cur->at]) != LDG_TRUTH_TRUE) { break; }
+            if (ldg_char_hex_is((uint8_t)curr->text[curr->at]) != LDG_TRUTH_TRUE) { break; }
 
-            if (ldg_hex_to_nipple(cur->text[cur->at], &nibble) != LDG_ERR_AOK) { break; }
+            if (ldg_hex_to_nipple(curr->text[curr->at], &nibble) != LDG_ERR_AOK) { break; }
 
             val = (val << LDG_NIBBLE_BITS) | (uint64_t)nibble;
-            cur->at++;
+            curr->at++;
             digits++;
         }
     }
-    else if (calc_digit_zero_is(cur->text[cur->at]) == LDG_TRUTH_TRUE && (cur->text[cur->at + 1] == 'b' || cur->text[cur->at + 1] == 'B'))
+    else if (calc_digit_zero_is(curr->text[curr->at]) == LDG_TRUTH_TRUE && (curr->text[curr->at + 1] == 'b' || curr->text[curr->at + 1] == 'B'))
     {
-        cur->at = cur->at + 0x2;
+        curr->at = curr->at + 0x2;
         while (LDG_TRUTH_TRUE)
         {
             uint8_t bit = 0;
 
-            if (digits != 0) { calc_group_skip(cur, (uint32_t)CALC_GROUP_BIN); }
+            if (digits != 0) { calc_group_skip(curr, (uint32_t)CALC_GROUP_BIN); }
 
-            if (ldg_char_digit_is((uint8_t)cur->text[cur->at]) != LDG_TRUTH_TRUE) { break; }
+            if (ldg_char_digit_is((uint8_t)curr->text[curr->at]) != LDG_TRUTH_TRUE) { break; }
 
-            if (ldg_hex_to_nipple(cur->text[cur->at], &bit) != LDG_ERR_AOK) { break; }
+            if (ldg_hex_to_nipple(curr->text[curr->at], &bit) != LDG_ERR_AOK) { break; }
 
             if (bit > 1) { break; }
 
             val = (val << 1) | (uint64_t)bit;
-            cur->at++;
+            curr->at++;
             digits++;
         }
     }
@@ -256,41 +256,41 @@ static uint32_t calc_num_parse(const calc_env_t *env, calc_cursor_t *cur, uint64
         {
             uint8_t digit = 0;
 
-            if (digits != 0) { calc_group_skip(cur, (uint32_t)CALC_GROUP_DEC); }
+            if (digits != 0) { calc_group_skip(curr, (uint32_t)CALC_GROUP_DEC); }
 
-            if (ldg_char_digit_is((uint8_t)cur->text[cur->at]) != LDG_TRUTH_TRUE) { break; }
+            if (ldg_char_digit_is((uint8_t)curr->text[curr->at]) != LDG_TRUTH_TRUE) { break; }
 
-            if (ldg_hex_to_nipple(cur->text[cur->at], &digit) != LDG_ERR_AOK) { break; }
+            if (ldg_hex_to_nipple(curr->text[curr->at], &digit) != LDG_ERR_AOK) { break; }
 
             val = val * (uint64_t)LDG_BASE_DEC + (uint64_t)digit;
-            cur->at++;
+            curr->at++;
             digits++;
         }
     }
 
     if (digits == 0) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-    if (dec_is == LDG_TRUTH_TRUE && cur->text[cur->at] == '.' && ldg_char_digit_is((uint8_t)cur->text[cur->at + 1]) == LDG_TRUTH_TRUE)
+    if (dec_is == LDG_TRUTH_TRUE && curr->text[curr->at] == '.' && ldg_char_digit_is((uint8_t)curr->text[curr->at + 1]) == LDG_TRUTH_TRUE)
     {
-        cur->at++;
-        while (ldg_char_digit_is((uint8_t)cur->text[cur->at]) == LDG_TRUTH_TRUE)
+        curr->at++;
+        while (ldg_char_digit_is((uint8_t)curr->text[curr->at]) == LDG_TRUTH_TRUE)
         {
             uint8_t digit = 0;
 
-            if (ldg_hex_to_nipple(cur->text[cur->at], &digit) != LDG_ERR_AOK) { break; }
+            if (ldg_hex_to_nipple(curr->text[curr->at], &digit) != LDG_ERR_AOK) { break; }
 
             frac_div = frac_div * CALC_FRAC_BASE;
             frac = frac + (double)digit / frac_div;
-            cur->at++;
+            curr->at++;
         }
 
-        if (cur->text[cur->at] != 'n' && cur->text[cur->at] != 'u' && cur->text[cur->at] != 'm' && cur->text[cur->at] != 's') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
+        if (curr->text[curr->at] != 'n' && curr->text[curr->at] != 'u' && curr->text[curr->at] != 'm' && curr->text[curr->at] != 's') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
     }
 
-    if (dec_is == LDG_TRUTH_TRUE) { if (cur->text[cur->at] == 'n' && cur->text[cur->at + 1] == 's') { scale_ns = 1.0; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 'u' && cur->text[cur->at + 1] == 's') { scale_ns = (double)LDG_NS_PER_US; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 'm' && cur->text[cur->at + 1] == 's') { scale_ns = (double)LDG_NS_PER_MS; cur->at = cur->at + 0x2; }
-        else if (cur->text[cur->at] == 's' && calc_ident_rest_is(cur->text[cur->at + 1]) != LDG_TRUTH_TRUE) { scale_ns = (double)LDG_NS_PER_SEC; cur->at++; } }
+    if (dec_is == LDG_TRUTH_TRUE) { if (curr->text[curr->at] == 'n' && curr->text[curr->at + 1] == 's') { scale_ns = 1.0; curr->at = curr->at + 0x2; }
+        else if (curr->text[curr->at] == 'u' && curr->text[curr->at + 1] == 's') { scale_ns = (double)LDG_NS_PER_US; curr->at = curr->at + 0x2; }
+        else if (curr->text[curr->at] == 'm' && curr->text[curr->at + 1] == 's') { scale_ns = (double)LDG_NS_PER_MS; curr->at = curr->at + 0x2; }
+        else if (curr->text[curr->at] == 's' && calc_ident_rest_is(curr->text[curr->at + 1]) != LDG_TRUTH_TRUE) { scale_ns = (double)LDG_NS_PER_SEC; curr->at++; } }
 
     if (scale_ns > 0.0)
     {
@@ -322,16 +322,16 @@ static uint32_t calc_pow_get(uint64_t base, uint64_t exp, uint64_t *out)
     return LDG_ERR_AOK;
 }
 
-static uint32_t calc_op_peek(const calc_cursor_t *cur, uint32_t *out_prec, uint32_t *out_len, char *out_op)
+static uint32_t calc_op_peek(const calc_cursor_t *curr, uint32_t *out_prec, uint32_t *out_len, char *out_op)
 {
-    char first = cur->text[cur->at];
-    char second = cur->text[cur->at + 1];
+    char first = curr->text[curr->at];
+    char second = curr->text[curr->at + 1];
 
     *out_prec = 0;
     *out_len = 0;
     *out_op = first;
 
-    if (first == 'x' && second == 'o' && cur->text[cur->at + 0x2] == 'r' && calc_ident_rest_is(cur->text[cur->at + 0x3]) != LDG_TRUTH_TRUE)
+    if (first == 'x' && second == 'o' && curr->text[curr->at + 0x2] == 'r' && calc_ident_rest_is(curr->text[curr->at + 0x3]) != LDG_TRUTH_TRUE)
     {
         *out_prec = CALC_PREC_XOR;
         *out_len = 0x3;
@@ -359,72 +359,72 @@ static uint32_t calc_op_peek(const calc_cursor_t *cur, uint32_t *out_prec, uint3
     return LDG_ERR_NOT_FOUND;
 }
 
-static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint32_t min_prec, uint64_t *out)
+static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *curr, uint32_t min_prec, uint64_t *out)
 {
     uint64_t lhs = 0;
     uint32_t ret = 0;
 
     *out = 0;
 
-    calc_space_skip(cur);
-    if (cur->text[cur->at] == '~')
+    calc_space_skip(curr);
+    if (curr->text[curr->at] == '~')
     {
-        cur->at++;
-        ret = calc_expr_parse(env, cur, CALC_PREC_UNARY, &lhs);
+        curr->at++;
+        ret = calc_expr_parse(env, curr, CALC_PREC_UNARY, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         lhs = ~lhs;
     }
-    else if (cur->text[cur->at] == '-')
+    else if (curr->text[curr->at] == '-')
     {
-        cur->at++;
-        ret = calc_expr_parse(env, cur, CALC_PREC_UNARY, &lhs);
+        curr->at++;
+        ret = calc_expr_parse(env, curr, CALC_PREC_UNARY, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         lhs = ~lhs + 1;
     }
-    else if (cur->text[cur->at] == '(')
+    else if (curr->text[curr->at] == '(')
     {
-        cur->at++;
-        ret = calc_expr_parse(env, cur, CALC_PREC_LOR, &lhs);
+        curr->at++;
+        ret = calc_expr_parse(env, curr, CALC_PREC_LOR, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        calc_space_skip(cur);
-        if (cur->text[cur->at] != ')') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
+        calc_space_skip(curr);
+        if (curr->text[curr->at] != ')') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-        cur->at++;
+        curr->at++;
     }
-    else if (calc_ident_first_is(cur->text[cur->at]) == LDG_TRUTH_TRUE)
+    else if (calc_ident_first_is(curr->text[curr->at]) == LDG_TRUTH_TRUE)
     {
         char name[CALC_NAME_CAP] = LDG_ARR_ZERO_INIT;
 
-        ret = calc_ident_parse(cur, name, (uint32_t)sizeof(name));
+        ret = calc_ident_parse(curr, name, (uint32_t)sizeof(name));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        calc_space_skip(cur);
-        if (cur->text[cur->at] == '[')
+        calc_space_skip(curr);
+        if (curr->text[curr->at] == '[')
         {
             uint64_t first_idx = 0;
 
-            cur->at++;
-            ret = calc_expr_parse(env, cur, CALC_PREC_LOR, &first_idx);
+            curr->at++;
+            ret = calc_expr_parse(env, curr, CALC_PREC_LOR, &first_idx);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            calc_space_skip(cur);
-            if (cur->text[cur->at] == ':')
+            calc_space_skip(curr);
+            if (curr->text[curr->at] == ':')
             {
                 uint64_t lo = 0;
                 uint64_t hi = first_idx;
                 uint64_t span = 0;
 
-                cur->at++;
-                ret = calc_expr_parse(env, cur, CALC_PREC_LOR, &lo);
+                curr->at++;
+                ret = calc_expr_parse(env, curr, CALC_PREC_LOR, &lo);
                 if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-                calc_space_skip(cur);
-                if (cur->text[cur->at] != ']') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
+                calc_space_skip(curr);
+                if (curr->text[curr->at] != ']') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-                cur->at++;
+                curr->at++;
 
                 if (hi > (uint64_t)CALC_BIT_MAX) { hi = CALC_BIT_MAX; }
 
@@ -441,9 +441,9 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
                 uint64_t word = 0;
                 uint32_t got = 0;
 
-                if (cur->text[cur->at] != ']') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
+                if (curr->text[curr->at] != ']') { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
-                cur->at++;
+                curr->at++;
 
                 if (env->calc->fpga != 0x0 && crosstalk_eda_ic_fpga_mem_rd(env->calc->fpga, env->calc->slot, name, first_idx, &word, 1, &got) == LDG_ERR_AOK && got == 1) { lhs = word; }
                 else
@@ -463,7 +463,7 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
     }
     else
     {
-        ret = calc_num_parse(env, cur, &lhs);
+        ret = calc_num_parse(env, curr, &lhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 
@@ -474,14 +474,14 @@ static uint32_t calc_expr_parse(const calc_env_t *env, calc_cursor_t *cur, uint3
         uint32_t op_len = 0;
         char op = 0;
 
-        calc_space_skip(cur);
-        ret = calc_op_peek(cur, &prec, &op_len, &op);
+        calc_space_skip(curr);
+        ret = calc_op_peek(curr, &prec, &op_len, &op);
         if (ret != LDG_ERR_AOK) { break; }
 
         if (prec < min_prec) { break; }
 
-        cur->at = cur->at + op_len;
-        ret = calc_expr_parse(env, cur, op == CALC_OP_POW ? prec : prec + 1, &rhs);
+        curr->at = curr->at + op_len;
+        ret = calc_expr_parse(env, curr, op == CALC_OP_POW ? prec : prec + 1, &rhs);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
         if (op == '|') { lhs = lhs | rhs; }
@@ -537,17 +537,17 @@ static void calc_env_fill(const crosstalk_eda_ui_calc_ctx_t *ctx, calc_env_t *en
 static uint32_t calc_eval(const crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, uint64_t *out)
 {
     calc_env_t env = LDG_STRUCT_ZERO_INIT;
-    calc_cursor_t cur = LDG_STRUCT_ZERO_INIT;
+    calc_cursor_t curr = LDG_STRUCT_ZERO_INIT;
     uint32_t ret = 0;
 
     calc_env_fill(ctx, &env);
 
-    cur.text = expr;
-    ret = calc_expr_parse(&env, &cur, CALC_PREC_LOR, out);
+    curr.text = expr;
+    ret = calc_expr_parse(&env, &curr, CALC_PREC_LOR, out);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    calc_space_skip(&cur);
-    if (cur.text[cur.at] != LDG_STR_TERM) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
+    calc_space_skip(&curr);
+    if (curr.text[curr.at] != LDG_STR_TERM) { return CROSSTALK_EDA_UI_CALC_ERR_PARSE; }
 
     return LDG_ERR_AOK;
 }
@@ -867,7 +867,7 @@ static void calc_hist_push(crosstalk_eda_ui_calc_ctx_t *ctx, const char *expr, c
 static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
 {
     uint64_t fmt_len = 0;
-    calc_cursor_t cur = LDG_STRUCT_ZERO_INIT;
+    calc_cursor_t curr = LDG_STRUCT_ZERO_INIT;
     char name[CROSSTALK_EDA_UI_CALC_VAR_NAME_CAP] = LDG_ARR_ZERO_INIT;
     char text[CROSSTALK_EDA_UI_CALC_HIST_TEXT_CAP] = LDG_ARR_ZERO_INIT;
     uint64_t val = 0;
@@ -892,15 +892,15 @@ static void calc_submit(crosstalk_eda_ui_calc_ctx_t *ctx)
         return;
     }
 
-    cur.text = ctx->expr;
-    calc_space_skip(&cur);
-    if (calc_ident_first_is(cur.text[cur.at]) == LDG_TRUTH_TRUE && calc_ident_parse(&cur, name, (uint32_t)sizeof(name)) == LDG_ERR_AOK)
+    curr.text = ctx->expr;
+    calc_space_skip(&curr);
+    if (calc_ident_first_is(curr.text[curr.at]) == LDG_TRUTH_TRUE && calc_ident_parse(&curr, name, (uint32_t)sizeof(name)) == LDG_ERR_AOK)
     {
-        calc_space_skip(&cur);
-        if (cur.text[cur.at] == '=' && cur.text[cur.at + 1] != '=' && strcmp(name, CALC_RES_NAME) != 0x0)
+        calc_space_skip(&curr);
+        if (curr.text[curr.at] == '=' && curr.text[curr.at + 1] != '=' && strcmp(name, CALC_RES_NAME) != 0x0)
         {
-            cur.at++;
-            ret = calc_eval(ctx, cur.text + cur.at, &val);
+            curr.at++;
+            ret = calc_eval(ctx, curr.text + curr.at, &val);
             if (ret != LDG_ERR_AOK) { return; }
 
             if (calc_var_find(ctx, name, &idx) != LDG_TRUTH_TRUE)

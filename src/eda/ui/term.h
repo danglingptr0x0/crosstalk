@@ -37,6 +37,7 @@
 #define CROSSTALK_EDA_UI_TERM_KEY_CAP 64
 #define CROSSTALK_EDA_UI_TERM_BS 0x08
 #define CROSSTALK_EDA_UI_TERM_DEL 0x7F
+#define CROSSTALK_EDA_UI_TERM_FF 0x0C
 #define CROSSTALK_EDA_UI_TERM_CSI 0x5B
 #define CROSSTALK_EDA_UI_TERM_ARROW_UP 0x41
 #define CROSSTALK_EDA_UI_TERM_ARROW_DOWN 0x42
@@ -139,6 +140,7 @@ uint8_t crosstalk_eda_ui_term_open_is(const crosstalk_eda_ui_term_ctx_t *ctx);
 uint32_t crosstalk_eda_ui_term_sesh_bind(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, crosstalk_eda_ui_term_src_t src, uint32_t src_handle, const char *title);
 uint32_t crosstalk_eda_ui_term_sesh_clear(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx);
 uint32_t crosstalk_eda_ui_term_sesh_grid_view_set(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, uint8_t on);
+uint32_t crosstalk_eda_ui_term_sesh_grid_size_set(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx, uint32_t col_cunt, uint32_t row_cunt);
 uint32_t crosstalk_eda_ui_term_sesh_next_get(const crosstalk_eda_ui_term_ctx_t *ctx, uint32_t *out);
 uint32_t crosstalk_eda_ui_term_sesh_src_find(const crosstalk_eda_ui_term_ctx_t *ctx, crosstalk_eda_ui_term_src_t src, uint32_t *out);
 uint32_t crosstalk_eda_ui_term_sesh_close(crosstalk_eda_ui_term_ctx_t *ctx, uint32_t sesh_idx);

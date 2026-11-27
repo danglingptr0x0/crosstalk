@@ -1948,7 +1948,7 @@ static uint32_t crosstalk_hdl_exec_delta_run(crosstalk_hdl_exec_ctx_t *ctx, uint
 
 uint32_t crosstalk_hdl_exec_time_adv(crosstalk_hdl_exec_ctx_t *ctx, uint64_t until, uint64_t *out)
 {
-    uint64_t nxt = 0;
+    uint64_t next = 0;
     uint32_t idx = 0;
     uint32_t pass = 0;
     uint32_t res = 0;
@@ -1974,26 +1974,26 @@ uint32_t crosstalk_hdl_exec_time_adv(crosstalk_hdl_exec_ctx_t *ctx, uint64_t unt
 
         if (ctx->done == LDG_TRUTH_TRUE) { break; }
 
-        nxt = UINT64_MAX;
+        next = UINT64_MAX;
 
-        for (idx = 0; idx < ctx->ir_ctx->proc_cunt; idx++) { if (ctx->seg_at[idx] != UINT32_MAX && ctx->wake_at[idx] < nxt) { nxt = ctx->wake_at[idx]; } }
+        for (idx = 0; idx < ctx->ir_ctx->proc_cunt; idx++) { if (ctx->seg_at[idx] != UINT32_MAX && ctx->wake_at[idx] < next) { next = ctx->wake_at[idx]; } }
 
-        for (idx = 0; idx < ctx->sched_wr_cunt; idx++) { if (ctx->sched_wr[idx].at < nxt) { nxt = ctx->sched_wr[idx].at; } }
+        for (idx = 0; idx < ctx->sched_wr_cunt; idx++) { if (ctx->sched_wr[idx].at < next) { next = ctx->sched_wr[idx].at; } }
 
-        if (nxt == UINT64_MAX)
+        if (next == UINT64_MAX)
         {
             ctx->done = LDG_TRUTH_TRUE;
             break;
         }
 
-        if (nxt > until)
+        if (next > until)
         {
             if (until > ctx->now) { ctx->now = until; }
 
             break;
         }
 
-        ctx->now = nxt;
+        ctx->now = next;
     }
 
     *out = ctx->now;

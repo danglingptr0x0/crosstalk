@@ -4,9 +4,11 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <dangling/core/arith.h>
 #include <dangling/core/err.h>
 #include <dangling/str/fmt.h>
 #include <dangling/core/macros.h>
+#include <dangling/mem/secure.h>
 #include <dangling/str/str.h>
 #include <dangling/time/time.h>
 
@@ -48,12 +50,22 @@
 #define SETTINGS_MENU_KB_TIP_IDLE "Return rebinds the selected action; Esc then Return (or Alt+Return) saves and closes the list; Esc twice discards the changes"
 #define SETTINGS_MENU_KB_TIP_ARMED "Waiting for the new combination for this action"
 #define SETTINGS_MENU_KB_TIP_ESC "Esc again discards the changes; Return saves them and closes the list"
+#define SETTINGS_MENU_WHITELIST_TITLE "Settings > Player whitelist"
+#define SETTINGS_MENU_WHITELIST_LINE_FMT "%.3s %.63s%.15s"
+#define SETTINGS_MENU_WHITELIST_MARK_ON "[x]"
+#define SETTINGS_MENU_WHITELIST_MARK_OFF "[ ]"
+#define SETTINGS_MENU_WHITELIST_ABSENT_TEXT " (not running)"
+#define SETTINGS_MENU_WHITELIST_EMPTY_TEXT "No media player is running"
+#define SETTINGS_MENU_WHITELIST_TIP_IDLE "Space or Return marks or unmarks the selected player; only marked players are followed; Esc then Return (or Alt+Return) saves and closes the list; Esc twice discards the changes"
+#define SETTINGS_MENU_WHITELIST_SYS_ONLY_TEXT "System only"
+#define SETTINGS_MENU_WHITELIST_OPEN_TEXT "Open"
 
 typedef enum settings_menu_item
 {
     SETTINGS_MENU_ITEM_FAB_SAFETY = 0,
     SETTINGS_MENU_ITEM_FAB_INTERLOCK,
     SETTINGS_MENU_ITEM_MUSIC_SRC,
+    SETTINGS_MENU_ITEM_MUSIC_WHITELIST,
     SETTINGS_MENU_ITEM_MUSIC_SHOW,
     SETTINGS_MENU_ITEM_DISCORD,
     SETTINGS_MENU_ITEM_PRESENCE,
@@ -87,6 +99,8 @@ static const char* settings_menu_label_get(uint32_t item)
 
     if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_SRC) { return "Music source"; }
 
+    if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_WHITELIST) { return "Player whitelist"; }
+
     if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_SHOW) { return "Show music"; }
 
     if (item == (uint32_t)SETTINGS_MENU_ITEM_DISCORD) { return "Discord"; }
@@ -113,6 +127,8 @@ static const char* settings_menu_tip_get(uint32_t item)
     if (item == (uint32_t)SETTINGS_MENU_ITEM_FAB_INTERLOCK) { return "Fabrication interlock; while closed, boards stay exportable and manufacturable from library components alone; open it (safety off first) to allow custom components and edits to library ones"; }
 
     if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_SRC) { return "Where the playback panel gets its music; Steam controls the Steam client player, Native plays the game soundtrack, System controls whatever the machine is playing"; }
+
+    if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_WHITELIST) { return "Media players the System source follows; with none marked, the System source follows nothing; Return opens the list"; }
 
     if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_SHOW) { return "Adds the current track to the Discord presence, visible to anyone who can see it"; }
 
@@ -166,6 +182,7 @@ static void settings_menu_val_fmt(const crosstalk_game_settings_t *settings, uin
     else if (item == (uint32_t)SETTINGS_MENU_ITEM_PRESENCE) { text = off_on[settings->discord_presence_on != LDG_TRUTH_FALSE ? SETTINGS_MENU_STEP : SETTINGS_MENU_ROW_FIRST]; }
     else if (item == (uint32_t)SETTINGS_MENU_ITEM_VOICE) { text = off_on[settings->discord_voice_on != LDG_TRUTH_FALSE ? SETTINGS_MENU_STEP : SETTINGS_MENU_ROW_FIRST]; }
     else if (item == (uint32_t)SETTINGS_MENU_ITEM_KEYBIND) { text = "Open"; }
+    else if (item == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_WHITELIST) { text = settings->music_src == (uint8_t)CROSSTALK_GAME_MUSIC_SRC_SYS ? SETTINGS_MENU_WHITELIST_OPEN_TEXT : SETTINGS_MENU_WHITELIST_SYS_ONLY_TEXT; }
     else { text = off_on[settings->focus_pause_on != LDG_TRUTH_FALSE ? SETTINGS_MENU_STEP : SETTINGS_MENU_ROW_FIRST]; }
 
     if (ldg_str_fmt(out, (uint64_t)(cap), &fmt_len, "%.31s", text) != LDG_ERR_AOK) { *(out) = LDG_STR_TERM; }
@@ -366,13 +383,157 @@ uint8_t crosstalk_game_settings_menu_keybind_open_is(const crosstalk_game_settin
     return ctx->kb_open == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
+uint8_t crosstalk_game_settings_menu_whitelist_open_is(const crosstalk_game_settings_menu_ctx_t *ctx)
+{
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    return ctx->whitelist_open == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+static void settings_menu_whitelist_row_add(crosstalk_game_settings_menu_ctx_t *ctx, const char *name, uint8_t live)
+{
+    uint32_t cmp = 0;
+    uint32_t at = 0;
+
+    if (name[0] == LDG_STR_TERM) { return; }
+
+    for (at = 0; at < ctx->whitelist_row_cunt; at++) { if (ldg_str_case_cmp(ctx->whitelist_row[at], name, (uint64_t)CROSSTALK_GAME_SETTINGS_WHITELIST_NAME_CAP, &cmp) == LDG_ERR_AOK && cmp == LDG_ARITH_ORD_EQ)
+        {
+            if (live == LDG_TRUTH_TRUE) { ctx->whitelist_row_live[at] = LDG_TRUTH_TRUE; }
+
+            return;
+        }
+    }
+
+    if (ctx->whitelist_row_cunt >= (uint32_t)CROSSTALK_GAME_SETTINGS_WHITELIST_ROW_CAP) { return; }
+
+    if (ldg_str_rbrcpy(ctx->whitelist_row[ctx->whitelist_row_cunt], name, (uint64_t)sizeof(ctx->whitelist_row[ctx->whitelist_row_cunt])) != LDG_ERR_AOK) { return; }
+
+    ctx->whitelist_row_live[ctx->whitelist_row_cunt] = live;
+    ctx->whitelist_row_cunt++;
+}
+
+static void settings_menu_whitelist_open(crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings)
+{
+    uint32_t cunt = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
+
+    memcpy(&ctx->whitelist_pending[0][0], settings->music_whitelist, sizeof(ctx->whitelist_pending));
+    ctx->whitelist_row_cunt = 0;
+
+    ret = ldg_sys_media_list(ctx->whitelist_sesh, (uint32_t)CROSSTALK_GAME_MUSIC_SESH_CAP, &cunt);
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_FULL) { cunt = 0; }
+
+    if (cunt > (uint32_t)CROSSTALK_GAME_MUSIC_SESH_CAP) { cunt = (uint32_t)CROSSTALK_GAME_MUSIC_SESH_CAP; }
+
+    for (at = 0; at < cunt; at++) { settings_menu_whitelist_row_add(ctx, ctx->whitelist_sesh[at].player, LDG_TRUTH_TRUE); }
+
+    for (at = 0; at < (uint32_t)CROSSTALK_GAME_SETTINGS_WHITELIST_CAP; at++) { settings_menu_whitelist_row_add(ctx, ctx->whitelist_pending[at], LDG_TRUTH_FALSE); }
+
+    ctx->whitelist_sel = (uint32_t)SETTINGS_MENU_ROW_FIRST;
+    ctx->whitelist_open = LDG_TRUTH_TRUE;
+    ctx->whitelist_esc_armed = LDG_TRUTH_FALSE;
+}
+
+static void settings_menu_whitelist_toggle(crosstalk_game_settings_menu_ctx_t *ctx)
+{
+    const char *name = 0x0;
+    uint32_t cmp = 0;
+    uint32_t at = 0;
+
+    if (ctx->whitelist_sel >= ctx->whitelist_row_cunt) { return; }
+
+    name = ctx->whitelist_row[ctx->whitelist_sel];
+
+    for (at = 0; at < (uint32_t)CROSSTALK_GAME_SETTINGS_WHITELIST_CAP; at++)
+    {
+        if (ctx->whitelist_pending[at][0] == LDG_STR_TERM) { continue; }
+
+        if (ldg_str_case_cmp(ctx->whitelist_pending[at], name, (uint64_t)CROSSTALK_GAME_SETTINGS_WHITELIST_NAME_CAP, &cmp) == LDG_ERR_AOK && cmp == LDG_ARITH_ORD_EQ)
+        {
+            ctx->whitelist_pending[at][0] = LDG_STR_TERM;
+            return;
+        }
+    }
+
+    for (at = 0; at < (uint32_t)CROSSTALK_GAME_SETTINGS_WHITELIST_CAP; at++)
+    {
+        if (ctx->whitelist_pending[at][0] != LDG_STR_TERM) { continue; }
+
+        if (ldg_str_rbrcpy(ctx->whitelist_pending[at], name, (uint64_t)sizeof(ctx->whitelist_pending[at])) != LDG_ERR_AOK) { ctx->whitelist_pending[at][0] = LDG_STR_TERM; }
+
+        return;
+    }
+}
+
+static uint8_t settings_menu_whitelist_esc_live_is(const crosstalk_game_settings_menu_ctx_t *ctx, uint64_t now)
+{
+    if (ctx->whitelist_esc_armed != LDG_TRUTH_TRUE) { return LDG_TRUTH_FALSE; }
+
+    return now - ctx->whitelist_esc_at <= (uint64_t)SETTINGS_MENU_KB_ARM_MS ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+}
+
+static uint32_t settings_menu_whitelist_key_isr(crosstalk_game_settings_menu_ctx_t *ctx, crosstalk_game_settings_t *settings, const ldg_term_key_event_t *key, uint8_t *consumed)
+{
+    uint64_t now = ldg_time_epoch_ms_get();
+
+    *consumed = LDG_TRUTH_TRUE;
+
+    if (key->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { return LDG_ERR_AOK; }
+
+    if (key->key == (uint8_t)LDG_TERM_KEY_ESCAPE)
+    {
+        if (memcmp(ctx->whitelist_pending, settings->music_whitelist, sizeof(ctx->whitelist_pending)) == 0)
+        {
+            ctx->whitelist_open = LDG_TRUTH_FALSE;
+            ctx->whitelist_esc_armed = LDG_TRUTH_FALSE;
+            return LDG_ERR_AOK;
+        }
+
+        if (settings_menu_whitelist_esc_live_is(ctx, now) == LDG_TRUTH_TRUE)
+        {
+            memcpy(&ctx->whitelist_pending[0][0], settings->music_whitelist, sizeof(ctx->whitelist_pending));
+            ctx->whitelist_esc_armed = LDG_TRUTH_FALSE;
+            return LDG_ERR_AOK;
+        }
+
+        ctx->whitelist_esc_armed = LDG_TRUTH_TRUE;
+        ctx->whitelist_esc_at = now;
+
+        return LDG_ERR_AOK;
+    }
+
+    if (key->key == (uint8_t)LDG_TERM_KEY_ENTER && (settings_menu_whitelist_esc_live_is(ctx, now) == LDG_TRUTH_TRUE || (key->mods & (uint32_t)LDG_TERM_MOD_ALT) != 0))
+    {
+        memcpy(&settings->music_whitelist[0][0], ctx->whitelist_pending, sizeof(settings->music_whitelist));
+        ctx->changed = LDG_TRUTH_TRUE;
+        ctx->whitelist_open = LDG_TRUTH_FALSE;
+        ctx->whitelist_esc_armed = LDG_TRUTH_FALSE;
+        return LDG_ERR_AOK;
+    }
+
+    if (key->key == (uint8_t)LDG_TERM_KEY_ENTER || (key->text_cunt != 0 && key->text[0] == (uint32_t)LDG_ASCII_SPACE))
+    {
+        settings_menu_whitelist_toggle(ctx);
+        return LDG_ERR_AOK;
+    }
+
+    if (key->key == (uint8_t)LDG_TERM_KEY_UP && ctx->whitelist_sel != 0) { ctx->whitelist_sel--; }
+    else if (key->key == (uint8_t)LDG_TERM_KEY_DOWN && ctx->whitelist_sel + SETTINGS_MENU_STEP < ctx->whitelist_row_cunt) { ctx->whitelist_sel++; }
+
+    return LDG_ERR_AOK;
+}
+
 uint32_t crosstalk_game_settings_menu_init(crosstalk_game_settings_menu_ctx_t *ctx)
 {
-    crosstalk_game_settings_menu_ctx_t empty = LDG_STRUCT_ZERO_INIT;
+    uint32_t ret = 0;
 
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    *ctx = empty;
+    ret = ldg_mem_secure_zero(ctx, (uint64_t)sizeof(*ctx));
+    if (ret != LDG_ERR_AOK) { return ret; }
+
     ctx->link_action = CROSSTALK_GAME_SETTINGS_LINK_NONE;
 
     return LDG_ERR_AOK;
@@ -558,6 +719,84 @@ static uint32_t settings_menu_kb_draw(const crosstalk_game_settings_menu_ctx_t *
     return settings_menu_tip_draw(render, tip, inner_col, row + SETTINGS_MENU_TIP_GAP, inner_w);
 }
 
+static uint32_t settings_menu_whitelist_draw(const crosstalk_game_settings_menu_ctx_t *ctx, ldg_term_render_t *render, const ldg_term_rect_t *rect)
+{
+    char line[SETTINGS_MENU_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    ldg_term_render_color_t box_fg = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t box_bg = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t fg = LDG_STRUCT_ZERO_INIT;
+    ldg_term_render_color_t bg = LDG_STRUCT_ZERO_INIT;
+    uint64_t fmt_len = 0;
+    uint32_t list_rows = ctx->whitelist_row_cunt != 0 ? ctx->whitelist_row_cunt : (uint32_t)SETTINGS_MENU_STEP;
+    uint32_t box_w = (uint32_t)SETTINGS_MENU_BOX_COL_CUNT;
+    uint32_t box_h = (uint32_t)SETTINGS_MENU_TITLE_ROWS + (uint32_t)SETTINGS_MENU_TIP_GAP + list_rows + (uint32_t)SETTINGS_MENU_TIP_GAP + (uint32_t)SETTINGS_MENU_TIP_ROW_MAX + (uint32_t)SETTINGS_MENU_BOX_PAD * (uint32_t)SETTINGS_MENU_BOX_SIDES;
+    uint32_t box_col = 0;
+    uint32_t box_row = 0;
+    uint32_t inner_col = 0;
+    uint32_t inner_w = 0;
+    uint32_t row = 0;
+    uint32_t at = 0;
+    uint32_t ret = 0;
+
+    if (box_w > rect->col_cunt) { box_w = rect->col_cunt; }
+
+    if (box_h > rect->row_cunt) { box_h = rect->row_cunt; }
+
+    if (box_w <= (uint32_t)SETTINGS_MENU_BOX_PAD * (uint32_t)SETTINGS_MENU_BOX_SIDES) { return LDG_ERR_AOK; }
+
+    box_col = rect->col + (rect->col_cunt - box_w) / (uint32_t)SETTINGS_MENU_CENTER_DIV;
+    box_row = rect->row + (rect->row_cunt - box_h) / (uint32_t)SETTINGS_MENU_CENTER_DIV;
+    inner_col = box_col + (uint32_t)SETTINGS_MENU_BOX_PAD;
+    inner_w = box_w - (uint32_t)SETTINGS_MENU_BOX_PAD * (uint32_t)SETTINGS_MENU_BOX_SIDES;
+
+    ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, &box_fg);
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_CELL_PANE_RGBA, &box_bg); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_LIT_RGBA, &fg); }
+
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_color_get((uint32_t)CROSSTALK_UI_THEME_SEL_BG_RGBA, &bg); }
+
+    for (row = box_row; ret == LDG_ERR_AOK && row < box_row + box_h; row++) { ret = crosstalk_ui_cell_span_fill(render, box_col, row, box_w, &box_fg, &box_bg); }
+
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    row = box_row + (uint32_t)SETTINGS_MENU_BOX_PAD;
+
+    ret = crosstalk_ui_cell_rgba_put(render, inner_col, row, SETTINGS_MENU_WHITELIST_TITLE, (uint64_t)SETTINGS_MENU_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_LIT_RGBA, 0x0);
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    row = row + SETTINGS_MENU_STEP + (uint32_t)SETTINGS_MENU_TIP_GAP;
+
+    if (ctx->whitelist_row_cunt == 0)
+    {
+        ret = crosstalk_ui_cell_rgba_put(render, inner_col, row, SETTINGS_MENU_WHITELIST_EMPTY_TEXT, (uint64_t)SETTINGS_MENU_LINE_CAP, (uint32_t)CROSSTALK_UI_THEME_DIM_RGBA, 0x0);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        row++;
+    }
+
+    for (at = 0; at < ctx->whitelist_row_cunt; at++)
+    {
+        const char *mark = crosstalk_game_music_whitelist_has(ctx->whitelist_pending, (uint32_t)CROSSTALK_GAME_SETTINGS_WHITELIST_CAP, ctx->whitelist_row[at]) == LDG_TRUTH_TRUE ? SETTINGS_MENU_WHITELIST_MARK_ON : SETTINGS_MENU_WHITELIST_MARK_OFF;
+        const char *absent = ctx->whitelist_row_live[at] == LDG_TRUTH_TRUE ? "" : SETTINGS_MENU_WHITELIST_ABSENT_TEXT;
+
+        if (ldg_str_fmt(line, (uint64_t)sizeof(line), &fmt_len, SETTINGS_MENU_WHITELIST_LINE_FMT, mark, ctx->whitelist_row[at], absent) != LDG_ERR_AOK) { return LDG_ERR_STR_FMT; }
+
+        if (at == ctx->whitelist_sel)
+        {
+            ret = crosstalk_ui_cell_span_fill(render, inner_col, row, inner_w, &fg, &bg);
+            if (ret == LDG_ERR_AOK) { ret = crosstalk_ui_cell_text_put(render, inner_col, row, line, (uint64_t)sizeof(line), &fg, &bg); }
+        }
+        else { ret = crosstalk_ui_cell_rgba_put(render, inner_col, row, line, (uint64_t)sizeof(line), (uint32_t)CROSSTALK_UI_THEME_TEXT_RGBA, 0x0); }
+
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        row++;
+    }
+
+    return settings_menu_tip_draw(render, settings_menu_whitelist_esc_live_is(ctx, ldg_time_epoch_ms_get()) == LDG_TRUTH_TRUE ? SETTINGS_MENU_KB_TIP_ESC : SETTINGS_MENU_WHITELIST_TIP_IDLE, inner_col, row + SETTINGS_MENU_TIP_GAP, inner_w);
+}
+
 uint32_t crosstalk_game_settings_menu_draw(const crosstalk_game_settings_menu_ctx_t *ctx, const crosstalk_game_settings_t *settings, uint8_t discord_linked, ldg_term_render_t *render, const ldg_term_rect_t *rect)
 {
     uint32_t mnemonic_pos[SETTINGS_MENU_ITEM_CUNT] = LDG_ARR_ZERO_INIT;
@@ -578,6 +817,8 @@ uint32_t crosstalk_game_settings_menu_draw(const crosstalk_game_settings_menu_ct
     if (rect->col_cunt == 0 || rect->row_cunt == 0) { return LDG_ERR_AOK; }
 
     if (ctx->kb_open == LDG_TRUTH_TRUE) { return settings_menu_kb_draw(ctx, settings, render, rect); }
+
+    if (ctx->whitelist_open == LDG_TRUTH_TRUE) { return settings_menu_whitelist_draw(ctx, render, rect); }
 
     ret = settings_menu_mnemonic_get(mnemonic_pos, mnemonic_ch);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
@@ -683,6 +924,8 @@ uint32_t crosstalk_game_settings_menu_key_isr(crosstalk_game_settings_menu_ctx_t
 
     if (ctx->kb_open == LDG_TRUTH_TRUE) { return settings_menu_kb_key_isr(ctx, settings, key, consumed); }
 
+    if (ctx->whitelist_open == LDG_TRUTH_TRUE) { return settings_menu_whitelist_key_isr(ctx, settings, key, consumed); }
+
     if (key->kind == (uint8_t)LDG_TERM_KEY_KIND_RELEASE) { return LDG_ERR_AOK; }
 
     if ((key->mods & ((uint32_t)LDG_TERM_MOD_CTRL | (uint32_t)LDG_TERM_MOD_ALT | (uint32_t)LDG_TERM_MOD_SUPER)) != 0) { return LDG_ERR_AOK; }
@@ -712,6 +955,13 @@ uint32_t crosstalk_game_settings_menu_key_isr(crosstalk_game_settings_menu_ctx_t
     }
 
     if (ctx->sel == (uint32_t)SETTINGS_MENU_ITEM_KEYBIND && key->key == (uint8_t)LDG_TERM_KEY_LHS) { return LDG_ERR_AOK; }
+
+    if (ctx->sel == (uint32_t)SETTINGS_MENU_ITEM_MUSIC_WHITELIST)
+    {
+        if (settings->music_src == (uint8_t)CROSSTALK_GAME_MUSIC_SRC_SYS && (key->key == (uint8_t)LDG_TERM_KEY_RHS || key->key == (uint8_t)LDG_TERM_KEY_ENTER)) { settings_menu_whitelist_open(ctx, settings); }
+
+        if (key->key == (uint8_t)LDG_TERM_KEY_LHS || key->key == (uint8_t)LDG_TERM_KEY_RHS || key->key == (uint8_t)LDG_TERM_KEY_ENTER) { return LDG_ERR_AOK; }
+    }
 
     if (key->key == (uint8_t)LDG_TERM_KEY_LHS) { settings_menu_item_step(ctx, settings, discord_linked, LDG_TRUTH_TRUE); return LDG_ERR_AOK; }
 

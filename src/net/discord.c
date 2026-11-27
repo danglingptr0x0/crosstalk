@@ -61,6 +61,9 @@
 #define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED "Paused at the keyboard"
 #define CROSSTALK_NET_DISCORD_TEXT_LOBBY_PAUSED "Paused in a lobby"
 #define CROSSTALK_NET_DISCORD_TEXT_SANDBOX "At the keyboard with %u32"
+#define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO_KBD "At the keyboard (%.63s)"
+#define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_KBD "At the keyboard with %u32 (%.63s)"
+#define CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED_KBD "Paused at the keyboard (%.63s)"
 #define CROSSTALK_NET_DISCORD_TEXT_LOBBY "Busylooping in a lobby (%u32/%u32)"
 #define CROSSTALK_NET_DISCORD_PARTY_NONE 0
 #define CROSSTALK_NET_DISCORD_STAMP_NONE 0
@@ -1254,9 +1257,11 @@ static void crosstalk_net_discord_presence_flush(crosstalk_net_discord_ctx_t *ct
 
     if (ctx->presence.details[0] != LDG_STR_TERM)
     {
+        char paused_text[CROSSTALK_NET_DISCORD_DETAILS_CAP] = LDG_ARR_ZERO_INIT;
         const char *details = ctx->presence.details;
 
-        if (ctx->presence.paused == LDG_TRUTH_TRUE && ctx->presence.kind == CROSSTALK_NET_DISCORD_KIND_SANDBOX) { details = CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED; }
+        if (ctx->presence.paused == LDG_TRUTH_TRUE && ctx->presence.kind == CROSSTALK_NET_DISCORD_KIND_SANDBOX && ctx->presence.kbd[0] != LDG_STR_TERM && ldg_str_fmt(paused_text, (uint64_t)sizeof(paused_text), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED_KBD, ctx->presence.kbd) == LDG_ERR_AOK) { details = paused_text; }
+        else if (ctx->presence.paused == LDG_TRUTH_TRUE && ctx->presence.kind == CROSSTALK_NET_DISCORD_KIND_SANDBOX) { details = CROSSTALK_NET_DISCORD_TEXT_SANDBOX_PAUSED; }
         else if (ctx->presence.paused == LDG_TRUTH_TRUE && ctx->presence.kind == CROSSTALK_NET_DISCORD_KIND_LOBBY) { details = CROSSTALK_NET_DISCORD_TEXT_LOBBY_PAUSED; }
 
         crosstalk_net_discord_str_make(details, &text);
@@ -1956,13 +1961,15 @@ uint32_t crosstalk_net_discord_presence_sandbox_set(crosstalk_net_discord_ctx_t 
 
     if (players <= CROSSTALK_NET_DISCORD_SCAN_CUNT)
     {
-        if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
+        if (ctx->presence.kbd[0] != LDG_STR_TERM) { if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO_KBD, ctx->presence.kbd) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; } }
+        else if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX_SOLO) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
 
         crosstalk_net_discord_badge_set(ctx, CROSSTALK_NET_DISCORD_BADGE_SOLO, CROSSTALK_NET_DISCORD_BADGE_TEXT_SOLO);
     }
     else
     {
-        if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX, players) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
+        if (ctx->presence.kbd[0] != LDG_STR_TERM) { if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX_KBD, players, ctx->presence.kbd) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; } }
+        else if (ldg_str_fmt(ctx->presence.details, (uint64_t)sizeof(ctx->presence.details), &fmt_len, CROSSTALK_NET_DISCORD_TEXT_SANDBOX, players) != LDG_ERR_AOK) { *(ctx->presence.details) = LDG_STR_TERM; }
 
         crosstalk_net_discord_badge_set(ctx, CROSSTALK_NET_DISCORD_BADGE_COOP, CROSSTALK_NET_DISCORD_BADGE_TEXT_COOP);
     }
@@ -2086,6 +2093,14 @@ uint32_t crosstalk_net_discord_presence_push(void *backend_ctx, const crosstalk_
 
     ret = crosstalk_net_discord_presence_paused_set(ctx, desc->paused);
     if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+    ctx->presence.kbd[0] = LDG_STR_TERM;
+
+    if (desc->kbd != 0x0 && desc->kbd[0] != LDG_STR_TERM)
+    {
+        ret = ldg_str_rbrcpy(ctx->presence.kbd, desc->kbd, (uint64_t)sizeof(ctx->presence.kbd));
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { ctx->presence.kbd[0] = LDG_STR_TERM; }
+    }
 
     switch (desc->screen)
     {

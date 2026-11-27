@@ -236,11 +236,11 @@ uint32_t crosstalk_hdl_logic_gate_cycle_run(crosstalk_hdl_logic_gate_ctx_t *ctx,
             for (bit_idx = 0; bit_idx < ent->dst_w; bit_idx++)
             {
                 uint32_t node = aig_ctx->pi_node[ent->pi_base + bit_idx] >> 1;
-                uint8_t nxt = (uint8_t)((val >> bit_idx) & 1);
+                uint8_t next = (uint8_t)((val >> bit_idx) & 1);
 
-                if (ctx->node_val[node] != nxt)
+                if (ctx->node_val[node] != next)
                 {
-                    ctx->node_val[node] = nxt;
+                    ctx->node_val[node] = next;
                     changed = LDG_TRUTH_TRUE;
                 }
             }
@@ -248,11 +248,11 @@ uint32_t crosstalk_hdl_logic_gate_cycle_run(crosstalk_hdl_logic_gate_ctx_t *ctx,
 
         for (bit_idx = 0; bit_idx < ctx->latch_cunt; bit_idx++)
         {
-            uint8_t nxt = (uint8_t)crosstalk_hdl_logic_gate_literal_bit_get(ctx, ctx->latch_root_literal[bit_idx]);
+            uint8_t next = (uint8_t)crosstalk_hdl_logic_gate_literal_bit_get(ctx, ctx->latch_root_literal[bit_idx]);
 
-            if (ctx->node_val[ctx->latch_pi_node[bit_idx]] != nxt)
+            if (ctx->node_val[ctx->latch_pi_node[bit_idx]] != next)
             {
-                ctx->node_val[ctx->latch_pi_node[bit_idx]] = nxt;
+                ctx->node_val[ctx->latch_pi_node[bit_idx]] = next;
                 changed = LDG_TRUTH_TRUE;
             }
         }

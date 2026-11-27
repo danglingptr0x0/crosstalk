@@ -62,16 +62,16 @@
 #define NATIVE_CH_EXP_LOWER 'e'
 #define NATIVE_CH_EXP_UPPER 'E'
 #define NATIVE_CH_WILD '?'
-#define NATIVE_CH_UNSIGNED 'u'
-#define NATIVE_CH_SIGNED 'i'
-#define NATIVE_CH_REAL 'f'
+#define NATIVE_TYPE_UNSIGNED "uint"
+#define NATIVE_TYPE_SIGNED "int"
+#define NATIVE_TYPE_REAL "fp"
+#define NATIVE_TYPE_PREFIX_AT 0
 #define NATIVE_WORD_EXE "exe"
 #define NATIVE_WORD_PTR "ptr"
 #define NATIVE_WORD_8 "8"
 #define NATIVE_WORD_16 "16"
 #define NATIVE_WORD_32 "32"
 #define NATIVE_WORD_64 "64"
-#define NATIVE_WORD_HELP "help"
 #define NATIVE_WORD_STATUS "status"
 #define NATIVE_WORD_MODULES "modules"
 #define NATIVE_WORD_SYM "symbol"
@@ -130,6 +130,30 @@ typedef struct native_ctx
     uint8_t tail_pudding[6];
 } native_ctx_t;
 
+uint32_t crosstalk_re_repl_native_mod_cunt_get(crosstalk_re_repl_ctx_t *ctx, uint64_t *out)
+{
+    native_ctx_t *native = 0x0;
+    uint64_t cunt = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = 0;
+
+    if (ctx->native == 0x0 || ctx->attached != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
+
+    native = (native_ctx_t *)ctx->native;
+
+    ret = ldg_sys_mod_list(&ctx->proc, native->mods, (uint64_t)NATIVE_MOD_CAP, &cunt);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (cunt > (uint64_t)NATIVE_MOD_CAP) { cunt = (uint64_t)NATIVE_MOD_CAP; }
+
+    *out = cunt;
+
+    return LDG_ERR_AOK;
+}
+
 uint32_t crosstalk_re_repl_native_init(crosstalk_re_repl_ctx_t *ctx)
 {
     uint32_t ret = 0;
@@ -181,6 +205,9 @@ uint32_t crosstalk_re_repl_native_rst(crosstalk_re_repl_ctx_t *ctx)
 
 uint32_t crosstalk_re_repl_native_type_get(const char *text, uint32_t *out_bytes, uint8_t *out_fp, uint8_t *out_signed)
 {
+    const char *width = 0x0;
+    uint64_t hit = UINT64_MAX;
+
     if (LDG_UNLIKELY(text == 0x0 || out_bytes == 0x0 || out_fp == 0x0 || out_signed == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_bytes = 0;
@@ -193,15 +220,23 @@ uint32_t crosstalk_re_repl_native_type_get(const char *text, uint32_t *out_bytes
         return LDG_ERR_AOK;
     }
 
-    if (text[NATIVE_ARG_VERB] != NATIVE_CH_UNSIGNED && text[NATIVE_ARG_VERB] != NATIVE_CH_SIGNED && text[NATIVE_ARG_VERB] != NATIVE_CH_REAL) { return LDG_ERR_FUNC_ARG_INVALID; }
+    if (ldg_str_substring_find(text, NATIVE_TYPE_UNSIGNED, (uint64_t)sizeof(NATIVE_TYPE_UNSIGNED), &hit) == LDG_ERR_AOK && hit == (uint64_t)NATIVE_TYPE_PREFIX_AT) { width = text + sizeof(NATIVE_TYPE_UNSIGNED) - LDG_STR_TERM_SIZE; }
+    else if (ldg_str_substring_find(text, NATIVE_TYPE_SIGNED, (uint64_t)sizeof(NATIVE_TYPE_SIGNED), &hit) == LDG_ERR_AOK && hit == (uint64_t)NATIVE_TYPE_PREFIX_AT)
+    {
+        width = text + sizeof(NATIVE_TYPE_SIGNED) - LDG_STR_TERM_SIZE;
+        *out_signed = LDG_TRUTH_TRUE;
+    }
+    else if (ldg_str_substring_find(text, NATIVE_TYPE_REAL, (uint64_t)sizeof(NATIVE_TYPE_REAL), &hit) == LDG_ERR_AOK && hit == (uint64_t)NATIVE_TYPE_PREFIX_AT)
+    {
+        width = text + sizeof(NATIVE_TYPE_REAL) - LDG_STR_TERM_SIZE;
+        *out_fp = LDG_TRUTH_TRUE;
+    }
+    else { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    *out_fp = text[NATIVE_ARG_VERB] == NATIVE_CH_REAL ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    *out_signed = text[NATIVE_ARG_VERB] == NATIVE_CH_SIGNED ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-
-    if (crosstalk_re_repl_cmd_eq_is(text + NATIVE_STEP, NATIVE_WORD_8) == LDG_TRUTH_TRUE && *out_fp != LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_BYTE; }
-    else if (crosstalk_re_repl_cmd_eq_is(text + NATIVE_STEP, NATIVE_WORD_16) == LDG_TRUTH_TRUE && *out_fp != LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_WORD; }
-    else if (crosstalk_re_repl_cmd_eq_is(text + NATIVE_STEP, NATIVE_WORD_32) == LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_DWORD; }
-    else if (crosstalk_re_repl_cmd_eq_is(text + NATIVE_STEP, NATIVE_WORD_64) == LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_QWORD; }
+    if (crosstalk_re_repl_cmd_eq_is(width, NATIVE_WORD_8) == LDG_TRUTH_TRUE && *out_fp != LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_BYTE; }
+    else if (crosstalk_re_repl_cmd_eq_is(width, NATIVE_WORD_16) == LDG_TRUTH_TRUE && *out_fp != LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_WORD; }
+    else if (crosstalk_re_repl_cmd_eq_is(width, NATIVE_WORD_32) == LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_DWORD; }
+    else if (crosstalk_re_repl_cmd_eq_is(width, NATIVE_WORD_64) == LDG_TRUTH_TRUE) { *out_bytes = (uint32_t)NATIVE_BYTES_QWORD; }
     else { return LDG_ERR_FUNC_ARG_INVALID; }
 
     return LDG_ERR_AOK;
@@ -1072,36 +1107,6 @@ static uint32_t native_poke_cmd(crosstalk_re_repl_ctx_t *ctx, uint32_t argc, cha
     return native_wr(ctx, addr, len);
 }
 
-static uint32_t native_help(crosstalk_re_repl_ctx_t *ctx)
-{
-    uint32_t ret = 0;
-
-    ret = crosstalk_re_repl_emit(ctx, "modules [start] | symbol <module> <export> | address <address>");
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "regions [address] | peek <address> [bytes: 1..256]"); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "read <type> <address> | write <type> <address> <value> | poke <address> <hex-bytes>"); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Types: u8/u16/u32/u64/i8/i16/i32/i64/ptr/f32/f64. Writes require writable committed pages, verify the bytes and flush the instruction cache; page protection is never changed."); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "find <address> <bytes> <hex-pattern>; e.g. 488B??FF"); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "findstr <address> <bytes> <ASCII-token> | findptr <address> <bytes> <target-address>"); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Search: max 256 MiB/request, 128 pattern bytes, 64 matches; use next address and remaining bytes to continue. Unreadable and guard pages are skipped; a search is not an atomic snapshot."); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "xrefs <target> [start bytes]: byte scan of executable pages for a rel32 that lands on the target or the target as a 64-bit value; defaults to the main executable. No instruction decoding, so expect false positives."); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "scan: expression/delta/curve scanner; scan help for baseline, filters, timed sampling and ranking"); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "terminate: force-stop the attached process immediately; no save or shutdown callbacks run."); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Addresses: decimal, 0xhex, module+0xRVA, or exe+0xRVA for the main executable. No spaces in address expressions."); }
-
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Region rows: committed, readable, writable, executable and guard are flags; kind is none, private, mapped or image."); }
-
-    return ret;
-}
-
 static uint32_t native_list_cmd(crosstalk_re_repl_ctx_t *ctx, uint32_t argc, char **args, uint8_t regions)
 {
     uint64_t val = 0;
@@ -1171,7 +1176,6 @@ uint32_t crosstalk_re_repl_native_cmd(crosstalk_re_repl_ctx_t *ctx, uint32_t arg
 
     verb = args[NATIVE_ARG_VERB];
 
-    if (crosstalk_re_repl_cmd_eq_is(verb, NATIVE_WORD_HELP) == LDG_TRUTH_TRUE) { return argc == (uint32_t)NATIVE_ARGC_VERB ? native_help(ctx) : LDG_ERR_FUNC_ARG_INVALID; }
 
     if (crosstalk_re_repl_cmd_eq_is(verb, NATIVE_WORD_STATUS) == LDG_TRUTH_TRUE) { return crosstalk_re_repl_emit(ctx, "native ready: %u32; pid: %u32; pointer bytes: %u32; search bytes per tick: %u32", (uint32_t)LDG_TRUTH_TRUE, ctx->proc.pid, (uint32_t)NATIVE_PTR_BYTES, (uint32_t)(NATIVE_CHUNK * NATIVE_CHUNK_STEPS)); }
 

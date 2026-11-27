@@ -2465,13 +2465,13 @@ static void mem_watch_note(crosstalk_eda_ic_fpga_ctx_t *ctx, uint32_t slot_idx, 
 
     for (at = 0; at < ctx->mem_watch_cunt; at++)
     {
-        crosstalk_eda_ic_fpga_mem_watch_t *cur = &ctx->mem_watch[at];
+        crosstalk_eda_ic_fpga_mem_watch_t *curr = &ctx->mem_watch[at];
 
-        if (cur->used != LDG_TRUTH_TRUE || cur->slot_idx != slot_idx || cur->word_off != word_off) { continue; }
+        if (curr->used != LDG_TRUTH_TRUE || curr->slot_idx != slot_idx || curr->word_off != word_off) { continue; }
 
-        if (strcmp(cur->sig, sig_name) != 0) { continue; }
+        if (strcmp(curr->sig, sig_name) != 0) { continue; }
 
-        watch = cur;
+        watch = curr;
         break;
     }
 

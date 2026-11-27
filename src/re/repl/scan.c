@@ -466,6 +466,27 @@ static uint32_t scan_pass_end(scan_ctx_t *scan, uint32_t step_err)
     return LDG_ERR_AOK;
 }
 
+uint32_t crosstalk_re_repl_scan_state_get(const crosstalk_re_repl_ctx_t *ctx, uint32_t *out_cand, uint8_t *out_running, uint8_t *out_ready)
+{
+    const scan_ctx_t *scan = 0x0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || out_cand == 0x0 || out_running == 0x0 || out_ready == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out_cand = 0;
+    *out_running = LDG_TRUTH_FALSE;
+    *out_ready = LDG_TRUTH_FALSE;
+
+    if (ctx->scan == 0x0) { return LDG_ERR_NOT_INIT; }
+
+    scan = (const scan_ctx_t *)ctx->scan;
+
+    *out_cand = scan->cunt;
+    *out_running = scan->mode != (uint32_t)SCAN_MODE_IDLE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+    *out_ready = scan->ready == LDG_TRUTH_TRUE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
+
+    return LDG_ERR_AOK;
+}
+
 uint32_t crosstalk_re_repl_scan_tick(crosstalk_re_repl_ctx_t *ctx)
 {
     scan_ctx_t *scan = 0x0;
@@ -704,7 +725,7 @@ static uint32_t scan_help(crosstalk_re_repl_ctx_t *ctx)
 {
     uint32_t ret = 0;
 
-    ret = crosstalk_re_repl_emit(ctx, "scan begin <u8/u16/u32/u64/i8/i16/i32/i64/f32/f64> <address> <bytes> <stride> [predicate]");
+    ret = crosstalk_re_repl_emit(ctx, "scan begin <uint8/uint16/uint32/uint64/int8/int16/int32/int64/fp32/fp64> <addr> <bytes> <stride> [predicate]");
     if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "scan where <predicate> | scan watch <interval-ms> <samples> <predicate> | scan fit <interval-ms> <samples> <residual>"); }
 
     if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "scan status | scan list [start-slot] | scan best [start-rank] | scan rebase | scan stop | scan clear"); }
@@ -717,7 +738,7 @@ static uint32_t scan_help(crosstalk_re_repl_ctx_t *ctx)
 
     if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Predicates retain nonzero results; watch requires every sample to pass. Fit ranks lowest mean absolute residual; use scan best. No automatic scale/time fitting."); }
 
-    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Async jobs: status reports completion/errors; stop preserves partial changes. Capacity 32768 candidates; full retains the partial baseline and reports err. Narrow the range or the first predicate. Max range 256 MiB; stride starts at the supplied address."); }
+    if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "Async jobs: status reports completion/errors; stop preserves partial changes. Capacity 32768 candidates; full retains the partial baseline and reports err. Narrow the range or the first predicate. Max range 256 MiB; stride starts at the supplied addr."); }
 
     if (ret == LDG_ERR_AOK) { ret = crosstalk_re_repl_emit(ctx, "At most 256 slots/tick, 2 ms budget. Samples are not simultaneous; actual t/dt and pass span matter. 16..60000 ms requested interval, 1..4096 samples. No catch-up samples."); }
 

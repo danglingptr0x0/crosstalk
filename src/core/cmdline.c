@@ -24,13 +24,17 @@
 
 static uint32_t cmdline_cmd_cb(void *user, const char *const *arg, uint32_t arg_cunt, uint8_t *out_truth)
 {
-    if (LDG_UNLIKELY(user == 0x0 || arg == 0x0 || out_truth == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+    crosstalk_core_cmdline_ctx_t *ctx = (crosstalk_core_cmdline_ctx_t *)user;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || arg == 0x0 || out_truth == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     *out_truth = LDG_TRUTH_INDETERMINATE;
 
     if (arg_cunt > (uint32_t)LDG_SHELL_ARG_MAX) { return LDG_ERR_FUNC_ARG_INVALID; }
 
-    return LDG_ERR_UNSUPPORTED;
+    ctx->verb_seen = LDG_TRUTH_TRUE;
+
+    return LDG_ERR_AOK;
 }
 
 static uint32_t cmdline_hist_cb(void *user, uint32_t idx, const char **out)
@@ -308,13 +312,71 @@ uint32_t crosstalk_core_cmdline_hist_ld(crosstalk_core_cmdline_ctx_t *ctx, const
 
 uint32_t crosstalk_core_cmdline_out_push(crosstalk_core_cmdline_ctx_t *ctx, const char *text)
 {
+    char ln[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t len = 0;
+    uint32_t ret = 0;
+
     if (LDG_UNLIKELY(ctx == 0x0 || text == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (ctx->drawer_ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
     if (text[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
 
-    return ldg_shell_out_push(ctx->shell, text);
+    ret = ldg_str_rbrcpy(ln, text, (uint64_t)sizeof(ln) - (uint64_t)CROSSTALK_CORE_CMDLINE_LF_ROOM);
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
+
+    ret = ldg_str_len_get(ln, (uint64_t)sizeof(ln), &len);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (ln[len - (uint64_t)CROSSTALK_CORE_CMDLINE_LAST_CH_BACK] != LDG_ASCII_LF)
+    {
+        ln[len] = LDG_ASCII_LF;
+        ln[len + (uint64_t)CROSSTALK_CORE_CMDLINE_LF_ROOM] = LDG_STR_TERM;
+    }
+
+    return ldg_shell_out_push(ctx->shell, ln);
+}
+
+uint32_t crosstalk_core_cmdline_wipe_ck(crosstalk_core_cmdline_ctx_t *ctx)
+{
+    uint64_t cunt = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (ctx->shell == 0x0) { return LDG_ERR_NOT_INIT; }
+
+    ret = ldg_shell_wipe_cunt_get(ctx->shell, &cunt);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (cunt == ctx->wipe_seen) { return LDG_ERR_AOK; }
+
+    ctx->wipe_seen = cunt;
+
+    return ldg_shell_out_seq_get(ctx->shell, &ctx->out_floor);
+}
+
+uint32_t crosstalk_core_cmdline_ln_trim(char *text, uint64_t cap, uint64_t *out_len)
+{
+    uint64_t len = 0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(text == 0x0 || out_len == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out_len = 0;
+
+    ret = ldg_str_len_get(text, cap, &len);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    while (len != 0 && (text[len - (uint64_t)CROSSTALK_CORE_CMDLINE_LAST_CH_BACK] == LDG_ASCII_LF || text[len - (uint64_t)CROSSTALK_CORE_CMDLINE_LAST_CH_BACK] == LDG_ASCII_CR))
+    {
+        len--;
+        text[len] = LDG_STR_TERM;
+    }
+
+    *out_len = len;
+
+    return LDG_ERR_AOK;
 }
 
 uint32_t crosstalk_core_cmdline_out_seq_get(crosstalk_core_cmdline_ctx_t *ctx, uint64_t *out)
@@ -330,6 +392,9 @@ uint32_t crosstalk_core_cmdline_out_seq_get(crosstalk_core_cmdline_ctx_t *ctx, u
 
 uint32_t crosstalk_core_cmdline_out_get(crosstalk_core_cmdline_ctx_t *ctx, uint64_t seq, char *out, uint32_t out_cap, uint64_t *out_seq)
 {
+    uint64_t got = 0;
+    uint32_t ret = 0;
+
     if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0 || out_seq == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     out[0] = LDG_STR_TERM;
@@ -337,7 +402,18 @@ uint32_t crosstalk_core_cmdline_out_get(crosstalk_core_cmdline_ctx_t *ctx, uint6
 
     if (ctx->drawer_ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    return ldg_shell_out_get(ctx->shell, seq, out, (uint64_t)out_cap, out_seq);
+    ret = ldg_shell_out_get(ctx->shell, seq, out, (uint64_t)out_cap, &got);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (got == seq || got == seq + (uint64_t)CROSSTALK_CORE_CMDLINE_HIST_STEP)
+    {
+        *out_seq = seq + (uint64_t)CROSSTALK_CORE_CMDLINE_HIST_STEP;
+        return LDG_ERR_AOK;
+    }
+
+    out[0] = LDG_STR_TERM;
+
+    return LDG_ERR_NOT_FOUND;
 }
 
 uint32_t crosstalk_core_cmdline_echo_set(crosstalk_core_cmdline_ctx_t *ctx, uint8_t on)
@@ -431,23 +507,26 @@ static uint32_t cmdline_drawer_draw(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_
     at = seq - (uint64_t)shown;
     row = ctx->drawer_row - shown;
 
+    if (at < ctx->out_floor && ctx->out_floor <= seq)
+    {
+        row = row + (uint32_t)(ctx->out_floor - at);
+        at = ctx->out_floor;
+    }
+
     while (at < seq && row < ctx->drawer_row)
     {
-        ret = ldg_shell_out_get(ctx->shell, at, text, (uint64_t)sizeof(text), &got);
-        if (ret != LDG_ERR_AOK) { break; }
-
-        if (got > at)
+        ret = crosstalk_core_cmdline_out_get(ctx, at, text, (uint32_t)sizeof(text), &got);
+        if (ret != LDG_ERR_AOK)
         {
-            row = row + (uint32_t)(got - at);
-            at = got;
-
-            if (row >= ctx->drawer_row) { break; }
+            at = at + (uint64_t)CROSSTALK_CORE_CMDLINE_HIST_STEP;
+            row = row + (uint32_t)CROSSTALK_CORE_CMDLINE_LINE_ROW_CUNT;
+            continue;
         }
 
         ret = crosstalk_ui_cell_span_fill(render, ctx->drawer_col, row, ctx->drawer_col_cunt, fg, bg);
         if (ret != LDG_ERR_AOK) { return ret; }
 
-        ret = ldg_str_len_get(text, (uint64_t)sizeof(text), &len);
+        ret = crosstalk_core_cmdline_ln_trim(text, (uint64_t)sizeof(text), &len);
         if (ret != LDG_ERR_AOK) { return ret; }
 
         if (len > (uint64_t)ctx->drawer_col_cunt) { len = (uint64_t)ctx->drawer_col_cunt; }
@@ -525,13 +604,26 @@ static uint32_t cmdline_line_collect(crosstalk_core_cmdline_ctx_t *ctx)
 
     if (ctx->line[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
 
-    if (ctx->echo_off != LDG_TRUTH_TRUE && ldg_shell_out_push(ctx->shell, ctx->line) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline echo push failed"); }
+    if (ctx->echo_off != LDG_TRUTH_TRUE && crosstalk_core_cmdline_out_push(ctx, ctx->line) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline echo push failed"); }
 
     if (ldg_shell_hist_cunt_get(ctx->shell, &cunt) == LDG_ERR_AOK && cunt != 0 && ldg_shell_hist_get(ctx->shell, cunt - (uint32_t)CROSSTALK_CORE_CMDLINE_HIST_STEP, &last) == LDG_ERR_AOK && last != 0x0 && strncmp(last, ctx->line, (uint64_t)sizeof(ctx->line)) == 0) { kept = LDG_TRUTH_TRUE; }
 
     if (kept != LDG_TRUTH_TRUE && ldg_shell_hist_push(ctx->shell, ctx->line) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline history push failed"); }
 
     if (kept != LDG_TRUTH_TRUE && ctx->hist_path[0] != LDG_STR_TERM && ldg_shell_hist_st(ctx->shell) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline: hist store failed"); }
+
+    ctx->verb_seen = LDG_TRUTH_FALSE;
+
+    if (ldg_shell_ln_exec(ctx->shell, ctx->line) == LDG_ERR_AOK && ctx->verb_seen != LDG_TRUTH_TRUE)
+    {
+        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_DEBUG, "cmdline: run by the shell; line: %.128s", ctx->line);
+
+        if (crosstalk_core_cmdline_wipe_ck(ctx) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "cmdline: wipe check failed"); }
+
+        ctx->line[0] = LDG_STR_TERM;
+
+        return crosstalk_core_cmdline_close(ctx);
+    }
 
     ctx->line_rdy = LDG_TRUTH_TRUE;
 

@@ -59,6 +59,8 @@ typedef enum crosstalk_net_wire_kind
 typedef struct crosstalk_net_wire_remote_sesh
 {
     uint32_t src;
+    uint32_t col_cunt;
+    uint32_t row_cunt;
     uint8_t live;
     uint8_t pudding[3];
     char title[CROSSTALK_NET_WIRE_REMOTE_TITLE_CAP];

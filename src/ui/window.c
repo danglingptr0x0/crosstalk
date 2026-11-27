@@ -556,14 +556,9 @@ static uint32_t window_one_draw(crosstalk_ui_window_ctx_t *ctx, uint32_t idx, ld
 
     style.accent_edge = (uint8_t)LDG_TERM_RENDER_FRAME_EDGE_TOP_LHS;
 
-    if (slot->id == ctx->flash_id)
-    {
-        uint64_t now_ms = ldg_time_epoch_ms_get();
-
-        if (now_ms >= ctx->flash_from_ms && now_ms < ctx->flash_until_ms && ((now_ms - ctx->flash_from_ms) / (uint64_t)WINDOW_FLASH_PERIOD_MS) % (uint64_t)WINDOW_FLASH_PHASE_CUNT == (uint64_t)WINDOW_FLASH_PHASE_LIT)
+    if (slot->id == ctx->flash_id) { if (crosstalk_ui_window_flash_lit_is(ctx->flash_from_ms, ctx->flash_until_ms, ldg_time_epoch_ms_get()) == LDG_TRUTH_TRUE)
         {
             ldg_term_render_color_t swap = style.title_bg;
-
             style.accent_edge = (uint8_t)LDG_TERM_RENDER_FRAME_EDGE_BOTTOM_RHS;
             style.title_bg = style.accent;
             style.title_fg = swap;
@@ -729,6 +724,13 @@ uint32_t crosstalk_ui_window_modal_draw(ldg_term_render_t *render, const ldg_ter
     if (ldg_term_render_clip_rst(render) != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "window clip reset failed"); }
 
     return ret;
+}
+
+uint8_t crosstalk_ui_window_flash_lit_is(uint64_t from, uint64_t until, uint64_t now)
+{
+    if (now < from || now >= until) { return LDG_TRUTH_FALSE; }
+
+    return ((now - from) / (uint64_t)WINDOW_FLASH_PERIOD_MS) % (uint64_t)WINDOW_FLASH_PHASE_CUNT == (uint64_t)WINDOW_FLASH_PHASE_LIT ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 }
 
 uint32_t crosstalk_ui_window_flash_set(crosstalk_ui_window_ctx_t *ctx, uint64_t win_id, uint64_t until_ms)

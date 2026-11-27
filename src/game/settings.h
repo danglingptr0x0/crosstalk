@@ -18,6 +18,10 @@
 #define CROSSTALK_GAME_KEYBIND_MOD_MASK 0xE00U
 #define CROSSTALK_GAME_KEYBIND_UNBOUND 0x0U
 #define CROSSTALK_GAME_KEYBIND_FMT_CAP 48
+#define CROSSTALK_GAME_SETTINGS_WHITELIST_CAP 16
+#define CROSSTALK_GAME_SETTINGS_WHITELIST_NAME_CAP 64
+#define CROSSTALK_GAME_SETTINGS_PUDDING_SIZE 1
+#define CROSSTALK_GAME_SETTINGS_XOXO_CAP 32
 
 typedef enum crosstalk_game_keybind_action
 {
@@ -112,8 +116,12 @@ typedef struct crosstalk_game_settings
     uint8_t music_src;
     uint8_t music_presence_on;
     uint8_t focus_pause_on;
-    uint8_t pudding[2];
+    uint8_t discord_ask_done;
+    uint8_t pudding[CROSSTALK_GAME_SETTINGS_PUDDING_SIZE];
     uint32_t keybind[CROSSTALK_GAME_KEYBIND_CUNT];
+    char music_whitelist[CROSSTALK_GAME_SETTINGS_WHITELIST_CAP][CROSSTALK_GAME_SETTINGS_WHITELIST_NAME_CAP];
+    uint64_t xoxo_id[CROSSTALK_GAME_SETTINGS_XOXO_CAP];
+    uint8_t xoxo_src[CROSSTALK_GAME_SETTINGS_XOXO_CAP];
 } crosstalk_game_settings_t;
 
 typedef struct crosstalk_game_settings_tip

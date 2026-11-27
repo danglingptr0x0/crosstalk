@@ -27,6 +27,9 @@
 #define CROSSTALK_CORE_CMDLINE_DRAWER_SHOW_CUNT 16
 #define CROSSTALK_CORE_CMDLINE_LOG_LVL_T __typeof__(1UL)
 #define CROSSTALK_CORE_CMDLINE_CANDIDATE_CAP LDG_TERM_LN_CANDIDATE_CAP
+#define CROSSTALK_CORE_CMDLINE_PUDDING_SIZE 7
+#define CROSSTALK_CORE_CMDLINE_LF_ROOM 1
+#define CROSSTALK_CORE_CMDLINE_LAST_CH_BACK 1
 
 typedef struct crosstalk_core_cmdline_ctx
 {
@@ -41,6 +44,8 @@ typedef struct crosstalk_core_cmdline_ctx
     void *io_raw;
     uint8_t *io_buff;
     uint64_t io_cap;
+    uint64_t out_floor;
+    uint64_t wipe_seen;
     uint32_t drawer_col;
     uint32_t drawer_row;
     uint32_t drawer_col_cunt;
@@ -48,12 +53,16 @@ typedef struct crosstalk_core_cmdline_ctx
     uint8_t drawer_ok;
     uint8_t line_rdy;
     uint8_t echo_off;
+    uint8_t verb_seen;
+    uint8_t pudding[CROSSTALK_CORE_CMDLINE_PUDDING_SIZE];
 } crosstalk_core_cmdline_ctx_t;
 
 uint32_t crosstalk_core_cmdline_open(crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_close(crosstalk_core_cmdline_ctx_t *ctx);
 uint8_t crosstalk_core_cmdline_open_is(const crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_verb_reg(crosstalk_core_cmdline_ctx_t *ctx, const char *name, const char *help, uint32_t arg_max);
+uint32_t crosstalk_core_cmdline_ln_trim(char *text, uint64_t cap, uint64_t *out_len);
+uint32_t crosstalk_core_cmdline_wipe_ck(crosstalk_core_cmdline_ctx_t *ctx);
 uint32_t crosstalk_core_cmdline_candidate_cb_set(crosstalk_core_cmdline_ctx_t *ctx, ldg_term_ln_candidate_cb_t cb, void *user);
 uint32_t crosstalk_core_cmdline_prompt_set(crosstalk_core_cmdline_ctx_t *ctx, const char *prompt);
 uint32_t crosstalk_core_cmdline_hist_ld(crosstalk_core_cmdline_ctx_t *ctx, const char *path);

@@ -1,8 +1,10 @@
 #include <stdint.h>
+#include <string.h>
 
 #include <dangling/core/err.h>
 #include <dangling/core/macros.h>
 #include <dangling/mem/secure.h>
+#include <dangling/str/fmt.h>
 #include <dangling/str/str.h>
 #include <dangling/term/key.h>
 
@@ -17,6 +19,10 @@
 #define SESH_CANCEL_CODEPOINT_UPPER 'C'
 #define SESH_CANCEL_CTRL_CODE 0x03
 #define SESH_VERB_HELP ""
+#define SESH_PAGE_CLEAR "\x1B[H\x1B[2J\x1B[3J"
+#define SESH_LN_CLEAR "\r\x1B[2K"
+#define SESH_ECHO_FMT "%.15s%.511s"
+#define SESH_WIPE "wipe"
 
 static uint32_t sesh_out(crosstalk_re_repl_sesh_t *sesh, const char *text, uint32_t len)
 {
@@ -28,6 +34,21 @@ static uint32_t sesh_out(crosstalk_re_repl_sesh_t *sesh, const char *text, uint3
 static uint32_t sesh_eol_put(crosstalk_re_repl_sesh_t *sesh)
 {
     return sesh_out(sesh, SESH_EOL, (uint32_t)sizeof(SESH_EOL) - LDG_STR_TERM_SIZE);
+}
+
+static uint32_t sesh_ring_push(crosstalk_re_repl_sesh_t *sesh, const uint8_t *bytes, uint32_t len)
+{
+    char text[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint32_t take = len;
+
+    if (take == 0) { return LDG_ERR_AOK; }
+
+    if (take > (uint32_t)sizeof(text) - LDG_STR_TERM_SIZE) { take = (uint32_t)sizeof(text) - LDG_STR_TERM_SIZE; }
+
+    memcpy(text, bytes, (uint64_t)take);
+    text[take] = LDG_STR_TERM;
+
+    return crosstalk_core_cmdline_out_push(&sesh->input, text);
 }
 
 static uint32_t sesh_repl_sink_cb(void *user, const uint8_t *bytes, uint32_t len)
@@ -46,16 +67,13 @@ static uint32_t sesh_repl_sink_cb(void *user, const uint8_t *bytes, uint32_t len
     {
         if (bytes[at] != (uint8_t)LDG_ASCII_LF) { continue; }
 
-        ret = sesh_out(sesh, (const char *)bytes + start, at - start);
-        if (ret != LDG_ERR_AOK) { return ret; }
-
-        ret = sesh_eol_put(sesh);
+        ret = sesh_ring_push(sesh, bytes + start, at - start);
         if (ret != LDG_ERR_AOK) { return ret; }
 
         start = at + (uint32_t)SESH_STEP;
     }
 
-    return sesh_out(sesh, (const char *)bytes + start, len - start);
+    return sesh_ring_push(sesh, bytes + start, len - start);
 }
 
 static uint32_t sesh_line_draw(crosstalk_re_repl_sesh_t *sesh)
@@ -71,6 +89,77 @@ static uint32_t sesh_line_draw(crosstalk_re_repl_sesh_t *sesh)
     return sesh_out(sesh, (const char *)sesh->enc, (uint32_t)len);
 }
 
+static uint32_t sesh_render(crosstalk_re_repl_sesh_t *sesh)
+{
+    char text[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
+    uint64_t seq = 0;
+    uint64_t at = 0;
+    uint64_t got = 0;
+    uint64_t len = 0;
+    uint32_t ret = 0;
+
+    ret = crosstalk_core_cmdline_out_seq_get(&sesh->input, &seq);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (sesh->page_due == LDG_TRUTH_TRUE || sesh->out_seen > seq)
+    {
+        ret = sesh_out(sesh, SESH_PAGE_CLEAR, (uint32_t)sizeof(SESH_PAGE_CLEAR) - LDG_STR_TERM_SIZE);
+        if (ret != LDG_ERR_AOK) { return ret; }
+
+        if (seq > (uint64_t)LDG_SHELL_OUT_LN_MAX_DEFAULT) { at = seq - (uint64_t)LDG_SHELL_OUT_LN_MAX_DEFAULT; }
+
+        sesh->page_due = LDG_TRUTH_FALSE;
+    }
+    else
+    {
+        ret = sesh_out(sesh, SESH_LN_CLEAR, (uint32_t)sizeof(SESH_LN_CLEAR) - LDG_STR_TERM_SIZE);
+        if (ret != LDG_ERR_AOK) { return ret; }
+
+        at = sesh->out_seen;
+    }
+
+    sesh->out_seen = seq;
+
+    if (at < sesh->input.out_floor) { at = sesh->input.out_floor; }
+
+    for (; at < seq; at++)
+    {
+        if (crosstalk_core_cmdline_out_get(&sesh->input, at, text, (uint32_t)sizeof(text), &got) != LDG_ERR_AOK || got != at + (uint64_t)SESH_STEP) { continue; }
+
+        ret = crosstalk_core_cmdline_ln_trim(text, (uint64_t)sizeof(text), &len);
+        if (ret != LDG_ERR_AOK) { return ret; }
+
+        ret = sesh_out(sesh, text, (uint32_t)len);
+        if (ret != LDG_ERR_AOK) { return ret; }
+
+        ret = sesh_eol_put(sesh);
+        if (ret != LDG_ERR_AOK) { return ret; }
+    }
+
+    if (sesh->prompt_due == LDG_TRUTH_TRUE || (sesh->repl != 0x0 && crosstalk_re_repl_busy_is(sesh->repl) == LDG_TRUTH_TRUE)) { return LDG_ERR_AOK; }
+
+    return sesh_line_draw(sesh);
+}
+
+uint32_t crosstalk_re_repl_sesh_wipe(crosstalk_re_repl_sesh_t *sesh)
+{
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(sesh == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    if (sesh->input_ok != LDG_TRUTH_TRUE || sesh->input.shell == 0x0) { return LDG_ERR_NOT_INIT; }
+
+    ret = ldg_shell_ln_exec(sesh->input.shell, SESH_WIPE);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    ret = crosstalk_core_cmdline_wipe_ck(&sesh->input);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    sesh->page_due = LDG_TRUTH_TRUE;
+
+    return crosstalk_re_repl_sesh_prompt_put(sesh);
+}
+
 uint32_t crosstalk_re_repl_sesh_prompt_put(crosstalk_re_repl_sesh_t *sesh)
 {
     if (LDG_UNLIKELY(sesh == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -79,7 +168,7 @@ uint32_t crosstalk_re_repl_sesh_prompt_put(crosstalk_re_repl_sesh_t *sesh)
 
     if (crosstalk_core_cmdline_open_is(&sesh->input) != LDG_TRUTH_TRUE && crosstalk_core_cmdline_open(&sesh->input) != LDG_ERR_AOK) { return LDG_ERR_NOT_INIT; }
 
-    return sesh_line_draw(sesh);
+    return sesh_render(sesh);
 }
 
 uint32_t crosstalk_re_repl_sesh_col_cunt_set(crosstalk_re_repl_sesh_t *sesh, uint32_t col_cunt)
@@ -91,13 +180,13 @@ uint32_t crosstalk_re_repl_sesh_col_cunt_set(crosstalk_re_repl_sesh_t *sesh, uin
     return LDG_ERR_AOK;
 }
 
-uint32_t crosstalk_re_repl_sesh_verb_reg(crosstalk_re_repl_sesh_t *sesh, const char *name)
+uint32_t crosstalk_re_repl_sesh_verb_reg(crosstalk_re_repl_sesh_t *sesh, const char *name, const char *help)
 {
     if (LDG_UNLIKELY(sesh == 0x0 || name == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
     if (sesh->input_ok != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
 
-    return crosstalk_core_cmdline_verb_reg(&sesh->input, name, SESH_VERB_HELP, (uint32_t)LDG_SHELL_ARG_MAX);
+    return crosstalk_core_cmdline_verb_reg(&sesh->input, name, help != 0x0 ? help : SESH_VERB_HELP, (uint32_t)LDG_SHELL_ARG_MAX);
 }
 
 uint32_t crosstalk_re_repl_sesh_open(crosstalk_re_repl_sesh_t *sesh, crosstalk_re_repl_ctx_t *repl, crosstalk_re_repl_subst_t *subst, crosstalk_re_repl_sink_cb_t out_cb, void *out_user)
@@ -112,6 +201,7 @@ uint32_t crosstalk_re_repl_sesh_open(crosstalk_re_repl_sesh_t *sesh, crosstalk_r
     if (ret != LDG_ERR_AOK) { return ret; }
 
     sesh->prompt_due = LDG_TRUTH_FALSE;
+    sesh->page_due = LDG_TRUTH_TRUE;
     sesh->repl = repl;
     sesh->subst = subst;
     sesh->out_cb = out_cb;
@@ -280,7 +370,13 @@ static uint32_t sesh_key_put(crosstalk_re_repl_sesh_t *sesh, const ldg_term_key_
 
     if (crosstalk_core_cmdline_line_take(&sesh->input, sesh->line, (uint32_t)sizeof(sesh->line)) == LDG_ERR_AOK)
     {
-        ret = sesh_eol_put(sesh);
+        char echo[CROSSTALK_CORE_CMDLINE_DRAWER_LINE_CAP] = LDG_ARR_ZERO_INIT;
+        uint64_t echo_len = 0;
+
+        ret = ldg_str_fmt(echo, (uint64_t)sizeof(echo), &echo_len, SESH_ECHO_FMT, SESH_PROMPT, sesh->line);
+        if (ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC) { return ret; }
+
+        ret = crosstalk_core_cmdline_out_push(&sesh->input, echo);
         if (ret != LDG_ERR_AOK) { return ret; }
 
         ret = crosstalk_core_cmdline_open(&sesh->input);
@@ -341,6 +437,7 @@ uint32_t crosstalk_re_repl_sesh_bytes_put(crosstalk_re_repl_sesh_t *sesh, const 
 
 uint32_t crosstalk_re_repl_sesh_tick(crosstalk_re_repl_sesh_t *sesh)
 {
+    uint64_t seq = 0;
     uint32_t ret = 0;
 
     if (LDG_UNLIKELY(sesh == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
@@ -350,7 +447,12 @@ uint32_t crosstalk_re_repl_sesh_tick(crosstalk_re_repl_sesh_t *sesh)
     ret = crosstalk_re_repl_tick(sesh->repl);
     if (ret != LDG_ERR_AOK) { return ret; }
 
-    if (sesh->prompt_due != LDG_TRUTH_TRUE || crosstalk_re_repl_busy_is(sesh->repl) == LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
+    if (sesh->prompt_due == LDG_TRUTH_TRUE && crosstalk_re_repl_busy_is(sesh->repl) != LDG_TRUTH_TRUE) { return crosstalk_re_repl_sesh_prompt_put(sesh); }
 
-    return crosstalk_re_repl_sesh_prompt_put(sesh);
+    ret = crosstalk_core_cmdline_out_seq_get(&sesh->input, &seq);
+    if (ret != LDG_ERR_AOK) { return ret; }
+
+    if (seq == sesh->out_seen) { return LDG_ERR_AOK; }
+
+    return sesh_render(sesh);
 }

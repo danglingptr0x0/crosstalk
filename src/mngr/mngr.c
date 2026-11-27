@@ -105,7 +105,7 @@ static uint32_t mngr_ext_is(const char *name, uint8_t *out)
 
 static uint32_t mngr_data_dir_resolve(char *out, uint64_t out_size)
 {
-    char nxt[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
+    char next[LDG_IO_PATH_MAX] = LDG_ARR_ZERO_INIT;
     const char *seg[CROSSTALK_MNGR_CONF_SEG_CUNT] = { 0x0, 0x0, 0x0 };
     uint32_t idx = 0;
     uint8_t exists = 0;
@@ -122,19 +122,19 @@ static uint32_t mngr_data_dir_resolve(char *out, uint64_t out_size)
 
     for (idx = 0; idx < (uint32_t)CROSSTALK_MNGR_CONF_SEG_CUNT; idx++)
     {
-        ret = ldg_io_path_join(out, seg[idx], nxt, (uint64_t)sizeof(nxt));
+        ret = ldg_io_path_join(out, seg[idx], next, (uint64_t)sizeof(next));
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-        exists = ldg_io_path_exists_is(nxt);
+        exists = ldg_io_path_exists_is(next);
         if (LDG_UNLIKELY(exists != LDG_TRUTH_TRUE && exists != LDG_TRUTH_FALSE)) { return exists; }
 
         if (exists == LDG_TRUTH_FALSE)
         {
-            ret = ldg_io_dir_create(nxt, (uint32_t)MNGR_DIR_MODE);
+            ret = ldg_io_dir_create(next, (uint32_t)MNGR_DIR_MODE);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
 
-        ret = ldg_str_rbrcpy(out, nxt, out_size);
+        ret = ldg_str_rbrcpy(out, next, out_size);
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
     }
 

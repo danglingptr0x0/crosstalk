@@ -57,19 +57,19 @@
 #define IMG_SEG_RAW_NAME "raw"
 #define IMG_SEG_LD_FMT "ld%u32"
 
-static uint16_t img_u16_get(const uint8_t *at)
+static uint16_t img_uint16_get(const uint8_t *at)
 {
     return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[1] << LDG_BYTE_BITS));
 }
 
-static uint32_t img_u32_get(const uint8_t *at)
+static uint32_t img_uint32_get(const uint8_t *at)
 {
-    return (uint32_t)img_u16_get(at) | ((uint32_t)img_u16_get(at + 0x2) << (LDG_BYTE_BITS * 0x2));
+    return (uint32_t)img_uint16_get(at) | ((uint32_t)img_uint16_get(at + 0x2) << (LDG_BYTE_BITS * 0x2));
 }
 
-static uint64_t img_u64_get(const uint8_t *at)
+static uint64_t img_uint64_get(const uint8_t *at)
 {
-    return (uint64_t)img_u32_get(at) | ((uint64_t)img_u32_get(at + 0x4) << (LDG_BYTE_BITS * 0x4));
+    return (uint64_t)img_uint32_get(at) | ((uint64_t)img_uint32_get(at + 0x4) << (LDG_BYTE_BITS * 0x4));
 }
 
 static uint32_t img_file_rd(const char *path, ldg_byte_t **out, uint64_t *out_span)
@@ -237,24 +237,24 @@ static uint32_t img_elf_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *fi
 
     if (span < hdr_len) { return CROSSTALK_RE_IMG_ERR_TRUNC; }
 
-    machine = (uint32_t)img_u16_get(file + IMG_ELF_MACHINE_AT);
+    machine = (uint32_t)img_uint16_get(file + IMG_ELF_MACHINE_AT);
 
     ret = img_elf_isa_get(machine, &ctx->isa);
     if (ret != LDG_ERR_AOK) { ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_WARN, "re img: elf machine unknown; machine: %u32", machine); return ret; }
 
     if (ctx->class_is64 == LDG_TRUTH_TRUE)
     {
-        ctx->entry = base + img_u64_get(file + IMG_ELF_ENTRY_AT);
-        phoff = img_u64_get(file + IMG_ELF_PHOFF64_AT);
-        phentsize = (uint32_t)img_u16_get(file + IMG_ELF_PHENTSIZE64_AT);
-        phnum = (uint32_t)img_u16_get(file + IMG_ELF_PHNUM64_AT);
+        ctx->entry = base + img_uint64_get(file + IMG_ELF_ENTRY_AT);
+        phoff = img_uint64_get(file + IMG_ELF_PHOFF64_AT);
+        phentsize = (uint32_t)img_uint16_get(file + IMG_ELF_PHENTSIZE64_AT);
+        phnum = (uint32_t)img_uint16_get(file + IMG_ELF_PHNUM64_AT);
     }
     else
     {
-        ctx->entry = base + (uint64_t)img_u32_get(file + IMG_ELF_ENTRY_AT);
-        phoff = (uint64_t)img_u32_get(file + IMG_ELF_PHOFF32_AT);
-        phentsize = (uint32_t)img_u16_get(file + IMG_ELF_PHENTSIZE32_AT);
-        phnum = (uint32_t)img_u16_get(file + IMG_ELF_PHNUM32_AT);
+        ctx->entry = base + (uint64_t)img_uint32_get(file + IMG_ELF_ENTRY_AT);
+        phoff = (uint64_t)img_uint32_get(file + IMG_ELF_PHOFF32_AT);
+        phentsize = (uint32_t)img_uint16_get(file + IMG_ELF_PHENTSIZE32_AT);
+        phnum = (uint32_t)img_uint16_get(file + IMG_ELF_PHNUM32_AT);
     }
 
     if (phoff == 0 || phnum == 0 || (uint64_t)phentsize != ent_len) { return CROSSTALK_RE_IMG_ERR_PHDR; }
@@ -270,23 +270,23 @@ static uint32_t img_elf_layout(crosstalk_re_img_ctx_t *ctx, const ldg_byte_t *fi
         uint64_t memsz = 0;
         uint32_t flags = 0;
 
-        if (img_u32_get(ent + IMG_ELF_PH_TYPE_AT) != (uint32_t)IMG_ELF_PT_LD) { continue; }
+        if (img_uint32_get(ent + IMG_ELF_PH_TYPE_AT) != (uint32_t)IMG_ELF_PT_LD) { continue; }
 
         if (ctx->class_is64 == LDG_TRUTH_TRUE)
         {
-            flags = img_u32_get(ent + IMG_ELF_PH64_FLAGS_AT);
-            off = img_u64_get(ent + IMG_ELF_PH64_OFF_AT);
-            vaddr = img_u64_get(ent + IMG_ELF_PH64_VADDR_AT);
-            filesz = img_u64_get(ent + IMG_ELF_PH64_FILESZ_AT);
-            memsz = img_u64_get(ent + IMG_ELF_PH64_MEMSZ_AT);
+            flags = img_uint32_get(ent + IMG_ELF_PH64_FLAGS_AT);
+            off = img_uint64_get(ent + IMG_ELF_PH64_OFF_AT);
+            vaddr = img_uint64_get(ent + IMG_ELF_PH64_VADDR_AT);
+            filesz = img_uint64_get(ent + IMG_ELF_PH64_FILESZ_AT);
+            memsz = img_uint64_get(ent + IMG_ELF_PH64_MEMSZ_AT);
         }
         else
         {
-            off = (uint64_t)img_u32_get(ent + IMG_ELF_PH32_OFF_AT);
-            vaddr = (uint64_t)img_u32_get(ent + IMG_ELF_PH32_VADDR_AT);
-            filesz = (uint64_t)img_u32_get(ent + IMG_ELF_PH32_FILESZ_AT);
-            memsz = (uint64_t)img_u32_get(ent + IMG_ELF_PH32_MEMSZ_AT);
-            flags = img_u32_get(ent + IMG_ELF_PH32_FLAGS_AT);
+            off = (uint64_t)img_uint32_get(ent + IMG_ELF_PH32_OFF_AT);
+            vaddr = (uint64_t)img_uint32_get(ent + IMG_ELF_PH32_VADDR_AT);
+            filesz = (uint64_t)img_uint32_get(ent + IMG_ELF_PH32_FILESZ_AT);
+            memsz = (uint64_t)img_uint32_get(ent + IMG_ELF_PH32_MEMSZ_AT);
+            flags = img_uint32_get(ent + IMG_ELF_PH32_FLAGS_AT);
         }
 
         if (off > span || filesz > span - off) { return CROSSTALK_RE_IMG_ERR_TRUNC; }

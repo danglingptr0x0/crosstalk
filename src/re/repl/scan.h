@@ -10,5 +10,6 @@ uint32_t crosstalk_re_repl_scan_shutdown(crosstalk_re_repl_ctx_t *ctx);
 uint32_t crosstalk_re_repl_scan_rst(crosstalk_re_repl_ctx_t *ctx);
 uint32_t crosstalk_re_repl_scan_tick(crosstalk_re_repl_ctx_t *ctx);
 uint32_t crosstalk_re_repl_scan_cmd(crosstalk_re_repl_ctx_t *ctx, uint32_t argc, char **args);
+uint32_t crosstalk_re_repl_scan_state_get(const crosstalk_re_repl_ctx_t *ctx, uint32_t *out_cand, uint8_t *out_running, uint8_t *out_ready);
 
 #endif

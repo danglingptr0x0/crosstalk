@@ -22,7 +22,7 @@
 #define MNGR_CONF_WIN_H_DEFAULT 960
 #define MNGR_CONF_GAMMA_DEFAULT 1.0
 
-static void mngr_conf_u32_put(uint8_t *at, uint32_t val)
+static void mngr_conf_uint32_put(uint8_t *at, uint32_t val)
 {
     at[0] = (uint8_t)(val & (uint32_t)LDG_BYTE_MASK);
     at[1] = (uint8_t)((val >> (uint32_t)LDG_BYTE_BITS) & (uint32_t)LDG_BYTE_MASK);
@@ -30,20 +30,20 @@ static void mngr_conf_u32_put(uint8_t *at, uint32_t val)
     at[3] = (uint8_t)((val >> (uint32_t)LDG_BYTE_SHIFT_3) & (uint32_t)LDG_BYTE_MASK);
 }
 
-static uint32_t mngr_conf_u32_get(const uint8_t *at)
+static uint32_t mngr_conf_uint32_get(const uint8_t *at)
 {
     return (uint32_t)at[0] | ((uint32_t)at[1] << (uint32_t)LDG_BYTE_BITS) | ((uint32_t)at[2] << (uint32_t)LDG_BYTE_SHIFT_2) | ((uint32_t)at[3] << (uint32_t)LDG_BYTE_SHIFT_3);
 }
 
-static void mngr_conf_u64_put(uint8_t *at, uint64_t val)
+static void mngr_conf_uint64_put(uint8_t *at, uint64_t val)
 {
-    mngr_conf_u32_put(at, (uint32_t)(val & (uint64_t)UINT32_MAX));
-    mngr_conf_u32_put(at + (uint64_t)LDG_WORD_BYTES, (uint32_t)(val >> (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES)));
+    mngr_conf_uint32_put(at, (uint32_t)(val & (uint64_t)UINT32_MAX));
+    mngr_conf_uint32_put(at + (uint64_t)LDG_WORD_BYTES, (uint32_t)(val >> (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES)));
 }
 
-static uint64_t mngr_conf_u64_get(const uint8_t *at)
+static uint64_t mngr_conf_uint64_get(const uint8_t *at)
 {
-    return (uint64_t)mngr_conf_u32_get(at) | ((uint64_t)mngr_conf_u32_get(at + (uint64_t)LDG_WORD_BYTES) << (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES));
+    return (uint64_t)mngr_conf_uint32_get(at) | ((uint64_t)mngr_conf_uint32_get(at + (uint64_t)LDG_WORD_BYTES) << (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES));
 }
 
 uint32_t crosstalk_mngr_conf_default_get(crosstalk_mngr_machine_t *out)
@@ -116,9 +116,9 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
 
     if (cap < (uint32_t)CROSSTALK_MNGR_CONF_HDR_BYTES) { return CROSSTALK_MNGR_ERR_FULL; }
 
-    mngr_conf_u32_put(out, (uint32_t)CROSSTALK_MNGR_CONF_MAGIC);
-    mngr_conf_u32_put(out + LDG_WORD_BYTES, (uint32_t)CROSSTALK_MNGR_CONF_REV);
-    mngr_conf_u32_put(out + (uint32_t)(LDG_WORD_BYTES * 2), (uint32_t)CROSSTALK_MNGR_CONF_BLK_CUNT);
+    mngr_conf_uint32_put(out, (uint32_t)CROSSTALK_MNGR_CONF_MAGIC);
+    mngr_conf_uint32_put(out + LDG_WORD_BYTES, (uint32_t)CROSSTALK_MNGR_CONF_REV);
+    mngr_conf_uint32_put(out + (uint32_t)(LDG_WORD_BYTES * 2), (uint32_t)CROSSTALK_MNGR_CONF_BLK_CUNT);
 
     at = (uint32_t)CROSSTALK_MNGR_CONF_HDR_BYTES;
 
@@ -139,36 +139,36 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
     memcpy(out + at, machine->font_path, sizeof(machine->font_path));
     at = at + (uint32_t)sizeof(machine->font_path);
 
-    mngr_conf_u64_put(out + at, machine->ram_bytes);
+    mngr_conf_uint64_put(out + at, machine->ram_bytes);
     at = at + (uint32_t)(LDG_WORD_BYTES * 2);
 
-    mngr_conf_u64_put(out + at, machine->f_op);
+    mngr_conf_uint64_put(out + at, machine->f_op);
     at = at + (uint32_t)(LDG_WORD_BYTES * 2);
 
-    mngr_conf_u64_put(out + at, (uint64_t)(machine->gamma * (double)LDG_MS_PER_SEC));
+    mngr_conf_uint64_put(out + at, (uint64_t)(machine->gamma * (double)LDG_MS_PER_SEC));
     at = at + (uint32_t)(LDG_WORD_BYTES * 2);
 
-    mngr_conf_u32_put(out + at, machine->win_w);
+    mngr_conf_uint32_put(out + at, machine->win_w);
     at = at + (uint32_t)LDG_WORD_BYTES;
 
-    mngr_conf_u32_put(out + at, machine->win_h);
+    mngr_conf_uint32_put(out + at, machine->win_h);
     at = at + (uint32_t)LDG_WORD_BYTES;
 
-    mngr_conf_u32_put(out + at, machine->key_mode);
+    mngr_conf_uint32_put(out + at, machine->key_mode);
     at = at + (uint32_t)LDG_WORD_BYTES;
 
-    mngr_conf_u32_put(out + at, (uint32_t)machine->audio_on | ((uint32_t)machine->serial_on << (uint32_t)LDG_BYTE_BITS) | ((uint32_t)machine->disk_persist << (uint32_t)LDG_BYTE_SHIFT_2));
+    mngr_conf_uint32_put(out + at, (uint32_t)machine->audio_on | ((uint32_t)machine->serial_on << (uint32_t)LDG_BYTE_BITS) | ((uint32_t)machine->disk_persist << (uint32_t)LDG_BYTE_SHIFT_2));
     at = at + (uint32_t)LDG_WORD_BYTES;
 
-    mngr_conf_u32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_MACHINE);
-    mngr_conf_u32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
+    mngr_conf_uint32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_MACHINE);
+    mngr_conf_uint32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
 
     blk_at = at;
     at = at + (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES;
 
     if (cap < at + (uint32_t)LDG_WORD_BYTES + (uint32_t)CROSSTALK_EMU_LD_MAX * ((uint32_t)LDG_IO_PATH_MAX + (uint32_t)(LDG_WORD_BYTES * 2))) { return CROSSTALK_MNGR_ERR_FULL; }
 
-    mngr_conf_u32_put(out + at, machine->ld_cunt);
+    mngr_conf_uint32_put(out + at, machine->ld_cunt);
     at = at + (uint32_t)LDG_WORD_BYTES;
 
     for (idx = 0; idx < (uint32_t)CROSSTALK_EMU_LD_MAX; idx++)
@@ -176,12 +176,12 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
         memcpy(out + at, machine->ld_path[idx], sizeof(machine->ld_path[idx]));
         at = at + (uint32_t)sizeof(machine->ld_path[idx]);
 
-        mngr_conf_u64_put(out + at, machine->ld_off[idx]);
+        mngr_conf_uint64_put(out + at, machine->ld_off[idx]);
         at = at + (uint32_t)(LDG_WORD_BYTES * 2);
     }
 
-    mngr_conf_u32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_IMGS);
-    mngr_conf_u32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
+    mngr_conf_uint32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_IMGS);
+    mngr_conf_uint32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
 
     blk_at = at;
     at = at + (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES;
@@ -194,8 +194,8 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
         at = at + (uint32_t)sizeof(machine->disk_path[drive]);
     }
 
-    mngr_conf_u32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_DISKS);
-    mngr_conf_u32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
+    mngr_conf_uint32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_DISKS);
+    mngr_conf_uint32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
 
     blk_at = at;
     at = at + (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES;
@@ -205,8 +205,8 @@ uint32_t crosstalk_mngr_conf_serialize(const crosstalk_mngr_machine_t *machine, 
     memcpy(out + at, machine->net_path, sizeof(machine->net_path));
     at = at + (uint32_t)sizeof(machine->net_path);
 
-    mngr_conf_u32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_NET);
-    mngr_conf_u32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
+    mngr_conf_uint32_put(out + blk_at, (uint32_t)CROSSTALK_MNGR_CONF_BLK_NET);
+    mngr_conf_uint32_put(out + blk_at + LDG_WORD_BYTES, at - blk_at - (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES);
 
     *out_len = at;
 
@@ -225,11 +225,11 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
     if (len < (uint32_t)CROSSTALK_MNGR_CONF_HDR_BYTES) { return CROSSTALK_MNGR_ERR_TRUNC; }
 
-    if (mngr_conf_u32_get(buff) != (uint32_t)CROSSTALK_MNGR_CONF_MAGIC) { return CROSSTALK_MNGR_ERR_MAGIC; }
+    if (mngr_conf_uint32_get(buff) != (uint32_t)CROSSTALK_MNGR_CONF_MAGIC) { return CROSSTALK_MNGR_ERR_MAGIC; }
 
-    if (mngr_conf_u32_get(buff + LDG_WORD_BYTES) != (uint32_t)CROSSTALK_MNGR_CONF_REV) { return CROSSTALK_MNGR_ERR_REV; }
+    if (mngr_conf_uint32_get(buff + LDG_WORD_BYTES) != (uint32_t)CROSSTALK_MNGR_CONF_REV) { return CROSSTALK_MNGR_ERR_REV; }
 
-    blks = mngr_conf_u32_get(buff + (uint32_t)(LDG_WORD_BYTES * 2));
+    blks = mngr_conf_uint32_get(buff + (uint32_t)(LDG_WORD_BYTES * 2));
 
     if (crosstalk_mngr_conf_default_get(out) != LDG_ERR_AOK) { return LDG_ERR_FUNC_ARG_INVALID; }
 
@@ -245,8 +245,8 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
 
         if (len - at < (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES) { return CROSSTALK_MNGR_ERR_TRUNC; }
 
-        kind = mngr_conf_u32_get(buff + at);
-        span = mngr_conf_u32_get(buff + at + LDG_WORD_BYTES);
+        kind = mngr_conf_uint32_get(buff + at);
+        span = mngr_conf_uint32_get(buff + at + LDG_WORD_BYTES);
         body = at + (uint32_t)CROSSTALK_MNGR_CONF_BLK_HDR_BYTES;
 
         if (span > len - body) { return CROSSTALK_MNGR_ERR_TRUNC; }
@@ -270,25 +270,25 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
             memcpy(&out->font_path[0], buff + body, sizeof(out->font_path));
             body = body + (uint32_t)sizeof(out->font_path);
 
-            out->ram_bytes = mngr_conf_u64_get(buff + body);
+            out->ram_bytes = mngr_conf_uint64_get(buff + body);
             body = body + (uint32_t)(LDG_WORD_BYTES * 2);
 
-            out->f_op = mngr_conf_u64_get(buff + body);
+            out->f_op = mngr_conf_uint64_get(buff + body);
             body = body + (uint32_t)(LDG_WORD_BYTES * 2);
 
-            out->gamma = (double)mngr_conf_u64_get(buff + body) / (double)LDG_MS_PER_SEC;
+            out->gamma = (double)mngr_conf_uint64_get(buff + body) / (double)LDG_MS_PER_SEC;
             body = body + (uint32_t)(LDG_WORD_BYTES * 2);
 
-            out->win_w = mngr_conf_u32_get(buff + body);
+            out->win_w = mngr_conf_uint32_get(buff + body);
             body = body + (uint32_t)LDG_WORD_BYTES;
 
-            out->win_h = mngr_conf_u32_get(buff + body);
+            out->win_h = mngr_conf_uint32_get(buff + body);
             body = body + (uint32_t)LDG_WORD_BYTES;
 
-            out->key_mode = mngr_conf_u32_get(buff + body);
+            out->key_mode = mngr_conf_uint32_get(buff + body);
             body = body + (uint32_t)LDG_WORD_BYTES;
 
-            flags = mngr_conf_u32_get(buff + body);
+            flags = mngr_conf_uint32_get(buff + body);
 
             out->audio_on = (uint8_t)(flags & (uint32_t)LDG_BYTE_MASK);
             out->serial_on = (uint8_t)((flags >> (uint32_t)LDG_BYTE_BITS) & (uint32_t)LDG_BYTE_MASK);
@@ -303,7 +303,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
         {
             if (span < (uint32_t)LDG_WORD_BYTES + (uint32_t)CROSSTALK_EMU_LD_MAX * ((uint32_t)LDG_IO_PATH_MAX + (uint32_t)(LDG_WORD_BYTES * 2))) { return CROSSTALK_MNGR_ERR_BLK; }
 
-            out->ld_cunt = mngr_conf_u32_get(buff + body);
+            out->ld_cunt = mngr_conf_uint32_get(buff + body);
             body = body + (uint32_t)LDG_WORD_BYTES;
 
             if (out->ld_cunt > (uint32_t)CROSSTALK_EMU_LD_MAX) { out->ld_cunt = (uint32_t)CROSSTALK_EMU_LD_MAX; }
@@ -314,7 +314,7 @@ uint32_t crosstalk_mngr_conf_deserialize(crosstalk_mngr_machine_t *out, const ui
                 out->ld_path[idx][sizeof(out->ld_path[idx]) - LDG_STR_TERM_SIZE] = LDG_STR_TERM;
                 body = body + (uint32_t)sizeof(out->ld_path[idx]);
 
-                out->ld_off[idx] = mngr_conf_u64_get(buff + body);
+                out->ld_off[idx] = mngr_conf_uint64_get(buff + body);
                 body = body + (uint32_t)(LDG_WORD_BYTES * 2);
             }
         }

@@ -12,7 +12,7 @@
 typedef struct crosstalk_hdl_diag_entry
 {
     const char *prev_text;
-    const char *cur_text;
+    const char *curr_text;
     const char *msg;
     const char *cite;
     uint32_t err;

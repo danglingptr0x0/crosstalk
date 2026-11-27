@@ -89,19 +89,19 @@
 #define ELF_ARCH_ABI_FMT "%s %s %s"
 #define ELF_ABI_DANGLING_TEXT "DANGLING"
 
-static uint16_t elf_u16_get(const uint8_t *at)
+static uint16_t elf_uint16_get(const uint8_t *at)
 {
     return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[1] << LDG_BYTE_BITS));
 }
 
-static uint32_t elf_u32_get(const uint8_t *at)
+static uint32_t elf_uint32_get(const uint8_t *at)
 {
     return (uint32_t)at[0] | ((uint32_t)at[1] << 8) | ((uint32_t)at[2] << 16) | ((uint32_t)at[3] << 24);
 }
 
-static uint64_t elf_u64_get(const uint8_t *at)
+static uint64_t elf_uint64_get(const uint8_t *at)
 {
-    return (uint64_t)elf_u32_get(at) | ((uint64_t)elf_u32_get(at + 0x4) << 32);
+    return (uint64_t)elf_uint32_get(at) | ((uint64_t)elf_uint32_get(at + 0x4) << 32);
 }
 
 static uint32_t elf_rd_at(ldg_io_file_t *file, uint64_t off, void *dst, uint64_t len)
@@ -229,16 +229,16 @@ static uint32_t elf_sym_scan(const uint8_t *tab, uint64_t tab_len, const char *s
 
         if (class_is64 == LDG_TRUTH_TRUE)
         {
-            name_off = elf_u32_get(ent + ELF_SYM64_NAME_AT);
+            name_off = elf_uint32_get(ent + ELF_SYM64_NAME_AT);
             info = ent[ELF_SYM64_INFO_AT];
-            value = elf_u64_get(ent + ELF_SYM64_VALUE_AT);
-            size = elf_u64_get(ent + ELF_SYM64_SIZE_AT);
+            value = elf_uint64_get(ent + ELF_SYM64_VALUE_AT);
+            size = elf_uint64_get(ent + ELF_SYM64_SIZE_AT);
         }
         else
         {
-            name_off = elf_u32_get(ent + ELF_SYM32_NAME_AT);
-            value = (uint64_t)elf_u32_get(ent + ELF_SYM32_VALUE_AT);
-            size = (uint64_t)elf_u32_get(ent + ELF_SYM32_SIZE_AT);
+            name_off = elf_uint32_get(ent + ELF_SYM32_NAME_AT);
+            value = (uint64_t)elf_uint32_get(ent + ELF_SYM32_VALUE_AT);
+            size = (uint64_t)elf_uint32_get(ent + ELF_SYM32_SIZE_AT);
             info = ent[ELF_SYM32_INFO_AT];
         }
 
@@ -386,15 +386,15 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
     {
         if (class_is64 == LDG_TRUTH_TRUE)
         {
-            shoff = elf_u64_get(hdr + ELF_SHOFF64_AT);
-            shentsize = (uint32_t)elf_u16_get(hdr + ELF_SHENTSIZE64_AT);
-            shnum = (uint32_t)elf_u16_get(hdr + ELF_SHNUM64_AT);
+            shoff = elf_uint64_get(hdr + ELF_SHOFF64_AT);
+            shentsize = (uint32_t)elf_uint16_get(hdr + ELF_SHENTSIZE64_AT);
+            shnum = (uint32_t)elf_uint16_get(hdr + ELF_SHNUM64_AT);
         }
         else
         {
-            shoff = (uint64_t)elf_u32_get(hdr + ELF_SHOFF32_AT);
-            shentsize = (uint32_t)elf_u16_get(hdr + ELF_SHENTSIZE32_AT);
-            shnum = (uint32_t)elf_u16_get(hdr + ELF_SHNUM32_AT);
+            shoff = (uint64_t)elf_uint32_get(hdr + ELF_SHOFF32_AT);
+            shentsize = (uint32_t)elf_uint16_get(hdr + ELF_SHENTSIZE32_AT);
+            shnum = (uint32_t)elf_uint16_get(hdr + ELF_SHNUM32_AT);
         }
 
         if (shoff == 0 || shnum == 0) { ret = LDG_ERR_NOT_FOUND; }
@@ -419,19 +419,19 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
         {
             const uint8_t *ent = sect + (uint64_t)at * ent_len;
 
-            if (elf_u32_get(ent + ELF_SH_TYPE_AT) != (uint32_t)ELF_SHT_SYMTAB) { continue; }
+            if (elf_uint32_get(ent + ELF_SH_TYPE_AT) != (uint32_t)ELF_SHT_SYMTAB) { continue; }
 
             if (class_is64 == LDG_TRUTH_TRUE)
             {
-                tab_off = elf_u64_get(ent + ELF_SH_OFF64_AT);
-                tab_len = elf_u64_get(ent + ELF_SH_SIZE64_AT);
-                link = elf_u32_get(ent + ELF_SH_LINK64_AT);
+                tab_off = elf_uint64_get(ent + ELF_SH_OFF64_AT);
+                tab_len = elf_uint64_get(ent + ELF_SH_SIZE64_AT);
+                link = elf_uint32_get(ent + ELF_SH_LINK64_AT);
             }
             else
             {
-                tab_off = (uint64_t)elf_u32_get(ent + ELF_SH_OFF32_AT);
-                tab_len = (uint64_t)elf_u32_get(ent + ELF_SH_SIZE32_AT);
-                link = elf_u32_get(ent + ELF_SH_LINK32_AT);
+                tab_off = (uint64_t)elf_uint32_get(ent + ELF_SH_OFF32_AT);
+                tab_len = (uint64_t)elf_uint32_get(ent + ELF_SH_SIZE32_AT);
+                link = elf_uint32_get(ent + ELF_SH_LINK32_AT);
             }
 
             found = LDG_TRUTH_TRUE;
@@ -447,16 +447,16 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
     {
         const uint8_t *ent = sect + (uint64_t)link * ent_len;
 
-        if (elf_u32_get(ent + ELF_SH_TYPE_AT) != (uint32_t)ELF_SHT_STRTAB) { ret = LDG_ERR_IO_FMT; }
+        if (elf_uint32_get(ent + ELF_SH_TYPE_AT) != (uint32_t)ELF_SHT_STRTAB) { ret = LDG_ERR_IO_FMT; }
         else if (class_is64 == LDG_TRUTH_TRUE)
         {
-            str_off = elf_u64_get(ent + ELF_SH_OFF64_AT);
-            str_len = elf_u64_get(ent + ELF_SH_SIZE64_AT);
+            str_off = elf_uint64_get(ent + ELF_SH_OFF64_AT);
+            str_len = elf_uint64_get(ent + ELF_SH_SIZE64_AT);
         }
         else
         {
-            str_off = (uint64_t)elf_u32_get(ent + ELF_SH_OFF32_AT);
-            str_len = (uint64_t)elf_u32_get(ent + ELF_SH_SIZE32_AT);
+            str_off = (uint64_t)elf_uint32_get(ent + ELF_SH_OFF32_AT);
+            str_len = (uint64_t)elf_uint32_get(ent + ELF_SH_SIZE32_AT);
         }
 
         if (ret == LDG_ERR_AOK && (str_len == 0 || str_len > (uint64_t)ELF_SECT_BYTES_MAX)) { ret = LDG_ERR_BOUNDS; }
@@ -489,7 +489,7 @@ uint32_t crosstalk_hdl_elf_ld(crosstalk_hdl_elf_ctx_t *ctx, const char *path)
     if (ret == LDG_ERR_AOK)
     {
         elf_sort(ctx->sym, ctx->sym_cunt);
-        elf_arch_fmt(ctx->arch, (uint32_t)CROSSTALK_HDL_ELF_ARCH_CAP, (uint32_t)elf_u16_get(hdr + ELF_MACHINE32_AT), class_is64, ident[ELF_OSABI_AT]);
+        elf_arch_fmt(ctx->arch, (uint32_t)CROSSTALK_HDL_ELF_ARCH_CAP, (uint32_t)elf_uint16_get(hdr + ELF_MACHINE32_AT), class_is64, ident[ELF_OSABI_AT]);
         elf_name_cpy(ctx->path, path, (uint32_t)CROSSTALK_HDL_ELF_PATH_CAP);
         ctx->gen++;
         ctx->ok = LDG_TRUTH_TRUE;

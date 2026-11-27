@@ -75,7 +75,7 @@ typedef struct crosstalk_eda_ic_fpga_emu_stat
     uint64_t rate_peak;
     uint64_t step_at_ms;
     uint32_t prog_cunt;
-    uint32_t cur;
+    uint32_t curr;
     uint8_t live_prev;
     uint8_t pudding[7];
 } crosstalk_eda_ic_fpga_emu_stat_t;

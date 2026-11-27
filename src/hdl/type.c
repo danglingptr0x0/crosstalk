@@ -207,19 +207,19 @@ typedef struct type_build
     uint8_t pudding[4];
 } type_build_t;
 
-static uint16_t type_u16_get(const uint8_t *at)
+static uint16_t type_uint16_get(const uint8_t *at)
 {
     return (uint16_t)((uint16_t)at[0] | ((uint16_t)at[1] << LDG_BYTE_BITS));
 }
 
-static uint32_t type_u32_get(const uint8_t *at)
+static uint32_t type_uint32_get(const uint8_t *at)
 {
     return (uint32_t)at[0] | ((uint32_t)at[1] << 8) | ((uint32_t)at[2] << 16) | ((uint32_t)at[3] << 24);
 }
 
-static uint64_t type_u64_get(const uint8_t *at)
+static uint64_t type_uint64_get(const uint8_t *at)
 {
-    return (uint64_t)type_u32_get(at) | ((uint64_t)type_u32_get(at + 0x4) << 32);
+    return (uint64_t)type_uint32_get(at) | ((uint64_t)type_uint32_get(at + 0x4) << 32);
 }
 
 static uint32_t type_rd_at(ldg_io_file_t *file, uint64_t off, void *dst, uint64_t len)
@@ -330,7 +330,7 @@ static uint32_t type_sect_find(const uint8_t *sect, uint32_t shnum, uint64_t ent
     for (at = 0; at < shnum; at++)
     {
         const uint8_t *ent = sect + (uint64_t)at * ent_len;
-        uint32_t name_off = type_u32_get(ent + TYPE_SH_NAME_AT);
+        uint32_t name_off = type_uint32_get(ent + TYPE_SH_NAME_AT);
 
         if ((uint64_t)name_off >= shstr_len) { continue; }
 
@@ -338,13 +338,13 @@ static uint32_t type_sect_find(const uint8_t *sect, uint32_t shnum, uint64_t ent
 
         if (class_is64 == LDG_TRUTH_TRUE)
         {
-            *out_off = type_u64_get(ent + TYPE_SH_OFF64_AT);
-            *out_len = type_u64_get(ent + TYPE_SH_SIZE64_AT);
+            *out_off = type_uint64_get(ent + TYPE_SH_OFF64_AT);
+            *out_len = type_uint64_get(ent + TYPE_SH_SIZE64_AT);
         }
         else
         {
-            *out_off = (uint64_t)type_u32_get(ent + TYPE_SH_OFF32_AT);
-            *out_len = (uint64_t)type_u32_get(ent + TYPE_SH_SIZE32_AT);
+            *out_off = (uint64_t)type_uint32_get(ent + TYPE_SH_OFF32_AT);
+            *out_len = (uint64_t)type_uint32_get(ent + TYPE_SH_SIZE32_AT);
         }
 
         return LDG_ERR_AOK;
@@ -381,7 +381,7 @@ static uint32_t type_strx_get(const type_parse_t *parse, uint64_t idx, const cha
 
     if (slot + (uint64_t)TYPE_UNIT_HDR_LEN_LEN > parse->str_off.len) { return LDG_ERR_BOUNDS; }
 
-    off = (uint64_t)type_u32_get(parse->str_off.at + slot);
+    off = (uint64_t)type_uint32_get(parse->str_off.at + slot);
 
     return type_str_at_get(&parse->str, off, out);
 }
@@ -400,8 +400,8 @@ static uint32_t type_addrx_get(const type_parse_t *parse, uint64_t idx, uint64_t
 
     if (slot + (uint64_t)parse->addr_size > parse->addr.len) { return LDG_ERR_BOUNDS; }
 
-    if (parse->addr_size == sizeof(uint64_t)) { *out = type_u64_get(parse->addr.at + slot); }
-    else { *out = (uint64_t)type_u32_get(parse->addr.at + slot); }
+    if (parse->addr_size == sizeof(uint64_t)) { *out = type_uint64_get(parse->addr.at + slot); }
+    else { *out = (uint64_t)type_uint32_get(parse->addr.at + slot); }
 
     return LDG_ERR_AOK;
 }
@@ -439,8 +439,8 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
     {
         if (*at + (uint64_t)parse->addr_size > len) { return LDG_ERR_BOUNDS; }
 
-        if (parse->addr_size == sizeof(uint64_t)) { out->num = type_u64_get(info + *at); }
-        else { out->num = (uint64_t)type_u32_get(info + *at); }
+        if (parse->addr_size == sizeof(uint64_t)) { out->num = type_uint64_get(info + *at); }
+        else { out->num = (uint64_t)type_uint32_get(info + *at); }
 
         *at = *at + (uint64_t)parse->addr_size;
 
@@ -458,7 +458,7 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
     {
         if (*at + 0x2 > len) { return LDG_ERR_BOUNDS; }
 
-        out->num = (uint64_t)type_u16_get(info + *at);
+        out->num = (uint64_t)type_uint16_get(info + *at);
         *at = *at + 0x2;
     }
     else if (form == (uint32_t)TYPE_FORM_STRX3 || form == (uint32_t)TYPE_FORM_ADDRX3)
@@ -472,14 +472,14 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
     {
         if (*at + 0x4 > len) { return LDG_ERR_BOUNDS; }
 
-        out->num = (uint64_t)type_u32_get(info + *at);
+        out->num = (uint64_t)type_uint32_get(info + *at);
         *at = *at + 0x4;
     }
     else if (form == (uint32_t)TYPE_FORM_DATA8 || form == (uint32_t)TYPE_FORM_REF8 || form == (uint32_t)TYPE_FORM_REF_SIG8 || form == (uint32_t)TYPE_FORM_REF_SUP8)
     {
         if (*at + 0x8 > len) { return LDG_ERR_BOUNDS; }
 
-        out->num = type_u64_get(info + *at);
+        out->num = type_uint64_get(info + *at);
         *at = *at + 0x8;
     }
     else if (form == (uint32_t)TYPE_FORM_DATA16)
@@ -492,7 +492,7 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
     {
         if (*at + 0x4 > len) { return LDG_ERR_BOUNDS; }
 
-        out->num = (uint64_t)type_u32_get(info + *at);
+        out->num = (uint64_t)type_uint32_get(info + *at);
         *at = *at + 0x4;
     }
     else if (form == (uint32_t)TYPE_FORM_UDATA || form == (uint32_t)TYPE_FORM_REF_UDATA || form == (uint32_t)TYPE_FORM_STRX || form == (uint32_t)TYPE_FORM_ADDRX || form == (uint32_t)TYPE_FORM_LOCLISTX || form == (uint32_t)TYPE_FORM_RNGLISTX)
@@ -532,14 +532,14 @@ static uint32_t type_form_rd(const type_parse_t *parse, uint64_t *at, uint32_t f
         {
             if (*at + 0x2 > len) { return LDG_ERR_BOUNDS; }
 
-            blk_len = (uint64_t)type_u16_get(info + *at);
+            blk_len = (uint64_t)type_uint16_get(info + *at);
             *at = *at + 0x2;
         }
         else if (form == (uint32_t)TYPE_FORM_BLOCK4)
         {
             if (*at + 0x4 > len) { return LDG_ERR_BOUNDS; }
 
-            blk_len = (uint64_t)type_u32_get(info + *at);
+            blk_len = (uint64_t)type_uint32_get(info + *at);
             *at = *at + 0x4;
         }
         else
@@ -1000,8 +1000,8 @@ static uint32_t type_cu_walk(type_parse_t *parse, type_build_t *build, uint64_t 
             {
                 if (val.blk[0] == (uint8_t)TYPE_OP_ADDR && val.num >= (uint64_t)parse->addr_size + 1)
                 {
-                    if (parse->addr_size == sizeof(uint64_t)) { var_addr = type_u64_get(val.blk + 1); }
-                    else { var_addr = (uint64_t)type_u32_get(val.blk + 1); }
+                    if (parse->addr_size == sizeof(uint64_t)) { var_addr = type_uint64_get(val.blk + 1); }
+                    else { var_addr = (uint64_t)type_uint32_get(val.blk + 1); }
 
                     loc_has = LDG_TRUTH_TRUE;
                 }
@@ -1472,17 +1472,17 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
     {
         if (class_is64 == LDG_TRUTH_TRUE)
         {
-            shoff = type_u64_get(hdr + TYPE_SHOFF64_AT);
-            shentsize = (uint32_t)type_u16_get(hdr + TYPE_SHENTSIZE64_AT);
-            shnum = (uint32_t)type_u16_get(hdr + TYPE_SHNUM64_AT);
-            shstrndx = (uint32_t)type_u16_get(hdr + TYPE_SHSTRNDX64_AT);
+            shoff = type_uint64_get(hdr + TYPE_SHOFF64_AT);
+            shentsize = (uint32_t)type_uint16_get(hdr + TYPE_SHENTSIZE64_AT);
+            shnum = (uint32_t)type_uint16_get(hdr + TYPE_SHNUM64_AT);
+            shstrndx = (uint32_t)type_uint16_get(hdr + TYPE_SHSTRNDX64_AT);
         }
         else
         {
-            shoff = (uint64_t)type_u32_get(hdr + TYPE_SHOFF32_AT);
-            shentsize = (uint32_t)type_u16_get(hdr + TYPE_SHENTSIZE32_AT);
-            shnum = (uint32_t)type_u16_get(hdr + TYPE_SHNUM32_AT);
-            shstrndx = (uint32_t)type_u16_get(hdr + TYPE_SHSTRNDX32_AT);
+            shoff = (uint64_t)type_uint32_get(hdr + TYPE_SHOFF32_AT);
+            shentsize = (uint32_t)type_uint16_get(hdr + TYPE_SHENTSIZE32_AT);
+            shnum = (uint32_t)type_uint16_get(hdr + TYPE_SHNUM32_AT);
+            shstrndx = (uint32_t)type_uint16_get(hdr + TYPE_SHSTRNDX32_AT);
         }
 
         if (shoff == 0 || shnum == 0 || shstrndx >= shnum) { ret = LDG_ERR_NOT_FOUND; }
@@ -1507,13 +1507,13 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
 
         if (class_is64 == LDG_TRUTH_TRUE)
         {
-            shstr_off = type_u64_get(ent + TYPE_SH_OFF64_AT);
-            shstr_len = type_u64_get(ent + TYPE_SH_SIZE64_AT);
+            shstr_off = type_uint64_get(ent + TYPE_SH_OFF64_AT);
+            shstr_len = type_uint64_get(ent + TYPE_SH_SIZE64_AT);
         }
         else
         {
-            shstr_off = (uint64_t)type_u32_get(ent + TYPE_SH_OFF32_AT);
-            shstr_len = (uint64_t)type_u32_get(ent + TYPE_SH_SIZE32_AT);
+            shstr_off = (uint64_t)type_uint32_get(ent + TYPE_SH_OFF32_AT);
+            shstr_len = (uint64_t)type_uint32_get(ent + TYPE_SH_SIZE32_AT);
         }
 
         if (shstr_len == 0 || shstr_len > (uint64_t)TYPE_SECT_BYTES_MAX) { ret = LDG_ERR_BOUNDS; }
@@ -1603,7 +1603,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
 
         while (at + (uint64_t)TYPE_UNIT_HDR_LEN_LEN <= parse.info.len)
         {
-            uint64_t unit_len = (uint64_t)type_u32_get(parse.info.at + at);
+            uint64_t unit_len = (uint64_t)type_uint32_get(parse.info.at + at);
             uint64_t cu_off = at;
             uint64_t cu_end = 0;
             uint64_t abbrev_base = 0;
@@ -1619,7 +1619,7 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
 
             if (at + 0x2 > parse.info.len) { break; }
 
-            ver = (uint32_t)type_u16_get(parse.info.at + at);
+            ver = (uint32_t)type_uint16_get(parse.info.at + at);
             at = at + 0x2;
 
             if (ver < (uint32_t)TYPE_VER_MIN || ver > (uint32_t)TYPE_VER_MAX) { at = cu_end; continue; }
@@ -1634,14 +1634,14 @@ uint32_t crosstalk_hdl_type_ld(crosstalk_hdl_type_ctx_t *ctx, const char *path)
 
                 if (at + 0x4 > parse.info.len) { break; }
 
-                abbrev_base = (uint64_t)type_u32_get(parse.info.at + at);
+                abbrev_base = (uint64_t)type_uint32_get(parse.info.at + at);
                 at = at + 0x4;
             }
             else
             {
                 if (at + 0x5 > parse.info.len) { break; }
 
-                abbrev_base = (uint64_t)type_u32_get(parse.info.at + at);
+                abbrev_base = (uint64_t)type_uint32_get(parse.info.at + at);
                 at = at + 0x4;
                 parse.addr_size = parse.info.at[at];
                 at++;
@@ -1864,7 +1864,7 @@ uint32_t crosstalk_hdl_type_var_get(const crosstalk_hdl_type_ctx_t *ctx, uint32_
 uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint32_t type_idx, const char *path, crosstalk_hdl_type_field_t *out)
 {
     uint64_t off = 0;
-    uint32_t cur = type_idx;
+    uint32_t curr = type_idx;
     uint32_t at = 0;
     uint32_t depth = 0;
 
@@ -1898,12 +1898,12 @@ uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint
 
         if (path[at] == (char)CROSSTALK_HDL_TYPE_PATH_SEP) { at++; }
 
-        rec = &ctx->type[cur];
+        rec = &ctx->type[curr];
 
         if (rec->member_cunt == 0 && rec->ref != (uint32_t)UINT32_MAX && rec->ref < ctx->type_cunt)
         {
-            cur = rec->ref;
-            rec = &ctx->type[cur];
+            curr = rec->ref;
+            rec = &ctx->type[curr];
         }
 
         for (member_at = 0; member_at < rec->member_cunt; member_at++)
@@ -1921,17 +1921,17 @@ uint32_t crosstalk_hdl_type_field_find(const crosstalk_hdl_type_ctx_t *ctx, uint
 
         if (ctx->member[hit].type_idx == (uint32_t)UINT32_MAX || ctx->member[hit].type_idx >= ctx->type_cunt) { return LDG_ERR_NOT_FOUND; }
 
-        cur = ctx->member[hit].type_idx;
+        curr = ctx->member[hit].type_idx;
         depth++;
     }
 
     type_name_cpy(out->path, path, (uint32_t)CROSSTALK_HDL_TYPE_PATH_CAP);
 
     out->off = off;
-    out->size = ctx->type[cur].size;
-    out->kind = ctx->type[cur].kind;
-    out->type_idx = cur;
-    out->ref = ctx->type[cur].ref;
+    out->size = ctx->type[curr].size;
+    out->kind = ctx->type[curr].kind;
+    out->type_idx = curr;
+    out->ref = ctx->type[curr].ref;
 
     return LDG_ERR_AOK;
 }
@@ -1940,7 +1940,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
 {
     uint64_t fmt_len = 0;
     uint64_t rest = off;
-    uint32_t cur = type_idx;
+    uint32_t curr = type_idx;
     uint32_t depth = 0;
     uint32_t path_len = 0;
 
@@ -1957,7 +1957,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
 
     while (depth < (uint32_t)CROSSTALK_HDL_TYPE_DEPTH_MAX)
     {
-        const crosstalk_hdl_type_rec_t *rec = &ctx->type[cur];
+        const crosstalk_hdl_type_rec_t *rec = &ctx->type[curr];
 
         if (rec->kind == (uint32_t)CROSSTALK_HDL_TYPE_KIND_STRUCT || rec->kind == (uint32_t)CROSSTALK_HDL_TYPE_KIND_UNION)
         {
@@ -1966,7 +1966,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
 
             if (rec->member_cunt == 0 && rec->ref != (uint32_t)UINT32_MAX && rec->ref < ctx->type_cunt)
             {
-                cur = rec->ref;
+                curr = rec->ref;
                 depth++;
 
                 continue;
@@ -2000,7 +2000,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
 
             if (ctx->member[hit].type_idx == (uint32_t)UINT32_MAX || ctx->member[hit].type_idx >= ctx->type_cunt) { break; }
 
-            cur = ctx->member[hit].type_idx;
+            curr = ctx->member[hit].type_idx;
             depth++;
 
             continue;
@@ -2026,7 +2026,7 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
             path_len = (uint32_t)strlen(out->path);
 
             rest = rest - slot * elem->size;
-            cur = rec->ref;
+            curr = rec->ref;
             depth++;
 
             continue;
@@ -2036,10 +2036,10 @@ uint32_t crosstalk_hdl_type_field_at(const crosstalk_hdl_type_ctx_t *ctx, uint32
     }
 
     out->off = off - rest;
-    out->size = ctx->type[cur].size;
-    out->kind = ctx->type[cur].kind;
-    out->type_idx = cur;
-    out->ref = ctx->type[cur].ref;
+    out->size = ctx->type[curr].size;
+    out->kind = ctx->type[curr].kind;
+    out->type_idx = curr;
+    out->ref = ctx->type[curr].ref;
 
     if (out->path[0] == LDG_STR_TERM) { return LDG_ERR_NOT_FOUND; }
 

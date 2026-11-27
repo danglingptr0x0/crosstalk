@@ -90,14 +90,14 @@ static uint32_t wshop_type_find(const char *path, uint32_t *out_type)
     return LDG_ERR_AOK;
 }
 
-static uint32_t wshop_u32_rd(const uint8_t *at)
+static uint32_t wshop_uint32_rd(const uint8_t *at)
 {
     return (uint32_t)at[0] | ((uint32_t)at[1] << (uint32_t)LDG_BYTE_BITS) | ((uint32_t)at[2] << (uint32_t)LDG_BYTE_SHIFT_2) | ((uint32_t)at[3] << (uint32_t)LDG_BYTE_SHIFT_3);
 }
 
-static uint64_t wshop_u64_rd(const uint8_t *at)
+static uint64_t wshop_uint64_rd(const uint8_t *at)
 {
-    return (uint64_t)wshop_u32_rd(at) | ((uint64_t)wshop_u32_rd(at + (uint64_t)LDG_WORD_BYTES) << (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES));
+    return (uint64_t)wshop_uint32_rd(at) | ((uint64_t)wshop_uint32_rd(at + (uint64_t)LDG_WORD_BYTES) << (uint64_t)(LDG_BYTE_BITS * LDG_WORD_BYTES));
 }
 
 static uint32_t wshop_call_res_get(const crosstalk_net_wshop_ctx_t *ctx, uint64_t call, uint32_t cb_id, uint8_t *res, uint8_t *out_done)
@@ -352,10 +352,10 @@ uint32_t crosstalk_net_wshop_upload_state_get(crosstalk_net_wshop_ctx_t *ctx, cr
         {
             file_id_off = ldg_io_path_sep_get() == WSHOP_WIN_SEP ? CROSSTALK_NET_WSHOP_RES_CREATED_FILE_ID_OFF_PACK8 : CROSSTALK_NET_WSHOP_RES_CREATED_FILE_ID_OFF_PACK4;
 
-            if (wshop_u32_rd(res + CROSSTALK_NET_WSHOP_RES_ERES_OFF) != CROSSTALK_NET_WSHOP_ERES_OK) { ret = LDG_ERR_IO_WR; }
+            if (wshop_uint32_rd(res + CROSSTALK_NET_WSHOP_RES_ERES_OFF) != CROSSTALK_NET_WSHOP_ERES_OK) { ret = LDG_ERR_IO_WR; }
             else
             {
-                up->file_id = wshop_u64_rd(res + file_id_off);
+                up->file_id = wshop_uint64_rd(res + file_id_off);
                 ret = wshop_update_submit(ctx, up);
                 if (ret == LDG_ERR_AOK) { up->state = CROSSTALK_NET_WSHOP_UPLOAD_UPDATING; }
             }
@@ -372,7 +372,7 @@ uint32_t crosstalk_net_wshop_upload_state_get(crosstalk_net_wshop_ctx_t *ctx, cr
         ret = wshop_call_res_get(ctx, up->call, CROSSTALK_NET_WSHOP_CB_ITEM_SUBMITTED, res, &done);
         if (ret == LDG_ERR_AOK && done == LDG_TRUTH_TRUE)
         {
-            up->state = wshop_u32_rd(res + CROSSTALK_NET_WSHOP_RES_ERES_OFF) == CROSSTALK_NET_WSHOP_ERES_OK ? CROSSTALK_NET_WSHOP_UPLOAD_DONE : CROSSTALK_NET_WSHOP_UPLOAD_ERR;
+            up->state = wshop_uint32_rd(res + CROSSTALK_NET_WSHOP_RES_ERES_OFF) == CROSSTALK_NET_WSHOP_ERES_OK ? CROSSTALK_NET_WSHOP_UPLOAD_DONE : CROSSTALK_NET_WSHOP_UPLOAD_ERR;
 
             ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "wshop: item submitted; id: %u64; state: %u32", up->file_id, up->state);
         }

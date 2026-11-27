@@ -232,15 +232,15 @@ uint32_t crosstalk_eda_ui_scope_freq_measure(const crosstalk_eda_ui_scope_ctx_t 
     for (idx = CROSSTALK_EDA_UI_SCOPE_STEP; idx < ctx->cunt; idx++)
     {
         uint32_t prev = (ctx->hd + idx - (uint32_t)CROSSTALK_EDA_UI_SCOPE_STEP) % (uint32_t)CROSSTALK_EDA_UI_SCOPE_SAMPLE_CAP;
-        uint32_t cur = (ctx->hd + idx) % (uint32_t)CROSSTALK_EDA_UI_SCOPE_SAMPLE_CAP;
+        uint32_t curr = (ctx->hd + idx) % (uint32_t)CROSSTALK_EDA_UI_SCOPE_SAMPLE_CAP;
 
         if (ctx->sample[prev].volt >= mid) { continue; }
 
-        if (ctx->sample[cur].volt < mid) { continue; }
+        if (ctx->sample[curr].volt < mid) { continue; }
 
-        if (edges == 0) { first_ns = ctx->sample[cur].sim_ns; }
+        if (edges == 0) { first_ns = ctx->sample[curr].sim_ns; }
 
-        last_ns = ctx->sample[cur].sim_ns;
+        last_ns = ctx->sample[curr].sim_ns;
         edges = edges + (uint32_t)CROSSTALK_EDA_UI_SCOPE_STEP;
     }
 

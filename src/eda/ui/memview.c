@@ -161,7 +161,6 @@
 #define MEMVIEW_REPL_TOK_LIVE "live"
 #define MEMVIEW_REPL_TOK_DIFF "diff"
 #define MEMVIEW_REPL_TOK_OFF "off"
-#define MEMVIEW_REPL_TOK_HELP "help"
 #define MEMVIEW_REPL_TOK_STRINGS "strings"
 #define MEMVIEW_REPL_TOK_REFS "refs"
 #define MEMVIEW_REFS_ARG_CUNT 4
@@ -170,7 +169,6 @@
 #define MEMVIEW_REFS_ARG_HI 3
 #define MEMVIEW_REPL_TOK_PTRS "ptrs"
 #define MEMVIEW_REPL_TOK_ON "on"
-#define MEMVIEW_REPL_HELP_TEXT "where <field> <op> <val> [&& <field> <op> <val>] | freeze 0xADDR|<symbol> [len] | freeze off [0xADDR] | refs 0xADDR|<symbol> [0xWINDOW] [0xLO 0xHI] | ptrs [on|off] | find [0xLO 0xHI] <0xNN [0xNN ...]|\"text\"> |strings [min] | dis [0xADDR|loc|@sig] [n] [dangcsa|m16|m32] | go 0xADDR|<symbol>[+0xOFF] | watch [0xLO|<symbol> [0xHI|0xVAL]] [0xNN ...|\"text\"|+N|-N|+|-|*|~N|off] | break 0xLO|<symbol> [0xHI] | break off | step [n] | hlt | run | poke 0xADDR|<symbol> 0xNN [0xNN ...] | snap [name] | diff [name|off] | live"
 #define MEMVIEW_STRINGS_MIN_DEFAULT 4
 #define MEMVIEW_STRINGS_RUN_TEXT "strings"
 #define MEMVIEW_STRINGS_CHUNK 256
@@ -199,9 +197,25 @@
 #define MEMVIEW_HIT_LOG_FMT " 0x%X64"
 #define MEMVIEW_SCROLL_NONE 0.0
 
+static uint32_t memview_verb_help_get(uint32_t idx, const char **out)
+{
+    static const char *const help[] = {
+        "Jump to an addr or symbol: go <addr>", "Search the view: find <hex-bytes or text>", "Find references to an addr: refs <addr> [window] [lo] [hi]", "Find values matching an expression: where <expression>", "Pointer annotations: ptrs [on|off]", "Disassemble: dis [addr] [lines]", "List ASCII strings: strings [min length]", "Leave the snapshot or diff and show live memory", "Compare live memory with a saved snapshot: diff <name> | diff off", "Watch memory for a change or a value: watch <...> | watch off", "Halt when watched memory matches: break <...> | break off", "Stop the clock and run a few cycles: step [cycles]", "Stop the clock", "Start the clock again", "Write bytes: poke <addr> <hex-bytes>", "Hold a value in place: freeze <addr> <value>", "View a saved snapshot: snap <name>"
+    };
+
+    *out = 0x0;
+
+    if (idx >= (uint32_t)(sizeof(help) / sizeof(help[0]))) { return LDG_ERR_NOT_FOUND; }
+
+    *out = help[idx];
+
+    return LDG_ERR_AOK;
+}
+
 uint32_t crosstalk_eda_ui_memview_init(crosstalk_eda_ui_memview_ctx_t *ctx)
 {
     const char *name = 0x0;
+    const char *help = 0x0;
     uint32_t idx = 0;
     uint32_t ret = 0;
 
@@ -216,7 +230,9 @@ uint32_t crosstalk_eda_ui_memview_init(crosstalk_eda_ui_memview_ctx_t *ctx)
 
     while (crosstalk_eda_ui_memview_verb_get(idx, &name) == LDG_ERR_AOK)
     {
-        ret = crosstalk_core_cmdline_verb_reg(&ctx->input, name, MEMVIEW_REPL_VERB_HELP, (uint32_t)LDG_SHELL_ARG_MAX);
+        if (memview_verb_help_get(idx, &help) != LDG_ERR_AOK) { help = MEMVIEW_REPL_VERB_HELP; }
+
+        ret = crosstalk_core_cmdline_verb_reg(&ctx->input, name, help, (uint32_t)LDG_SHELL_ARG_MAX);
         if (ret != LDG_ERR_AOK) { return ret; }
 
         idx = idx + (uint32_t)MEMVIEW_STEP;
@@ -241,8 +257,7 @@ uint32_t crosstalk_eda_ui_memview_open_set(crosstalk_eda_ui_memview_ctx_t *ctx, 
 {
     if (LDG_UNLIKELY(ctx == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    ctx->open = open != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
-    ctx->win.open = ctx->open;
+    ctx->win.open = open != LDG_TRUTH_FALSE ? LDG_TRUTH_TRUE : LDG_TRUTH_FALSE;
 
     return LDG_ERR_AOK;
 }
@@ -2254,7 +2269,7 @@ uint32_t crosstalk_eda_ui_memview_tick(crosstalk_eda_ui_memview_ctx_t *ctx, cons
 {
     if (LDG_UNLIKELY(ctx == 0x0 || fpga == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (ctx->open != LDG_TRUTH_TRUE || ctx->bound != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
+    if (ctx->win.open != LDG_TRUTH_TRUE || ctx->bound != LDG_TRUTH_TRUE) { return LDG_ERR_AOK; }
 
     ctx->proc_blk_len = 0;
 
@@ -2512,7 +2527,7 @@ static uint32_t memview_num_parse(const char *text, uint64_t *out)
 static uint32_t memview_path_off_get(const crosstalk_eda_ui_memview_ctx_t *ctx, uint32_t type_idx, const char *text, uint64_t *out_off, uint32_t *out_type)
 {
     uint64_t off = 0;
-    uint32_t cur = type_idx;
+    uint32_t curr = type_idx;
     uint32_t at = 0;
     uint32_t depth = 0;
 
@@ -2527,11 +2542,11 @@ static uint32_t memview_path_off_get(const crosstalk_eda_ui_memview_ctx_t *ctx, 
     {
         const crosstalk_hdl_type_rec_t *rec = 0x0;
 
-        if (crosstalk_hdl_type_get(ctx->types, cur, &rec) != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
+        if (crosstalk_hdl_type_get(ctx->types, curr, &rec) != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
 
         if (rec->member_cunt == 0 && rec->kind == (uint32_t)CROSSTALK_HDL_TYPE_KIND_STRUCT && rec->ref != (uint32_t)UINT32_MAX)
         {
-            cur = rec->ref;
+            curr = rec->ref;
             depth = depth + (uint32_t)MEMVIEW_STEP;
 
             continue;
@@ -2564,7 +2579,7 @@ static uint32_t memview_path_off_get(const crosstalk_eda_ui_memview_ctx_t *ctx, 
             if (rec->ref == (uint32_t)UINT32_MAX || crosstalk_hdl_type_get(ctx->types, rec->ref, &elem) != LDG_ERR_AOK || elem->size == 0) { return LDG_ERR_NOT_FOUND; }
 
             off = off + (uint64_t)slot * elem->size;
-            cur = rec->ref;
+            curr = rec->ref;
             depth = depth + (uint32_t)MEMVIEW_STEP;
 
             continue;
@@ -2587,10 +2602,10 @@ static uint32_t memview_path_off_get(const crosstalk_eda_ui_memview_ctx_t *ctx, 
 
             name[pos] = LDG_STR_TERM;
 
-            if (crosstalk_hdl_type_field_find(ctx->types, cur, name, &field) != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
+            if (crosstalk_hdl_type_field_find(ctx->types, curr, name, &field) != LDG_ERR_AOK) { return LDG_ERR_NOT_FOUND; }
 
             off = off + field.off;
-            cur = field.type_idx;
+            curr = field.type_idx;
             depth = depth + (uint32_t)MEMVIEW_STEP;
 
             continue;
@@ -2600,7 +2615,7 @@ static uint32_t memview_path_off_get(const crosstalk_eda_ui_memview_ctx_t *ctx, 
     }
 
     *out_off = off;
-    *out_type = cur;
+    *out_type = curr;
 
     return LDG_ERR_AOK;
 }
@@ -2932,13 +2947,6 @@ static uint32_t memview_repl_exec(crosstalk_eda_ui_memview_ctx_t *ctx)
 
     if (verb[0] == LDG_STR_TERM) { return LDG_ERR_AOK; }
 
-    if (strcmp(verb, MEMVIEW_REPL_TOK_HELP) == 0)
-    {
-        ldg_logging_ln_wr(CROSSTALK_CORE_LOG_PATH, LDG_LOGGING_LVL_INFO, "memview: repl verbs; %s", MEMVIEW_REPL_HELP_TEXT);
-
-        return LDG_ERR_AOK;
-    }
-
     if (strcmp(verb, MEMVIEW_REPL_TOK_GO) == 0)
     {
         uint64_t addr = 0;
@@ -3136,7 +3144,7 @@ uint32_t crosstalk_eda_ui_memview_exec_set(crosstalk_eda_ui_memview_ctx_t *ctx, 
 
 uint32_t crosstalk_eda_ui_memview_verb_get(uint32_t idx, const char **out)
 {
-    static const char *const verb[] = { MEMVIEW_REPL_TOK_HELP, MEMVIEW_REPL_TOK_GO, MEMVIEW_REPL_TOK_FIND, MEMVIEW_REPL_TOK_REFS, MEMVIEW_REPL_TOK_WHERE, MEMVIEW_REPL_TOK_PTRS, MEMVIEW_REPL_TOK_DIS, MEMVIEW_REPL_TOK_STRINGS, MEMVIEW_REPL_TOK_LIVE, MEMVIEW_REPL_TOK_DIFF, MEMVIEW_REPL_TOK_WATCH, MEMVIEW_REPL_TOK_BREAK, MEMVIEW_REPL_TOK_STEP, MEMVIEW_REPL_TOK_HLT, MEMVIEW_REPL_TOK_RUN, MEMVIEW_REPL_TOK_POKE, MEMVIEW_REPL_TOK_FREEZE, MEMVIEW_REPL_TOK_SNAP };
+    static const char *const verb[] = { MEMVIEW_REPL_TOK_GO, MEMVIEW_REPL_TOK_FIND, MEMVIEW_REPL_TOK_REFS, MEMVIEW_REPL_TOK_WHERE, MEMVIEW_REPL_TOK_PTRS, MEMVIEW_REPL_TOK_DIS, MEMVIEW_REPL_TOK_STRINGS, MEMVIEW_REPL_TOK_LIVE, MEMVIEW_REPL_TOK_DIFF, MEMVIEW_REPL_TOK_WATCH, MEMVIEW_REPL_TOK_BREAK, MEMVIEW_REPL_TOK_STEP, MEMVIEW_REPL_TOK_HLT, MEMVIEW_REPL_TOK_RUN, MEMVIEW_REPL_TOK_POKE, MEMVIEW_REPL_TOK_FREEZE, MEMVIEW_REPL_TOK_SNAP };
 
     if (LDG_UNLIKELY(out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 

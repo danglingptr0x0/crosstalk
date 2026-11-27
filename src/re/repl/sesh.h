@@ -11,7 +11,7 @@
 #include "re/repl/subst.h"
 
 #define CROSSTALK_RE_REPL_SESH_TITLE "repl"
-#define CROSSTALK_RE_REPL_SESH_PUDDING_SIZE 7
+#define CROSSTALK_RE_REPL_SESH_PUDDING_SIZE 6
 #define CROSSTALK_RE_REPL_SESH_HIST_FILE "replhist.log"
 #define CROSSTALK_RE_REPL_SESH_COL_CUNT 80
 #define CROSSTALK_RE_REPL_SESH_ENC_CAP 8192
@@ -28,12 +28,14 @@ typedef struct crosstalk_re_repl_sesh
     void *out_user;
     crosstalk_re_repl_sesh_exec_cb_t exec_cb;
     void *exec_user;
+    uint64_t out_seen;
     char line[CROSSTALK_CORE_CMDLINE_CAP];
     ldg_byte_t enc[CROSSTALK_RE_REPL_SESH_ENC_CAP];
     uint32_t col_cunt;
     uint8_t prompt_due;
     uint8_t live;
     uint8_t input_ok;
+    uint8_t page_due;
     uint8_t pudding[CROSSTALK_RE_REPL_SESH_PUDDING_SIZE];
 } crosstalk_re_repl_sesh_t;
 
@@ -47,7 +49,8 @@ uint8_t crosstalk_re_repl_sesh_live_is(const crosstalk_re_repl_sesh_t *sesh);
 uint32_t crosstalk_re_repl_sesh_bytes_put(crosstalk_re_repl_sesh_t *sesh, const uint8_t *bytes, uint32_t len);
 uint32_t crosstalk_re_repl_sesh_prompt_put(crosstalk_re_repl_sesh_t *sesh);
 uint32_t crosstalk_re_repl_sesh_col_cunt_set(crosstalk_re_repl_sesh_t *sesh, uint32_t col_cunt);
-uint32_t crosstalk_re_repl_sesh_verb_reg(crosstalk_re_repl_sesh_t *sesh, const char *name);
+uint32_t crosstalk_re_repl_sesh_verb_reg(crosstalk_re_repl_sesh_t *sesh, const char *name, const char *help);
 uint32_t crosstalk_re_repl_sesh_tick(crosstalk_re_repl_sesh_t *sesh);
+uint32_t crosstalk_re_repl_sesh_wipe(crosstalk_re_repl_sesh_t *sesh);
 
 #endif

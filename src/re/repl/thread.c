@@ -133,6 +133,27 @@ static uint32_t thread_ids_ld(crosstalk_re_repl_ctx_t *ctx, crosstalk_re_repl_th
     return LDG_ERR_AOK;
 }
 
+uint32_t crosstalk_re_repl_thread_cunt_get(crosstalk_re_repl_ctx_t *ctx, uint64_t *out)
+{
+    crosstalk_re_repl_thread_t *thread = 0x0;
+    uint32_t ret = 0;
+
+    if (LDG_UNLIKELY(ctx == 0x0 || out == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
+
+    *out = 0;
+
+    if (ctx->thread == 0x0 || ctx->attached != LDG_TRUTH_TRUE) { return LDG_ERR_NOT_INIT; }
+
+    thread = (crosstalk_re_repl_thread_t *)ctx->thread;
+
+    ret = thread_ids_ld(ctx, thread);
+    if (ret != LDG_ERR_AOK && ret != LDG_ERR_EMPTY) { return ret; }
+
+    *out = (uint64_t)thread->id_cunt;
+
+    return LDG_ERR_AOK;
+}
+
 static uint32_t thread_regs_ld(crosstalk_re_repl_ctx_t *ctx, crosstalk_re_repl_thread_t *thread)
 {
     ldg_thread_ref_t ref = LDG_STRUCT_ZERO_INIT;

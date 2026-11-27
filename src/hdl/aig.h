@@ -65,7 +65,7 @@ typedef struct crosstalk_hdl_aig_ctx
     uint32_t mem_rd_cunt;
     uint32_t mem_wr_cunt;
     uint32_t latch_bits;
-    uint32_t cur_op;
+    uint32_t curr_op;
     uint8_t comb_mode;
     uint8_t pudding[7];
 } crosstalk_hdl_aig_ctx_t;

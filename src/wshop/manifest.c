@@ -52,7 +52,7 @@ static uint32_t manifest_str_set(char *dst, uint64_t cap, const char *val, uint6
     return LDG_ERR_AOK;
 }
 
-static uint32_t manifest_u64_parse(const char *val, uint64_t val_len, uint64_t *out)
+static uint32_t manifest_uint64_parse(const char *val, uint64_t val_len, uint64_t *out)
 {
     uint64_t idx = 0;
     uint64_t acc = 0;
@@ -96,7 +96,7 @@ static uint32_t manifest_u64_parse(const char *val, uint64_t val_len, uint64_t *
     return LDG_ERR_AOK;
 }
 
-static uint32_t manifest_u32_parse(const char *val, uint64_t val_len, uint32_t *out)
+static uint32_t manifest_uint32_parse(const char *val, uint64_t val_len, uint32_t *out)
 {
     uint64_t wide = 0;
     uint32_t ret = 0;
@@ -105,7 +105,7 @@ static uint32_t manifest_u32_parse(const char *val, uint64_t val_len, uint32_t *
 
     *out = 0;
 
-    ret = manifest_u64_parse(val, val_len, &wide);
+    ret = manifest_uint64_parse(val, val_len, &wide);
     if (ret != LDG_ERR_AOK) { return ret; }
 
     if (wide > UINT32_MAX) { return LDG_ERR_OVERFLOW; }
@@ -216,8 +216,8 @@ static uint32_t manifest_mem_field_set(crosstalk_wshop_manifest_t *out, uint64_t
     if (idx >= CROSSTALK_WSHOP_MANIFEST_MEM_MAX) { return CROSSTALK_WSHOP_MANIFEST_ERR_FULL; }
 
     if (manifest_key_is(tail, tail_len, "sig") == LDG_TRUTH_TRUE) { ret = manifest_str_set(out->mem[idx].sig, CROSSTALK_WSHOP_MANIFEST_SIG_CAP, val, val_len); }
-    else if (manifest_key_is(tail, tail_len, "words") == LDG_TRUTH_TRUE) { ret = manifest_u64_parse(val, val_len, &out->mem[idx].words); }
-    else if (manifest_key_is(tail, tail_len, "base") == LDG_TRUTH_TRUE) { ret = manifest_u64_parse(val, val_len, &out->mem[idx].base); }
+    else if (manifest_key_is(tail, tail_len, "words") == LDG_TRUTH_TRUE) { ret = manifest_uint64_parse(val, val_len, &out->mem[idx].words); }
+    else if (manifest_key_is(tail, tail_len, "base") == LDG_TRUTH_TRUE) { ret = manifest_uint64_parse(val, val_len, &out->mem[idx].base); }
     else { return LDG_ERR_AOK; }
 
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -237,7 +237,7 @@ static uint32_t manifest_img_field_set(crosstalk_wshop_manifest_t *out, uint64_t
 
     if (manifest_key_is(tail, tail_len, "path") == LDG_TRUTH_TRUE) { ret = manifest_str_set(out->img[idx].path, CROSSTALK_WSHOP_MANIFEST_PATH_CAP, val, val_len); }
     else if (manifest_key_is(tail, tail_len, "mem") == LDG_TRUTH_TRUE) { ret = manifest_str_set(out->img[idx].mem, CROSSTALK_WSHOP_MANIFEST_SIG_CAP, val, val_len); }
-    else if (manifest_key_is(tail, tail_len, "word_off") == LDG_TRUTH_TRUE) { ret = manifest_u64_parse(val, val_len, &out->img[idx].word_off); }
+    else if (manifest_key_is(tail, tail_len, "word_off") == LDG_TRUTH_TRUE) { ret = manifest_uint64_parse(val, val_len, &out->img[idx].word_off); }
     else { return LDG_ERR_AOK; }
 
     if (ret != LDG_ERR_AOK) { return ret; }
@@ -251,7 +251,7 @@ static uint32_t manifest_common_field_set(crosstalk_wshop_manifest_t *out, const
 {
     if (LDG_UNLIKELY(out == 0x0 || key == 0x0 || val == 0x0)) { return LDG_ERR_FUNC_ARG_NULL; }
 
-    if (manifest_key_is(key, key_len, "rev") == LDG_TRUTH_TRUE) { return manifest_u32_parse(val, val_len, &out->rev); }
+    if (manifest_key_is(key, key_len, "rev") == LDG_TRUTH_TRUE) { return manifest_uint32_parse(val, val_len, &out->rev); }
 
     if (manifest_key_is(key, key_len, "kind") == LDG_TRUTH_TRUE) { return manifest_kind_parse(val, val_len, &out->kind); }
 
@@ -259,7 +259,7 @@ static uint32_t manifest_common_field_set(crosstalk_wshop_manifest_t *out, const
 
     if (manifest_key_is(key, key_len, "author") == LDG_TRUTH_TRUE) { return manifest_str_set(out->author, CROSSTALK_WSHOP_MANIFEST_AUTHOR_CAP, val, val_len); }
 
-    if (manifest_key_is(key, key_len, "author_id") == LDG_TRUTH_TRUE) { return manifest_u64_parse(val, val_len, &out->author_id); }
+    if (manifest_key_is(key, key_len, "author_id") == LDG_TRUTH_TRUE) { return manifest_uint64_parse(val, val_len, &out->author_id); }
 
     if (manifest_key_is(key, key_len, "license") == LDG_TRUTH_TRUE) { return manifest_str_set(out->license, CROSSTALK_WSHOP_MANIFEST_LICENSE_CAP, val, val_len); }
 
@@ -287,11 +287,11 @@ static uint32_t manifest_core_field_set(crosstalk_wshop_manifest_t *out, const c
 
     if (manifest_key_is(key, key_len, "isa") == LDG_TRUTH_TRUE) { return manifest_str_set(out->isa, CROSSTALK_WSHOP_MANIFEST_ISA_CAP, val, val_len); }
 
-    if (manifest_key_is(key, key_len, "isa_rev") == LDG_TRUTH_TRUE) { return manifest_u32_parse(val, val_len, &out->isa_rev); }
+    if (manifest_key_is(key, key_len, "isa_rev") == LDG_TRUTH_TRUE) { return manifest_uint32_parse(val, val_len, &out->isa_rev); }
 
-    if (manifest_key_is(key, key_len, "fingerprint") == LDG_TRUTH_TRUE) { return manifest_u64_parse(val, val_len, &out->fingerprint); }
+    if (manifest_key_is(key, key_len, "fingerprint") == LDG_TRUTH_TRUE) { return manifest_uint64_parse(val, val_len, &out->fingerprint); }
 
-    if (manifest_key_is(key, key_len, "toolchain_rev") == LDG_TRUTH_TRUE) { return manifest_u32_parse(val, val_len, &out->toolchain_rev); }
+    if (manifest_key_is(key, key_len, "toolchain_rev") == LDG_TRUTH_TRUE) { return manifest_uint32_parse(val, val_len, &out->toolchain_rev); }
 
     if (manifest_key_is(key, key_len, "port.serial") == LDG_TRUTH_TRUE) { return manifest_str_set(out->port_serial, CROSSTALK_WSHOP_MANIFEST_SIG_CAP, val, val_len); }
 
@@ -322,13 +322,13 @@ static uint32_t manifest_software_field_set(crosstalk_wshop_manifest_t *out, con
 
     if (manifest_key_is(key, key_len, "tgt.isa") == LDG_TRUTH_TRUE) { return manifest_str_set(out->tgt_isa, CROSSTALK_WSHOP_MANIFEST_ISA_CAP, val, val_len); }
 
-    if (manifest_key_is(key, key_len, "tgt.isa_rev") == LDG_TRUTH_TRUE) { return manifest_u32_parse(val, val_len, &out->tgt_isa_rev); }
+    if (manifest_key_is(key, key_len, "tgt.isa_rev") == LDG_TRUTH_TRUE) { return manifest_uint32_parse(val, val_len, &out->tgt_isa_rev); }
 
-    if (manifest_key_is(key, key_len, "tgt.core") == LDG_TRUTH_TRUE) { return manifest_u64_parse(val, val_len, &out->tgt_core); }
+    if (manifest_key_is(key, key_len, "tgt.core") == LDG_TRUTH_TRUE) { return manifest_uint64_parse(val, val_len, &out->tgt_core); }
 
-    if (manifest_key_is(key, key_len, "tgt.fingerprint_min") == LDG_TRUTH_TRUE) { return manifest_u64_parse(val, val_len, &out->tgt_fingerprint_min); }
+    if (manifest_key_is(key, key_len, "tgt.fingerprint_min") == LDG_TRUTH_TRUE) { return manifest_uint64_parse(val, val_len, &out->tgt_fingerprint_min); }
 
-    if (manifest_key_is(key, key_len, "tgt.fingerprint_max") == LDG_TRUTH_TRUE) { return manifest_u64_parse(val, val_len, &out->tgt_fingerprint_max); }
+    if (manifest_key_is(key, key_len, "tgt.fingerprint_max") == LDG_TRUTH_TRUE) { return manifest_uint64_parse(val, val_len, &out->tgt_fingerprint_max); }
 
     ret = manifest_idx_key_split(key, key_len, "img.", &idx, &tail, &tail_len);
     if (ret == LDG_ERR_AOK) { return manifest_img_field_set(out, idx, tail, tail_len, val, val_len); }

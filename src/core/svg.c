@@ -235,8 +235,8 @@ static uint32_t crosstalk_core_svg_arc_emit(crosstalk_core_svg_path_t *out, doub
 uint32_t crosstalk_core_svg_path_parse(const char *desc, double off_x, double off_y, crosstalk_core_svg_path_t *out)
 {
     const char *cursor = desc;
-    double cur_x = 0.0;
-    double cur_y = 0.0;
+    double curr_x = 0.0;
+    double curr_y = 0.0;
     double start_x = 0.0;
     double start_y = 0.0;
     double arg[7] = LDG_ARR_ZERO_INIT;
@@ -275,14 +275,14 @@ uint32_t crosstalk_core_svg_path_parse(const char *desc, double off_x, double of
         {
             arg[0] = crosstalk_core_svg_num_rd(&cursor);
             arg[1] = crosstalk_core_svg_num_rd(&cursor);
-            cur_x = rel == LDG_TRUTH_TRUE ? cur_x + arg[0] : arg[0];
-            cur_y = rel == LDG_TRUTH_TRUE ? cur_y + arg[1] : arg[1];
-            start_x = cur_x;
-            start_y = cur_y;
+            curr_x = rel == LDG_TRUTH_TRUE ? curr_x + arg[0] : arg[0];
+            curr_y = rel == LDG_TRUTH_TRUE ? curr_y + arg[1] : arg[1];
+            start_x = curr_x;
+            start_y = curr_y;
             ret = crosstalk_core_svg_sub_open(out);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            ret = crosstalk_core_svg_vert_push(out, cur_x + off_x, cur_y + off_y);
+            ret = crosstalk_core_svg_vert_push(out, curr_x + off_x, curr_y + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             prev = rel == LDG_TRUTH_TRUE ? 'l' : 'L';
@@ -291,23 +291,23 @@ uint32_t crosstalk_core_svg_path_parse(const char *desc, double off_x, double of
         {
             arg[0] = crosstalk_core_svg_num_rd(&cursor);
             arg[1] = crosstalk_core_svg_num_rd(&cursor);
-            cur_x = rel == LDG_TRUTH_TRUE ? cur_x + arg[0] : arg[0];
-            cur_y = rel == LDG_TRUTH_TRUE ? cur_y + arg[1] : arg[1];
-            ret = crosstalk_core_svg_vert_push(out, cur_x + off_x, cur_y + off_y);
+            curr_x = rel == LDG_TRUTH_TRUE ? curr_x + arg[0] : arg[0];
+            curr_y = rel == LDG_TRUTH_TRUE ? curr_y + arg[1] : arg[1];
+            ret = crosstalk_core_svg_vert_push(out, curr_x + off_x, curr_y + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
         else if (cmd == 'H' || cmd == 'h')
         {
             arg[0] = crosstalk_core_svg_num_rd(&cursor);
-            cur_x = rel == LDG_TRUTH_TRUE ? cur_x + arg[0] : arg[0];
-            ret = crosstalk_core_svg_vert_push(out, cur_x + off_x, cur_y + off_y);
+            curr_x = rel == LDG_TRUTH_TRUE ? curr_x + arg[0] : arg[0];
+            ret = crosstalk_core_svg_vert_push(out, curr_x + off_x, curr_y + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
         else if (cmd == 'V' || cmd == 'v')
         {
             arg[0] = crosstalk_core_svg_num_rd(&cursor);
-            cur_y = rel == LDG_TRUTH_TRUE ? cur_y + arg[0] : arg[0];
-            ret = crosstalk_core_svg_vert_push(out, cur_x + off_x, cur_y + off_y);
+            curr_y = rel == LDG_TRUTH_TRUE ? curr_y + arg[0] : arg[0];
+            ret = crosstalk_core_svg_vert_push(out, curr_x + off_x, curr_y + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
         }
         else if (cmd == 'C' || cmd == 'c')
@@ -320,21 +320,21 @@ uint32_t crosstalk_core_svg_path_parse(const char *desc, double off_x, double of
             arg[5] = crosstalk_core_svg_num_rd(&cursor);
             if (rel == LDG_TRUTH_TRUE)
             {
-                arg[0] = arg[0] + cur_x;
-                arg[1] = arg[1] + cur_y;
-                arg[2] = arg[2] + cur_x;
-                arg[3] = arg[3] + cur_y;
-                arg[4] = arg[4] + cur_x;
-                arg[5] = arg[5] + cur_y;
+                arg[0] = arg[0] + curr_x;
+                arg[1] = arg[1] + curr_y;
+                arg[2] = arg[2] + curr_x;
+                arg[3] = arg[3] + curr_y;
+                arg[4] = arg[4] + curr_x;
+                arg[5] = arg[5] + curr_y;
             }
 
-            ret = crosstalk_core_svg_cubic_emit(out, cur_x + off_x, cur_y + off_y, arg[0] + off_x, arg[1] + off_y, arg[2] + off_x, arg[3] + off_y, arg[4] + off_x, arg[5] + off_y);
+            ret = crosstalk_core_svg_cubic_emit(out, curr_x + off_x, curr_y + off_y, arg[0] + off_x, arg[1] + off_y, arg[2] + off_x, arg[3] + off_y, arg[4] + off_x, arg[5] + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             ctrl_x = arg[2];
             ctrl_y = arg[3];
-            cur_x = arg[4];
-            cur_y = arg[5];
+            curr_x = arg[4];
+            curr_y = arg[5];
         }
         else if (cmd == 'S' || cmd == 's')
         {
@@ -344,30 +344,30 @@ uint32_t crosstalk_core_svg_path_parse(const char *desc, double off_x, double of
             arg[5] = crosstalk_core_svg_num_rd(&cursor);
             if (rel == LDG_TRUTH_TRUE)
             {
-                arg[2] = arg[2] + cur_x;
-                arg[3] = arg[3] + cur_y;
-                arg[4] = arg[4] + cur_x;
-                arg[5] = arg[5] + cur_y;
+                arg[2] = arg[2] + curr_x;
+                arg[3] = arg[3] + curr_y;
+                arg[4] = arg[4] + curr_x;
+                arg[5] = arg[5] + curr_y;
             }
 
             if (prior == 'C' || prior == 'c' || prior == 'S' || prior == 's')
             {
-                arg[0] = cur_x + (cur_x - ctrl_x);
-                arg[1] = cur_y + (cur_y - ctrl_y);
+                arg[0] = curr_x + (curr_x - ctrl_x);
+                arg[1] = curr_y + (curr_y - ctrl_y);
             }
             else
             {
-                arg[0] = cur_x;
-                arg[1] = cur_y;
+                arg[0] = curr_x;
+                arg[1] = curr_y;
             }
 
-            ret = crosstalk_core_svg_cubic_emit(out, cur_x + off_x, cur_y + off_y, arg[0] + off_x, arg[1] + off_y, arg[2] + off_x, arg[3] + off_y, arg[4] + off_x, arg[5] + off_y);
+            ret = crosstalk_core_svg_cubic_emit(out, curr_x + off_x, curr_y + off_y, arg[0] + off_x, arg[1] + off_y, arg[2] + off_x, arg[3] + off_y, arg[4] + off_x, arg[5] + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
             ctrl_x = arg[2];
             ctrl_y = arg[3];
-            cur_x = arg[4];
-            cur_y = arg[5];
+            curr_x = arg[4];
+            curr_y = arg[5];
         }
         else if (cmd == 'A' || cmd == 'a')
         {
@@ -380,22 +380,22 @@ uint32_t crosstalk_core_svg_path_parse(const char *desc, double off_x, double of
             arg[6] = crosstalk_core_svg_num_rd(&cursor);
             if (rel == LDG_TRUTH_TRUE)
             {
-                arg[5] = arg[5] + cur_x;
-                arg[6] = arg[6] + cur_y;
+                arg[5] = arg[5] + curr_x;
+                arg[6] = arg[6] + curr_y;
             }
 
-            ret = crosstalk_core_svg_arc_emit(out, cur_x + off_x, cur_y + off_y, arg[0], arg[1], arg[2], large, sweep, arg[5] + off_x, arg[6] + off_y);
+            ret = crosstalk_core_svg_arc_emit(out, curr_x + off_x, curr_y + off_y, arg[0], arg[1], arg[2], large, sweep, arg[5] + off_x, arg[6] + off_y);
             if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-            cur_x = arg[5];
-            cur_y = arg[6];
+            curr_x = arg[5];
+            curr_y = arg[6];
         }
         else if (cmd == 'Z' || cmd == 'z')
         {
             if (out->sub_cunt > 0) { out->sub[out->sub_cunt - CROSSTALK_CORE_SVG_SUB_LAST_OFF].closed = LDG_TRUTH_TRUE; }
 
-            cur_x = start_x;
-            cur_y = start_y;
+            curr_x = start_x;
+            curr_y = start_y;
         }
         else { return LDG_ERR_INVALID; }
     }

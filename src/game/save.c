@@ -28,9 +28,6 @@
 #define GAME_SAVE_DIFFICULTY_NONE 0
 #define GAME_SAVE_SECT_MAX 16
 #define GAME_SAVE_SECT_NAME_CAP 8
-#define GAME_SAVE_SECT_ECON "ECON"
-#define GAME_SAVE_SECT_PCB "PCB"
-#define GAME_SAVE_SECT_DISTRICT "DISTRICT"
 #define GAME_SAVE_SECT_SETTINGS "SETTINGS"
 #define GAME_SAVE_SECT_LASTSTAT "LASTSTAT"
 #define GAME_SAVE_SECT_CREDIT "CREDIT"
@@ -469,23 +466,11 @@ static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payl
         if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_STR_TRUNC)) { return ret; }
     }
 
-    found = 0;
     ret = save_sect_find(payload, payload_len, GAME_SAVE_SECT_BENCH, &data, &len);
-    if (ret == LDG_ERR_AOK && len >= (uint32_t)sizeof(game_save_bench_stats_t)) { found = LDG_TRUTH_TRUE; }
-    else if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND)) { return ret; }
+    if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
 
-    if (found != LDG_TRUTH_TRUE)
-    {
-        ret = save_sect_find(payload, payload_len, GAME_SAVE_SECT_PCB, &data, &len);
-        if (ret == LDG_ERR_AOK && len >= (uint32_t)(sizeof(game_save_sect_stats_t) + sizeof(game_save_bench_stats_t)))
-        {
-            data = data + sizeof(game_save_sect_stats_t);
-            found = LDG_TRUTH_TRUE;
-        }
-        else if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND)) { return ret; }
-    }
+    if (LDG_UNLIKELY(len != (uint32_t)sizeof(game_save_bench_stats_t))) { return LDG_ERR_IO_FMT; }
 
-    if (found == LDG_TRUTH_TRUE)
     {
         game_save_bench_stats_t bench = LDG_STRUCT_ZERO_INIT;
 
@@ -500,7 +485,13 @@ static uint32_t save_payload_sect_rd(const ldg_byte_t *payload, ldg_dword_t payl
     if (ret == LDG_ERR_AOK) { found = LDG_TRUTH_TRUE; }
     else if (LDG_UNLIKELY(ret != LDG_ERR_NOT_FOUND)) { return ret; }
 
-    if (found == LDG_TRUTH_TRUE && out_settings != 0x0 && out_settings_present != 0x0 && len > 0) { if (crosstalk_game_settings_deserialize(out_settings, data, len) == LDG_ERR_AOK) { *out_settings_present = LDG_TRUTH_TRUE; } }
+    if (found == LDG_TRUTH_TRUE && out_settings != 0x0 && out_settings_present != 0x0)
+    {
+        ret = crosstalk_game_settings_deserialize(out_settings, data, len);
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK)) { return ret; }
+
+        *out_settings_present = LDG_TRUTH_TRUE;
+    }
 
     found = 0;
     ret = save_sect_find(payload, payload_len, GAME_SAVE_SECT_LASTSTAT, &data, &len);
@@ -636,13 +627,11 @@ uint32_t crosstalk_game_save_meta_rd(const char *path, char *out_author_name, ui
             {
                 uint8_t game_hit = LDG_TRUTH_FALSE;
 
-                if (save_sect_name_eq_is(descs[idx].name, GAME_SAVE_SECT_PCB) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
-
                 if (save_sect_name_eq_is(descs[idx].name, GAME_SAVE_SECT_BENCH) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
 
-                if (save_sect_name_eq_is(descs[idx].name, GAME_SAVE_SECT_ECON) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
+                if (save_sect_name_eq_is(descs[idx].name, CROSSTALK_GAME_SAVE_SECT_MUSIC) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
 
-                if (save_sect_name_eq_is(descs[idx].name, GAME_SAVE_SECT_DISTRICT) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
+                if (save_sect_name_eq_is(descs[idx].name, CROSSTALK_GAME_SAVE_SECT_RE) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
 
                 if (save_sect_name_eq_is(descs[idx].name, GAME_SAVE_SECT_SETTINGS) == LDG_TRUTH_TRUE) { game_hit = LDG_TRUTH_TRUE; }
 
@@ -908,7 +897,17 @@ uint32_t crosstalk_game_save_settings_rd(const char *path, crosstalk_game_settin
             return ret;
         }
 
-        if (ret == LDG_ERR_AOK && len > 0) { if (crosstalk_game_settings_deserialize(out_settings, data, len) == LDG_ERR_AOK) { *out_present = LDG_TRUTH_TRUE; } }
+        if (ret == LDG_ERR_AOK)
+        {
+            ret = crosstalk_game_settings_deserialize(out_settings, data, len);
+            if (ret == LDG_ERR_AOK) { *out_present = LDG_TRUTH_TRUE; }
+        }
+
+        if (LDG_UNLIKELY(ret != LDG_ERR_AOK && ret != LDG_ERR_NOT_FOUND))
+        {
+            ldg_mem_dealloc(frame);
+            return ret;
+        }
     }
 
     ldg_mem_dealloc(frame);
