@@ -42,6 +42,7 @@ SUMMARY_KEYS="F2=Launch - F5=Rebuild - Esc=Menu - F10=Quit"
 SMALL_TEXT="terminal too small"
 LAUNCH_CONFIRM_TEXT="The latest source is newer than the compiled binaries. Launch anyway (press again)?"
 DEPS_CONFIRM_TEXT="The dependencies are already in place. Obtain them again (press again)?"
+DEPS_MISSING_TEXT="LDG or LibreSteam is missing; press O to obtain them first"
 LAUNCH_ARM_SPAN=3000
 FRAME_WAIT=0.016
 ESC_WAIT=0.01
@@ -93,6 +94,18 @@ PREV_DURATION=0
 FAIL_SRC=""
 FAIL_TEXT=""
 DEPS_OK=0
+DEP_INC=()
+DEP_LIB=()
+FOUND_DIR=""
+PC_VAL=""
+DEP_LIB_DIRS=(/usr/local/lib64 /usr/lib /usr/lib64 /usr/lib/x86_64-linux-gnu)
+DEP_INC_DIRS=(/usr/local/include /usr/include)
+LDG_PC="dangling"
+LRS_PC="libresteam"
+LDG_LIB_FILE="libdangling.so"
+LRS_LIB_FILE="libresteam.so"
+LDG_HDR_FILE="dangling/core/err.h"
+LRS_HDR_FILE="libresteam/backend/backend.h"
 declare -A KEYV
 ITEM_KIND=()
 ITEM_VAL=()
@@ -271,7 +284,7 @@ build_obj_path_get()
 
 build_cflags_wr()
 {
-    local idx kind
+    local idx kind dir
 
     RSP=""
 
@@ -281,6 +294,11 @@ build_cflags_wr()
 
     build_rsp_set cflagset
     build_rsp_arg "" "-march=native"
+
+    for dir in "${DEP_INC[@]}"; do
+        build_rsp_arg "" "-isystem"
+        build_rsp_arg "" "$dir"
+    done
 
     for idx in "${!ITEM_KIND[@]}"; do
         kind="${ITEM_KIND[$idx]}"
@@ -306,14 +324,17 @@ build_cflags_wr()
 
 build_link_wr()
 {
-    local idx val
+    local idx val dir
+    local rpath="\$ORIGIN:$SYS_LIB"
 
     RSP=""
+
+    for dir in "${DEP_LIB[@]}"; do rpath+=":$dir"; done
 
     if [[ -n "${KEYV[tgt]:-}" ]]; then build_rsp_arg "--target=" "${KEYV[tgt]}"; fi
 
     build_rsp_arg "" "-fuse-ld=lld"
-    build_rsp_arg "" "-Wl,-rpath,\$ORIGIN:$SYS_LIB"
+    build_rsp_arg "" "-Wl,-rpath,$rpath"
     build_rsp_arg "" "$LD_AS_NEEDED"
     build_rsp_set ldflagset
     build_rsp_arg "" "-o"
@@ -336,6 +357,8 @@ build_link_wr()
 
     build_rsp_arg "-L" "$ROOT"
     build_rsp_arg "-L" "$SYS_LIB"
+
+    for dir in "${DEP_LIB[@]}"; do build_rsp_arg "-L" "$dir"; done
 
     for idx in "${!ITEM_KIND[@]}"; do
         if [[ "${ITEM_KIND[$idx]}" != "lib" ]]; then continue; fi
@@ -613,9 +636,102 @@ compile_pump()
     printf '%s\n%s\n' "$RELEASE" "$((BUILD_END - BUILD_START))" >"$STAMP_PATH"
 }
 
+dep_pc_var_get()
+{
+    PC_VAL=""
+
+    if ! sys_tool_has pkg-config || ! pkg-config --exists "$1"; then return 1; fi
+
+    PC_VAL="$(pkg-config --variable="$2" "$1")"
+}
+
+dep_lib_dir_find()
+{
+    local file="$1" pc="$2"
+    local dir line ldc re
+    local dirs=()
+
+    FOUND_DIR=""
+
+    if dep_pc_var_get "$pc" libdir; then dirs+=("$PC_VAL"); fi
+
+    dirs+=("$SYS_LIB" "${DEP_LIB_DIRS[@]}")
+
+    for dir in "${dirs[@]}"; do
+        if [[ -n "$dir" && -e "$dir/$file" ]]; then
+            FOUND_DIR="$dir"
+            return 0
+        fi
+    done
+
+    ldc="$(type -P ldconfig)"
+    if [[ -z "$ldc" && -x /sbin/ldconfig ]]; then ldc=/sbin/ldconfig; fi
+    if [[ -z "$ldc" ]]; then return 1; fi
+
+    re="^[[:space:]]*${file//./\\.} .*=> (.*)/${file//./\\.}$"
+
+    while IFS= read -r line; do
+        if [[ "$line" =~ $re ]]; then
+            FOUND_DIR="${BASH_REMATCH[1]}"
+            return 0
+        fi
+    done <<<"$("$ldc" -p)"
+
+    return 1
+}
+
+dep_inc_dir_find()
+{
+    local file="$1" pc="$2"
+    local dir
+    local dirs=()
+
+    FOUND_DIR=""
+
+    if dep_pc_var_get "$pc" includedir; then dirs+=("$PC_VAL"); fi
+
+    dirs+=("${DEP_INC_DIRS[@]}")
+
+    for dir in "${dirs[@]}"; do
+        if [[ -n "$dir" && -e "$dir/$file" ]]; then
+            FOUND_DIR="$dir"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+dep_dir_std_is()
+{
+    local dir
+
+    for dir in "$SYS_LIB" "${DEP_LIB_DIRS[@]}" "${DEP_INC_DIRS[@]}"; do
+        if [[ "$1" == "$dir" ]]; then return 0; fi
+    done
+
+    return 1
+}
+
 core_deps_ck()
 {
-    if [[ -e "$SYS_LIB/libdangling.so" && -e "$SYS_LIB/libresteam.so" ]]; then DEPS_OK=1; else DEPS_OK=0; fi
+    DEPS_OK=0
+    DEP_INC=()
+    DEP_LIB=()
+
+    dep_lib_dir_find "$LDG_LIB_FILE" "$LDG_PC" || return 0
+    if ! dep_dir_std_is "$FOUND_DIR"; then DEP_LIB+=("$FOUND_DIR"); fi
+
+    dep_lib_dir_find "$LRS_LIB_FILE" "$LRS_PC" || return 0
+    if ! dep_dir_std_is "$FOUND_DIR"; then DEP_LIB+=("$FOUND_DIR"); fi
+
+    dep_inc_dir_find "$LDG_HDR_FILE" "$LDG_PC" || return 0
+    if ! dep_dir_std_is "$FOUND_DIR"; then DEP_INC+=("$FOUND_DIR"); fi
+
+    dep_inc_dir_find "$LRS_HDR_FILE" "$LRS_PC" || return 0
+    if ! dep_dir_std_is "$FOUND_DIR"; then DEP_INC+=("$FOUND_DIR"); fi
+
+    DEPS_OK=1
 }
 
 core_view_fill()
@@ -913,6 +1029,15 @@ core_frame_draw()
 core_build_kick()
 {
     local ret
+
+    core_deps_ck
+
+    if [[ "$DEPS_OK" != 1 ]]; then
+        NOTICE="$DEPS_MISSING_TEXT"
+        SCREEN=menu
+        logging_line_wr WARN "dangem: build refused; LDG or LibreSteam missing"
+        return 0
+    fi
 
     compile_start
     ret=$?

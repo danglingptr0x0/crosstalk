@@ -42,6 +42,7 @@ $script:SUMMARY_KEYS = 'F2=Launch - F5=Rebuild - Esc=Menu - F10=Quit'
 $script:SMALL_TEXT = 'terminal too small'
 $script:LAUNCH_CONFIRM_TEXT = 'The latest source is newer than the compiled binaries. Launch anyway (press again)?'
 $script:DEPS_CONFIRM_TEXT = 'The dependencies are already in place. Obtain them again (press again)?'
+$script:DEPS_MISSING_TEXT = 'LDG or LibreSteam is missing; press O to obtain them first'
 $script:LAUNCH_ARM_SPAN = 3000
 $script:FRAME_WAIT = 16
 $script:COL_MAX = 512
@@ -886,6 +887,16 @@ function core_frame_draw
 
 function core_build_kick([int]$after)
 {
+    core_deps_ck
+
+    if ($script:DEPS_OK -ne 1)
+    {
+        $script:NOTICE = $script:DEPS_MISSING_TEXT
+        $script:SCREEN = 'menu'
+        logging_line_wr 'WARN' 'dangem: build refused; LDG or LibreSteam missing'
+        return
+    }
+
     $ret = compile_start
 
     if ($ret -ne 0)
